@@ -8,3 +8,5 @@ cmake-build-*/
 *.exe
 *.log
 .DS_Store
+__pycache__/
+backtests/sai_h1/test_*/

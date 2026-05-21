@@ -1,0 +1,158 @@
+//@version=5
+indicator("Sai H1 Visual Scanner", overlay=true, max_labels_count=500, max_boxes_count=100)
+
+// This is a visual scanner for checking Sai-style setups on TradingView.
+// Use it on a 1H chart. It is intentionally a confirmation tool, not final EA logic.
+
+mediumLookback = input.int(520, "中期目線バー数", minval=100)
+shortLookback = input.int(72, "短期目線バー数", minval=12)
+recentLookback = input.int(8, "直近重視バー数", minval=3)
+atrLen = input.int(14, "ATR", minval=1)
+trendAtr = input.float(2.0, "トレンド判定ATR倍率", step=0.1)
+
+momentumLen = input.int(12, "モメンタム判定バー数", minval=3)
+momentumAtr = input.float(1.0, "モメンタムATR倍率", step=0.1)
+bodyRatioMin = input.float(0.50, "同方向ローソク比率", minval=0.0, maxval=1.0, step=0.05)
+
+stagBars = input.int(8, "停滞バー数", minval=7, maxval=24)
+tightAtr = input.float(1.20, "通常停滞ATR倍率", step=0.1)
+wideAtr = input.float(2.50, "広め停滞ATR倍率", step=0.1)
+breakBufferAtr = input.float(0.10, "ブレイク余白ATR倍率", step=0.01)
+
+keyLookback = input.int(720, "抵抗線/支持線 lookback", minval=100)
+keyNearAtr = input.float(1.25, "節目付近ATR倍率", step=0.1)
+
+rangeBars = input.int(480, "レンジ判定バー数", minval=100)
+rangeMaxAtr = input.float(10.0, "レンジ幅ATR倍率", step=0.5)
+secondBreakLookback = input.int(160, "2回目ブレイク確認バー数", minval=20)
+
+vLookback = input.int(96, "V字確認バー数", minval=20)
+vMoveAtr = input.float(3.0, "V字最小値幅ATR倍率", step=0.1)
+vRecovery = input.float(0.80, "V字戻し率", minval=0.1, maxval=1.0, step=0.05)
+
+showZones = input.bool(true, "停滞ゾーンを表示")
+showTable = input.bool(true, "状態テーブルを表示")
+skipHoliday = input.bool(true, "12月中旬から1月10日を除外")
+
+atr = ta.atr(atrLen)
+segment = math.max(5, math.floor(mediumLookback / 5))
+
+firstMedium = ta.sma(close, segment)[mediumLookback - segment]
+lastMedium = ta.sma(close, segment)
+mediumDelta = lastMedium - firstMedium
+mediumLong = mediumDelta > atr * trendAtr
+mediumShort = mediumDelta < -atr * trendAtr
+
+firstShort = ta.sma(close, math.max(5, math.floor(shortLookback / 5)))[shortLookback - math.max(5, math.floor(shortLookback / 5))]
+lastShort = ta.sma(close, math.max(5, math.floor(shortLookback / 5)))
+shortDelta = lastShort - firstShort
+recentDelta = close - close[recentLookback]
+shortLong = recentDelta > atr * 0.35 or shortDelta > atr * trendAtr
+shortShort = recentDelta < -atr * 0.35 or shortDelta < -atr * trendAtr
+
+longAligned = mediumLong and shortLong
+shortAligned = mediumShort and shortShort
+
+netMove = close - open[momentumLen - 1]
+longBodies = ta.sum(close > open ? 1.0 : 0.0, momentumLen) / momentumLen
+shortBodies = ta.sum(close < open ? 1.0 : 0.0, momentumLen) / momentumLen
+longMomentum = netMove > atr * momentumAtr and longBodies >= bodyRatioMin
+shortMomentum = netMove < -atr * momentumAtr and shortBodies >= bodyRatioMin
+
+zoneHigh = ta.highest(high[1], stagBars)
+zoneLow = ta.lowest(low[1], stagBars)
+zoneWidth = zoneHigh - zoneLow
+tightStag = zoneWidth <= atr * tightAtr
+wideStag = not tightStag and zoneWidth <= atr * wideAtr
+hasStag = tightStag or wideStag
+
+breakLong = hasStag and close > zoneHigh + atr * breakBufferAtr
+breakShort = hasStag and close < zoneLow - atr * breakBufferAtr
+
+keyHigh = ta.highest(high[1], keyLookback)
+keyLow = ta.lowest(low[1], keyLookback)
+nearResistance = math.abs(zoneHigh - keyHigh) <= atr * keyNearAtr or zoneHigh >= keyHigh - atr * keyNearAtr
+nearSupport = math.abs(zoneLow - keyLow) <= atr * keyNearAtr or zoneLow <= keyLow + atr * keyNearAtr
+
+rangeHigh = ta.highest(high[secondBreakLookback], rangeBars)
+rangeLow = ta.lowest(low[secondBreakLookback], rangeBars)
+rangeLike = rangeHigh - rangeLow <= atr * rangeMaxAtr
+firstBreakHigh = ta.highest(high[1], secondBreakLookback)
+firstBreakLow = ta.lowest(low[1], secondBreakLookback)
+returnedInsideLong = ta.lowest(close[1], secondBreakLookback) < rangeHigh
+returnedInsideShort = ta.highest(close[1], secondBreakLookback) > rangeLow
+secondBreakLong = rangeLike and firstBreakHigh > rangeHigh + atr * breakBufferAtr and returnedInsideLong and close > firstBreakHigh + atr * breakBufferAtr
+secondBreakShort = rangeLike and firstBreakLow < rangeLow - atr * breakBufferAtr and returnedInsideShort and close < firstBreakLow - atr * breakBufferAtr
+
+valley = ta.lowest(low[1], vLookback)
+preHigh = ta.highest(high[1], vLookback)
+drop = preHigh - valley
+longV = drop >= atr * vMoveAtr and close - valley >= drop * vRecovery
+
+peak = ta.highest(high[1], vLookback)
+preLow = ta.lowest(low[1], vLookback)
+rally = peak - preLow
+shortV = rally >= atr * vMoveAtr and peak - close >= rally * vRecovery
+
+currentMonth = month(time)
+currentDay = dayofmonth(time)
+holiday = skipHoliday and ((currentMonth == 12 and currentDay >= 15) or (currentMonth == 1 and currentDay <= 10))
+
+longBase = not holiday and longAligned and longMomentum
+shortBase = not holiday and shortAligned and shortMomentum
+
+longMethod =
+     secondBreakLong ? "レンジ抜け2回目以降" :
+     breakLong and longV and nearResistance ? "V字＋高値停滞" :
+     breakLong and longV ? "急な揺り戻し＋高値停滞" :
+     breakLong and nearResistance and wideStag ? "値幅広めの高値停滞" :
+     breakLong and nearResistance ? "抵抗線付近の高値停滞" :
+     breakLong and wideStag ? "値幅広めの高値停滞" :
+     breakLong ? "高値停滞" : ""
+
+shortMethod =
+     secondBreakShort ? "レンジ抜け2回目以降" :
+     breakShort and shortV and nearSupport ? "逆V字＋安値停滞" :
+     breakShort and shortV ? "急な揺り戻し＋安値停滞" :
+     breakShort and nearSupport and wideStag ? "値幅広めの安値停滞" :
+     breakShort and nearSupport ? "支持線付近の安値停滞" :
+     breakShort and wideStag ? "値幅広めの安値停滞" :
+     breakShort ? "安値停滞" : ""
+
+longSignal = longBase and (breakLong or secondBreakLong)
+shortSignal = shortBase and (breakShort or secondBreakShort)
+
+plotshape(longSignal, title="Long signal", style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.small, text="Sai L")
+plotshape(shortSignal, title="Short signal", style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small, text="Sai S")
+
+if longSignal
+    label.new(bar_index, low, longMethod, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.small)
+
+if shortSignal
+    label.new(bar_index, high, shortMethod, style=label.style_label_down, color=color.new(color.red, 0), textcolor=color.white, size=size.small)
+
+plot(showZones and hasStag ? zoneHigh : na, "停滞ゾーン上限", color=color.new(color.yellow, 0), style=plot.style_linebr)
+plot(showZones and hasStag ? zoneLow : na, "停滞ゾーン下限", color=color.new(color.yellow, 0), style=plot.style_linebr)
+plot(showZones ? keyHigh : na, "抵抗線候補", color=color.new(color.orange, 70), style=plot.style_linebr)
+plot(showZones ? keyLow : na, "支持線候補", color=color.new(color.aqua, 70), style=plot.style_linebr)
+
+bgcolor(holiday ? color.new(color.gray, 88) : na, title="年末年始除外")
+bgcolor(longAligned ? color.new(color.green, 94) : shortAligned ? color.new(color.red, 94) : na, title="短中一致")
+
+var table t = table.new(position.top_right, 2, 6, border_width=1)
+if showTable and barstate.islast
+    table.cell(t, 0, 0, "短中一致", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 0, longAligned ? "買い" : shortAligned ? "売り" : "なし")
+    table.cell(t, 0, 1, "モメンタム", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 1, longMomentum ? "買い" : shortMomentum ? "売り" : "弱い")
+    table.cell(t, 0, 2, "停滞", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 2, tightStag ? "通常" : wideStag ? "広め" : "なし")
+    table.cell(t, 0, 3, "節目付近", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 3, nearResistance ? "抵抗線" : nearSupport ? "支持線" : "なし")
+    table.cell(t, 0, 4, "V字", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 4, longV ? "V字" : shortV ? "逆V字" : "なし")
+    table.cell(t, 0, 5, "除外期間", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 5, holiday ? "ON" : "OFF")
+
+alertcondition(longSignal, "Sai long candidate", "Sai long candidate: {{ticker}} {{interval}}")
+alertcondition(shortSignal, "Sai short candidate", "Sai short candidate: {{ticker}} {{interval}}")

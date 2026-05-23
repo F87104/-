@@ -1,0 +1,420 @@
+//@version=5
+// =====================================================================
+// Sai Best Method Strategy [Production]
+// =====================================================================
+// Sai H1 戦略のうち、検証で最も優秀な「急な揺り戻し+高値停滞」のみを
+// 抽出したStrategy版。
+//
+// 検証結果 (2015-2024, H1, 7通貨):
+//   - Trades: 378 (10年) ≒ 37.8 trades/year/symbol
+//   - WR: 44.4% / PF: 1.47 / AvgR: +0.26R
+//   - 最大連勝/連敗: 6 / 9
+//
+// 発火条件:
+//   1. 中期 + 短期トレンドが同方向 (longAligned / shortAligned)
+//   2. モメンタム条件 (net移動 + 同方向ローソク比率)
+//   3. 停滞ゾーン形成 (8本のレンジ ≤ ATR×1.2 or 2.5)
+//   4. 停滞ブレイク (close > zoneHigh + ATR×0.10)
+//   5. V字パターン形成 (96本以内の安値→現在まで >= ATR×3.0 × 戻し率0.80)
+//   6. 節目付近ではない (not nearResistance / not nearSupport)
+//   7. 12/15 - 1/10 ではない (年末年始除外)
+// =====================================================================
+
+strategy("Sai Best Method [Production]",
+     overlay              = true,
+     initial_capital      = 10000,
+     default_qty_type     = strategy.fixed,
+     default_qty_value    = 1000,
+     pyramiding           = 0,
+     calc_on_order_fills  = false,
+     calc_on_every_tick   = true,
+     process_orders_on_close = false,
+     commission_type      = strategy.commission.percent,
+     commission_value     = 0.0,
+     slippage             = 2,
+     max_bars_back        = 1000,
+     max_lines_count      = 500,
+     max_labels_count     = 500,
+     max_boxes_count      = 100)
+
+// =====================================================================
+// INPUTS
+// =====================================================================
+grpDir = "■ 取引方向"
+allowLong  = input.bool(true,  "ロング (買い) を許可", group=grpDir, tooltip="検証データ上は Long-only で+98.84R。BothでもOK。")
+allowShort = input.bool(true,  "ショート (売り) を許可", group=grpDir)
+
+grpStrategy = "■ Sai 戦略パラメータ"
+mediumLookback   = input.int(520, "中期目線バー数", minval=100, group=grpStrategy)
+shortLookback    = input.int(72,  "短期目線バー数", minval=12, group=grpStrategy)
+recentLookback   = input.int(8,   "直近重視バー数", minval=3, group=grpStrategy)
+atrLen           = input.int(14,  "ATR", minval=1, group=grpStrategy)
+trendAtr         = input.float(2.0, "トレンド判定ATR倍率", step=0.1, group=grpStrategy)
+
+grpMomentum = "■ モメンタム"
+momentumLen      = input.int(12,    "モメンタム判定バー数", minval=3, group=grpMomentum)
+momentumAtr      = input.float(1.0, "モメンタムATR倍率", step=0.1, group=grpMomentum)
+bodyRatioMin     = input.float(0.50, "同方向ローソク比率", minval=0.0, maxval=1.0, step=0.05, group=grpMomentum)
+
+grpZone = "■ 停滞 + ブレイク"
+stagBars         = input.int(8,     "停滞バー数", minval=7, maxval=24, group=grpZone)
+tightAtr         = input.float(1.20, "通常停滞ATR倍率", step=0.1, group=grpZone)
+wideAtr          = input.float(2.50, "広め停滞ATR倍率", step=0.1, group=grpZone)
+breakBufferAtr   = input.float(0.10, "ブレイク余白ATR倍率", step=0.01, group=grpZone)
+
+grpKey = "■ 節目フィルタ"
+keyLookback      = input.int(720, "抵抗線/支持線 lookback", minval=100, group=grpKey)
+keyNearAtr       = input.float(1.25, "節目付近ATR倍率", step=0.1, group=grpKey, tooltip="この距離以内に節目があるとシグナル無効")
+
+grpV = "■ V字検出"
+vLookback        = input.int(96,    "V字確認バー数", minval=20, group=grpV)
+vMoveAtr         = input.float(3.0, "V字最小値幅ATR倍率", step=0.1, group=grpV)
+vRecovery        = input.float(0.80, "V字戻し率", minval=0.1, maxval=1.0, step=0.05, group=grpV)
+
+grpRisk = "■ リスク管理"
+slAtrMult        = input.float(1.5, "SL = ATR x", minval=0.5, step=0.1, group=grpRisk)
+tpRR             = input.float(2.0, "TP = SL x RR", minval=1.0, step=0.1, group=grpRisk, tooltip="検証はRR=2.0で行われた")
+riskPct          = input.float(1.0, "1トレード許容リスク (口座%)", minval=0.1, maxval=5.0, step=0.1, group=grpRisk)
+useFixedSize     = input.bool(false, "固定ロットで運用 (リスク%無効化)", group=grpRisk)
+fixedLot         = input.float(0.1, "固定ロット数", minval=0.01, step=0.01, group=grpRisk)
+maxDDPctIn       = input.float(20.0, "停止DD閾値 (%)", minval=5.0, maxval=50.0, group=grpRisk)
+cooldownBars     = input.int(24, "シグナル間隔 (バー数)", minval=1, group=grpRisk)
+
+grpFilter = "■ フィルタ"
+skipHoliday      = input.bool(true, "12月15日から1月10日を除外", group=grpFilter)
+newsCooldown     = input.bool(true, "ATR異常時のクールダウン", group=grpFilter, tooltip="ATRが直近平均の2倍超 → 1時間休む")
+
+grpVisual = "■ 可視化"
+showZones        = input.bool(true, "停滞ゾーン表示", group=grpVisual)
+showSignals      = input.bool(true, "シグナル矢印", group=grpVisual)
+showTradeLabels  = input.bool(true, "約定/決済ラベル", group=grpVisual)
+showLevelPlots   = input.bool(true, "保有中 Entry/SL/TP 線", group=grpVisual)
+showStats        = input.bool(true, "パフォーマンステーブル", group=grpVisual)
+
+grpRealtime = "■ リアルタイム挙動"
+executionMode    = input.string("確定足のみ", "シグナル判定", options=["確定足のみ","リアルタイム監視"], group=grpRealtime)
+
+// =====================================================================
+// HELPERS
+// =====================================================================
+fmtPrice(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, format.mintick)
+    out
+
+fmtNum(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#.##")
+    out
+
+fmtR(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#.##") + "R"
+    out
+
+calcQty(float equityNow, float slDist, bool useFixed, float fixedQty, float riskP) =>
+    float result = 0.0
+    if useFixed
+        result := fixedQty
+    else if slDist > 0
+        result := (equityNow * riskP / 100) / slDist
+    result
+
+// =====================================================================
+// SIGNAL CALCULATION (sai_h1_visual_scanner.pine の Best Method ロジック)
+// =====================================================================
+atr = ta.atr(atrLen)
+atrAvg = ta.sma(atr, 100)
+isHighVol = newsCooldown and not na(atrAvg) and atr > atrAvg * 2.0
+
+// --- Trend (medium / short) ---
+segment = math.max(5, math.floor(mediumLookback / 5))
+firstMedium = ta.sma(close, segment)[mediumLookback - segment]
+lastMedium = ta.sma(close, segment)
+mediumDelta = lastMedium - firstMedium
+mediumLong  = mediumDelta >  atr * trendAtr
+mediumShort = mediumDelta < -atr * trendAtr
+
+shortSeg = math.max(5, math.floor(shortLookback / 5))
+firstShort = ta.sma(close, shortSeg)[shortLookback - shortSeg]
+lastShort  = ta.sma(close, shortSeg)
+shortDelta = lastShort - firstShort
+recentDelta = close - close[recentLookback]
+shortLong  = recentDelta >  atr * 0.35 or shortDelta >  atr * trendAtr
+shortShort = recentDelta < -atr * 0.35 or shortDelta < -atr * trendAtr
+
+longAligned  = mediumLong  and shortLong
+shortAligned = mediumShort and shortShort
+
+// --- Momentum ---
+netMove = close - open[momentumLen - 1]
+longBodies  = math.sum(close > open ? 1.0 : 0.0, momentumLen) / momentumLen
+shortBodies = math.sum(close < open ? 1.0 : 0.0, momentumLen) / momentumLen
+longMomentum  = netMove >  atr * momentumAtr and longBodies  >= bodyRatioMin
+shortMomentum = netMove < -atr * momentumAtr and shortBodies >= bodyRatioMin
+
+// --- Stagnation zone & breakout ---
+zoneHigh = ta.highest(high[1], stagBars)
+zoneLow  = ta.lowest(low[1],  stagBars)
+zoneWidth = zoneHigh - zoneLow
+tightStag = zoneWidth <= atr * tightAtr
+wideStag  = not tightStag and zoneWidth <= atr * wideAtr
+hasStag = tightStag or wideStag
+
+breakLong  = hasStag and close > zoneHigh + atr * breakBufferAtr
+breakShort = hasStag and close < zoneLow  - atr * breakBufferAtr
+
+// --- Key level filter ---
+keyHigh = ta.highest(high[1], keyLookback)
+keyLow  = ta.lowest(low[1],   keyLookback)
+nearResistance = math.abs(zoneHigh - keyHigh) <= atr * keyNearAtr or zoneHigh >= keyHigh - atr * keyNearAtr
+nearSupport    = math.abs(zoneLow  - keyLow)  <= atr * keyNearAtr or zoneLow  <= keyLow  + atr * keyNearAtr
+
+// --- V-shape detection (急な揺り戻し) ---
+valley  = ta.lowest(low[1],  vLookback)
+preHigh = ta.highest(high[1], vLookback)
+drop    = preHigh - valley
+longV   = drop >= atr * vMoveAtr and (close - valley) >= drop * vRecovery
+
+peak    = ta.highest(high[1], vLookback)
+preLow  = ta.lowest(low[1],   vLookback)
+rally   = peak - preLow
+shortV  = rally >= atr * vMoveAtr and (peak - close) >= rally * vRecovery
+
+// --- Holiday filter ---
+holiday = skipHoliday and ((month(time) == 12 and dayofmonth(time) >= 15) or
+                            (month(time) == 1 and dayofmonth(time) <= 10))
+
+// --- Final signal: 「急な揺り戻し+停滞」 = breakLong + longV + NOT nearResistance ---
+//     検証で唯一プラス収益を出した条件
+ready = bar_index >= keyLookback + 10
+longBase  = ready and not holiday and not isHighVol and longAligned  and longMomentum
+shortBase = ready and not holiday and not isHighVol and shortAligned and shortMomentum
+
+longSig_raw  = allowLong  and longBase  and breakLong  and longV  and not nearResistance
+shortSig_raw = allowShort and shortBase and breakShort and shortV and not nearSupport
+
+// =====================================================================
+// DD STOP
+// =====================================================================
+var float maxEquity     = na
+var float maxDDAmount   = 0.0
+var float maxDDPercent  = 0.0
+curEq = strategy.equity
+maxEquity := na(maxEquity) ? curEq : math.max(maxEquity, curEq)
+curDDAmount = maxEquity - curEq
+ddPct = maxEquity > 0 ? curDDAmount / maxEquity * 100 : 0.0
+maxDDAmount  := math.max(maxDDAmount,  curDDAmount)
+maxDDPercent := math.max(maxDDPercent, ddPct)
+ddStop = ddPct >= maxDDPctIn
+
+longSig  = longSig_raw  and not ddStop
+shortSig = shortSig_raw and not ddStop
+
+// =====================================================================
+// ENTRY EXECUTION
+// =====================================================================
+var float storedAtr   = na
+var int   lastExitBar = -99999
+
+justExited       = strategy.position_size == 0 and strategy.position_size[1] != 0
+canEnter         = not justExited and (bar_index - lastExitBar) >= cooldownBars
+confirmedOK      = executionMode == "リアルタイム監視" ? true : barstate.isconfirmed
+longEntrySignal  = longSig  and confirmedOK and strategy.position_size == 0 and canEnter
+shortEntrySignal = shortSig and confirmedOK and strategy.position_size == 0 and canEnter
+
+var float signalPrice = na
+var int   signalBar   = na
+
+slDistNow = atr * slAtrMult
+qtyNow    = calcQty(curEq, slDistNow, useFixedSize, fixedLot, riskPct)
+
+if longEntrySignal and qtyNow > 0
+    storedAtr := atr
+    signalPrice := close
+    signalBar   := bar_index
+    if showTradeLabels
+        label.new(time, na,
+             "LONG SIGNAL (急な揺り戻し+高値停滞)\nSignal: " + fmtPrice(close) +
+             "\nZone H: " + fmtPrice(zoneHigh) +
+             "\nValley: " + fmtPrice(valley) +
+             "\nEst SL: " + fmtPrice(close - slDistNow) +
+             "\nEst TP: " + fmtPrice(close + slDistNow * tpRR) +
+             "\nQty: "    + fmtNum(qtyNow),
+             xloc=xloc.bar_time, yloc=yloc.belowbar,
+             style=label.style_label_up,
+             color=color.new(color.lime, 10),
+             textcolor=color.black, size=size.small)
+    strategy.entry("Long", strategy.long, qty=qtyNow)
+
+if shortEntrySignal and qtyNow > 0
+    storedAtr := atr
+    signalPrice := close
+    signalBar   := bar_index
+    if showTradeLabels
+        label.new(time, na,
+             "SHORT SIGNAL (急な揺り戻し+安値停滞)\nSignal: " + fmtPrice(close) +
+             "\nZone L: " + fmtPrice(zoneLow) +
+             "\nPeak: "   + fmtPrice(peak) +
+             "\nEst SL: " + fmtPrice(close + slDistNow) +
+             "\nEst TP: " + fmtPrice(close - slDistNow * tpRR) +
+             "\nQty: "    + fmtNum(qtyNow),
+             xloc=xloc.bar_time, yloc=yloc.abovebar,
+             style=label.style_label_down,
+             color=color.new(color.red, 10),
+             textcolor=color.white, size=size.small)
+    strategy.entry("Short", strategy.short, qty=qtyNow)
+
+// =====================================================================
+// SL/TP MANAGEMENT
+// =====================================================================
+var float entryPrice     = na
+var float slPrice        = na
+var float tpPrice        = na
+var int   entryBar       = na
+var float activeRiskDist = na
+var int   activeDir      = 0
+
+justEnteredL = strategy.position_size > 0 and strategy.position_size[1] <= 0
+justEnteredS = strategy.position_size < 0 and strategy.position_size[1] >= 0
+
+if justEnteredL
+    entryPrice := strategy.position_avg_price
+    float sd = nz(storedAtr, atr) * slAtrMult
+    slPrice        := entryPrice - sd
+    tpPrice        := entryPrice + sd * tpRR
+    entryBar       := bar_index
+    activeRiskDist := sd
+    activeDir      := 1
+    if showTradeLabels
+        label.new(time, entryPrice,
+             "LONG FILLED\nEntry: " + fmtPrice(entryPrice) +
+             "\nSL: " + fmtPrice(slPrice) +
+             "\nTP: " + fmtPrice(tpPrice) +
+             "\nQty: " + fmtNum(math.abs(strategy.position_size)),
+             xloc=xloc.bar_time,
+             style=label.style_label_left,
+             color=color.new(color.yellow, 0),
+             textcolor=color.black, size=size.small)
+
+if justEnteredS
+    entryPrice := strategy.position_avg_price
+    float sd = nz(storedAtr, atr) * slAtrMult
+    slPrice        := entryPrice + sd
+    tpPrice        := entryPrice - sd * tpRR
+    entryBar       := bar_index
+    activeRiskDist := sd
+    activeDir      := -1
+    if showTradeLabels
+        label.new(time, entryPrice,
+             "SHORT FILLED\nEntry: " + fmtPrice(entryPrice) +
+             "\nSL: " + fmtPrice(slPrice) +
+             "\nTP: " + fmtPrice(tpPrice) +
+             "\nQty: " + fmtNum(math.abs(strategy.position_size)),
+             xloc=xloc.bar_time,
+             style=label.style_label_left,
+             color=color.new(color.yellow, 0),
+             textcolor=color.black, size=size.small)
+
+if strategy.position_size > 0 and not na(slPrice) and not na(tpPrice)
+    strategy.exit("L-Exit", from_entry="Long",  stop=slPrice, limit=tpPrice)
+if strategy.position_size < 0 and not na(slPrice) and not na(tpPrice)
+    strategy.exit("S-Exit", from_entry="Short", stop=slPrice, limit=tpPrice)
+
+if justExited
+    lastExitBar := bar_index
+
+// EXIT label
+var int seenClosedTrades = 0
+if showTradeLabels and strategy.closedtrades > seenClosedTrades
+    int   tradeIdx         = strategy.closedtrades - 1
+    float exitPx           = strategy.closedtrades.exit_price(tradeIdx)
+    float closedEntryPx    = strategy.closedtrades.entry_price(tradeIdx)
+    int   closedDir        = activeDir != 0 ? activeDir : 1
+    float riskForR         = not na(activeRiskDist) and activeRiskDist > 0 ? activeRiskDist : math.abs(closedEntryPx - exitPx)
+    float exitR            = na
+    if riskForR > 0
+        if closedDir == 1
+            exitR := (exitPx - closedEntryPx) / riskForR
+        else
+            exitR := (closedEntryPx - exitPx) / riskForR
+    color  exitCol         = not na(exitR) and exitR >= 0 ? color.new(color.lime, 5) : color.new(color.red, 5)
+    string exitStyleStr    = closedDir == 1 ? label.style_label_down : label.style_label_up
+    label.new(time, exitPx,
+         "EXIT\nEntry: " + fmtPrice(closedEntryPx) +
+         "\nExit: "  + fmtPrice(exitPx) +
+         "\nR: "     + fmtR(exitR),
+         xloc=xloc.bar_time,
+         style=exitStyleStr, color=exitCol, textcolor=color.white, size=size.small)
+    seenClosedTrades := strategy.closedtrades
+
+// =====================================================================
+// VISUALS
+// =====================================================================
+plotshape(showSignals and longEntrySignal,  title="LONG entry",
+     style=shape.triangleup,   location=location.belowbar,
+     color=color.new(color.lime, 0), size=size.tiny)
+plotshape(showSignals and shortEntrySignal, title="SHORT entry",
+     style=shape.triangledown, location=location.abovebar,
+     color=color.new(color.red,  0), size=size.tiny)
+
+inTrade = strategy.position_size != 0
+plot(showLevelPlots and inTrade ? entryPrice : na, title="Active Entry",
+     color=color.new(color.yellow, 0), linewidth=2, style=plot.style_linebr)
+plot(showLevelPlots and inTrade ? slPrice    : na, title="Active SL",
+     color=color.new(color.red,    0), linewidth=2, style=plot.style_linebr)
+plot(showLevelPlots and inTrade ? tpPrice    : na, title="Active TP",
+     color=color.new(color.lime,   0), linewidth=2, style=plot.style_linebr)
+
+plot(showZones and hasStag ? zoneHigh : na, title="停滞ゾーン上限",
+     color=color.new(color.aqua, 50), style=plot.style_linebr)
+plot(showZones and hasStag ? zoneLow  : na, title="停滞ゾーン下限",
+     color=color.new(color.aqua, 70), style=plot.style_linebr)
+
+bgcolor(isHighVol ? color.new(color.orange, 90) : na, title="高ボラ警告")
+bgcolor(ddStop    ? color.new(color.red,    85) : na, title="DD停止中")
+
+// =====================================================================
+// PERFORMANCE TABLE
+// =====================================================================
+var table statsTable = table.new(position.top_right, 2, 16, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+
+addRow(table tbl, int r, string k, string v, color c) =>
+    table.cell(tbl, 0, r, k, text_color=color.white, bgcolor=color.new(color.gray, 70), text_size=size.small)
+    table.cell(tbl, 1, r, v, text_color=c,           bgcolor=color.new(color.black, 50), text_size=size.small)
+
+if showStats and barstate.islast
+    float grossWin   = strategy.grossprofit
+    float grossLoss  = math.abs(strategy.grossloss)
+    float pf         = grossLoss > 0 ? grossWin / grossLoss : na
+    int   nTrades    = strategy.closedtrades
+    int   nWins      = strategy.wintrades
+    float wr         = nTrades > 0 ? nWins / nTrades * 100 : 0.0
+    float maxDDP     = maxDDPercent
+    float roi        = (curEq / 10000.0 - 1) * 100
+
+    string pfStr     = na(pf) ? "N/A" : str.tostring(pf, "#.##")
+    color  pfCol     = na(pf) ? color.gray : pf >= 1.3 ? color.lime : color.red
+    color  ddCol     = maxDDP < 15 ? color.lime : maxDDP < 25 ? color.orange : color.red
+
+    addRow(statsTable, 0,  "Strategy",     "Sai Best Method", color.aqua)
+    addRow(statsTable, 1,  "Method",       "急な揺り戻し+停滞", color.lime)
+    addRow(statsTable, 2,  "Symbol",       syminfo.ticker, color.yellow)
+    addRow(statsTable, 3,  "Equity",       str.tostring(curEq, "#"), curEq > 10000 ? color.lime : color.red)
+    addRow(statsTable, 4,  "ROI %",        str.tostring(roi, "#.##") + "%", roi > 0 ? color.lime : color.red)
+    addRow(statsTable, 5,  "Trades",       str.tostring(nTrades), color.white)
+    addRow(statsTable, 6,  "Win Rate",     str.tostring(wr, "#.#") + "%", wr >= 40 ? color.lime : color.orange)
+    addRow(statsTable, 7,  "Profit Factor", pfStr, pfCol)
+    addRow(statsTable, 8,  "Max DD",       str.tostring(maxDDP, "#.#") + "%", ddCol)
+    addRow(statsTable, 9,  "Current DD",   str.tostring(ddPct, "#.#") + "%", color.white)
+    addRow(statsTable, 10, "Risk %",       str.tostring(riskPct, "#.#") + "%", color.yellow)
+    addRow(statsTable, 11, "RR",           "1:" + str.tostring(tpRR, "#.#"), color.white)
+    addRow(statsTable, 12, "Status",       ddStop ? "DD-STOP" : inTrade ? "IN-TRADE" : "READY",
+           ddStop ? color.red : inTrade ? color.yellow : color.lime)
+    addRow(statsTable, 13, "Last Signal",  fmtPrice(signalPrice), color.yellow)
+    addRow(statsTable, 14, "Entry",        inTrade ? fmtPrice(entryPrice) : "N/A", color.yellow)
+    addRow(statsTable, 15, "SL/TP",        inTrade ? (fmtPrice(slPrice) + " / " + fmtPrice(tpPrice)) : "N/A", color.lime)
+
+// =====================================================================
+// ALERTS
+// =====================================================================
+alertcondition(longEntrySignal,  title="Sai Best LONG",  message="Sai Best Method LONG on {{ticker}} @ {{close}}")
+alertcondition(shortEntrySignal, title="Sai Best SHORT", message="Sai Best Method SHORT on {{ticker}} @ {{close}}")
+alertcondition(ddStop,           title="Sai DD STOP",    message="Sai Best Method DD threshold reached on {{ticker}}")

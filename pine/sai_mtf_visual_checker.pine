@@ -1,0 +1,320 @@
+//@version=5
+indicator("Sai MTF Visual Checker - H4/D1 Candidates", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=100)
+
+// =====================================================================
+// Purpose
+// =====================================================================
+// Visual checker for the three higher-timeframe candidates found in the
+// first Python backtest:
+//   1. H4 V字＋高値停滞
+//   2. H4 レンジ抜け2回目以降のブレイクアウト
+//   3. D1 値幅広めの高値停滞
+//
+// This is a visual confirmation tool. It does not place orders.
+// It is designed to be used on a chart timeframe equal to or lower than the
+// target analysis timeframe, e.g. H1 chart with H4/D1 signals overlaid.
+// =====================================================================
+
+grpTf = "■ 表示する時間足"
+h4Tf = input.timeframe("240", "H4条件の時間足", group=grpTf)
+d1Tf = input.timeframe("D", "D1条件の時間足", group=grpTf)
+showH4V = input.bool(true, "H4 V字＋高値停滞", group=grpTf)
+showH4Second = input.bool(true, "H4 レンジ抜け2回目以降", group=grpTf)
+showD1Wide = input.bool(true, "D1 値幅広めの高値停滞", group=grpTf)
+
+grpCommon = "■ 共通条件"
+atrLen = input.int(14, "ATR", minval=1, group=grpCommon)
+trendAtr = input.float(2.0, "中期トレンドATR倍率", step=0.1, group=grpCommon)
+momentumAtr = input.float(1.0, "モメンタムATR倍率", step=0.1, group=grpCommon)
+bodyRatioMin = input.float(0.50, "同方向ローソク比率", minval=0.0, maxval=1.0, step=0.05, group=grpCommon)
+breakBufferAtr = input.float(0.10, "ブレイク余白ATR倍率", step=0.01, group=grpCommon)
+skipHoliday = input.bool(true, "12月15日から1月10日を除外", group=grpCommon)
+
+grpH4 = "■ H4条件"
+h4Medium = input.int(130, "H4 中期lookback", minval=20, group=grpH4)
+h4Short = input.int(18, "H4 短期lookback", minval=3, group=grpH4)
+h4Recent = input.int(2, "H4 直近lookback", minval=1, group=grpH4)
+h4Momentum = input.int(3, "H4 モメンタム本数", minval=2, group=grpH4)
+h4StagMin = input.int(2, "H4 停滞最小本数", minval=2, group=grpH4)
+h4StagMax = input.int(6, "H4 停滞最大本数", minval=2, group=grpH4)
+h4TightAtr = input.float(1.20, "H4 通常停滞ATR倍率", step=0.1, group=grpH4)
+h4WideAtr = input.float(2.50, "H4 広め停滞ATR倍率", step=0.1, group=grpH4)
+h4KeyLookback = input.int(180, "H4 節目lookback", minval=20, group=grpH4)
+h4KeyNearAtr = input.float(1.25, "H4 節目付近ATR倍率", step=0.1, group=grpH4)
+h4VLookback = input.int(24, "H4 V字確認本数", minval=8, group=grpH4)
+h4VMoveAtr = input.float(3.0, "H4 V字最小値幅ATR倍率", step=0.1, group=grpH4)
+h4VRecovery = input.float(0.80, "H4 V字戻し率", minval=0.1, maxval=1.0, step=0.05, group=grpH4)
+h4RangeBars = input.int(120, "H4 レンジ判定本数", minval=20, group=grpH4)
+h4RangeMaxAtr = input.float(10.0, "H4 レンジ最大幅ATR倍率", step=0.5, group=grpH4)
+h4SecondLookback = input.int(40, "H4 2回目ブレイク確認本数", minval=10, group=grpH4)
+
+grpD1 = "■ D1条件"
+d1Medium = input.int(22, "D1 中期lookback", minval=5, group=grpD1)
+d1Short = input.int(3, "D1 短期lookback", minval=2, group=grpD1)
+d1Recent = input.int(2, "D1 直近lookback", minval=1, group=grpD1)
+d1Momentum = input.int(2, "D1 モメンタム本数", minval=2, group=grpD1)
+d1StagMin = input.int(2, "D1 停滞最小本数", minval=2, group=grpD1)
+d1StagMax = input.int(3, "D1 停滞最大本数", minval=2, group=grpD1)
+d1TightAtr = input.float(1.20, "D1 通常停滞ATR倍率", step=0.1, group=grpD1)
+d1WideAtr = input.float(2.50, "D1 広め停滞ATR倍率", step=0.1, group=grpD1)
+d1KeyLookback = input.int(30, "D1 節目lookback", minval=5, group=grpD1)
+d1KeyNearAtr = input.float(1.25, "D1 節目付近ATR倍率", step=0.1, group=grpD1)
+d1RequireKey = input.bool(false, "D1 広め停滞に節目付近を必須にする", group=grpD1)
+
+grpVisual = "■ 可視化"
+showLabels = input.bool(true, "シグナルラベル", group=grpVisual)
+showLevelPlots = input.bool(true, "候補ゾーン/レンジ線", group=grpVisual)
+showBg = input.bool(true, "候補バー背景色", group=grpVisual)
+showTable = input.bool(true, "状態テーブル", group=grpVisual)
+
+// =====================================================================
+// Helpers
+// =====================================================================
+f_holiday() =>
+    skipHoliday and ((month(time) == 12 and dayofmonth(time) >= 15) or (month(time) == 1 and dayofmonth(time) <= 10))
+
+// 手動SMA (ta.sma は simple int のみ → series int 引数では使えない)
+f_manual_sma(int len, int offset) =>
+    float sum = 0.0
+    if len > 0
+        for i = 0 to len - 1
+            sum := sum + close[i + offset]
+    float result = len > 0 ? sum / len : na
+    result
+
+f_dir_by_window(int lookback, float atrValue) =>
+    int seg = math.max(2, int(math.floor(lookback / 5)))
+    int firstOffset = math.max(lookback - seg, 1)
+    float last  = f_manual_sma(seg, 0)
+    float first = f_manual_sma(seg, firstOffset)
+    float delta = last - first
+    int dir = delta > atrValue * trendAtr ? 1 : delta < -atrValue * trendAtr ? -1 : 0
+    dir
+
+f_short_dir(int recentLookback, int shortLookback, float atrValue) =>
+    float recentDelta = close - close[recentLookback]
+    int recentDir = recentDelta > atrValue * 0.35 ? 1 : recentDelta < -atrValue * 0.35 ? -1 : 0
+    int fallback = f_dir_by_window(shortLookback, atrValue)
+    int dir = recentDir != 0 ? recentDir : fallback
+    dir
+
+// 手動 net & same-body カウント (math.sum も simple int のみ)
+f_momentum(int len, int direction, float atrValue) =>
+    float net = close - open[len - 1]
+    float bodyCount = 0.0
+    if len > 0
+        for i = 0 to len - 1
+            bool isSame = direction == 1 ? close[i] > open[i] : close[i] < open[i]
+            if isSame
+                bodyCount := bodyCount + 1.0
+    float sameBody = len > 0 ? bodyCount / len : 0.0
+    bool ok = direction == 1 ? (net > atrValue * momentumAtr and sameBody >= bodyRatioMin) : (net < -atrValue * momentumAtr and sameBody >= bodyRatioMin)
+    ok
+
+f_zone(int minBars, int maxBars, float atrValue, float maxAtr) =>
+    bool valid = false
+    float zHigh = na
+    float zLow = na
+    int zBars = 0
+    for b = minBars to maxBars
+        float h = ta.highest(high[1], b)
+        float l = ta.lowest(low[1], b)
+        if h - l <= atrValue * maxAtr
+            valid := true
+            zHigh := h
+            zLow := l
+            zBars := b
+    [valid, zHigh, zLow, zBars]
+
+// 正しい V字判定: 高値 → 安値 → 高値 の時間的順序を保証する
+// lookback 期間内で、まず谷の位置 (最安値バー) を特定し、
+// 谷の前 (下落レッグ) と 谷の後 (上昇レッグ) がそれぞれ十分大きいか確認。
+f_long_vshape(int lookback, float atrValue) =>
+    // 1. 過去 lookback 本 (現在足を除く) の最安値バーを特定
+    //    ta.lowestbars は 0..-(length-1) の非正値を返す → 正値にして扱う
+    int rawIdx       = ta.lowestbars(low[1], lookback)
+    int valleyBars   = -rawIdx                  // low[1] から見た正のオフセット (0 = low[1])
+    int valleyOffset = valleyBars + 1            // 現在足からのオフセット (1 = 1本前 = low[1])
+    int barsBefore   = lookback - 1 - valleyBars // 谷より「古い」バーの数
+    int barsAfter    = valleyBars                // 谷より「新しい」バーの数 (現在足を除く)
+
+    bool hasBefore = barsBefore >= 3
+    bool hasAfter  = barsAfter  >= 3
+
+    // 2. 谷の値
+    float valley   = low[valleyOffset]
+
+    // 3. 谷より「前」(古い側) の最高値 = 下落レッグの起点
+    float preHigh  = hasBefore ? ta.highest(high[valleyOffset + 1], barsBefore) : na
+
+    // 4. 谷より「後」(新しい側、現在足は除く) の最高値 = 回復のピーク
+    //    → ブレイク当バーは別途条件で見るため、ここでは「V字回復が完了したか」だけ判定
+    float postHigh = hasAfter ? ta.highest(high[1], valleyBars) : na
+
+    float downLeg = na(preHigh) ? 0.0 : preHigh - valley
+    float upLeg   = postHigh - valley
+
+    bool ok = hasBefore and hasAfter and downLeg >= atrValue * h4VMoveAtr and upLeg >= downLeg * h4VRecovery
+    ok
+
+f_second_break_long(int rangeBars, int scanBars, float atrValue, float rangeMaxAtr) =>
+    float rangeHigh = ta.highest(high[scanBars], rangeBars)
+    float rangeLow = ta.lowest(low[scanBars], rangeBars)
+    bool rangeLike = rangeHigh - rangeLow <= atrValue * rangeMaxAtr
+    float buffer = atrValue * breakBufferAtr
+    bool firstBreak = false
+    bool returnedInside = false
+    float firstExtreme = na
+    // Pine v5: by の step は正値のみ。降順は from > to で自動判定される
+    if scanBars >= 1
+        for offset = 0 to scanBars - 1
+            int k = scanBars - offset
+            if high[k] > rangeHigh + buffer
+                firstBreak := true
+                firstExtreme := na(firstExtreme) ? high[k] : math.max(firstExtreme, high[k])
+            if firstBreak and close[k] < rangeHigh
+                returnedInside := true
+    bool sig = rangeLike and firstBreak and returnedInside and not na(firstExtreme) and close > firstExtreme + buffer
+    [sig, rangeHigh, rangeLow, firstExtreme]
+
+f_second_break_short(int rangeBars, int scanBars, float atrValue, float rangeMaxAtr) =>
+    float rangeHigh = ta.highest(high[scanBars], rangeBars)
+    float rangeLow = ta.lowest(low[scanBars], rangeBars)
+    bool rangeLike = rangeHigh - rangeLow <= atrValue * rangeMaxAtr
+    float buffer = atrValue * breakBufferAtr
+    bool firstBreak = false
+    bool returnedInside = false
+    float firstExtreme = na
+    if scanBars >= 1
+        for offset = 0 to scanBars - 1
+            int k = scanBars - offset
+            if low[k] < rangeLow - buffer
+                firstBreak := true
+                firstExtreme := na(firstExtreme) ? low[k] : math.min(firstExtreme, low[k])
+            if firstBreak and close[k] > rangeLow
+                returnedInside := true
+    bool sig = rangeLike and firstBreak and returnedInside and not na(firstExtreme) and close < firstExtreme - buffer
+    [sig, rangeHigh, rangeLow, firstExtreme]
+
+f_h4_pack() =>
+    float atrValue = ta.atr(atrLen)
+    bool holiday = f_holiday()
+    int medium = f_dir_by_window(h4Medium, atrValue)
+    int short = f_short_dir(h4Recent, h4Short, atrValue)
+    bool longBase = not holiday and medium == 1 and short == 1 and f_momentum(h4Momentum, 1, atrValue)
+    bool shortBase = not holiday and medium == -1 and short == -1 and f_momentum(h4Momentum, -1, atrValue)
+
+    [tightOk, tightHigh, tightLow, tightBars] = f_zone(h4StagMin, h4StagMax, atrValue, h4TightAtr)
+    [wideOk, wideHigh, wideLow, wideBars] = f_zone(h4StagMin, h4StagMax, atrValue, h4WideAtr)
+    bool zoneOk = tightOk or wideOk
+    float zoneHigh = tightOk ? tightHigh : wideHigh
+    float zoneLow = tightOk ? tightLow : wideLow
+    bool zoneWide = not tightOk and wideOk
+
+    float keyHigh = ta.highest(high[1], h4KeyLookback)
+    bool nearResistance = math.abs(zoneHigh - keyHigh) <= atrValue * h4KeyNearAtr or zoneHigh >= keyHigh - atrValue * h4KeyNearAtr
+    bool breakLong = zoneOk and close > zoneHigh + atrValue * breakBufferAtr
+    bool h4VLong = longBase and breakLong and f_long_vshape(h4VLookback, atrValue) and nearResistance
+
+    [secondLong, rangeHighL, rangeLowL, firstHigh] = f_second_break_long(h4RangeBars, h4SecondLookback, atrValue, h4RangeMaxAtr)
+    [secondShort, rangeHighS, rangeLowS, firstLow] = f_second_break_short(h4RangeBars, h4SecondLookback, atrValue, h4RangeMaxAtr)
+    bool h4SecondLong = longBase and secondLong
+    bool h4SecondShort = shortBase and secondShort
+    float rangeHigh = h4SecondLong ? rangeHighL : h4SecondShort ? rangeHighS : na
+    float rangeLow = h4SecondLong ? rangeLowL : h4SecondShort ? rangeLowS : na
+    float firstExtreme = h4SecondLong ? firstHigh : h4SecondShort ? firstLow : na
+
+    [h4VLong, h4SecondLong, h4SecondShort, zoneHigh, zoneLow, rangeHigh, rangeLow, firstExtreme, atrValue, close]
+
+f_d1_pack() =>
+    float atrValue = ta.atr(atrLen)
+    bool holiday = f_holiday()
+    int medium = f_dir_by_window(d1Medium, atrValue)
+    int short = f_short_dir(d1Recent, d1Short, atrValue)
+    bool longBase = not holiday and medium == 1 and short == 1 and f_momentum(d1Momentum, 1, atrValue)
+
+    [tightOk, tightHigh, tightLow, tightBars] = f_zone(d1StagMin, d1StagMax, atrValue, d1TightAtr)
+    [wideOk, wideHigh, wideLow, wideBars] = f_zone(d1StagMin, d1StagMax, atrValue, d1WideAtr)
+    bool zoneWide = not tightOk and wideOk
+    float zoneHigh = wideHigh
+    float zoneLow = wideLow
+    float keyHigh = ta.highest(high[1], d1KeyLookback)
+    bool nearResistance = math.abs(zoneHigh - keyHigh) <= atrValue * d1KeyNearAtr or zoneHigh >= keyHigh - atrValue * d1KeyNearAtr
+    bool breakLong = zoneWide and close > zoneHigh + atrValue * breakBufferAtr
+    bool d1WideLong = longBase and breakLong and (not d1RequireKey or nearResistance)
+    [d1WideLong, zoneHigh, zoneLow, atrValue, close]
+
+// =====================================================================
+// MTF requests
+// =====================================================================
+[h4VLong, h4SecondLong, h4SecondShort, h4ZoneHigh, h4ZoneLow, h4RangeHigh, h4RangeLow, h4FirstExtreme, h4Atr, h4Close] =
+     request.security(syminfo.tickerid, h4Tf, f_h4_pack(), lookahead=barmerge.lookahead_off)
+
+[d1WideLong, d1ZoneHigh, d1ZoneLow, d1Atr, d1Close] =
+     request.security(syminfo.tickerid, d1Tf, f_d1_pack(), lookahead=barmerge.lookahead_off)
+
+newH4V = showH4V and h4VLong and not h4VLong[1]
+newH4SecondL = showH4Second and h4SecondLong and not h4SecondLong[1]
+newH4SecondS = showH4Second and h4SecondShort and not h4SecondShort[1]
+newD1Wide = showD1Wide and d1WideLong and not d1WideLong[1]
+
+// =====================================================================
+// Visuals
+// =====================================================================
+plotshape(newH4V, title="H4 V字＋高値停滞", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="H4 V")
+plotshape(newH4SecondL, title="H4 2回目ブレイク Long", style=shape.triangleup, location=location.belowbar, color=color.new(color.teal, 0), size=size.small, text="H4 2")
+plotshape(newH4SecondS, title="H4 2回目ブレイク Short", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), size=size.small, text="H4 2")
+plotshape(newD1Wide, title="D1 値幅広め高値停滞", style=shape.diamond, location=location.belowbar, color=color.new(color.yellow, 0), size=size.small, text="D1 W")
+
+// ラベルは time + xloc.bar_time + yloc.belowbar/abovebar でアンカー
+// → チャート操作 (ズーム/スクロール/履歴追加) でずれなくなる
+if showLabels and newH4V
+    label.new(time, na, "H4 V字＋高値停滞\nBreak: " + str.tostring(h4Close, format.mintick) + "\nZone H: " + str.tostring(h4ZoneHigh, format.mintick) + "\nZone L: " + str.tostring(h4ZoneLow, format.mintick),
+         xloc=xloc.bar_time, yloc=yloc.belowbar,
+         style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.small)
+
+if showLabels and newH4SecondL
+    label.new(time, na, "H4 2回目ブレイク LONG\nBreak: " + str.tostring(h4Close, format.mintick) + "\nRange H: " + str.tostring(h4RangeHigh, format.mintick) + "\n1st High: " + str.tostring(h4FirstExtreme, format.mintick),
+         xloc=xloc.bar_time, yloc=yloc.belowbar,
+         style=label.style_label_up, color=color.new(color.teal, 0), textcolor=color.black, size=size.small)
+
+if showLabels and newH4SecondS
+    label.new(time, na, "H4 2回目ブレイク SHORT\nBreak: " + str.tostring(h4Close, format.mintick) + "\nRange L: " + str.tostring(h4RangeLow, format.mintick) + "\n1st Low: " + str.tostring(h4FirstExtreme, format.mintick),
+         xloc=xloc.bar_time, yloc=yloc.abovebar,
+         style=label.style_label_down, color=color.new(color.red, 0), textcolor=color.white, size=size.small)
+
+if showLabels and newD1Wide
+    label.new(time, na, "D1 値幅広めの高値停滞\nBreak: " + str.tostring(d1Close, format.mintick) + "\nZone H: " + str.tostring(d1ZoneHigh, format.mintick) + "\nZone L: " + str.tostring(d1ZoneLow, format.mintick),
+         xloc=xloc.bar_time, yloc=yloc.belowbar,
+         style=label.style_label_up, color=color.new(color.yellow, 0), textcolor=color.black, size=size.small)
+
+plot(showLevelPlots and (h4VLong or h4SecondLong or h4SecondShort) ? h4ZoneHigh : na, "H4 停滞上限", color=color.new(color.lime, 15), style=plot.style_linebr)
+plot(showLevelPlots and (h4VLong or h4SecondLong or h4SecondShort) ? h4ZoneLow : na, "H4 停滞下限", color=color.new(color.lime, 35), style=plot.style_linebr)
+plot(showLevelPlots and (h4SecondLong or h4SecondShort) ? h4RangeHigh : na, "H4 レンジ上限", color=color.new(color.teal, 15), style=plot.style_linebr)
+plot(showLevelPlots and (h4SecondLong or h4SecondShort) ? h4RangeLow : na, "H4 レンジ下限", color=color.new(color.teal, 35), style=plot.style_linebr)
+plot(showLevelPlots and d1WideLong ? d1ZoneHigh : na, "D1 広め停滞上限", color=color.new(color.yellow, 0), style=plot.style_linebr)
+plot(showLevelPlots and d1WideLong ? d1ZoneLow : na, "D1 広め停滞下限", color=color.new(color.yellow, 40), style=plot.style_linebr)
+
+bgcolor(showBg and h4VLong ? color.new(color.lime, 88) : na, title="H4 V字背景")
+bgcolor(showBg and (h4SecondLong or h4SecondShort) ? color.new(color.teal, 88) : na, title="H4 2回目背景")
+bgcolor(showBg and d1WideLong ? color.new(color.yellow, 88) : na, title="D1 広め背景")
+
+var table t = table.new(position.top_right, 2, 6, border_width=1)
+if showTable and barstate.islast
+    table.cell(t, 0, 0, "H4 TF", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 0, h4Tf, text_color=color.white)
+    table.cell(t, 0, 1, "D1 TF", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 1, d1Tf, text_color=color.white)
+    table.cell(t, 0, 2, "H4 V字＋高値停滞", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 2, h4VLong ? "ON" : "OFF", text_color=h4VLong ? color.lime : color.gray)
+    table.cell(t, 0, 3, "H4 2回目", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 3, h4SecondLong ? "LONG" : h4SecondShort ? "SHORT" : "OFF", text_color=h4SecondLong ? color.lime : h4SecondShort ? color.red : color.gray)
+    table.cell(t, 0, 4, "D1 広め高値停滞", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 4, d1WideLong ? "ON" : "OFF", text_color=d1WideLong ? color.yellow : color.gray)
+    table.cell(t, 0, 5, "用途", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 5, "目視確認", text_color=color.white)
+
+alertcondition(newH4V, title="Sai H4 V字＋高値停滞", message="Sai H4 V字＋高値停滞 candidate on {{ticker}}")
+alertcondition(newH4SecondL, title="Sai H4 2回目ブレイク LONG", message="Sai H4 second range breakout LONG candidate on {{ticker}}")
+alertcondition(newH4SecondS, title="Sai H4 2回目ブレイク SHORT", message="Sai H4 second range breakout SHORT candidate on {{ticker}}")
+alertcondition(newD1Wide, title="Sai D1 値幅広め高値停滞", message="Sai D1 wide high stagnation candidate on {{ticker}}")

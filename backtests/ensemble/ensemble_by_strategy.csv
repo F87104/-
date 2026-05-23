@@ -1,0 +1,3 @@
+name,trades,win_rate_%,PF,avg_R,avg_win_R,avg_loss_R,total_R,max_DD_R,calmar_R,max_consec_wins,max_consec_losses,trades_per_year
+SaiBest,359,44.57,1.499,0.277,1.865,-1.0,99.36,17.2,5.778,6,9,36.5
+TrendBreakV1,369,37.13,1.772,0.485,3.0,-1.0,179.0,13.0,13.769,6,12,37.5

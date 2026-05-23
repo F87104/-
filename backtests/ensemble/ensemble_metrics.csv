@@ -1,0 +1,4 @@
+name,trades,win_rate_%,PF,avg_R,avg_win_R,avg_loss_R,total_R,max_DD_R,calmar_R,max_consec_wins,max_consec_losses,trades_per_year
+TrendBreakV1 (solo),392,36.73,1.742,0.469,3.0,-1.0,184.0,15.0,12.267,5,13,39.8
+SaiBest (solo),378,44.44,1.471,0.261,1.838,-1.0,98.84,13.21,7.485,6,9,38.4
+Ensemble (accepted),728,40.8,1.646,0.382,2.388,-1.0,278.36,16.4,16.977,8,10,73.9

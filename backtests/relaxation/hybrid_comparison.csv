@@ -1,0 +1,4 @@
+scenario,total_trades,trades_per_year,win_rate,total_r_clean,total_r_after_cost,avg_r_after_cost,pf_after_cost,max_losing_streak,max_dd_after_cost_r
+BASE_uniform,310,31.0,39.68,182.0,163.31,0.5268,1.826,11,12.05
+SAFE1_uniform,405,40.5,38.52,219.0,194.05,0.4791,1.737,13,14.07
+HYBRID_optimal,394,39.4,39.34,226.0,201.38,0.5111,1.795,13,14.07

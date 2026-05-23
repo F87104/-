@@ -54,8 +54,8 @@ longAligned = mediumLong and shortLong
 shortAligned = mediumShort and shortShort
 
 netMove = close - open[momentumLen - 1]
-longBodies = ta.sum(close > open ? 1.0 : 0.0, momentumLen) / momentumLen
-shortBodies = ta.sum(close < open ? 1.0 : 0.0, momentumLen) / momentumLen
+longBodies = math.sum(close > open ? 1.0 : 0.0, momentumLen) / momentumLen
+shortBodies = math.sum(close < open ? 1.0 : 0.0, momentumLen) / momentumLen
 longMomentum = netMove > atr * momentumAtr and longBodies >= bodyRatioMin
 shortMomentum = netMove < -atr * momentumAtr and shortBodies >= bodyRatioMin
 

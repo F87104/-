@@ -1,0 +1,481 @@
+//@version=5
+// =====================================================================
+// TrendBreakV1 [FINAL / Production Build] - fixed Pine v5 syntax
+// =====================================================================
+// 修正点:
+//   - 複数行の三項演算子を if/switch に変更
+//   - ta.max(strategy.equity) を自前の maxEquity 更新に変更
+//   - table 用 addRow 関数をグローバル関数化
+//   - strategy.initial_capital 参照を固定値 initialCapitalForStats に変更
+//   - 5000本ウォームアップで mid シグナルまで止まる問題を修正
+//   - 実際にエントリー可能なバーだけにシグナル/アラートを限定
+//   - Max DD 表示も自前計算に変更
+//   - Manual の long/any/confluence 時も正しい水準で余白判定
+//   - Signal / Entry / SL / TP / Exit の価格表示を強化
+//   - 確定足モード / リアルタイム監視モードを追加
+// =====================================================================
+
+strategy("TrendBreakV1 [FINAL]",
+     overlay = true,
+     initial_capital = 10000,
+     default_qty_type = strategy.fixed,
+     default_qty_value = 1000,
+     pyramiding = 0,
+     calc_on_order_fills = false,
+     calc_on_every_tick = true,
+     process_orders_on_close = false,
+     commission_type = strategy.commission.percent,
+     commission_value = 0.0,
+     slippage = 2,
+     max_bars_back = 5000,
+     max_lines_count = 500,
+     max_labels_count = 500,
+     max_boxes_count = 100)
+
+// =====================================================================
+// INPUTS
+// =====================================================================
+grpPreset = "■ プリセット (通貨ペアごとに選択)"
+preset = input.string("Auto", "プリセット", options=["Auto","XAUUSD","USDJPY","GBPJPY","CHFJPY","AUDJPY","Manual"], group=grpPreset, tooltip="Autoはsyminfo.tickerから自動選択。該当無しはManualへ。")
+
+grpManual = "■ Manual パラメータ (Preset=Manual時)"
+mLookback = input.int(240, "中期 lookback (本)", minval=60, group=grpManual)
+mExclude = input.int(30, "exclude (本)", minval=0, group=grpManual)
+mSlAtr = input.float(1.5, "SL = ATR ×", minval=0.5, step=0.1, group=grpManual)
+mTpRR = input.float(3.0, "TP = SL × RR", minval=1.0, step=0.1, group=grpManual)
+mLevel = input.string("mid", "level_kind", options=["mid","any","long","confluence"], group=grpManual)
+mSession = input.bool(true, "セッションフィルタを使う", group=grpManual)
+mAsia = input.bool(true, "アジア時間 (0-7, 21-24 UTC)", group=grpManual)
+mEU = input.bool(false, "欧州時間 (7-13 UTC)", group=grpManual)
+mNY = input.bool(true, "NY時間 (13-21 UTC)", group=grpManual)
+mMargin = input.float(0.0, "ブレイク余白 (ATR倍)", minval=0.0, step=0.1, group=grpManual)
+mCooldown = input.int(0, "クールダウン (本)", minval=0, group=grpManual)
+
+grpRisk = "■ リスク管理 (本番運用必須設定)"
+riskPct = input.float(1.0, "1トレード許容リスク (口座%)", minval=0.1, maxval=5.0, step=0.1, group=grpRisk, tooltip="1%固定推奨。19連敗で約-17%DDが想定内。")
+useFixedSize = input.bool(false, "固定ロットで運用 (リスク%無効化)", group=grpRisk)
+fixedLot = input.float(0.1, "固定ロット数", minval=0.01, step=0.01, group=grpRisk)
+maxDDPct = input.float(25.0, "停止DD閾値 (%)", minval=5.0, maxval=50.0, group=grpRisk, tooltip="このDD%に達したら新規取引を停止")
+newsCooldown = input.bool(true, "経済指標時のクールダウン (推奨)", group=grpRisk, tooltip="ATRが直近平均の2倍超で異常変動 → 1時間休む")
+
+grpVisual = "■ 可視化"
+showLines = input.bool(true, "Entry/SL/TP ライン表示", group=grpVisual)
+showStats = input.bool(true, "パフォーマンステーブル表示", group=grpVisual)
+showSignals = input.bool(true, "シグナルラベル表示", group=grpVisual)
+showTradeLabels = input.bool(true, "約定/決済価格ラベル表示", group=grpVisual)
+showLevelPlots = input.bool(true, "保有中 Entry/SL/TP 水平線を常時表示", group=grpVisual)
+
+grpRealtime = "■ リアルタイム挙動"
+executionMode = input.string("確定足のみ", "シグナル判定", options=["確定足のみ","リアルタイム監視"], group=grpRealtime, tooltip="確定足のみ: バー確定後だけ判定。検証と一致しやすい。リアルタイム監視: 形成中足でも判定するが、後からチャートを読み直すと結果が変わる可能性があります。")
+useDynamicAlerts = input.bool(false, "価格入り alert() を使う", group=grpRealtime, tooltip="ONにしてTradingView側で「Any alert() function call」を選ぶと、Signal/Entry/SL/TP価格入りの通知を出せます。")
+
+// =====================================================================
+// プリセット解決
+// =====================================================================
+sym = syminfo.ticker
+
+string usePreset = "Manual"
+if preset == "Manual"
+    usePreset := "Manual"
+else if preset == "Auto"
+    if str.contains(sym, "XAU")
+        usePreset := "XAUUSD"
+    else if str.contains(sym, "USDJPY")
+        usePreset := "USDJPY"
+    else if str.contains(sym, "GBPJPY")
+        usePreset := "GBPJPY"
+    else if str.contains(sym, "CHFJPY")
+        usePreset := "CHFJPY"
+    else if str.contains(sym, "AUDJPY")
+        usePreset := "AUDJPY"
+    else
+        usePreset := "Manual"
+else
+    usePreset := preset
+
+// =====================================================================
+// パラメータ展開
+// =====================================================================
+lookback3m = switch usePreset
+    "XAUUSD" => 240
+    "USDJPY" => 180
+    "GBPJPY" => 180
+    "AUDJPY" => 480
+    "CHFJPY" => 480
+    => mLookback
+
+excludeBars = switch usePreset
+    "XAUUSD" => 30
+    "USDJPY" => 30
+    "GBPJPY" => 30
+    "AUDJPY" => 30
+    "CHFJPY" => 90
+    => mExclude
+
+slAtrMult = switch usePreset
+    "XAUUSD" => 1.5
+    "USDJPY" => 1.5
+    "GBPJPY" => 1.5
+    "AUDJPY" => 1.5
+    "CHFJPY" => 2.5
+    => mSlAtr
+
+tpRR = usePreset == "Manual" ? mTpRR : 3.0
+
+levelKind = switch usePreset
+    "XAUUSD" => "mid"
+    "USDJPY" => "mid"
+    "GBPJPY" => "any"
+    "AUDJPY" => "any"
+    "CHFJPY" => "any"
+    => mLevel
+
+useSession = switch usePreset
+    "XAUUSD" => true
+    "USDJPY" => true
+    "GBPJPY" => false
+    "AUDJPY" => false
+    "CHFJPY" => false
+    => mSession
+
+allowAsia = usePreset == "Manual" ? mAsia : true
+allowEU = usePreset == "Manual" ? mEU : false
+allowNY = usePreset == "Manual" ? mNY : true
+
+marginBuf = usePreset == "USDJPY" ? 0.3 : usePreset == "Manual" ? mMargin : 0.0
+cooldownBars = usePreset == "Manual" ? mCooldown : 0
+
+LOOKBACK_LONG = 5000
+EXCLUDE_LONG = 760
+ATR_PERIOD = 14
+initialCapitalForStats = 10000.0
+
+fmtPrice(float v) =>
+    na(v) ? "N/A" : str.tostring(v, format.mintick)
+
+fmtNum(float v) =>
+    na(v) ? "N/A" : str.tostring(v, "#.##")
+
+fmtR(float v) =>
+    na(v) ? "N/A" : str.tostring(v, "#.##") + "R"
+
+// =====================================================================
+// 指標計算
+// =====================================================================
+atrSig = ta.atr(ATR_PERIOD)
+atrAvg = ta.sma(atrSig, 100)
+isHighVol = newsCooldown and not na(atrAvg) and atrSig > atrAvg * 2.0
+
+// rolling max/min (previous bar 起点)
+high3m = ta.highest(high[1], lookback3m)
+low3m = ta.lowest(low[1], lookback3m)
+highL = ta.highest(high[1], LOOKBACK_LONG)
+lowL = ta.lowest(low[1], LOOKBACK_LONG)
+
+// 直近 exclude 本の最高/最低 → タッチ判定
+excludeLen = excludeBars > 0 ? excludeBars : 1
+recHi3m = ta.highest(high[1], excludeLen)
+recLo3m = ta.lowest(low[1], excludeLen)
+recHiL = ta.highest(high[1], EXCLUDE_LONG)
+recLoL = ta.lowest(low[1], EXCLUDE_LONG)
+
+noTouchHi3m = excludeBars > 0 ? recHi3m < high3m : true
+noTouchLo3m = excludeBars > 0 ? recLo3m > low3m : true
+noTouchHiL = recHiL < highL
+noTouchLoL = recLoL > lowL
+
+ready3m = bar_index >= lookback3m + 5
+readyLongLevel = bar_index >= LOOKBACK_LONG + 5
+
+long3m = ready3m and close > high3m and noTouchHi3m
+short3m = ready3m and close < low3m and noTouchLo3m
+longL_ = readyLongLevel and close > highL and noTouchHiL
+shortL_ = readyLongLevel and close < lowL and noTouchLoL
+
+longSig_raw = switch levelKind
+    "long" => longL_
+    "any" => long3m or longL_
+    "confluence" => long3m and longL_
+    => long3m
+
+shortSig_raw = switch levelKind
+    "long" => shortL_
+    "any" => short3m or shortL_
+    "confluence" => short3m and shortL_
+    => short3m
+
+// セッションフィルタ (UTC)
+hUTC = hour(time, "UTC")
+sessAsia = (hUTC >= 0 and hUTC < 7) or (hUTC >= 21 and hUTC < 24)
+sessEU = hUTC >= 7 and hUTC < 13
+sessNY = hUTC >= 13 and hUTC < 21
+sessOK = not useSession or ((sessAsia and allowAsia) or (sessEU and allowEU) or (sessNY and allowNY))
+
+// マージンフィルタ
+marginLong3m = marginBuf > 0 and not na(high3m) and atrSig > 0 ? (close - high3m) / atrSig : 999.0
+marginShort3m = marginBuf > 0 and not na(low3m) and atrSig > 0 ? (low3m - close) / atrSig : 999.0
+marginLongL = marginBuf > 0 and not na(highL) and atrSig > 0 ? (close - highL) / atrSig : 999.0
+marginShortL = marginBuf > 0 and not na(lowL) and atrSig > 0 ? (lowL - close) / atrSig : 999.0
+
+bool marginOK_L = true
+bool marginOK_S = true
+if marginBuf > 0
+    if levelKind == "long"
+        marginOK_L := marginLongL >= marginBuf
+        marginOK_S := marginShortL >= marginBuf
+    else if levelKind == "any"
+        marginOK_L := (long3m and marginLong3m >= marginBuf) or (longL_ and marginLongL >= marginBuf)
+        marginOK_S := (short3m and marginShort3m >= marginBuf) or (shortL_ and marginShortL >= marginBuf)
+    else if levelKind == "confluence"
+        marginOK_L := marginLong3m >= marginBuf and marginLongL >= marginBuf
+        marginOK_S := marginShort3m >= marginBuf and marginShortL >= marginBuf
+    else
+        marginOK_L := marginLong3m >= marginBuf
+        marginOK_S := marginShort3m >= marginBuf
+
+// DD停止判定
+var float maxEquity = na
+var float maxDDAmount = 0.0
+var float maxDDPercent = 0.0
+maxEquity := na(maxEquity) ? strategy.equity : math.max(maxEquity, strategy.equity)
+curDDAmount = maxEquity - strategy.equity
+ddPct = maxEquity > 0 ? curDDAmount / maxEquity * 100 : 0.0
+maxDDAmount := math.max(maxDDAmount, curDDAmount)
+maxDDPercent := math.max(maxDDPercent, ddPct)
+ddStop = ddPct >= maxDDPct
+
+longSig = longSig_raw and sessOK and marginOK_L and not isHighVol and not ddStop
+shortSig = shortSig_raw and sessOK and marginOK_S and not isHighVol and not ddStop
+
+// =====================================================================
+// ポジションサイジング (1%リスク)
+// =====================================================================
+var float storedAtr = na
+
+calcQty(float equityNow, float slDist, bool useFixed, float fixedQty, float riskP) =>
+    if useFixed
+        fixedQty
+    else
+        riskAmount = equityNow * riskP / 100
+        slDist <= 0 ? 0.0 : riskAmount / slDist
+
+// =====================================================================
+// エントリー実行
+// =====================================================================
+var int lastExitBar = -99999
+justExited = strategy.position_size == 0 and strategy.position_size[1] != 0
+canEnter = not justExited and (bar_index - lastExitBar) >= cooldownBars
+confirmedOK = executionMode == "リアルタイム監視" ? true : barstate.isconfirmed
+longEntrySignal = longSig and confirmedOK and strategy.position_size == 0 and canEnter
+shortEntrySignal = shortSig and confirmedOK and strategy.position_size == 0 and canEnter
+
+var float signalPrice = na
+var float signalAtr = na
+var float signalQty = na
+var int signalDir = 0
+var int signalBar = na
+
+if longEntrySignal
+    storedAtr := atrSig
+    slDist = atrSig * slAtrMult
+    qty = calcQty(strategy.equity, slDist, useFixedSize, fixedLot, riskPct)
+    if qty > 0
+        signalPrice := close
+        signalAtr := atrSig
+        signalQty := qty
+        signalDir := 1
+        signalBar := bar_index
+        if showTradeLabels
+            label.new(bar_index, low, "LONG SIGNAL\nSignal: " + fmtPrice(close) + "\nEst SL: " + fmtPrice(close - slDist) + "\nEst TP: " + fmtPrice(close + slDist * tpRR) + "\nQty: " + fmtNum(qty), style=label.style_label_up, color=color.new(color.lime, 10), textcolor=color.black, size=size.small)
+        if useDynamicAlerts
+            longMsg = "TrendBreakV1 LONG SIGNAL\nSymbol: " + syminfo.ticker + "\nSignal: " + fmtPrice(close) + "\nEst SL: " + fmtPrice(close - slDist) + "\nEst TP: " + fmtPrice(close + slDist * tpRR) + "\nQty: " + fmtNum(qty) + "\nMode: " + executionMode
+            if executionMode == "確定足のみ"
+                alert(longMsg, alert.freq_once_per_bar_close)
+            else
+                alert(longMsg, alert.freq_once_per_bar)
+        strategy.entry("Long", strategy.long, qty=qty)
+
+if shortEntrySignal
+    storedAtr := atrSig
+    slDist = atrSig * slAtrMult
+    qty = calcQty(strategy.equity, slDist, useFixedSize, fixedLot, riskPct)
+    if qty > 0
+        signalPrice := close
+        signalAtr := atrSig
+        signalQty := qty
+        signalDir := -1
+        signalBar := bar_index
+        if showTradeLabels
+            label.new(bar_index, high, "SHORT SIGNAL\nSignal: " + fmtPrice(close) + "\nEst SL: " + fmtPrice(close + slDist) + "\nEst TP: " + fmtPrice(close - slDist * tpRR) + "\nQty: " + fmtNum(qty), style=label.style_label_down, color=color.new(color.red, 10), textcolor=color.white, size=size.small)
+        if useDynamicAlerts
+            shortMsg = "TrendBreakV1 SHORT SIGNAL\nSymbol: " + syminfo.ticker + "\nSignal: " + fmtPrice(close) + "\nEst SL: " + fmtPrice(close + slDist) + "\nEst TP: " + fmtPrice(close - slDist * tpRR) + "\nQty: " + fmtNum(qty) + "\nMode: " + executionMode
+            if executionMode == "確定足のみ"
+                alert(shortMsg, alert.freq_once_per_bar_close)
+            else
+                alert(shortMsg, alert.freq_once_per_bar)
+        strategy.entry("Short", strategy.short, qty=qty)
+
+// =====================================================================
+// SL/TP セット (約定後の実際エントリー価格で計算)
+// =====================================================================
+var float entryPrice = na
+var float slPrice = na
+var float tpPrice = na
+var int entryBar = na
+var float activeRiskDist = na
+var int activeDir = 0
+
+justEnteredL = strategy.position_size > 0 and strategy.position_size[1] <= 0
+justEnteredS = strategy.position_size < 0 and strategy.position_size[1] >= 0
+
+if justEnteredL
+    entryPrice := strategy.position_avg_price
+    slDist = nz(storedAtr, atrSig) * slAtrMult
+    slPrice := entryPrice - slDist
+    tpPrice := entryPrice + slDist * tpRR
+    entryBar := bar_index
+    activeRiskDist := slDist
+    activeDir := 1
+    if showTradeLabels
+        label.new(bar_index, entryPrice, "LONG FILLED\nSignal: " + fmtPrice(signalPrice) + "\nEntry: " + fmtPrice(entryPrice) + "\nSL: " + fmtPrice(slPrice) + "\nTP: " + fmtPrice(tpPrice) + "\nQty: " + fmtNum(math.abs(strategy.position_size)), style=label.style_label_left, color=color.new(color.yellow, 0), textcolor=color.black, size=size.small)
+    if useDynamicAlerts
+        alert("TrendBreakV1 LONG FILLED\nSymbol: " + syminfo.ticker + "\nSignal: " + fmtPrice(signalPrice) + "\nEntry: " + fmtPrice(entryPrice) + "\nSL: " + fmtPrice(slPrice) + "\nTP: " + fmtPrice(tpPrice) + "\nQty: " + fmtNum(math.abs(strategy.position_size)), alert.freq_once_per_bar)
+
+if justEnteredS
+    entryPrice := strategy.position_avg_price
+    slDist = nz(storedAtr, atrSig) * slAtrMult
+    slPrice := entryPrice + slDist
+    tpPrice := entryPrice - slDist * tpRR
+    entryBar := bar_index
+    activeRiskDist := slDist
+    activeDir := -1
+    if showTradeLabels
+        label.new(bar_index, entryPrice, "SHORT FILLED\nSignal: " + fmtPrice(signalPrice) + "\nEntry: " + fmtPrice(entryPrice) + "\nSL: " + fmtPrice(slPrice) + "\nTP: " + fmtPrice(tpPrice) + "\nQty: " + fmtNum(math.abs(strategy.position_size)), style=label.style_label_left, color=color.new(color.yellow, 0), textcolor=color.black, size=size.small)
+    if useDynamicAlerts
+        alert("TrendBreakV1 SHORT FILLED\nSymbol: " + syminfo.ticker + "\nSignal: " + fmtPrice(signalPrice) + "\nEntry: " + fmtPrice(entryPrice) + "\nSL: " + fmtPrice(slPrice) + "\nTP: " + fmtPrice(tpPrice) + "\nQty: " + fmtNum(math.abs(strategy.position_size)), alert.freq_once_per_bar)
+
+if strategy.position_size > 0
+    strategy.exit("L-Exit", from_entry="Long", stop=slPrice, limit=tpPrice)
+
+if strategy.position_size < 0
+    strategy.exit("S-Exit", from_entry="Short", stop=slPrice, limit=tpPrice)
+
+// 決済検知 → クールダウン開始
+if justExited
+    lastExitBar := bar_index
+
+var int seenClosedTrades = 0
+if showTradeLabels and strategy.closedtrades > seenClosedTrades
+    tradeIdx = strategy.closedtrades - 1
+    exitPrice = strategy.closedtrades.exit_price(tradeIdx)
+    closedEntryPrice = strategy.closedtrades.entry_price(tradeIdx)
+    closedDir = activeDir != 0 ? activeDir : 1
+    riskForR = not na(activeRiskDist) and activeRiskDist > 0 ? activeRiskDist : math.abs(closedEntryPrice - exitPrice)
+    exitR = riskForR > 0 ? (closedDir == 1 ? (exitPrice - closedEntryPrice) / riskForR : (closedEntryPrice - exitPrice) / riskForR) : na
+    exitCol = not na(exitR) and exitR >= 0 ? color.new(color.lime, 5) : color.new(color.red, 5)
+    exitStyle = closedDir == 1 ? label.style_label_down : label.style_label_up
+    label.new(bar_index, exitPrice, "EXIT\nEntry: " + fmtPrice(closedEntryPrice) + "\nExit: " + fmtPrice(exitPrice) + "\nResult: " + fmtR(exitR), style=exitStyle, color=exitCol, textcolor=color.white, size=size.small)
+    if useDynamicAlerts
+        alert("TrendBreakV1 EXIT\nSymbol: " + syminfo.ticker + "\nEntry: " + fmtPrice(closedEntryPrice) + "\nExit: " + fmtPrice(exitPrice) + "\nResult: " + fmtR(exitR), alert.freq_once_per_bar)
+    seenClosedTrades := strategy.closedtrades
+
+// =====================================================================
+// 可視化
+// =====================================================================
+plotshape(showSignals and longEntrySignal, title="LONG entry", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.tiny)
+plotshape(showSignals and shortEntrySignal, title="SHORT entry", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), size=size.tiny)
+
+inTrade = strategy.position_size != 0
+plot(showLevelPlots and inTrade ? entryPrice : na, title="Active Entry", color=color.new(color.yellow, 0), linewidth=2, style=plot.style_linebr)
+plot(showLevelPlots and inTrade ? slPrice : na, title="Active SL", color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
+plot(showLevelPlots and inTrade ? tpPrice : na, title="Active TP", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
+
+var line entryLine = na
+var line slLine = na
+var line tpLine = na
+var label entryLbl = na
+
+if showLines and (justEnteredL or justEnteredS)
+    if not na(entryLine)
+        line.delete(entryLine)
+    if not na(slLine)
+        line.delete(slLine)
+    if not na(tpLine)
+        line.delete(tpLine)
+    if not na(entryLbl)
+        label.delete(entryLbl)
+    col = justEnteredL ? color.lime : color.red
+    entryLine := line.new(bar_index, entryPrice, bar_index + 1, entryPrice, color=color.new(color.yellow, 0), width=2)
+    slLine := line.new(bar_index, slPrice, bar_index + 1, slPrice, color=color.new(color.red, 0), width=2, style=line.style_dashed)
+    tpLine := line.new(bar_index, tpPrice, bar_index + 1, tpPrice, color=color.new(color.lime, 0), width=2, style=line.style_dashed)
+    txt = (justEnteredL ? "LONG" : "SHORT") + "\nSignal: " + fmtPrice(signalPrice) + "\nEntry: " + fmtPrice(entryPrice) + "\nSL: " + fmtPrice(slPrice) + "\nTP: " + fmtPrice(tpPrice)
+    entryLbl := label.new(bar_index, entryPrice, txt, style=label.style_label_left, color=color.new(col, 15), textcolor=color.white, size=size.small)
+
+if showLines and strategy.position_size != 0 and not na(entryLine)
+    line.set_x2(entryLine, bar_index + 1)
+    line.set_x2(slLine, bar_index + 1)
+    line.set_x2(tpLine, bar_index + 1)
+
+// 高ボラ警告 / DD停止
+bgcolor(isHighVol ? color.new(color.orange, 90) : na, title="高ボラ警告")
+bgcolor(ddStop ? color.new(color.red, 85) : na, title="DD停止中")
+
+// =====================================================================
+// パフォーマンステーブル
+// =====================================================================
+addRow(table tbl, int r, string k, string v, color c) =>
+    table.cell(tbl, 0, r, k, text_color=color.white, bgcolor=color.new(color.gray, 70), text_size=size.small)
+    table.cell(tbl, 1, r, v, text_color=c, bgcolor=color.new(color.black, 50), text_size=size.small)
+
+var table t = table.new(position.top_right, 2, 22, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+
+if showStats and barstate.islast
+    netProfit = strategy.netprofit
+    grossWin = strategy.grossprofit
+    grossLoss = math.abs(strategy.grossloss)
+    pf = grossLoss > 0 ? grossWin / grossLoss : na
+    nTrades = strategy.closedtrades
+    nWins = strategy.wintrades
+    wr = nTrades > 0 ? nWins / nTrades * 100 : 0.0
+    avgWin = strategy.wintrades > 0 ? grossWin / strategy.wintrades : 0.0
+    avgLoss = strategy.losstrades > 0 ? grossLoss / strategy.losstrades : 0.0
+    expectancy = avgLoss > 0 ? (wr / 100 * avgWin - (1 - wr / 100) * avgLoss) / avgLoss : 0.0
+    maxDD = maxDDAmount
+    maxDDPct_ = maxDDPercent
+    finalEquity = strategy.equity
+    roi = (finalEquity / initialCapitalForStats - 1) * 100
+    liveR = inTrade and not na(activeRiskDist) and activeRiskDist > 0 ? (strategy.position_size > 0 ? (close - entryPrice) / activeRiskDist : (entryPrice - close) / activeRiskDist) : na
+    barsHeld = inTrade and not na(entryBar) ? bar_index - entryBar : na
+    modeText = executionMode == "確定足のみ" ? "Confirmed bar" : "Realtime monitor"
+    realtimeText = executionMode == "確定足のみ" ? "Stable / close only" : "Intrabar / can repaint"
+
+    addRow(t, 0, "Symbol", sym + " (" + usePreset + ")", color.yellow)
+    addRow(t, 1, "Initial", str.tostring(initialCapitalForStats, "#"), color.white)
+    addRow(t, 2, "Equity", str.tostring(finalEquity, "#"), finalEquity > initialCapitalForStats ? color.lime : color.red)
+    addRow(t, 3, "ROI %", str.tostring(roi, "#.##") + "%", roi > 0 ? color.lime : color.red)
+    addRow(t, 4, "Trades", str.tostring(nTrades), color.white)
+    addRow(t, 5, "Win Rate", str.tostring(wr, "#.#") + "%", wr >= 30 ? color.lime : color.orange)
+    addRow(t, 6, "Profit Factor", na(pf) ? "N/A" : str.tostring(pf, "#.##"), na(pf) ? color.gray : pf >= 1.3 ? color.lime : color.red)
+    addRow(t, 7, "Expectancy R", str.tostring(expectancy, "#.###") + "R", expectancy > 0 ? color.lime : color.red)
+    addRow(t, 8, "Avg Win", str.tostring(avgWin, "#.##"), color.lime)
+    addRow(t, 9, "Avg Loss", str.tostring(avgLoss, "#.##"), color.red)
+    addRow(t, 10, "Max DD", str.tostring(maxDD, "#.##") + " (" + str.tostring(maxDDPct_, "#.#") + "%)", maxDDPct_ < 20 ? color.lime : maxDDPct_ < 30 ? color.orange : color.red)
+    addRow(t, 11, "Current DD", str.tostring(ddPct, "#.#") + "%", ddPct < 10 ? color.lime : ddPct < 20 ? color.orange : color.red)
+    addRow(t, 12, "Risk per Trade", str.tostring(riskPct, "#.#") + "%", color.yellow)
+    addRow(t, 13, "Status", ddStop ? "DD-STOP" : isHighVol ? "HIGH-VOL" : strategy.position_size != 0 ? "IN-TRADE" : "READY", ddStop ? color.red : isHighVol ? color.orange : color.lime)
+    addRow(t, 14, "Mode", modeText, executionMode == "確定足のみ" ? color.lime : color.orange)
+    addRow(t, 15, "Realtime Note", realtimeText, executionMode == "確定足のみ" ? color.lime : color.orange)
+    addRow(t, 16, "Last Signal", fmtPrice(signalPrice), color.yellow)
+    addRow(t, 17, "Entry", inTrade ? fmtPrice(entryPrice) : "N/A", color.yellow)
+    addRow(t, 18, "SL", inTrade ? fmtPrice(slPrice) : "N/A", color.red)
+    addRow(t, 19, "TP", inTrade ? fmtPrice(tpPrice) : "N/A", color.lime)
+    addRow(t, 20, "Live R", fmtR(liveR), na(liveR) ? color.gray : liveR >= 0 ? color.lime : color.red)
+    addRow(t, 21, "Bars Held", na(barsHeld) ? "N/A" : str.tostring(barsHeld, "#"), color.white)
+
+// =====================================================================
+// アラート
+// =====================================================================
+alertcondition(longEntrySignal, title="TrendBreak LONG", message="TrendBreakV1 LONG signal on {{ticker}} @ {{close}}")
+alertcondition(shortEntrySignal, title="TrendBreak SHORT", message="TrendBreakV1 SHORT signal on {{ticker}} @ {{close}}")
+alertcondition(ddStop, title="DD STOP", message="WARNING: Max DD threshold reached on {{ticker}}")
+alertcondition(isHighVol, title="High Volatility", message="HIGH VOL detected on {{ticker}} - trades suspended")

@@ -1,0 +1,5 @@
+label,trades,wins,losses,win_rate_pct,total_r,avg_r,median_r,profit_factor,max_dd_r,expectancy_per_trade_r,avg_hold_days,trades_per_year,calmar_proxy
+TrendBreakV1 [Combined],1501,513,988,34.18,551.0,0.367,-1.0,1.56,41.0,0.367,1.02,150.1,13.44
+TrendBreakV1 [Conservative],392,144,248,36.73,184.0,0.469,-1.0,1.74,15.0,0.469,1.56,39.2,12.27
+TrendBreakV1 [Relaxed],1109,369,740,33.27,367.0,0.331,-1.0,1.5,48.0,0.331,0.82,110.9,7.65
+Sai H1 [BestMethod=急な揺り戻し+高値停滞],378,168,210,44.44,98.84,0.261,-1.0,1.47,13.21,0.261,1.71,37.8,7.48

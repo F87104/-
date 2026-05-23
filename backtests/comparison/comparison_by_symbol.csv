@@ -1,0 +1,14 @@
+strategy,symbol,trades,wr,total_r,pf
+TrendBreakV1,XAUUSD,237,39.66,139.0,1.97
+TrendBreakV1,GBPJPY,281,33.1,91.0,1.48
+TrendBreakV1,SILVER,214,35.05,86.0,1.62
+TrendBreakV1,USDJPY,183,34.97,73.0,1.61
+TrendBreakV1,CHFJPY,137,36.5,63.0,1.72
+TrendBreakV1,AUDJPY,246,31.3,62.0,1.37
+TrendBreakV1,EURJPY,203,29.56,37.0,1.26
+Sai_BestMethod,XAUUSD,74,45.95,49.83,2.25
+Sai_BestMethod,XAGUSD,55,47.27,25.52,1.88
+Sai_BestMethod,EURJPY,57,49.12,19.32,1.67
+Sai_BestMethod,AUDJPY,59,44.07,6.22,1.19
+Sai_BestMethod,GBPJPY,63,42.86,-0.39,0.99
+Sai_BestMethod,CHFJPY,70,38.57,-1.65,0.96

@@ -1,0 +1,7 @@
+symbol,cfg,trades,win_rate,total_r_clean,total_r_after_cost,avg_r_after_cost,pf_after_cost,max_losing_streak
+XAUUSD,"{'lookback_3m': 480, 'exclude': 120, 'sl_atr': 2.0, 'tp_rr': 3.0, 'level_kind': 'mid', 'session': False, 'asia': True, 'eu': False, 'ny': True, 'margin': 0.0, 'cooldown': 0}",79,44.3,61.0,57.11,0.723,2.243,4
+USDJPY,"{'lookback_3m': 480, 'exclude': 180, 'sl_atr': 2.0, 'tp_rr': 3.0, 'level_kind': 'mid', 'session': True, 'asia': True, 'eu': False, 'ny': True, 'margin': 0.0, 'cooldown': 0}",43,37.21,21.0,19.67,0.4575,1.707,7
+EURJPY,"{'lookback_3m': 360, 'exclude': 60, 'sl_atr': 2.5, 'tp_rr': 3.0, 'level_kind': 'mid', 'session': False, 'asia': True, 'eu': False, 'ny': True, 'margin': 0.5, 'cooldown': 0}",58,31.03,14.0,12.39,0.2137,1.302,7
+GBPJPY,"{'lookback_3m': 360, 'exclude': 180, 'sl_atr': 2.5, 'tp_rr': 3.0, 'level_kind': 'mid', 'session': True, 'asia': True, 'eu': False, 'ny': True, 'margin': 0.0, 'cooldown': 0}",29,51.72,31.0,30.11,1.0384,3.082,4
+CHFJPY,"{'lookback_3m': 480, 'exclude': 120, 'sl_atr': 2.0, 'tp_rr': 3.0, 'level_kind': 'mid', 'session': False, 'asia': True, 'eu': False, 'ny': True, 'margin': 0.0, 'cooldown': 0}",60,33.33,20.0,16.64,0.2773,1.394,11
+SILVER,"{'lookback_3m': 360, 'exclude': 180, 'sl_atr': 2.0, 'tp_rr': 3.0, 'level_kind': 'mid', 'session': True, 'asia': True, 'eu': False, 'ny': True, 'margin': 0.0, 'cooldown': 0}",41,46.34,35.0,27.37,0.6676,2.05,4

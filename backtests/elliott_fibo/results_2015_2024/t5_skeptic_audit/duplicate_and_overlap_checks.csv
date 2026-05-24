@@ -1,0 +1,4 @@
+candidate,trades,exact_duplicate_rows,same_v_candidate_reuse,removed_by_one_global_position,removed_by_one_symbol_position
+Current_060_110,157,0,0,84,0
+Robust_075_105_width7,129,0,0,62,0
+Strict_075_100_width7,102,0,0,44,0

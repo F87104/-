@@ -1,0 +1,339 @@
+//@version=5
+indicator("H4 T5 V Candidate + MACD + BB Visual", overlay=true, max_lines_count=500, max_labels_count=200, max_bars_back=5000)
+
+// =====================================================================
+// H4 T5 + MACD上昇 + BB位置 可視化
+// =====================================================================
+// 検証候補:
+//   V候補: 急落後、終値が下落幅の61.8%〜80%まで回復
+//   T5   : 候補後に「高値停滞ブレイク」または「押し後の戻り高値再ブレイク」
+//   追加 : MACDヒストグラムが3本前より上昇、BB位置、BB幅
+//
+// 検証メモ:
+//   標準候補: BB位置0.60〜1.10
+//   保守候補: BB位置0.75〜1.05 + BB幅ATR7以下
+//
+// 目的:
+//   売買執行用ではなく、候補が本当にV字文脈として見えるかを目視確認するための道具です。
+//   初期設定はH4判定。H1チャート上でもH4条件を重ねて表示できます。
+// =====================================================================
+
+grpCond = "条件"
+analysisTf = input.timeframe("240", "判定時間足", group=grpCond)
+pivotWidth = input.int(3, "Pivot幅", minval=1, maxval=20, group=grpCond)
+atrLen = input.int(14, "ATR期間", minval=1, group=grpCond)
+minSwingAtr = input.float(2.0, "Pivot間の最小スイング(ATR)", minval=0.1, step=0.1, group=grpCond)
+fibMin = input.float(0.618, "V候補 回復下限", minval=0.1, maxval=1.5, step=0.001, group=grpCond)
+fibMax = input.float(0.800, "V候補 回復上限", minval=0.1, maxval=1.5, step=0.001, group=grpCond)
+minDropAtr = input.float(3.5, "急落幅の最小ATR", minval=0.1, step=0.1, group=grpCond)
+minDropSpeed = input.float(0.30, "急落速度の下限(ATR/本)", minval=0.0, step=0.05, group=grpCond)
+maxRecoveryToDrop = input.float(1.5, "候補到達本数/下落本数の上限", minval=0.1, step=0.1, group=grpCond)
+maxAfterCandidate = input.int(24, "候補後の最大監視本数", minval=1, group=grpCond)
+bodyMin = input.float(0.60, "シグナル足 実体比率", minval=0.0, maxval=1.0, step=0.05, group=grpCond)
+breakBufferAtr = input.float(0.06, "ブレイク余白(ATR)", minval=0.0, step=0.01, group=grpCond)
+stagBars = input.int(3, "高値停滞 本数", minval=2, maxval=12, group=grpCond)
+stagRangeAtr = input.float(1.0, "高値停滞 最大値幅(ATR)", minval=0.1, step=0.1, group=grpCond)
+pullbackAtr = input.float(0.75, "再ブレイク前の押し幅(ATR)", minval=0.1, step=0.05, group=grpCond)
+bbLo = input.float(0.75, "BB位置 下限", minval=-1.0, maxval=2.0, step=0.05, group=grpCond)
+bbHi = input.float(1.05, "BB位置 上限", minval=-1.0, maxval=2.0, step=0.05, group=grpCond)
+useBbWidthFilter = input.bool(true, "BB幅フィルタを使う", group=grpCond)
+bbWidthMaxAtr = input.float(7.0, "BB幅 上限(ATR)", minval=0.1, step=0.1, group=grpCond)
+rr = input.float(2.0, "仮TP RR", minval=0.5, step=0.1, group=grpCond)
+
+grpView = "表示"
+showCandidate = input.bool(true, "V候補マーカー", group=grpView)
+showSignals = input.bool(true, "T5+MACD+BBシグナル", group=grpView)
+showVLines = input.bool(true, "V字ライン", group=grpView)
+showLevels = input.bool(true, "Trigger/SL/TPライン", group=grpView)
+showTable = input.bool(true, "状態テーブル", group=grpView)
+maxSignalLabels = input.int(30, "残すシグナルラベル数", minval=1, maxval=100, group=grpView)
+labelSide = input.string("右下に逃がす", "ラベル位置", options=["右下に逃がす","右上に逃がす","足元"], group=grpView)
+labelShiftBars = input.int(8, "ラベルを右へずらす本数", minval=0, maxval=50, group=grpView)
+labelOffsetAtr = input.float(3.0, "ラベル上下余白(ATR)", minval=0.5, step=0.5, group=grpView)
+
+fmt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, format.mintick)
+    out
+
+fmtNum(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#.##")
+    out
+
+f_t5_macd_bb() =>
+    float atrValue = ta.atr(atrLen)
+    float barRange = high - low
+    float bodyRatio = barRange > 0 ? math.abs(close - open) / barRange : 0.0
+
+    float ph = ta.pivothigh(high, pivotWidth, pivotWidth)
+    float pl = ta.pivotlow(low, pivotWidth, pivotWidth)
+
+    var int prevKind = 0
+    var float prevPrice = na
+    var int prevIndex = na
+    var int prevTime = na
+    var float prevAtr = na
+
+    var int lastKind = 0
+    var float lastPrice = na
+    var int lastIndex = na
+    var int lastTime = na
+    var float lastAtr = na
+
+    bool newPivot = false
+    int pKind = 0
+    float pPrice = na
+    int pIndex = na
+    int pTime = na
+    float pAtr = na
+
+    if not na(ph) and na(pl)
+        newPivot := true
+        pKind := 1
+        pPrice := ph
+        pIndex := bar_index - pivotWidth
+        pTime := time[pivotWidth]
+        pAtr := atrValue[pivotWidth]
+    else if not na(pl) and na(ph)
+        newPivot := true
+        pKind := -1
+        pPrice := pl
+        pIndex := bar_index - pivotWidth
+        pTime := time[pivotWidth]
+        pAtr := atrValue[pivotWidth]
+
+    bool acceptedPivot = false
+    if newPivot and not na(pAtr) and pAtr > 0
+        if lastKind == 0
+            lastKind := pKind
+            lastPrice := pPrice
+            lastIndex := pIndex
+            lastTime := pTime
+            lastAtr := pAtr
+            acceptedPivot := true
+        else if pKind == lastKind
+            bool moreExtreme = (pKind == 1 and pPrice > lastPrice) or (pKind == -1 and pPrice < lastPrice)
+            if moreExtreme
+                lastPrice := pPrice
+                lastIndex := pIndex
+                lastTime := pTime
+                lastAtr := pAtr
+                acceptedPivot := true
+        else
+            float swing = math.abs(pPrice - lastPrice)
+            float threshold = math.max(pAtr, lastAtr) * minSwingAtr
+            if swing >= threshold
+                prevKind := lastKind
+                prevPrice := lastPrice
+                prevIndex := lastIndex
+                prevTime := lastTime
+                prevAtr := lastAtr
+                lastKind := pKind
+                lastPrice := pPrice
+                lastIndex := pIndex
+                lastTime := pTime
+                lastAtr := pAtr
+                acceptedPivot := true
+
+    var int activePrevIndex = na
+    var int activeLastIndex = na
+    var bool pairInvalid = false
+    var bool candidateActive = false
+    var int candidateIndex = na
+    var int candidateTime = na
+    var float candidateClose = na
+    var float recoveryHigh = na
+    var int recoveryHighIndex = na
+    var bool pullbackSeen = false
+
+    bool vPair = prevKind == 1 and lastKind == -1 and not na(prevIndex) and not na(lastIndex) and prevPrice > lastPrice
+    bool newPair = vPair and (na(activePrevIndex) or na(activeLastIndex) or prevIndex != activePrevIndex or lastIndex != activeLastIndex)
+    if newPair
+        activePrevIndex := prevIndex
+        activeLastIndex := lastIndex
+        pairInvalid := false
+        candidateActive := false
+        candidateIndex := na
+        candidateTime := na
+        candidateClose := na
+        recoveryHigh := na
+        recoveryHighIndex := na
+        pullbackSeen := false
+
+    [macdLine, macdSignal, macdHist] = ta.macd(close, 12, 26, 9)
+    float macdSlope3 = macdHist - macdHist[3]
+    float bbBasis = ta.sma(close, 20)
+    float bbDev = ta.stdev(close, 20) * 2.0
+    float bbUpper = bbBasis + bbDev
+    float bbLower = bbBasis - bbDev
+    float bbDenom = bbUpper - bbLower
+    float bbPos = bbDenom != 0 ? (close - bbLower) / bbDenom : na
+    float bbWidthAtr = atrValue > 0 ? bbDenom / atrValue : na
+
+    bool candidateNow = false
+    bool signalNow = false
+    int triggerKind = 0
+    float triggerLevel = na
+    float stopLevel = na
+    float targetLevel = na
+    float dropAtr = na
+    float dropSpeed = na
+    float recoveryRatio = na
+    float fibRatioNow = na
+    int dropBars = na
+    int recoveryBars = na
+
+    if vPair and not na(atrValue) and atrValue > 0
+        float drop = prevPrice - lastPrice
+        dropBars := math.max(lastIndex - prevIndex, 1)
+        dropAtr := drop / atrValue
+        dropSpeed := drop / dropBars / atrValue
+        fibRatioNow := drop > 0 ? (close - lastPrice) / drop : na
+        float prevFib = drop > 0 ? (close[1] - lastPrice) / drop : na
+        bool baseOk = dropAtr >= minDropAtr and dropSpeed >= minDropSpeed
+        bool lowerLowInvalid = low < lastPrice - atrValue * 0.10
+        if lowerLowInvalid
+            pairInvalid := true
+            candidateActive := false
+        if not pairInvalid and baseOk
+            if not candidateActive
+                if fibRatioNow > fibMax
+                    pairInvalid := true
+                else
+                    int recBarsToCandidate = math.max(bar_index - lastIndex, 1)
+                    float recToDrop = recBarsToCandidate / dropBars
+                    bool inZone = fibRatioNow >= fibMin and fibRatioNow <= fibMax
+                    bool crossedIntoZone = na(prevFib) ? inZone : prevFib < fibMin and inZone
+                    if crossedIntoZone and recToDrop <= maxRecoveryToDrop
+                        candidateActive := true
+                        candidateIndex := bar_index
+                        candidateTime := time
+                        candidateClose := close
+                        recoveryHigh := high
+                        recoveryHighIndex := bar_index
+                        pullbackSeen := false
+                        candidateNow := true
+            else
+                if bar_index - candidateIndex > maxAfterCandidate
+                    candidateActive := false
+                    pairInvalid := true
+                else
+                    bool stagnationOk = false
+                    if bar_index - candidateIndex >= stagBars + 1
+                        float winHigh = ta.highest(high[1], stagBars)
+                        float winLow = ta.lowest(low[1], stagBars)
+                        float winRange = winHigh - winLow
+                        float fibMinLevel = lastPrice + drop * fibMin
+                        bool heldZone = winLow >= fibMinLevel - atrValue * 0.50
+                        bool tightEnough = winRange <= atrValue * stagRangeAtr
+                        bool brokeTightHigh = close > winHigh + atrValue * breakBufferAtr
+                        stagnationOk := heldZone and tightEnough and brokeTightHigh
+
+                    bool rebreakOk = false
+                    if not na(recoveryHigh)
+                        if low <= recoveryHigh - atrValue * pullbackAtr
+                            pullbackSeen := true
+                        rebreakOk := pullbackSeen and recoveryHighIndex <= bar_index - 2 and close > recoveryHigh + atrValue * breakBufferAtr
+                        if high > recoveryHigh and not rebreakOk
+                            recoveryHigh := high
+                            recoveryHighIndex := bar_index
+                            pullbackSeen := false
+
+                    bool macdOk = macdSlope3 > 0
+                    bool bbOk = not na(bbPos) and bbPos >= bbLo and bbPos <= bbHi
+                    bool bbWidthOk = not useBbWidthFilter or (not na(bbWidthAtr) and bbWidthAtr <= bbWidthMaxAtr)
+                    bool bodyOk = bodyRatio >= bodyMin
+                    signalNow := (stagnationOk or rebreakOk) and macdOk and bbOk and bbWidthOk and bodyOk
+                    triggerKind := stagnationOk and rebreakOk ? 3 : stagnationOk ? 1 : rebreakOk ? 2 : 0
+                    if signalNow
+                        triggerLevel := close
+                        stopLevel := lastPrice - atrValue * 0.25
+                        targetLevel := close + (close - stopLevel) * rr
+                        recoveryBars := math.max(bar_index - lastIndex, 1)
+                        recoveryRatio := recoveryBars / dropBars
+                        candidateActive := false
+                        pairInvalid := true
+
+    [signalNow, candidateNow, triggerKind, prevTime, prevPrice, lastTime, lastPrice, candidateTime, candidateClose, triggerLevel, stopLevel, targetLevel, dropAtr, dropSpeed, recoveryRatio, fibRatioNow, dropBars, recoveryBars, bodyRatio, macdHist, macdSlope3, bbPos, bbWidthAtr]
+
+[sig, cand, trigKind, vStartTime, vStartPrice, vLowTime, vLowPrice, candTime, candClose, trigPrice, slPrice, tpPrice, dropAtr, dropSpeed, recoveryRatio, fibRatioNow, dropBars, recoveryBars, bodyRatio, macdHist, macdSlope3, bbPos, bbWidthAtr] = request.security(syminfo.tickerid, analysisTf, f_t5_macd_bb(), barmerge.gaps_off, barmerge.lookahead_off)
+
+newCandidate = cand and not cand[1]
+newSignal = sig and not sig[1]
+
+plotshape(showCandidate and newCandidate, title="V candidate", style=shape.circle, location=location.belowbar, color=color.new(color.aqua, 0), size=size.tiny, text="V候補")
+plotshape(showSignals and newSignal, title="T5 MACD BB", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="T5")
+plot(showLevels ? trigPrice : na, title="Signal trigger", color=color.new(color.aqua, 0), linewidth=1, style=plot.style_circles)
+
+var label[] labels = array.new_label()
+var line[] lines = array.new_line()
+
+f_keep_label(label lb) =>
+    array.push(labels, lb)
+    if array.size(labels) > maxSignalLabels
+        label.delete(array.shift(labels))
+
+f_keep_line(line ln) =>
+    array.push(lines, ln)
+    if array.size(lines) > maxSignalLabels * 5
+        line.delete(array.shift(lines))
+
+if newSignal
+    float chartAtr = ta.atr(14)
+    int labelX = bar_index + labelShiftBars
+    float labelY = labelSide == "右上に逃がす" ? high + chartAtr * labelOffsetAtr : low - chartAtr * labelOffsetAtr
+    string labelStyle = labelSide == "右上に逃がす" ? label.style_label_down : label.style_label_up
+    string triggerName = trigKind == 3 ? "停滞+再ブレイク" : trigKind == 2 ? "再ブレイク" : "高値停滞"
+    if showVLines and not na(vStartTime) and not na(vLowTime)
+        f_keep_line(line.new(vStartTime, vStartPrice, vLowTime, vLowPrice, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2))
+        f_keep_line(line.new(vLowTime, vLowPrice, time, close, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2))
+    if showLevels and not na(slPrice) and not na(tpPrice)
+        int lineEnd = time + timeframe.in_seconds(analysisTf) * 1000
+        f_keep_line(line.new(time, trigPrice, lineEnd, trigPrice, xloc=xloc.bar_time, color=color.new(color.aqua, 0), width=1, style=line.style_dashed))
+        f_keep_line(line.new(time, slPrice, lineEnd, slPrice, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2, style=line.style_dashed))
+        f_keep_line(line.new(time, tpPrice, lineEnd, tpPrice, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2, style=line.style_dashed))
+    if labelSide != "足元"
+        f_keep_line(line.new(bar_index, low, labelX, labelY, xloc=xloc.bar_index, color=color.new(color.lime, 0), width=1))
+    label lb = label.new(labelSide == "足元" ? bar_index : labelX, labelSide == "足元" ? low : labelY,
+         "T5 + MACD + BB\n" +
+         "Trigger: " + triggerName +
+         "\nSignal: " + fmt(close) +
+         "\nSL: " + fmt(slPrice) +
+         "\nTP: " + fmt(tpPrice) +
+         "\nDrop: " + fmtNum(dropAtr) + " ATR" +
+         "\nDrop bars: " + str.tostring(dropBars) +
+         "\nRecovery bars: " + str.tostring(recoveryBars) +
+         "\nFib now: " + fmtNum(fibRatioNow) +
+         "\nMACD slope3: " + fmtNum(macdSlope3) +
+         "\nBB pos: " + fmtNum(bbPos) +
+         "\nBB width: " + fmtNum(bbWidthAtr) + " ATR",
+         xloc=xloc.bar_index,
+         style=labelSide == "足元" ? label.style_label_up : labelStyle,
+         color=color.new(color.lime, 0),
+         textcolor=color.black,
+         size=size.small)
+    f_keep_label(lb)
+
+var table t = table.new(position.top_right, 2, 10, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+if showTable and barstate.islast
+    table.cell(t, 0, 0, "TF", text_color=color.white)
+    table.cell(t, 1, 0, analysisTf, text_color=color.yellow)
+    table.cell(t, 0, 1, "Signal", text_color=color.white)
+    table.cell(t, 1, 1, sig ? "ON" : "OFF", text_color=sig ? color.lime : color.gray)
+    table.cell(t, 0, 2, "V候補", text_color=color.white)
+    table.cell(t, 1, 2, cand ? "ON" : "OFF", text_color=cand ? color.aqua : color.gray)
+    table.cell(t, 0, 3, "Drop ATR", text_color=color.white)
+    table.cell(t, 1, 3, fmtNum(dropAtr), text_color=color.white)
+    table.cell(t, 0, 4, "Fib now", text_color=color.white)
+    table.cell(t, 1, 4, fmtNum(fibRatioNow), text_color=color.white)
+    table.cell(t, 0, 5, "MACD slope3", text_color=color.white)
+    table.cell(t, 1, 5, fmtNum(macdSlope3), text_color=macdSlope3 > 0 ? color.lime : color.orange)
+    table.cell(t, 0, 6, "BB pos", text_color=color.white)
+    table.cell(t, 1, 6, fmtNum(bbPos), text_color=bbPos >= bbLo and bbPos <= bbHi ? color.lime : color.orange)
+    table.cell(t, 0, 7, "Body", text_color=color.white)
+    table.cell(t, 1, 7, str.tostring(bodyRatio * 100, "#.#") + "%", text_color=bodyRatio >= bodyMin ? color.lime : color.orange)
+    table.cell(t, 0, 8, "BB width", text_color=color.white)
+    table.cell(t, 1, 8, fmtNum(bbWidthAtr), text_color=not useBbWidthFilter or bbWidthAtr <= bbWidthMaxAtr ? color.lime : color.orange)
+    table.cell(t, 0, 9, "Note", text_color=color.white)
+    table.cell(t, 1, 9, "T5 close base", text_color=color.gray)
+
+alertcondition(newSignal, title="H4 T5 MACD BB", message="H4 T5 + MACD rising + BB position signal on {{ticker}} @ {{close}}")

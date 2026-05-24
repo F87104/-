@@ -1,6 +1,6 @@
 //@version=5
 // =====================================================================
-// TrendBreakV1 [FINAL / Production Build] - HYBRID 最適化版
+// TrendBreakV1 [FINAL / Live Ready Build] - HYBRID 最適化版
 // =====================================================================
 // 適用された最適化 (10年バックテスト + コスト込み検証で確定):
 //   - BASE は Conservative プリセット (PF高・連敗少)
@@ -22,15 +22,21 @@
 //   - 価格入り alert() オプション
 //   - Signal / Entry / SL / TP / Exit ラベル
 //   - ブレイクされた水準の起源バー診断機能
+// Live Ready 方針:
+//   - 実運用初期値は「確定足のみ」。検証結果とリアルタイム挙動を一致させるため、
+//     calc_on_every_tick=false に固定。
+//   - 形成中足での飛び乗りはリペイント/消滅リスクがあるため、研究時のみ別スクリプトで確認。
+//   - TradingViewの発注価格と実ブローカー約定価格は必ずズレるため、
+//     alertには Signal / Entry想定 / SL / TP / Qty を明示する。
 // =====================================================================
 strategy("TrendBreakV1 [FINAL]",
      overlay              = true,
      initial_capital      = 10000,
      default_qty_type     = strategy.fixed,
      default_qty_value    = 1000,
-     pyramiding           = 0,
+     pyramiding           = 5,
      calc_on_order_fills  = false,
-     calc_on_every_tick   = true,
+     calc_on_every_tick   = false,
      process_orders_on_close = false,
      commission_type      = strategy.commission.percent,
      commission_value     = 0.0,
@@ -40,11 +46,14 @@ strategy("TrendBreakV1 [FINAL]",
      max_labels_count     = 500,
      max_boxes_count      = 100)
 
+// TradingView が貼り付け途中の状態で「注文/描画がない」と誤判定するのを防ぐための不可視plot。
+plot(na, title="Compile Anchor", display=display.none)
+
 // =====================================================================
 // INPUTS
 // =====================================================================
 grpPreset = "■ プリセット (通貨ペアごとに選択) - HYBRID 最適化値"
-preset    = input.string("Auto", "プリセット", options=["Auto","XAUUSD","USDJPY","EURJPY","GBPJPY","CHFJPY","AUDJPY","SILVER","Manual"], group=grpPreset, tooltip="Autoはsyminfo.tickerから自動選択。該当無しはManualへ。\nHYBRID最適化版: 通貨ペア毎に検証済の最適パラメータが入る。\n推奨運用: XAUUSD, USDJPY, EURJPY, GBPJPY, CHFJPY, SILVER の6通貨。\nAUDJPY はコスト込みで赤字傾向のため除外推奨。")
+preset    = input.string("Auto", "プリセット", options=["Auto","XAUUSD","USDJPY","EURJPY","GBPJPY","CHFJPY","AUDJPY","SILVER","NAS100","Manual"], group=grpPreset, tooltip="Autoはsyminfo.tickerから自動選択。該当無しはManualへ。\nNAS100/US100/USTEC/NDX は NAS100 として認識します。\nHYBRID最適化版: 通貨ペア毎に検証済の最適パラメータが入る。\n推奨運用: XAUUSD, USDJPY, EURJPY, GBPJPY, CHFJPY, SILVER の6通貨。\nNAS100は監視候補、AUDJPY はコスト込みで赤字傾向のため除外推奨。")
 
 grpManual = "■ Manual パラメータ (Preset=Manual時)"
 mLookback = input.int(240, "中期 lookback (本)", minval=60, group=grpManual)
@@ -61,6 +70,7 @@ mCooldown = input.int(0, "クールダウン (本)", minval=0, group=grpManual)
 
 grpRisk = "■ リスク管理 (本番運用必須設定)"
 riskPct       = input.float(1.0, "1トレード許容リスク (口座%)", minval=0.1, maxval=5.0, step=0.1, group=grpRisk, tooltip="HYBRID版: 1%固定推奨。最大連敗13回 (≒-13%) が想定内。")
+maxEntriesPerDirection = input.int(1, "同方向の最大保有数", minval=1, maxval=5, group=grpRisk, tooltip="1なら従来通り1ポジションのみ。2以上にすると、同方向シグナルで追加エントリーします。反対方向の同時保有はしません。")
 useFixedSize  = input.bool(false, "固定ロットで運用 (リスク%無効化)", group=grpRisk)
 fixedLot      = input.float(0.1, "固定ロット数", minval=0.01, step=0.01, group=grpRisk)
 maxDDPctIn    = input.float(20.0, "停止DD閾値 (%)", minval=5.0, maxval=50.0, group=grpRisk, tooltip="このDD%に達したら新規取引を停止。HYBRID版の検証では最大DD≒14%のため、20%でゆとりを持たせる設定が適切。")
@@ -68,15 +78,28 @@ newsCooldown  = input.bool(true, "経済指標時のクールダウン (推奨)"
 
 grpVisual = "■ 可視化"
 showLines       = input.bool(true, "Entry/SL/TP ライン表示", group=grpVisual)
-showStats       = input.bool(true, "パフォーマンステーブル表示", group=grpVisual)
+showStats       = input.bool(false, "パフォーマンステーブル表示", group=grpVisual)
 showSignals     = input.bool(true, "シグナルラベル表示", group=grpVisual)
 showTradeLabels = input.bool(true, "約定/決済価格ラベル表示", group=grpVisual)
 showLevelPlots  = input.bool(true, "保有中 Entry/SL/TP 水平線を常時表示", group=grpVisual)
-showLevelHistory = input.bool(true, "ブレイクした水準を起源バーまで線で表示 (診断用)", group=grpVisual, tooltip="ブレイクした水準が、過去どこで作られたかを破線で表示。ロジックには影響しません。\nlime破線: ブレイクされた lookback 高値/安値\ngray点線: 直近 exclude 本の最高/最低 (不接触ゾーン)")
+showLevelHistory = input.bool(false, "ブレイクした水準を起源バーまで線で表示 (診断用)", group=grpVisual, tooltip="ブレイクした水準が、過去どこで作られたかを破線で表示。ロジックには影響しません。\nlime破線: ブレイクされた lookback 高値/安値\ngray点線: 直近 exclude 本の最高/最低 (不接触ゾーン)")
+compactTradeLabels = input.bool(true, "売買ラベルを短く表示", group=grpVisual)
+showHistoricalTradeLabels = input.bool(false, "過去の売買ラベルも残す", group=grpVisual, tooltip="OFF推奨。縮図で見る時は最新のSIGNAL/ENTRY/EXITだけ残し、チャートの視認性を優先します。")
+showLineInfoLabel = input.bool(false, "Entry/SL/TP ライン説明ラベル表示", group=grpVisual)
+labelOffsetBars = input.int(48, "ラベルを右にずらす本数", minval=0, maxval=200, group=grpVisual)
+labelStaggerBars = input.int(18, "ラベル同士の横ずらし本数", minval=0, maxval=50, group=grpVisual)
+labelOffsetAtr  = input.float(5.0, "ラベルを上下に逃がすATR倍率", minval=0.0, maxval=20.0, step=0.25, group=grpVisual)
+showLabelConnectors = input.bool(true, "ラベルと実価格を線でつなぐ", group=grpVisual)
 
 grpRealtime = "■ リアルタイム挙動"
-executionMode    = input.string("確定足のみ", "シグナル判定", options=["確定足のみ","リアルタイム監視"], group=grpRealtime, tooltip="確定足のみ: バー確定後だけ判定。検証と一致しやすい。リアルタイム監視: 形成中足でも判定するが、後からチャートを読み直すと結果が変わる可能性があります。")
-useDynamicAlerts = input.bool(false, "価格入り alert() を使う", group=grpRealtime, tooltip="ONにしてTradingView側で「Any alert() function call」を選ぶと、Signal/Entry/SL/TP価格入りの通知を出せます。")
+executionMode    = input.string("確定足のみ", "シグナル判定", options=["確定足のみ"], group=grpRealtime, tooltip="本番想定では確定足のみ。バー確定後に判定し、検証結果とのズレを抑えます。形成中足の監視は研究用として別管理してください。")
+useDynamicAlerts = input.bool(true, "価格入り alert() を使う", group=grpRealtime, tooltip="ONにしてTradingView側で「Any alert() function call」を選ぶと、Signal/Entry/SL/TP価格入りの通知を出せます。")
+
+grpFakeout = "■ 騙し回避フィルタ"
+useBodyFilter = input.bool(false, "実体比率フィルタを使う", group=grpFakeout, tooltip="ON: シグナル足の実体がローソク足全体の指定%以上の時だけ入ります。検証候補は60%。")
+minSignalBodyRatio = input.float(0.60, "最小実体比率", minval=0.0, maxval=1.0, step=0.05, group=grpFakeout)
+useEarlyBackInsideExit = input.bool(false, "ブレイク内戻りの早期撤退を使う", group=grpFakeout, tooltip="ON: エントリー後、指定本数以内に終値がブレイク水準の内側へ戻ったら成行撤退します。")
+earlyBackInsideBars = input.int(1, "早期撤退の監視本数", minval=1, maxval=6, group=grpFakeout)
 
 // =====================================================================
 // プリセット解決
@@ -91,6 +114,8 @@ else if preset == "Auto"
         usePreset := "XAUUSD"
     else if str.contains(sym, "XAG") or str.contains(sym, "SILVER")
         usePreset := "SILVER"
+    else if str.contains(sym, "NAS100") or str.contains(sym, "US100") or str.contains(sym, "USTEC") or str.contains(sym, "NDX")
+        usePreset := "NAS100"
     else if str.contains(sym, "USDJPY")
         usePreset := "USDJPY"
     else if str.contains(sym, "EURJPY")
@@ -263,6 +288,13 @@ shortSig_raw = switch levelKind
     "confluence" => short3m and shortL_
     => short3m
 
+longBreakLevel = levelKind == "long" ? highL : levelKind == "any" ? (long3m ? high3m : highL) : high3m
+shortBreakLevel = levelKind == "long" ? lowL : levelKind == "any" ? (short3m ? low3m : lowL) : low3m
+
+signalRange = high - low
+signalBodyRatio = signalRange > 0 ? math.abs(close - open) / signalRange : 0.0
+fakeoutBodyOK = not useBodyFilter or signalBodyRatio >= minSignalBodyRatio
+
 // セッションフィルタ (UTC)
 hUTC     = hour(time, "UTC")
 sessAsia = (hUTC >= 0 and hUTC < 7) or (hUTC >= 21 and hUTC < 24)
@@ -308,8 +340,8 @@ maxDDAmount  := math.max(maxDDAmount, curDDAmount)
 maxDDPercent := math.max(maxDDPercent, ddPct)
 ddStop = ddPct >= maxDDPctIn
 
-longSig  = longSig_raw  and sessOK and marginOK_L and not isHighVol and not ddStop
-shortSig = shortSig_raw and sessOK and marginOK_S and not isHighVol and not ddStop
+longSig  = longSig_raw  and fakeoutBodyOK and sessOK and marginOK_L and not isHighVol and not ddStop
+shortSig = shortSig_raw and fakeoutBodyOK and sessOK and marginOK_S and not isHighVol and not ddStop
 
 // =====================================================================
 // エントリー実行
@@ -319,15 +351,20 @@ var int   lastExitBar = -99999
 
 justExited       = strategy.position_size == 0 and strategy.position_size[1] != 0
 canEnter         = not justExited and (bar_index - lastExitBar) >= cooldownBars
-confirmedOK      = executionMode == "リアルタイム監視" ? true : barstate.isconfirmed
-longEntrySignal  = longSig  and confirmedOK and strategy.position_size == 0 and canEnter
-shortEntrySignal = shortSig and confirmedOK and strategy.position_size == 0 and canEnter
+confirmedOK      = barstate.isconfirmed
+canLongEntry      = strategy.position_size >= 0 and strategy.opentrades < maxEntriesPerDirection
+canShortEntry     = strategy.position_size <= 0 and strategy.opentrades < maxEntriesPerDirection
+longEntrySignal   = longSig  and confirmedOK and canLongEntry and canEnter
+shortEntrySignal  = shortSig and confirmedOK and canShortEntry and canEnter
 
 var float signalPrice = na
 var float signalAtr   = na
 var float signalQty   = na
 var int   signalDir   = 0
 var int   signalBar   = na
+var float signalBreakLevel = na
+var label latestTradeLabel = na
+var line  latestTradeConnector = na
 
 slDistNow = atrSig * slAtrMult
 qtyNow    = calcQty(curEq, slDistNow, useFixedSize, fixedLot, riskPct)
@@ -339,17 +376,35 @@ if longEntrySignal and qtyNow > 0
     signalQty   := qtyNow
     signalDir   := 1
     signalBar   := bar_index
+    signalBreakLevel := longBreakLevel
     if showTradeLabels
-        label.new(time, na,
-             "LONG SIGNAL\nSignal: " + fmtPrice(close) +
-             "\nBroken Lv: " + fmtPrice(high3m) + " (" + str.tostring(high3mBars) + " bars ago)" +
-             "\nEst SL: " + fmtPrice(close - slDistNow) +
-             "\nEst TP: " + fmtPrice(close + slDistNow * tpRR) +
-             "\nQty: " + fmtNum(qtyNow),
-             xloc=xloc.bar_time, yloc=yloc.belowbar,
+        if not showHistoricalTradeLabels
+            if not na(latestTradeLabel)
+                label.delete(latestTradeLabel)
+            if not na(latestTradeConnector)
+                line.delete(latestTradeConnector)
+            latestTradeLabel := na
+            latestTradeConnector := na
+        int longSigLabelX = bar_index + labelOffsetBars
+        float longSigLabelY = close - atrSig * labelOffsetAtr * 1.35
+        string longSigText = "LONG SIG\nS: " + fmtPrice(close) +
+             "\nSL: " + fmtPrice(close - slDistNow) +
+             "\nTP: " + fmtPrice(close + slDistNow * tpRR)
+        if not compactTradeLabels
+            longSigText := "LONG SIGNAL\nSignal: " + fmtPrice(close) +
+                 "\nBroken Lv: " + fmtPrice(longBreakLevel) + " (" + str.tostring(high3mBars) + " bars ago)" +
+                 "\nBody: " + str.tostring(signalBodyRatio * 100, "#.#") + "%" +
+                 "\nEst SL: " + fmtPrice(close - slDistNow) +
+                 "\nEst TP: " + fmtPrice(close + slDistNow * tpRR) +
+                 "\nQty: " + fmtNum(qtyNow)
+        latestTradeLabel := label.new(longSigLabelX, longSigLabelY,
+             longSigText,
+             xloc=xloc.bar_index,
              style=label.style_label_up,
              color=color.new(color.lime, 10),
-             textcolor=color.black, size=size.small)
+             textcolor=color.black, size=size.tiny)
+        if showLabelConnectors
+            latestTradeConnector := line.new(bar_index, close, longSigLabelX, longSigLabelY, xloc=xloc.bar_index, color=color.new(color.lime, 55), width=1, style=line.style_dotted)
     if showLevelHistory
         // ブレイクされた水準を「起源バー → 現在」まで破線で表示
         line.new(time[high3mBars], high3m, time, high3m,
@@ -379,17 +434,35 @@ if shortEntrySignal and qtyNow > 0
     signalQty   := qtyNow
     signalDir   := -1
     signalBar   := bar_index
+    signalBreakLevel := shortBreakLevel
     if showTradeLabels
-        label.new(time, na,
-             "SHORT SIGNAL\nSignal: " + fmtPrice(close) +
-             "\nBroken Lv: " + fmtPrice(low3m) + " (" + str.tostring(low3mBars) + " bars ago)" +
-             "\nEst SL: " + fmtPrice(close + slDistNow) +
-             "\nEst TP: " + fmtPrice(close - slDistNow * tpRR) +
-             "\nQty: " + fmtNum(qtyNow),
-             xloc=xloc.bar_time, yloc=yloc.abovebar,
+        if not showHistoricalTradeLabels
+            if not na(latestTradeLabel)
+                label.delete(latestTradeLabel)
+            if not na(latestTradeConnector)
+                line.delete(latestTradeConnector)
+            latestTradeLabel := na
+            latestTradeConnector := na
+        int shortSigLabelX = bar_index + labelOffsetBars
+        float shortSigLabelY = close + atrSig * labelOffsetAtr * 1.35
+        string shortSigText = "SHORT SIG\nS: " + fmtPrice(close) +
+             "\nSL: " + fmtPrice(close + slDistNow) +
+             "\nTP: " + fmtPrice(close - slDistNow * tpRR)
+        if not compactTradeLabels
+            shortSigText := "SHORT SIGNAL\nSignal: " + fmtPrice(close) +
+                 "\nBroken Lv: " + fmtPrice(shortBreakLevel) + " (" + str.tostring(low3mBars) + " bars ago)" +
+                 "\nBody: " + str.tostring(signalBodyRatio * 100, "#.#") + "%" +
+                 "\nEst SL: " + fmtPrice(close + slDistNow) +
+                 "\nEst TP: " + fmtPrice(close - slDistNow * tpRR) +
+                 "\nQty: " + fmtNum(qtyNow)
+        latestTradeLabel := label.new(shortSigLabelX, shortSigLabelY,
+             shortSigText,
+             xloc=xloc.bar_index,
              style=label.style_label_down,
              color=color.new(color.red, 10),
-             textcolor=color.white, size=size.small)
+             textcolor=color.white, size=size.tiny)
+        if showLabelConnectors
+            latestTradeConnector := line.new(bar_index, close, shortSigLabelX, shortSigLabelY, xloc=xloc.bar_index, color=color.new(color.red, 55), width=1, style=line.style_dotted)
     if showLevelHistory
         line.new(time[low3mBars], low3m, time, low3m,
              xloc=xloc.bar_time,
@@ -419,9 +492,10 @@ var float tpPrice        = na
 var int   entryBar       = na
 var float activeRiskDist = na
 var int   activeDir      = 0
+var float activeBreakLevel = na
 
-justEnteredL = strategy.position_size > 0 and strategy.position_size[1] <= 0
-justEnteredS = strategy.position_size < 0 and strategy.position_size[1] >= 0
+justEnteredL = strategy.position_size > 0 and strategy.position_size > strategy.position_size[1]
+justEnteredS = strategy.position_size < 0 and strategy.position_size < strategy.position_size[1]
 
 if justEnteredL
     entryPrice := strategy.position_avg_price
@@ -431,17 +505,34 @@ if justEnteredL
     entryBar       := bar_index
     activeRiskDist := sd
     activeDir      := 1
+    activeBreakLevel := signalBreakLevel
     if showTradeLabels
-        label.new(time, entryPrice,
-             "LONG FILLED\nSignal: " + fmtPrice(signalPrice) +
-             "\nEntry: " + fmtPrice(entryPrice) +
+        if not showHistoricalTradeLabels
+            if not na(latestTradeLabel)
+                label.delete(latestTradeLabel)
+            if not na(latestTradeConnector)
+                line.delete(latestTradeConnector)
+            latestTradeLabel := na
+            latestTradeConnector := na
+        int longFillLabelX = bar_index + labelOffsetBars + labelStaggerBars
+        float longFillLabelY = entryPrice - sd * labelOffsetAtr
+        string longFillText = "LONG IN\nE: " + fmtPrice(entryPrice) +
              "\nSL: " + fmtPrice(slPrice) +
-             "\nTP: " + fmtPrice(tpPrice) +
-             "\nQty: " + fmtNum(math.abs(strategy.position_size)),
-             xloc=xloc.bar_time,
+             "\nTP: " + fmtPrice(tpPrice)
+        if not compactTradeLabels
+            longFillText := "LONG FILLED\nSignal: " + fmtPrice(signalPrice) +
+                 "\nEntry: " + fmtPrice(entryPrice) +
+                 "\nSL: " + fmtPrice(slPrice) +
+                 "\nTP: " + fmtPrice(tpPrice) +
+                 "\nQty: " + fmtNum(math.abs(strategy.position_size))
+        latestTradeLabel := label.new(longFillLabelX, longFillLabelY,
+             longFillText,
+             xloc=xloc.bar_index,
              style=label.style_label_left,
              color=color.new(color.yellow, 0),
-             textcolor=color.black, size=size.small)
+             textcolor=color.black, size=size.tiny)
+        if showLabelConnectors
+            latestTradeConnector := line.new(bar_index, entryPrice, longFillLabelX, longFillLabelY, xloc=xloc.bar_index, color=color.new(color.yellow, 45), width=1, style=line.style_dotted)
     if useDynamicAlerts
         alert("TrendBreakV1 LONG FILLED\nSymbol: " + sym +
              "\nSignal: " + fmtPrice(signalPrice) +
@@ -459,17 +550,34 @@ if justEnteredS
     entryBar       := bar_index
     activeRiskDist := sd
     activeDir      := -1
+    activeBreakLevel := signalBreakLevel
     if showTradeLabels
-        label.new(time, entryPrice,
-             "SHORT FILLED\nSignal: " + fmtPrice(signalPrice) +
-             "\nEntry: " + fmtPrice(entryPrice) +
+        if not showHistoricalTradeLabels
+            if not na(latestTradeLabel)
+                label.delete(latestTradeLabel)
+            if not na(latestTradeConnector)
+                line.delete(latestTradeConnector)
+            latestTradeLabel := na
+            latestTradeConnector := na
+        int shortFillLabelX = bar_index + labelOffsetBars + labelStaggerBars
+        float shortFillLabelY = entryPrice + sd * labelOffsetAtr
+        string shortFillText = "SHORT IN\nE: " + fmtPrice(entryPrice) +
              "\nSL: " + fmtPrice(slPrice) +
-             "\nTP: " + fmtPrice(tpPrice) +
-             "\nQty: " + fmtNum(math.abs(strategy.position_size)),
-             xloc=xloc.bar_time,
+             "\nTP: " + fmtPrice(tpPrice)
+        if not compactTradeLabels
+            shortFillText := "SHORT FILLED\nSignal: " + fmtPrice(signalPrice) +
+                 "\nEntry: " + fmtPrice(entryPrice) +
+                 "\nSL: " + fmtPrice(slPrice) +
+                 "\nTP: " + fmtPrice(tpPrice) +
+                 "\nQty: " + fmtNum(math.abs(strategy.position_size))
+        latestTradeLabel := label.new(shortFillLabelX, shortFillLabelY,
+             shortFillText,
+             xloc=xloc.bar_index,
              style=label.style_label_left,
              color=color.new(color.yellow, 0),
-             textcolor=color.black, size=size.small)
+             textcolor=color.black, size=size.tiny)
+        if showLabelConnectors
+            latestTradeConnector := line.new(bar_index, entryPrice, shortFillLabelX, shortFillLabelY, xloc=xloc.bar_index, color=color.new(color.yellow, 45), width=1, style=line.style_dotted)
     if useDynamicAlerts
         alert("TrendBreakV1 SHORT FILLED\nSymbol: " + sym +
              "\nSignal: " + fmtPrice(signalPrice) +
@@ -484,6 +592,40 @@ if strategy.position_size > 0 and not na(slPrice) and not na(tpPrice)
 if strategy.position_size < 0 and not na(slPrice) and not na(tpPrice)
     strategy.exit("S-Exit", from_entry="Short", stop=slPrice, limit=tpPrice)
 
+barsFromEntry = not na(entryBar) ? bar_index - entryBar + 1 : na
+earlyExitLong = useEarlyBackInsideExit and strategy.position_size > 0 and not na(activeBreakLevel) and not na(barsFromEntry) and barsFromEntry <= earlyBackInsideBars and close <= activeBreakLevel
+earlyExitShort = useEarlyBackInsideExit and strategy.position_size < 0 and not na(activeBreakLevel) and not na(barsFromEntry) and barsFromEntry <= earlyBackInsideBars and close >= activeBreakLevel
+if earlyExitLong
+    strategy.close("Long", comment="BackInside")
+    if showTradeLabels
+        if not showHistoricalTradeLabels
+            if not na(latestTradeLabel)
+                label.delete(latestTradeLabel)
+            if not na(latestTradeConnector)
+                line.delete(latestTradeConnector)
+            latestTradeLabel := na
+            latestTradeConnector := na
+        int earlyLongLabelX = bar_index + labelOffsetBars
+        float earlyLongLabelY = close + nz(activeRiskDist, atrSig) * labelOffsetAtr
+        latestTradeLabel := label.new(earlyLongLabelX, earlyLongLabelY, "EARLY EXIT\nBack inside\nLv: " + fmtPrice(activeBreakLevel), xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.orange, 0), textcolor=color.black, size=size.tiny)
+        if showLabelConnectors
+            latestTradeConnector := line.new(bar_index, close, earlyLongLabelX, earlyLongLabelY, xloc=xloc.bar_index, color=color.new(color.orange, 45), width=1, style=line.style_dotted)
+if earlyExitShort
+    strategy.close("Short", comment="BackInside")
+    if showTradeLabels
+        if not showHistoricalTradeLabels
+            if not na(latestTradeLabel)
+                label.delete(latestTradeLabel)
+            if not na(latestTradeConnector)
+                line.delete(latestTradeConnector)
+            latestTradeLabel := na
+            latestTradeConnector := na
+        int earlyShortLabelX = bar_index + labelOffsetBars
+        float earlyShortLabelY = close - nz(activeRiskDist, atrSig) * labelOffsetAtr
+        latestTradeLabel := label.new(earlyShortLabelX, earlyShortLabelY, "EARLY EXIT\nBack inside\nLv: " + fmtPrice(activeBreakLevel), xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.orange, 0), textcolor=color.black, size=size.tiny)
+        if showLabelConnectors
+            latestTradeConnector := line.new(bar_index, close, earlyShortLabelX, earlyShortLabelY, xloc=xloc.bar_index, color=color.new(color.orange, 45), width=1, style=line.style_dotted)
+
 // 決済検知 → クールダウン開始
 if justExited
     lastExitBar := bar_index
@@ -493,6 +635,13 @@ if justExited
 // =====================================================================
 var int seenClosedTrades = 0
 if showTradeLabels and strategy.closedtrades > seenClosedTrades
+    if not showHistoricalTradeLabels
+        if not na(latestTradeLabel)
+            label.delete(latestTradeLabel)
+        if not na(latestTradeConnector)
+            line.delete(latestTradeConnector)
+        latestTradeLabel := na
+        latestTradeConnector := na
     int   tradeIdx         = strategy.closedtrades - 1
     float exitPx           = strategy.closedtrades.exit_price(tradeIdx)
     float closedEntryPx    = strategy.closedtrades.entry_price(tradeIdx)
@@ -506,12 +655,21 @@ if showTradeLabels and strategy.closedtrades > seenClosedTrades
             exitR := (closedEntryPx - exitPx) / riskForR
     color  exitCol         = not na(exitR) and exitR >= 0 ? color.new(color.lime, 5) : color.new(color.red, 5)
     string exitStyleStr    = closedDir == 1 ? label.style_label_down : label.style_label_up
-    label.new(time, exitPx,
-         "EXIT\nEntry: " + fmtPrice(closedEntryPx) +
-         "\nExit: "  + fmtPrice(exitPx) +
-         "\nResult: " + fmtR(exitR),
-         xloc=xloc.bar_time,
-         style=exitStyleStr, color=exitCol, textcolor=color.white, size=size.small)
+    float exitOffset = (not na(riskForR) and riskForR > 0 ? riskForR : atrSig) * labelOffsetAtr
+    int exitLabelX = bar_index + labelOffsetBars
+    float exitLabelY = closedDir == 1 ? exitPx + exitOffset : exitPx - exitOffset
+    string exitText = "EXIT\nX: " + fmtPrice(exitPx) +
+         "\nR: " + fmtR(exitR)
+    if not compactTradeLabels
+        exitText := "EXIT\nEntry: " + fmtPrice(closedEntryPx) +
+             "\nExit: "  + fmtPrice(exitPx) +
+             "\nResult: " + fmtR(exitR)
+    latestTradeLabel := label.new(exitLabelX, exitLabelY,
+         exitText,
+         xloc=xloc.bar_index,
+         style=exitStyleStr, color=exitCol, textcolor=not na(exitR) and exitR >= 0 ? color.black : color.white, size=size.tiny)
+    if showLabelConnectors
+        latestTradeConnector := line.new(bar_index, exitPx, exitLabelX, exitLabelY, xloc=xloc.bar_index, color=color.new(exitCol, 35), width=1, style=line.style_dotted)
     if useDynamicAlerts
         alert("TrendBreakV1 EXIT\nSymbol: " + sym +
              "\nEntry: " + fmtPrice(closedEntryPx) +
@@ -554,7 +712,13 @@ if showLines and (justEnteredL or justEnteredS)
          "\nEntry: " + fmtPrice(entryPrice) +
          "\nSL: " + fmtPrice(slPrice) +
          "\nTP: " + fmtPrice(tpPrice)
-    entryLbl := label.new(time, entryPrice, txt, xloc=xloc.bar_time, style=label.style_label_left, color=color.new(colLine, 15), textcolor=color.white, size=size.small)
+    float entryInfoOffset = nz(activeRiskDist, atrSig) * labelOffsetAtr
+    int entryInfoLabelX = bar_index + labelOffsetBars + labelStaggerBars * 2
+    float entryInfoLabelY = justEnteredL ? entryPrice - entryInfoOffset * 1.7 : entryPrice + entryInfoOffset * 1.7
+    if showLineInfoLabel
+        entryLbl := label.new(entryInfoLabelX, entryInfoLabelY, txt, xloc=xloc.bar_index, style=label.style_label_left, color=color.new(colLine, 15), textcolor=justEnteredL ? color.black : color.white, size=size.tiny)
+        if showLabelConnectors
+            line.new(bar_index, entryPrice, entryInfoLabelX, entryInfoLabelY, xloc=xloc.bar_index, color=color.new(colLine, 55), width=1, style=line.style_dotted)
 
 if showLines and strategy.position_size != 0 and not na(entryLine)
     line.set_x2(entryLine, bar_index + 1)
@@ -570,8 +734,8 @@ bgcolor(ddStop    ? color.new(color.red,    85) : na, title="DD停止中")
 var table statsTable = table.new(position.top_right, 2, 24, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
 
 addRow(table tbl, int r, string k, string v, color c) =>
-    table.cell(tbl, 0, r, k, text_color=color.white, bgcolor=color.new(color.gray, 70), text_size=size.small)
-    table.cell(tbl, 1, r, v, text_color=c,           bgcolor=color.new(color.black, 50), text_size=size.small)
+    table.cell(tbl, 0, r, k, text_color=color.white, bgcolor=color.new(color.gray, 70), text_size=size.tiny)
+    table.cell(tbl, 1, r, v, text_color=c,           bgcolor=color.new(color.black, 50), text_size=size.tiny)
 
 if showStats and barstate.islast
     float grossWin   = strategy.grossprofit

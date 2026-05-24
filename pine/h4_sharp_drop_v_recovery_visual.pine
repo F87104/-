@@ -1,0 +1,387 @@
+//@version=5
+indicator("H4 Sharp Drop V Recovery Visual", overlay=true, max_lines_count=500, max_labels_count=500)
+
+// =====================================================================
+// H4 急落後V字回復 可視化スクリプト
+// =====================================================================
+// 検証で使った定量定義に寄せた確認用インジケーターです。
+// 初期値は H4 / 急落後の買いV字回復:
+//   - confirmed pivot high -> confirmed pivot low
+//   - 下落幅 >= 3.5 ATR
+//   - 終値が下落開始水準まで回復
+//   - 回復本数 <= 下落本数
+//     例: 左肩の急落が10本なら、右肩の回復は10本以内
+//   - シグナル足の実体比率 >= 60%
+//   - SL = 谷 - 0.25 ATR
+//   - TP = Entry + 2R
+//
+// TradingView上ではH4チャートで見るのが最も正確です。
+// H1など下位足でもH4条件を重ねて表示できますが、線の位置はH4確定足ベースです。
+// =====================================================================
+
+grpMain = "条件"
+analysisTf      = input.timeframe("240", "判定時間足", group=grpMain)
+pivotLeft       = input.int(3, "Pivot left", minval=1, maxval=20, group=grpMain)
+pivotRight      = input.int(3, "Pivot right", minval=1, maxval=20, group=grpMain)
+atrLen          = input.int(14, "ATR期間", minval=1, group=grpMain)
+minSwingAtr     = input.float(2.0, "Pivot間の最小スイング(ATR)", minval=0.1, step=0.1, group=grpMain)
+vLookback       = input.int(30, "谷確定後の最大監視本数", minval=5, group=grpMain)
+minDropAtr      = input.float(3.5, "急落幅の最小ATR", minval=0.1, step=0.1, group=grpMain)
+fibRatio        = input.float(1.0, "回復判定比率", minval=0.1, maxval=1.5, step=0.001, group=grpMain, tooltip="1.0なら急落前の高値水準まで戻った時だけV字回復。0.618ならフィボ61.8%回復で早めに検出。")
+breakBufferAtr  = input.float(0.06, "回復ライン上抜け余白(ATR)", minval=0.0, step=0.01, group=grpMain)
+minBodyRatio    = input.float(0.60, "シグナル足の実体比率", minval=0.0, maxval=1.0, step=0.05, group=grpMain)
+minDropBars     = input.int(2, "急落の最小本数", minval=1, group=grpMain)
+maxDropBars     = input.int(18, "急落の最大本数", minval=2, group=grpMain)
+maxRecoveryBars = input.int(18, "回復の絶対最大本数", minval=1, group=grpMain)
+maxRecoveryMult = input.float(1.0, "回復本数/下落本数の上限", minval=0.1, step=0.1, group=grpMain, tooltip="V字らしさの左右バランス。1.0なら、左肩の下落が10本なら右肩の回復は10本以内。")
+minDropSpeed    = input.float(0.35, "急落速度の下限(ATR/本)", minval=0.0, step=0.05, group=grpMain)
+minRecoverySpeed = input.float(0.25, "回復速度の下限(ATR/本)", minval=0.0, step=0.05, group=grpMain)
+minRecoveryVsDrop = input.float(1.0, "回復速度/下落速度の下限", minval=0.0, maxval=2.0, step=0.05, group=grpMain, tooltip="1.0なら、下落と同じかそれ以上の角度で戻った形だけをV字候補にします。")
+rr              = input.float(2.0, "TP RR", minval=0.5, step=0.1, group=grpMain)
+
+grpView = "表示"
+showPivots   = input.bool(false, "Pivotラベル(デバッグ用)", group=grpView, tooltip="ONにすると、条件判定に使うH4の確定Pivotを全て表示します。通常はラベルが多くなるためOFF推奨です。")
+showVLines   = input.bool(true, "V字ライン", group=grpView)
+showLevels   = input.bool(true, "Trigger/SL/TPライン", group=grpView)
+showTable    = input.bool(false, "状態テーブル", group=grpView)
+compactLabels = input.bool(true, "ラベルを短く表示", group=grpView)
+showHistoricalLabels = input.bool(false, "過去ラベルも残す", group=grpView, tooltip="OFF推奨。縮図で見る時は最新ラベルだけ残してチャートを見やすくします。")
+signalLabelMode = input.string("右下に逃がす", "シグナル詳細ラベル位置", options=["右下に逃がす","右上に逃がす","足元"], group=grpView)
+labelShiftBars  = input.int(28, "ラベルを右へずらす本数", minval=0, maxval=100, group=grpView)
+labelOffsetAtr  = input.float(5.0, "ラベル上下余白(ATR)", minval=0.5, step=0.5, group=grpView)
+
+grpTrade = "仮想売買価格"
+showTradePriceLabels = input.bool(true, "Entry/Exit価格ラベル", group=grpTrade)
+showActiveTradeLines = input.bool(true, "保有中Entry/SL/TP水平線", group=grpTrade)
+tpBasis = input.string("Entry基準", "TP計算", options=["Entry基準","Signal基準"], group=grpTrade, tooltip="Entry基準: 次足始値の実際EntryからRRでTPを再計算。Signal基準: シグナル足で表示されたTPをそのまま使います。")
+maxHoldBars = input.int(180, "最大保有本数", minval=1, group=grpTrade)
+
+fmt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, format.mintick)
+    out
+
+fmtR(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#.##") + "R"
+    out
+
+f_h4_v_recovery() =>
+    float atrValue = ta.atr(atrLen)
+    float rangeNow = high - low
+    float bodyNow = math.abs(close - open)
+    float bodyRatio = rangeNow > 0 ? bodyNow / rangeNow : 0.0
+
+    float ph = ta.pivothigh(high, pivotLeft, pivotRight)
+    float pl = ta.pivotlow(low, pivotLeft, pivotRight)
+
+    var int   prevKind  = 0
+    var float prevPrice = na
+    var int   prevIndex = na
+    var int   prevTime  = na
+    var float prevAtr   = na
+
+    var int   lastKind  = 0
+    var float lastPrice = na
+    var int   lastIndex = na
+    var int   lastTime  = na
+    var float lastAtr   = na
+
+    bool newPivot = false
+    int pKind = 0
+    float pPrice = na
+    int pIndex = na
+    int pTime = na
+    float pAtr = na
+
+    if not na(ph) and na(pl)
+        newPivot := true
+        pKind := 1
+        pPrice := ph
+        pIndex := bar_index - pivotRight
+        pTime := time[pivotRight]
+        pAtr := atrValue[pivotRight]
+    else if not na(pl) and na(ph)
+        newPivot := true
+        pKind := -1
+        pPrice := pl
+        pIndex := bar_index - pivotRight
+        pTime := time[pivotRight]
+        pAtr := atrValue[pivotRight]
+
+    bool acceptedPivot = false
+    if newPivot and not na(pAtr) and pAtr > 0
+        if lastKind == 0
+            lastKind := pKind
+            lastPrice := pPrice
+            lastIndex := pIndex
+            lastTime := pTime
+            lastAtr := pAtr
+            acceptedPivot := true
+        else if pKind == lastKind
+            bool moreExtreme = (pKind == 1 and pPrice > lastPrice) or (pKind == -1 and pPrice < lastPrice)
+            if moreExtreme
+                lastPrice := pPrice
+                lastIndex := pIndex
+                lastTime := pTime
+                lastAtr := pAtr
+                acceptedPivot := true
+        else
+            float swing = math.abs(pPrice - lastPrice)
+            float threshold = math.max(pAtr, lastAtr) * minSwingAtr
+            if swing >= threshold
+                prevKind := lastKind
+                prevPrice := lastPrice
+                prevIndex := lastIndex
+                prevTime := lastTime
+                prevAtr := lastAtr
+                lastKind := pKind
+                lastPrice := pPrice
+                lastIndex := pIndex
+                lastTime := pTime
+                lastAtr := pAtr
+                acceptedPivot := true
+
+    bool sig = false
+    float trigger = na
+    float stop = na
+    float target = na
+    float dropAtr = na
+    float dropSpeed = na
+    float recoverySpeed = na
+    float recoveryRatio = na
+    int dropBars = na
+    int recoveryBars = na
+
+    bool vBase = prevKind == 1 and lastKind == -1 and not na(prevPrice) and not na(lastPrice) and not na(atrValue) and atrValue > 0
+    if vBase
+        float drop = prevPrice - lastPrice
+        dropBars := math.max(lastIndex - prevIndex, 1)
+        recoveryBars := math.max(bar_index - lastIndex, 1)
+        dropAtr := drop / atrValue
+        dropSpeed := drop / dropBars / atrValue
+        recoverySpeed := (close - lastPrice) / recoveryBars / atrValue
+        recoveryRatio := recoveryBars / dropBars
+        trigger := lastPrice + drop * fibRatio
+        float prevRecover = (close[1] - lastPrice) / drop
+        float nowRecover = (close - lastPrice) / drop
+        bool withinLookback = bar_index - lastIndex <= vLookback
+        bool dropOk = dropAtr >= minDropAtr
+        bool crossOk = prevRecover < fibRatio and nowRecover >= fibRatio and close > trigger + atrValue * breakBufferAtr
+        bool bodyOk = bodyRatio >= minBodyRatio
+        bool dropBarsOk = dropBars >= minDropBars and dropBars <= maxDropBars
+        bool recoveryBarsOk = recoveryBars <= maxRecoveryBars
+        bool recoveryOk = recoveryRatio <= maxRecoveryMult
+        bool speedOk = dropSpeed >= minDropSpeed
+        bool recoverySpeedOk = recoverySpeed >= minRecoverySpeed and recoverySpeed >= dropSpeed * minRecoveryVsDrop
+        sig := withinLookback and dropOk and crossOk and bodyOk and dropBarsOk and recoveryBarsOk and recoveryOk and speedOk and recoverySpeedOk
+        stop := lastPrice - atrValue * 0.25
+        target := close + (close - stop) * rr
+
+    [sig, acceptedPivot, pKind, pPrice, pTime, prevPrice, prevTime, lastPrice, lastTime, trigger, stop, target, dropAtr, dropSpeed, recoverySpeed, recoveryRatio, dropBars, recoveryBars, bodyRatio]
+
+[sigH4, pivotAccepted, pivotKind, pivotPrice, pivotTime, vStartPrice, vStartTime, vLowPrice, vLowTime, triggerH4, stopH4, targetH4, dropAtrH4, dropSpeedH4, recoverySpeedH4, recoveryRatioH4, dropBarsH4, recoveryBarsH4, bodyRatioH4] = request.security(syminfo.tickerid, analysisTf, f_h4_v_recovery(), barmerge.gaps_off, barmerge.lookahead_off)
+
+newSignal = sigH4 and not sigH4[1]
+newPivotOnChart = pivotAccepted and not pivotAccepted[1]
+var label latestLabel = na
+var line  latestConnector = na
+
+plotshape(newSignal, title="H4 V Recovery", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.tiny, text="H4 V")
+plot(showLevels ? triggerH4 : na, title="H4 Fib Trigger", color=color.new(color.aqua, 0), linewidth=1, style=plot.style_linebr)
+plot(showLevels and newSignal ? stopH4 : na, title="Signal SL", color=color.new(color.red, 0), linewidth=2, style=plot.style_circles)
+plot(showLevels and newSignal ? targetH4 : na, title="Signal TP", color=color.new(color.lime, 0), linewidth=2, style=plot.style_circles)
+
+if showPivots and newPivotOnChart and not na(pivotPrice)
+    string pTxt = pivotKind == 1 ? "H4 Pivot H" : "H4 Pivot L"
+    label.new(pivotTime, pivotPrice, pTxt, xloc=xloc.bar_time, style=pivotKind == 1 ? label.style_label_down : label.style_label_up, color=color.new(color.gray, 15), textcolor=color.white, size=size.tiny)
+
+if newSignal
+    int levelLineEnd = time + timeframe.in_seconds(analysisTf) * 1000
+    int labelX = bar_index + labelShiftBars
+    float chartAtr = ta.atr(14)
+    float labelY = signalLabelMode == "右上に逃がす" ? high + chartAtr * labelOffsetAtr : low - chartAtr * labelOffsetAtr
+    string signalLabelStyle = signalLabelMode == "右上に逃がす" ? label.style_label_down : label.style_label_up
+    if showVLines and not na(vStartTime) and not na(vLowTime)
+        line.new(vStartTime, vStartPrice, vLowTime, vLowPrice, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2)
+        line.new(vLowTime, vLowPrice, time, close, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2)
+    if showLevels
+        line.new(vLowTime, triggerH4, time, triggerH4, xloc=xloc.bar_time, color=color.new(color.aqua, 0), width=1, style=line.style_dashed)
+        line.new(time, stopH4, levelLineEnd, stopH4, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2, style=line.style_dashed)
+        line.new(time, targetH4, levelLineEnd, targetH4, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2, style=line.style_dashed)
+    if not showHistoricalLabels
+        if not na(latestLabel)
+            label.delete(latestLabel)
+        if not na(latestConnector)
+            line.delete(latestConnector)
+        latestLabel := na
+        latestConnector := na
+    if signalLabelMode != "足元"
+        latestConnector := line.new(bar_index, low, labelX, labelY, xloc=xloc.bar_index, color=color.new(color.lime, 0), width=1, style=line.style_dotted)
+    string vText = "H4 V\nS: " + fmt(close) +
+         "\nSL: " + fmt(stopH4) +
+         "\nTP: " + fmt(targetH4)
+    if not compactLabels
+        vText := "H4 急落後V字回復\nSignal Close: " + fmt(close) +
+             "\nTrigger: " + fmt(triggerH4) +
+             "\nEntry: next bar open" +
+             "\nSL: " + fmt(stopH4) +
+             "\nTP: " + fmt(targetH4) +
+             "\nDrop: " + str.tostring(dropAtrH4, "#.##") + " ATR" +
+             "\nDrop bars: " + str.tostring(dropBarsH4) +
+             "\nRecovery bars: " + str.tostring(recoveryBarsH4) +
+             "\nRecovery speed: " + str.tostring(recoverySpeedH4, "#.##") +
+             "\nBody: " + str.tostring(bodyRatioH4 * 100, "#.#") + "%"
+    latestLabel := label.new(signalLabelMode == "足元" ? bar_index : labelX, signalLabelMode == "足元" ? low : labelY,
+         vText,
+         xloc=xloc.bar_index, style=signalLabelMode == "足元" ? label.style_label_up : signalLabelStyle,
+         color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+
+// =====================================================================
+// 仮想売買の価格可視化
+// - Signal: H4条件が確定した足の終値
+// - Entry : 次の足の始値
+// - Exit  : SL/TP到達、または最大保有本数到達時の終値
+// - 同じ足でSL/TP両方に触れた場合は、保守的にSL優先
+// =====================================================================
+var bool  pendingLong = false
+var int   pendingBar = na
+var float pendingSignal = na
+var float pendingStop = na
+var float pendingTarget = na
+
+var bool  visualInTrade = false
+var int   visualEntryBar = na
+var float visualEntry = na
+var float visualStop = na
+var float visualTarget = na
+var float visualRisk = na
+var float lastExit = na
+var float lastExitR = na
+var string lastExitReason = "N/A"
+
+var line visualEntryLine = na
+var line visualStopLine = na
+var line visualTargetLine = na
+
+if newSignal and not visualInTrade and not pendingLong and not na(stopH4) and not na(targetH4)
+    pendingLong := true
+    pendingBar := bar_index
+    pendingSignal := close
+    pendingStop := stopH4
+    pendingTarget := targetH4
+
+if pendingLong and not visualInTrade and bar_index > pendingBar
+    visualEntry := open
+    visualStop := pendingStop
+    visualTarget := tpBasis == "Entry基準" ? visualEntry + (visualEntry - visualStop) * rr : pendingTarget
+    visualRisk := visualEntry - visualStop
+    if visualRisk > 0
+        visualInTrade := true
+        visualEntryBar := bar_index
+        if showTradePriceLabels
+            if not showHistoricalLabels
+                if not na(latestLabel)
+                    label.delete(latestLabel)
+                if not na(latestConnector)
+                    line.delete(latestConnector)
+                latestLabel := na
+                latestConnector := na
+            int entryLabelX = bar_index + labelShiftBars
+            float entryLabelY = visualEntry - ta.atr(14) * labelOffsetAtr
+            string entryText = "LONG IN\nE: " + fmt(visualEntry) +
+                 "\nSL: " + fmt(visualStop) +
+                 "\nTP: " + fmt(visualTarget)
+            if not compactLabels
+                entryText := "LONG ENTRY\nSignal: " + fmt(pendingSignal) +
+                     "\nEntry: " + fmt(visualEntry) +
+                     "\nSL: " + fmt(visualStop) +
+                     "\nTP: " + fmt(visualTarget) +
+                     "\nRisk: " + fmt(visualRisk)
+            latestConnector := line.new(bar_index, visualEntry, entryLabelX, entryLabelY, xloc=xloc.bar_index, color=color.new(color.yellow, 45), width=1, style=line.style_dotted)
+            latestLabel := label.new(entryLabelX, entryLabelY,
+                 entryText,
+                 xloc=xloc.bar_index, style=label.style_label_left,
+                 color=color.new(color.yellow, 0), textcolor=color.black, size=size.tiny)
+        if showActiveTradeLines
+            visualEntryLine := line.new(bar_index, visualEntry, bar_index + 1, visualEntry, color=color.new(color.yellow, 0), width=2)
+            visualStopLine := line.new(bar_index, visualStop, bar_index + 1, visualStop, color=color.new(color.red, 0), width=2, style=line.style_dashed)
+            visualTargetLine := line.new(bar_index, visualTarget, bar_index + 1, visualTarget, color=color.new(color.lime, 0), width=2, style=line.style_dashed)
+    pendingLong := false
+
+if visualInTrade and showActiveTradeLines and not na(visualEntryLine)
+    line.set_x2(visualEntryLine, bar_index + 1)
+    line.set_x2(visualStopLine, bar_index + 1)
+    line.set_x2(visualTargetLine, bar_index + 1)
+
+bool hitStop = visualInTrade and low <= visualStop
+bool hitTarget = visualInTrade and high >= visualTarget
+bool hitTime = visualInTrade and bar_index - visualEntryBar >= maxHoldBars
+
+if visualInTrade and (hitStop or hitTarget or hitTime)
+    float exitPrice = hitStop ? visualStop : hitTarget ? visualTarget : close
+    string reason = hitStop and hitTarget ? "SL first" : hitStop ? "SL" : hitTarget ? "TP" : "Time exit"
+    float resultR = visualRisk > 0 ? (exitPrice - visualEntry) / visualRisk : na
+    lastExit := exitPrice
+    lastExitR := resultR
+    lastExitReason := reason
+    if showTradePriceLabels
+        if not showHistoricalLabels
+            if not na(latestLabel)
+                label.delete(latestLabel)
+            if not na(latestConnector)
+                line.delete(latestConnector)
+            latestLabel := na
+            latestConnector := na
+        int exitLabelX = bar_index + labelShiftBars
+        float exitLabelY = resultR >= 0 ? exitPrice + ta.atr(14) * labelOffsetAtr : exitPrice - ta.atr(14) * labelOffsetAtr
+        string exitText = "EXIT\nX: " + fmt(exitPrice) +
+             "\nR: " + fmtR(resultR)
+        if not compactLabels
+            exitText := "EXIT " + reason +
+                 "\nEntry: " + fmt(visualEntry) +
+                 "\nExit: " + fmt(exitPrice) +
+                 "\nResult: " + fmtR(resultR)
+        latestConnector := line.new(bar_index, exitPrice, exitLabelX, exitLabelY, xloc=xloc.bar_index, color=resultR >= 0 ? color.new(color.lime, 45) : color.new(color.red, 45), width=1, style=line.style_dotted)
+        latestLabel := label.new(exitLabelX, exitLabelY,
+             exitText,
+             xloc=xloc.bar_index,
+             style=resultR >= 0 ? label.style_label_down : label.style_label_up,
+             color=resultR >= 0 ? color.new(color.lime, 5) : color.new(color.red, 5),
+             textcolor=resultR >= 0 ? color.black : color.white, size=size.tiny)
+    visualInTrade := false
+
+plot(showActiveTradeLines and visualInTrade ? visualEntry : na, title="Visual Entry", color=color.new(color.yellow, 0), linewidth=2, style=plot.style_linebr)
+plot(showActiveTradeLines and visualInTrade ? visualStop : na, title="Visual SL", color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
+plot(showActiveTradeLines and visualInTrade ? visualTarget : na, title="Visual TP", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
+
+var table t = table.new(position.bottom_left, 2, 14, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+if showTable and barstate.islast
+    table.cell(t, 0, 0, "TF", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 0, analysisTf, text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 1, "Signal", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 1, sigH4 ? "ON" : "OFF", text_color=sigH4 ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 2, "Trigger", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 2, fmt(triggerH4), text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 3, "Drop ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 3, str.tostring(dropAtrH4, "#.##"), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 4, "Drop Speed", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, str.tostring(dropSpeedH4, "#.##"), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 5, "Recovery/Drop", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 5, str.tostring(recoveryRatioH4, "#.##"), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 6, "Recovery Speed", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 6, str.tostring(recoverySpeedH4, "#.##"), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 7, "Body", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 7, str.tostring(bodyRatioH4 * 100, "#.#") + "%", text_color=bodyRatioH4 >= minBodyRatio ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 8, "Note", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 8, "Strict V shape", text_color=color.gray, text_size=size.tiny)
+    table.cell(t, 0, 9, "Visual Trade", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 9, visualInTrade ? "IN TRADE" : pendingLong ? "PENDING" : "FLAT", text_color=visualInTrade ? color.lime : pendingLong ? color.yellow : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 10, "Entry", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 10, visualInTrade ? fmt(visualEntry) : "N/A", text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 11, "SL / TP", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 11, visualInTrade ? fmt(visualStop) + " / " + fmt(visualTarget) : "N/A", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 12, "Last Exit", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 12, na(lastExit) ? "N/A" : fmt(lastExit) + " (" + lastExitReason + ")", text_color=na(lastExitR) ? color.gray : lastExitR >= 0 ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 13, "Last R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 13, fmtR(lastExitR), text_color=na(lastExitR) ? color.gray : lastExitR >= 0 ? color.lime : color.red, text_size=size.tiny)
+
+alertcondition(newSignal, title="H4 Sharp Drop V Recovery", message="H4 sharp-drop V recovery signal on {{ticker}} @ {{close}}")

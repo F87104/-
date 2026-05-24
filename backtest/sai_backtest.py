@@ -372,21 +372,50 @@ def simulate(sig: pd.DataFrame, p: SaiParams) -> list[Trade]:
 DATA_ROOT = os.path.join(os.path.dirname(__file__), "..", "F87104_test")
 
 INSTRUMENTS = {
-    "EURJPY":  "EURJPY2014-2024/EURJPY_H1_*.csv",
-    "USDJPY":  "USDJPY2014-2024/USDJPY_H1_*.csv",
-    "AUDJPY":  "AUDJPY2014-2024/AUDJPY H1 *.csv",
-    "CHFJPY":  "CHFJPY2014-2024/CHFJPY_H1_*.csv",
-    "GBPJPY":  "GBYJPY2014-2024/GBYJPY H1/GBY JPY H1 *.csv",
-    "XAUUSD":  "XAUUSD2014-2024/XAUUSD_H1_*.csv",
-    "SILVER":  "SILVER2014-2024/*.csv",
+    "EURJPY": [
+        "EURJPY2014-2024/EURJPY_H1_*.csv",
+        "EURJPY_H1_*.csv",
+        "AUDJPY2014-2024/EURJPY_H1_*.csv",
+    ],
+    "USDJPY": [
+        "USDJPY2014-2024/USDJPY_H1_*.csv",
+        "USDJPY_H1_*.csv",
+    ],
+    "AUDJPY": [
+        "AUDJPY2014-2024/AUDJPY H1 *.csv",
+        "AUDJPY H1 *.csv",
+    ],
+    "CHFJPY": [
+        "CHFJPY2014-2024/CHFJPY_H1_*.csv",
+        "CHFJPY_H1_*.csv",
+        "AUDJPY2014-2024/CHFJPY_H1_*.csv",
+    ],
+    "GBPJPY": [
+        "GBYJPY2014-2024/GBYJPY H1/GBY JPY H1 *.csv",
+        "GBY JPY H1 *.csv",
+        "AUDJPY2014-2024/GBY JPY H1 *.csv",
+    ],
+    "XAUUSD": [
+        "XAUUSD2014-2024/XAUUSD_H1_*.csv",
+        "XAUUSD_H1_*.csv",
+    ],
+    "SILVER": [
+        "SILVER2014-2024/*.csv",
+        "SILVER_H1_*.csv",
+    ],
 }
 
 
 def load_instrument(name: str) -> pd.DataFrame:
-    pattern = os.path.join(DATA_ROOT, INSTRUMENTS[name])
-    files = sorted(glob.glob(pattern))
+    patterns = INSTRUMENTS[name]
+    if isinstance(patterns, str):
+        patterns = [patterns]
+    files = []
+    for rel_pattern in patterns:
+        files.extend(glob.glob(os.path.join(DATA_ROOT, rel_pattern)))
+    files = sorted(set(files))
     if not files:
-        raise FileNotFoundError(f"No data for {name}: {pattern}")
+        raise FileNotFoundError(f"No data for {name}: {patterns}")
     dfs = []
     for f in files:
         df = pd.read_csv(f)

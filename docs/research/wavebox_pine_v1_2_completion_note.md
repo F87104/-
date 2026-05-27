@@ -4,7 +4,7 @@
 
 ## 完成版
 
-- `/Users/asamifujita/Documents/Codex/2026-05-21/fx-ai/pine/wavebox_usdjpy_h1_rebreak_v1_2.pine`
+- `/Users/asamifujita/Documents/Codex/2026-05-21/fx-ai/pine/research/wavebox_usdjpy_h1_rebreak_v1_2.pine`
 
 ## 方針
 

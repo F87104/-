@@ -110,7 +110,7 @@ def summary_row(name: str, df: pd.DataFrame, notes: str = "", r_col: str = "r_af
 def pine_default_mask(trades: pd.DataFrame) -> pd.Series:
     """Approximate the current live-ready Pine defaults.
 
-    Defaults in pine/h4_t5_macd_bb_live_ready.pine:
+    Defaults in pine/production/h4_t5_macd_bb_live_ready.pine:
     - BB preset: 0.75 to 1.00 with width<=7ATR
     - guard BB upper: <=0.95
     - candidate age: <=16 H4 bars

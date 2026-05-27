@@ -2,7 +2,7 @@
 
 対象:
 
-- `pine/wavebox_usdjpy_h1_rebreak_v1.pine`
+- `pine/archive/wavebox_usdjpy_h1_rebreak_v1.pine`
 
 ## 結論
 

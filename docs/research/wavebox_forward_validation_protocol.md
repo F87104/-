@@ -20,7 +20,7 @@ USDJPY H1 WaveBox Rebreak を実戦に入れる前に、TradingView上のPine表
 
 - 対象: USDJPYのみ
 - 時間足: H1
-- Pine: `pine/wavebox_usdjpy_h1_rebreak_v1_2.pine`
+- Pine: `pine/research/wavebox_usdjpy_h1_rebreak_v1_2.pine`
 - 標準Mode: `Strict`
 - 比較Mode: `Balanced`
 - 実戦候補: `GO A+` と `GO A`

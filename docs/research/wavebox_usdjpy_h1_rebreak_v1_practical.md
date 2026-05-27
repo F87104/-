@@ -154,9 +154,9 @@ H4逆行なしよりも、浅い押しの方が優先。
 
 実戦用Pine:
 
-- `/Users/asamifujita/Documents/Codex/2026-05-21/fx-ai/pine/wavebox_usdjpy_h1_rebreak_v1_2.pine`
-- `/Users/asamifujita/Documents/Codex/2026-05-21/fx-ai/pine/wavebox_usdjpy_h1_rebreak_v1.pine`
-- `/Users/asamifujita/Documents/Codex/2026-05-21/fx-ai/pine/wavebox_usdjpy_h1_rebreak_v1_1.pine`
+- `/Users/asamifujita/Documents/Codex/2026-05-21/fx-ai/pine/research/wavebox_usdjpy_h1_rebreak_v1_2.pine`
+- `/Users/asamifujita/Documents/Codex/2026-05-21/fx-ai/pine/archive/wavebox_usdjpy_h1_rebreak_v1.pine`
+- `/Users/asamifujita/Documents/Codex/2026-05-21/fx-ai/pine/archive/wavebox_usdjpy_h1_rebreak_v1_1.pine`
 
 最新版は `v1_2`。
 

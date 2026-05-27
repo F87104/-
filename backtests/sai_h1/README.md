@@ -67,7 +67,7 @@ python3 backtests/sai_h1/backtest_sai_h1.py \
 
 TradingViewで視覚確認する場合は、以下のPineを開いてチャートに追加します。
 
-- `pine/sai_h1_visual_scanner.pine`
+- `pine/visual/sai_h1_visual_scanner.pine`
 
 1時間足で使ってください。Pythonバックテストと完全一致ではなく、同じ思想で候補を表示する確認用インジケーターです。
 

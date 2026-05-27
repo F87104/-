@@ -71,7 +71,7 @@
 
 ## 2. 2つの戦略の中身
 
-### 2-1. TrendBreakV1 HYBRID ([`pine/TrendBreakV1_Final.pine`](pine/TrendBreakV1_Final.pine))
+### 2-1. TrendBreakV1 HYBRID ([`pine/production/TrendBreakV1_Final.pine`](pine/production/TrendBreakV1_Final.pine))
 
 #### 役割
 20日〜数か月級の高安値更新を使い、伸びる相場を取りに行く**主力**手法。
@@ -100,7 +100,7 @@
 
 ---
 
-### 2-2. H4 T5 + MACD + BB ([`pine/h4_t5_macd_bb_live_ready.pine`](pine/h4_t5_macd_bb_live_ready.pine))
+### 2-2. H4 T5 + MACD + BB ([`pine/production/h4_t5_macd_bb_live_ready.pine`](pine/production/h4_t5_macd_bb_live_ready.pine))
 
 #### 役割
 急落後の **V字回復を環境認識として使い**、その後に高値停滞・再ブレイク・MACD・BB が一致する場面だけに入る**補助**手法。
@@ -211,7 +211,7 @@
 #### Step 2: H1チャートに TrendBreakV1 を貼る
 
 1. Pine Editor を開く
-2. [`pine/TrendBreakV1_Final.pine`](pine/TrendBreakV1_Final.pine) の中身をコピペ
+2. [`pine/production/TrendBreakV1_Final.pine`](pine/production/TrendBreakV1_Final.pine) の中身をコピペ
 3. 「Add to chart」
 4. パラメータ:
    - `preset` = **`Auto`** (通貨を自動判別)
@@ -221,7 +221,7 @@
 #### Step 3: H4チャートに H4 T5 MACD BB を貼る
 
 1. Pine Editor を開く
-2. [`pine/h4_t5_macd_bb_live_ready.pine`](pine/h4_t5_macd_bb_live_ready.pine) の中身をコピペ
+2. [`pine/production/h4_t5_macd_bb_live_ready.pine`](pine/production/h4_t5_macd_bb_live_ready.pine) の中身をコピペ
 3. 「Add to chart」
 4. パラメータ:
    - `analysisTf` = **`240`** (H4)
@@ -526,6 +526,7 @@ USDJPY: 1 lot = 1 pip = 100,000 JPY × 0.01 = 1,000 JPY
 
 ### 公式研究ノート (docs/)
 
+- 📘 [`docs/BACKTEST_INDEX.md`](docs/BACKTEST_INDEX.md) — **全検証カタログ (試したもの全部の一覧)** ⭐
 - 📘 [`docs/two_method_practical_research_2026-05-24.md`](docs/two_method_practical_research_2026-05-24.md) — **最新の総括**
 - 📘 [`docs/h4_t5_macd_bb_practical_audit_2026-05-24.md`](docs/h4_t5_macd_bb_practical_audit_2026-05-24.md) — H4 T5 の実用監査
 - 📘 [`docs/h4_t5_macd_bb_live_ready_notes.md`](docs/h4_t5_macd_bb_live_ready_notes.md) — H4 T5 本番運用ノート

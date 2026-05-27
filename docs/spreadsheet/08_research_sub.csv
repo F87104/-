@@ -1,0 +1,11 @@
+﻿カテゴリ,ルール / 設定,Trades,WR%,PF,Total_R,DD_R,コメント
+Fakeout,baseline,461,36.88,1.62,191.53,17.95,現状採用 / 総R最大
+Fakeout,body60_filter,377,38.2,1.72,176.27,11.7,WR↑ DD↓
+Fakeout,early_back_inside_1,461,32.97,1.69,181.72,11.67,early exit
+Fakeout,body60_plus_early1,377,34.75,1.79,169.5,9.39,PF最大 / DD最小
+Pyramiding,entries=1 (現状),-,-,-,-,-,最適 / 推奨
+Pyramiding,entries=2,-,-,-,-,-,DD増加
+Pyramiding,entries=3+,-,-,-,-,-,DD指数増
+Cost,コストなし,-,-,-,184,-,audit前
+Cost,スプレッド+滑り込み,-,-,-,146,-,-21% でも維持
+Relaxation,HYBRID最適化,-,-,-,+23%,-,頻度+27%

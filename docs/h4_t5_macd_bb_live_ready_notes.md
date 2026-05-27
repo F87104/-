@@ -2,7 +2,7 @@
 
 ## 作成物
 
-- Pine: `pine/h4_t5_macd_bb_live_ready.pine`
+- Pine: `pine/production/h4_t5_macd_bb_live_ready.pine`
 - 検証追加: `backtests/elliott_fibo/run_t5_macd_bb_vshape_validation.py`
 - OOS検証追加: `backtests/elliott_fibo/run_t5_oos_2025_2026_vshape_validation.py`
 

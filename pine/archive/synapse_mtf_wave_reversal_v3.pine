@@ -1,0 +1,845 @@
+//@version=5
+// =====================================================================
+// Synapse MTF Wave Reversal v3.11
+// =====================================================================
+// Purpose:
+//   Visual checker rebuilt around the user's corrected Synapse idea:
+//   1) Define the parent wave first.
+//   2) Treat the green line as the middle wave.
+//   3) Inside that wave, find a smaller H&S / inverse H&S.
+//   4) Draw one diagonal trendline and two role-based horizontal A/B levels.
+//   5) Mark only the places where a turn from wave 2 into wave 3 is plausible.
+//   v3.2) Avoid late chase entries and range entries:
+//         - parent/major context can be required strictly
+//         - entry must not be too far from B break
+//         - entry must not be after the middle wave has already recovered too far
+//         - smaller reversal must form near the middle wave-2 "wall"
+//         - optional ADX filter marks low-direction range conditions
+//   v3.3) A/B definition fixed:
+//         - A is the start of the wave that made the head high/low.
+//         - B is the swing made after the head, i.e. the real turn-confirmation line.
+//         - B is no longer selected by max/min price; it is selected by role.
+//   v3.4) Tightened "trade or not" logic:
+//         - Reject small H&S patterns that form after the middle wave has already
+//           recovered too far.
+//         - Require enough practical RR to the Synapse half-value target.
+//         - Keep the smaller reversal pattern inside the middle wave-2 price zone.
+//         - Track middle-wave B distance as signed information while preventing late chase.
+//   v3.5) Added staged relaxation modes so 0-trade conditions can be diagnosed:
+//         - strict / standard / relaxed1 / relaxed2 / observation.
+//         - relaxed2 is the default research mode to restore testable trade count.
+//   v3.6) Force-reset strategy order input and add diagnostic counters:
+//         - avoids TradingView keeping the old "orders off" input state.
+//         - table now shows raw small-pattern count and accepted signal count.
+//   v3.7) Make research mode usable:
+//         - default numeric thresholds widened to avoid near-zero OK signals.
+//         - relaxed modes now loosen middle-wave direction and one-signal limits.
+//         - small-wave H&S candidates are persisted until their break window ends.
+//   v3.8) Add safety rails after relaxed mode over-fired:
+//         - default mode returns to standard, not relaxed2.
+//         - labels are off by default and small when enabled.
+//         - relaxed2 still requires an actual B break before entries.
+//         - one signal per middle wave and a cooldown are on by default.
+//   v3.9) Stop chart/order explosion:
+//         - default strategy orders are OFF for visual inspection.
+//         - cooldown is expressed in minutes so 5m/1h charts behave similarly.
+//         - when strategy orders are ON, new signals require a flat position.
+//   v3.10) Compile and safety fix:
+//         - fix cooldown variable reference.
+//         - force another TradingView input reset after v3.7 over-fired.
+//         - when orders are ON, block new signals while a position is open.
+//   v3.11) Visibility reset:
+//         - force-reset all display inputs so old TradingView OFF states do not hide waves/table.
+//         - lower default pivot ATR thresholds so 5m charts show major/middle waves again.
+//         - keep strategy orders OFF by default; first use as a visual checker.
+//
+// Important:
+//   This is a visual/research approximation. Synapse wave reading is partly
+//   discretionary, especially wave composition, diagonal half-value, channel
+//   deviation, and "good/bad" wave quality. Use the inputs to tune the green
+//   middle wave until it matches your manual wave drawing.
+// =====================================================================
+
+strategy("Synapse MTF Wave Reversal v3.11",
+     overlay=true,
+     pyramiding=0,
+     initial_capital=10000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
+     calc_on_every_tick=false,
+     process_orders_on_close=false,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500)
+
+// =====================================================================
+// Inputs
+// =====================================================================
+grpMode = "0. 検証モード"
+relaxMode = input.string("標準", "段階的緩和 v3.11", options=["厳格","標準","緩和1","緩和2","観察"], group=grpMode, tooltip="厳格: 全フィルタ。標準: 実戦寄り。緩和1: 少し緩和。緩和2: 研究用だがBブレイクは必須。観察: 小波パターン確認用で注文検証には不向き。")
+showRelaxNotes = input.bool(true, "緩和モードを表に表示", group=grpMode)
+
+bool modeStrict = relaxMode == "厳格"
+bool modeStandard = relaxMode == "標準"
+bool modeRelax1 = relaxMode == "緩和1"
+bool modeRelax2 = relaxMode == "緩和2"
+bool modeObserve = relaxMode == "観察"
+
+grpWave = "1. 波の定義"
+majorWidth = input.int(24, "大波 pivot幅 v3.11", minval=4, maxval=80, group=grpWave)
+midWidth   = input.int(12, "中波 pivot幅（緑線） v3.11", minval=3, maxval=60, group=grpWave)
+trigWidth  = input.int(4,  "小波/ダイナミ pivot幅 v3.11", minval=2, maxval=30, group=grpWave)
+minMajorAtr = input.float(1.2, "大波 最小値幅 ATR倍 v3.11", minval=0.3, step=0.1, group=grpWave)
+minMidAtr   = input.float(0.8, "中波 最小値幅 ATR倍 v3.11", minval=0.3, step=0.1, group=grpWave)
+minTrigAtr  = input.float(0.35, "小波 最小値幅 ATR倍 v3.11", minval=0.1, step=0.1, group=grpWave)
+
+grpTf = "1b. 時間軸補正"
+useTfScale     = input.bool(true, "チャート足に合わせて波幅を自動補正", group=grpTf)
+majorWaveMin   = input.int(240, "大波の想定時間（分）", minval=15, maxval=1440, group=grpTf)
+midWaveMin     = input.int(60, "中波の想定時間（分）", minval=5, maxval=720, group=grpTf)
+triggerWaveMin = input.int(15, "小波/ダイナミの想定時間（分）", minval=1, maxval=240, group=grpTf)
+
+grpSyn = "2. Synapse 条件"
+minRetrace = input.float(0.45, "2波の最小戻し", minval=0.10, maxval=0.95, step=0.01, group=grpSyn)
+maxRetrace = input.float(1.00, "2波の最大戻し", minval=0.30, maxval=1.20, step=0.01, group=grpSyn)
+requireProtectedStart = input.bool(true, "1波始点を割らない/超えない", group=grpSyn)
+requireMajorContext   = input.bool(true, "大波の方向一致も必須にする", group=grpSyn)
+requireTrendlineBreak = input.bool(true, "斜め1本のブレイクを必須にする", group=grpSyn)
+requireBBreak         = input.bool(true, "水平線Bブレイクを必須にする", group=grpSyn)
+maxTriggerAge         = input.int(140, "小波パターンの有効期限（本）", minval=5, maxval=300, group=grpSyn)
+breakBufferAtr        = input.float(0.03, "ブレイク余白 ATR倍", minval=0.0, step=0.01, group=grpSyn)
+slBufferAtr           = input.float(0.15, "SL余白 ATR倍", minval=0.0, step=0.05, group=grpSyn)
+rrTarget              = input.float(1.5, "仮TP RR", minval=0.3, step=0.1, group=grpSyn)
+useHalfValueTarget    = input.bool(true, "TPは中波2波から半値を優先", group=grpSyn)
+halfTargetRatio       = input.float(0.50, "半値TP比率", minval=0.25, maxval=1.0, step=0.01, group=grpSyn)
+
+grpQuality = "2b. 小波の品質"
+requireTriggerInsideMid = input.bool(true, "小波は中波2波内から始まる", group=grpQuality)
+requirePatternPriceInsideMid = input.bool(true, "小波価格も中波2波内に収める", group=grpQuality)
+minHeadDepthAtr         = input.float(0.15, "頭の深さ ATR倍", minval=0.0, step=0.05, group=grpQuality)
+maxShoulderGapAtr       = input.float(4.0, "左右肩のズレ許容 ATR倍", minval=0.1, step=0.1, group=grpQuality)
+maxNeckGapAtr           = input.float(5.0, "A/B役割線の距離許容 ATR倍", minval=0.1, step=0.1, group=grpQuality)
+maxBreakChaseAtr        = input.float(1.50, "Bブレイクからの追いかけ上限 ATR倍", minval=0.1, step=0.1, group=grpQuality)
+maxPatternBeyondMidAtr  = input.float(0.80, "中波1波終点からの小波はみ出し ATR倍", minval=0.0, step=0.05, group=grpQuality)
+maxMidRecovery          = input.float(0.75, "中波2波からの回復上限", minval=0.30, maxval=1.50, step=0.01, group=grpQuality)
+maxMidAgeMult           = input.float(5.0, "中波転換後の有効期限 pivot幅倍", minval=1.0, step=0.5, group=grpQuality)
+requireWallReaction     = input.bool(true, "中波2波の壁反応を必須", group=grpQuality)
+maxWallDistanceAtr      = input.float(2.00, "壁からの距離上限 ATR倍", minval=0.1, step=0.1, group=grpQuality)
+requireFreshMidBreak    = input.bool(true, "中波Bから離れすぎを除外", group=grpQuality)
+requireMiddleBBreak     = input.bool(false, "中波Bブレイクも必須にする（厳格）", group=grpQuality)
+maxMidBreakDistanceAtr  = input.float(1.50, "中波B距離上限 ATR倍", minval=0.1, step=0.1, group=grpQuality)
+requirePracticalRR      = input.bool(true, "半値TPまでの実用RRを必須", group=grpQuality)
+minPracticalRR          = input.float(0.80, "半値TPまでの最低RR", minval=0.1, step=0.1, group=grpQuality)
+oneSignalPerMidWave     = input.bool(true, "中波1本につき最初の候補だけ v3.11", group=grpQuality)
+signalCooldownMin       = input.int(240, "シグナル間隔 最低分数 v3.11", minval=0, maxval=10080, group=grpQuality)
+requireNonRange         = input.bool(true, "レンジ環境を避ける ADX", group=grpQuality)
+adxLen                  = input.int(14, "ADX length", minval=3, group=grpQuality)
+minAdx                  = input.float(15.0, "ADX最低値", minval=1.0, step=0.5, group=grpQuality)
+
+grpScore = "3. ロット/見送り"
+normalScore = input.float(6.5, "通常ロット判定スコア", minval=1.0, step=0.5, group=grpScore)
+halfScore   = input.float(4.0, "半ロット判定スコア", minval=1.0, step=0.5, group=grpScore)
+
+grpVisual = "4. 表示"
+showMajorWave = input.bool(true, "大波を表示（青） v3.11", group=grpVisual)
+showMidWave   = input.bool(true, "中波を表示（緑） v3.11", group=grpVisual)
+showTrigWave  = input.bool(false, "小波を表示（黄） v3.11", group=grpVisual)
+showCandidate = input.bool(true, "現在候補のA/B/斜めを表示 v3.11", group=grpVisual)
+showLabels    = input.bool(false, "シグナル詳細ラベル v3.11", group=grpVisual)
+showSkipLabel = input.bool(false, "見送りラベルも表示", group=grpVisual)
+showTable     = input.bool(true, "左下テーブル v3.11", group=grpVisual)
+labelBarsRight = input.int(12, "ラベルを右にずらす本数", minval=0, maxval=120, group=grpVisual)
+labelAtrAway   = input.float(3.0, "ラベルを価格から離す ATR倍", minval=0.3, step=0.2, group=grpVisual)
+labelSizeOpt   = input.string("tiny", "ラベルサイズ", options=["tiny","small","normal"], group=grpVisual)
+
+grpOrders = "5. Strategy 注文"
+enableOrders = input.bool(false, "strategy注文を出す v3.11（検証用）", group=grpOrders, tooltip="通常のチャート確認ではOFF推奨。検証でトレード一覧を見たい時だけONにしてください。TradingViewは古い入力状態を保持することがあるため、v3.11で入力名を変更しています。")
+
+bool effRequireProtectedStart = modeStrict ? requireProtectedStart : false
+bool effRequireMajorContext = modeStrict ? requireMajorContext : false
+bool effRequireTrendlineBreak = modeObserve ? false : requireTrendlineBreak
+bool effRequireBBreak = modeObserve ? false : requireBBreak
+bool effRequireTriggerInsideMid = modeStrict or modeStandard ? requireTriggerInsideMid : false
+bool effRequirePatternPriceInsideMid = modeStrict ? requirePatternPriceInsideMid : false
+bool effRequireWallReaction = modeStrict or modeStandard ? requireWallReaction : false
+bool effRequireFreshMidBreak = modeStrict ? requireFreshMidBreak : false
+bool effRequireMiddleBBreak = modeStrict ? requireMiddleBBreak : false
+bool effRequirePracticalRR = modeStrict ? requirePracticalRR : false
+bool effOneSignalPerMidWave = modeObserve ? false : oneSignalPerMidWave
+bool effRequireNonRange = modeStrict ? requireNonRange : false
+
+float effMinHeadDepthAtr = modeStrict ? minHeadDepthAtr : modeStandard ? math.min(minHeadDepthAtr, 0.12) : modeRelax1 ? 0.05 : 0.0
+float effMaxShoulderGapAtr = modeStrict ? maxShoulderGapAtr : modeStandard ? math.max(maxShoulderGapAtr, 5.0) : modeRelax1 ? 8.0 : 999.0
+float effMaxNeckGapAtr = modeStrict ? maxNeckGapAtr : modeStandard ? math.max(maxNeckGapAtr, 6.0) : modeRelax1 ? 9.0 : 999.0
+float effMaxBreakChaseAtr = modeStrict ? maxBreakChaseAtr : modeStandard ? math.max(maxBreakChaseAtr, 1.80) : modeRelax1 ? 3.00 : 999.0
+float effMaxPatternBeyondMidAtr = modeStrict ? maxPatternBeyondMidAtr : modeStandard ? math.max(maxPatternBeyondMidAtr, 1.00) : modeRelax1 ? 2.00 : 999.0
+float effMaxMidRecovery = modeStrict ? maxMidRecovery : modeStandard ? math.max(maxMidRecovery, 0.85) : modeRelax1 ? 1.15 : 1.50
+float effMaxMidAgeMult = modeStrict ? maxMidAgeMult : modeStandard ? math.max(maxMidAgeMult, 6.0) : modeRelax1 ? 10.0 : 999.0
+float effMaxWallDistanceAtr = modeStrict ? maxWallDistanceAtr : modeStandard ? math.max(maxWallDistanceAtr, 2.50) : 999.0
+float effMaxMidBreakDistanceAtr = modeStrict ? maxMidBreakDistanceAtr : modeStandard ? math.max(maxMidBreakDistanceAtr, 2.00) : modeRelax1 ? 4.00 : 999.0
+float effMinPracticalRR = modeStrict ? minPracticalRR : modeStandard ? math.min(minPracticalRR, 0.60) : 0.0
+float effMinAdx = modeStrict ? minAdx : 0.0
+float effNormalScore = modeStrict ? normalScore : modeStandard ? math.min(normalScore, 6.0) : modeRelax1 ? 5.0 : modeRelax2 ? 5.0 : 1.0
+float effHalfScore = modeStrict ? halfScore : modeStandard ? math.min(halfScore, 3.5) : modeRelax1 ? 2.5 : modeRelax2 ? 3.0 : 1.0
+
+atrLen = input.int(14, "ATR length", minval=1, group="共通")
+atr = ta.atr(atrLen)
+buffer = atr * breakBufferAtr
+labelSize = labelSizeOpt == "tiny" ? size.tiny : labelSizeOpt == "normal" ? size.normal : size.small
+[diPlus, diMinus, adxValue] = ta.dmi(adxLen, adxLen)
+float tfMinutes = math.max(nz(timeframe.in_seconds(timeframe.period), 60) / 60.0, 1.0)
+int majorWidthEff = useTfScale ? math.max(majorWidth, int(math.round(majorWaveMin / tfMinutes))) : majorWidth
+int midWidthEff   = useTfScale ? math.max(midWidth, int(math.round(midWaveMin / tfMinutes))) : midWidth
+int trigWidthEff  = useTfScale ? math.max(trigWidth, int(math.round(triggerWaveMin / tfMinutes))) : trigWidth
+int signalCooldownBarsEff = signalCooldownMin <= 0 ? 0 : math.max(1, int(math.round(signalCooldownMin / tfMinutes)))
+
+// TradingView sometimes reports "strategy must contain..." before it reaches
+// conditional drawings/orders. This hidden plot is a harmless compile anchor.
+plot(close, title="Compiler anchor", display=display.none)
+
+// =====================================================================
+// Helpers
+// =====================================================================
+fmt(float v) =>
+    na(v) ? "N/A" : str.tostring(v, format.mintick)
+
+fmtPct(float v) =>
+    na(v) ? "N/A" : str.tostring(v * 100.0, "#.#") + "%"
+
+f_line_value(int x0, float y0, int x1, float y1, int xNow) =>
+    int span = math.max(x1 - x0, 1)
+    float slope = (y1 - y0) / span
+    y1 + slope * (xNow - x1)
+
+f_add_pivot(array<int> bars, array<float> prices, array<int> kinds, int pBar, float pPrice, int pKind, float minMove) =>
+    bool changed = false
+    int n = array.size(kinds)
+    if n == 0
+        array.push(bars, pBar)
+        array.push(prices, pPrice)
+        array.push(kinds, pKind)
+        changed := true
+    else
+        int lastKind = array.get(kinds, n - 1)
+        float lastPrice = array.get(prices, n - 1)
+        if lastKind == pKind
+            bool moreExtreme = pKind == 1 ? pPrice > lastPrice : pPrice < lastPrice
+            if moreExtreme
+                array.set(bars, n - 1, pBar)
+                array.set(prices, n - 1, pPrice)
+                changed := true
+        else
+            float move = math.abs(pPrice - lastPrice)
+            if move >= minMove
+                array.push(bars, pBar)
+                array.push(prices, pPrice)
+                array.push(kinds, pKind)
+                changed := true
+    while array.size(kinds) > 30
+        array.shift(bars)
+        array.shift(prices)
+        array.shift(kinds)
+    changed
+
+f_clear_lines(array<line> lines) =>
+    int n = array.size(lines)
+    if n > 0
+        for i = 0 to n - 1
+            line.delete(array.get(lines, i))
+        array.clear(lines)
+
+f_draw_wave(array<int> bars, array<float> prices, array<line> lines, color col, int width) =>
+    f_clear_lines(lines)
+    int n = array.size(prices)
+    if n >= 2
+        for i = 1 to n - 1
+            line ln = line.new(array.get(bars, i - 1), array.get(prices, i - 1), array.get(bars, i), array.get(prices, i), color=col, width=width)
+            array.push(lines, ln)
+
+f_context(array<int> bars, array<float> prices, array<int> kinds, float atrValue, float minWaveAtrValue, float minRet, float maxRet, bool protectStart) =>
+    int dir = 0
+    float retr = na
+    float wave = na
+    int b0 = na
+    int b1 = na
+    int b2 = na
+    float p0 = na
+    float p1 = na
+    float p2 = na
+    int n = array.size(kinds)
+    if n >= 3 and not na(atrValue)
+        int k0 = array.get(kinds, n - 3)
+        int k1 = array.get(kinds, n - 2)
+        int k2 = array.get(kinds, n - 1)
+        b0 := array.get(bars, n - 3)
+        b1 := array.get(bars, n - 2)
+        b2 := array.get(bars, n - 1)
+        p0 := array.get(prices, n - 3)
+        p1 := array.get(prices, n - 2)
+        p2 := array.get(prices, n - 1)
+        if k0 == -1 and k1 == 1 and k2 == -1
+            wave := p1 - p0
+            retr := wave > 0 ? (p1 - p2) / wave : na
+            bool ok = wave > atrValue * minWaveAtrValue and retr >= minRet and retr <= maxRet and (not protectStart or p2 > p0)
+            dir := ok ? 1 : 0
+        else if k0 == 1 and k1 == -1 and k2 == 1
+            wave := p0 - p1
+            retr := wave > 0 ? (p2 - p1) / wave : na
+            bool ok = wave > atrValue * minWaveAtrValue and retr >= minRet and retr <= maxRet and (not protectStart or p2 < p0)
+            dir := ok ? -1 : 0
+    [dir, retr, wave, b0, b1, b2, p0, p1, p2]
+
+// =====================================================================
+// Pivot extraction
+// =====================================================================
+var array<int> majorBars = array.new_int()
+var array<float> majorPrices = array.new_float()
+var array<int> majorKinds = array.new_int()
+var array<line> majorLines = array.new_line()
+
+var array<int> midBars = array.new_int()
+var array<float> midPrices = array.new_float()
+var array<int> midKinds = array.new_int()
+var array<line> midLines = array.new_line()
+
+var array<int> trigBars = array.new_int()
+var array<float> trigPrices = array.new_float()
+var array<int> trigKinds = array.new_int()
+var array<line> trigLines = array.new_line()
+
+bool majorChanged = false
+bool midChanged = false
+bool trigChanged = false
+
+phMajor = ta.pivothigh(high, majorWidthEff, majorWidthEff)
+plMajor = ta.pivotlow(low, majorWidthEff, majorWidthEff)
+if not na(phMajor) and not na(atr[majorWidthEff])
+    majorChanged := f_add_pivot(majorBars, majorPrices, majorKinds, bar_index - majorWidthEff, phMajor, 1, atr[majorWidthEff] * minMajorAtr)
+if not na(plMajor) and not na(atr[majorWidthEff])
+    majorChanged := f_add_pivot(majorBars, majorPrices, majorKinds, bar_index - majorWidthEff, plMajor, -1, atr[majorWidthEff] * minMajorAtr) or majorChanged
+
+phMid = ta.pivothigh(high, midWidthEff, midWidthEff)
+plMid = ta.pivotlow(low, midWidthEff, midWidthEff)
+if not na(phMid) and not na(atr[midWidthEff])
+    midChanged := f_add_pivot(midBars, midPrices, midKinds, bar_index - midWidthEff, phMid, 1, atr[midWidthEff] * minMidAtr)
+if not na(plMid) and not na(atr[midWidthEff])
+    midChanged := f_add_pivot(midBars, midPrices, midKinds, bar_index - midWidthEff, plMid, -1, atr[midWidthEff] * minMidAtr) or midChanged
+
+phTrig = ta.pivothigh(high, trigWidthEff, trigWidthEff)
+plTrig = ta.pivotlow(low, trigWidthEff, trigWidthEff)
+if not na(phTrig) and not na(atr[trigWidthEff])
+    trigChanged := f_add_pivot(trigBars, trigPrices, trigKinds, bar_index - trigWidthEff, phTrig, 1, atr[trigWidthEff] * minTrigAtr)
+if not na(plTrig) and not na(atr[trigWidthEff])
+    trigChanged := f_add_pivot(trigBars, trigPrices, trigKinds, bar_index - trigWidthEff, plTrig, -1, atr[trigWidthEff] * minTrigAtr) or trigChanged
+
+bool redrawMajorWave = showMajorWave and (majorChanged or barstate.islast)
+bool redrawMidWave = showMidWave and (midChanged or barstate.islast)
+bool redrawTrigWave = showTrigWave and (trigChanged or barstate.islast)
+
+if redrawMajorWave
+    f_draw_wave(majorBars, majorPrices, majorLines, color.new(color.blue, 10), 2)
+if redrawMidWave
+    f_draw_wave(midBars, midPrices, midLines, color.new(color.lime, 0), 3)
+if redrawTrigWave
+    f_draw_wave(trigBars, trigPrices, trigLines, color.new(color.yellow, 20), 1)
+
+// If display is turned off after lines were drawn, clear them.
+if not showMajorWave and array.size(majorLines) > 0
+    f_clear_lines(majorLines)
+if not showMidWave and array.size(midLines) > 0
+    f_clear_lines(midLines)
+if not showTrigWave and array.size(trigLines) > 0
+    f_clear_lines(trigLines)
+
+// =====================================================================
+// Context from major and middle waves
+// =====================================================================
+[majorDir, majorRetr, majorWave, majorB0, majorB1, majorB2, majorP0, majorP1, majorP2] = f_context(majorBars, majorPrices, majorKinds, atr, minMajorAtr, minRetrace, maxRetrace, effRequireProtectedStart)
+[midDir, midRetr, midWave, midB0, midB1, midB2, midP0, midP1, midP2] = f_context(midBars, midPrices, midKinds, atr, minMidAtr, minRetrace, maxRetrace, effRequireProtectedStart)
+
+// =====================================================================
+// Trigger pattern: inverse H&S / H&S in the smaller wave
+// =====================================================================
+int trigDir = 0
+float levelA = na
+float levelB = na
+float tlNow = na
+float headPrice = na
+float rightShoulder = na
+float rawStop = na
+float score = 0.0
+string triggerName = "NONE"
+string skipReason = ""
+string qualityText = "N/A"
+int tlBar0 = na
+int tlBar1 = na
+float tlPrice0 = na
+float tlPrice1 = na
+int patternRightBar = na
+bool headDepthOk = false
+bool shoulderBalanceOk = false
+bool neckQualityOk = false
+bool insideMidOk = false
+bool chaseOk = false
+bool timingOk = false
+bool midAgeOk = false
+bool wallOk = false
+bool freshMidBreakOk = false
+bool patternPriceInsideMidOk = false
+bool practicalRROk = false
+bool repeatOk = false
+bool regimeOk = false
+float headDepthAtr = na
+float shoulderGapAtr = na
+float neckGapAtr = na
+float chaseAtr = na
+float wallDistanceAtr = na
+float midBreakDistanceAtr = na
+float midRecoveryNow = na
+float patternHigh = na
+float patternLow = na
+float halfTarget = na
+float practicalRR = na
+int midAgeBars = na
+
+if array.size(trigKinds) >= 5 and not na(atr)
+    int n = array.size(trigKinds)
+    int k0 = array.get(trigKinds, n - 5)
+    int k1 = array.get(trigKinds, n - 4)
+    int k2 = array.get(trigKinds, n - 3)
+    int k3 = array.get(trigKinds, n - 2)
+    int k4 = array.get(trigKinds, n - 1)
+    int b0 = array.get(trigBars, n - 5)
+    int b1 = array.get(trigBars, n - 4)
+    int b2 = array.get(trigBars, n - 3)
+    int b3 = array.get(trigBars, n - 2)
+    int b4 = array.get(trigBars, n - 1)
+    float p0 = array.get(trigPrices, n - 5)
+    float p1 = array.get(trigPrices, n - 4)
+    float p2 = array.get(trigPrices, n - 3)
+    float p3 = array.get(trigPrices, n - 2)
+    float p4 = array.get(trigPrices, n - 1)
+    float patternHighLocal = math.max(math.max(math.max(p0, p1), math.max(p2, p3)), p4)
+    float patternLowLocal = math.min(math.min(math.min(p0, p1), math.min(p2, p3)), p4)
+    patternRightBar := b4
+    bool fresh = bar_index - b4 <= maxTriggerAge
+
+    if k0 == -1 and k1 == 1 and k2 == -1 and k3 == 1 and k4 == -1
+        bool invHead = p2 < p0 and p2 < p4
+        bool shoulderOk = p4 > p2 + atr * 0.15
+        if invHead and shoulderOk and fresh
+            trigDir := 1
+            triggerName := "逆三尊"
+            // Synapse A/B definition for long:
+            // A = start of the sell wave that made the lowest low/head.
+            // B = rebound high after the lowest low/head. B break is the turn trigger.
+            levelA := p1
+            levelB := p3
+            tlBar0 := b1
+            tlBar1 := b3
+            tlPrice0 := p1
+            tlPrice1 := p3
+            tlNow := f_line_value(b1, p1, b3, p3, bar_index)
+            headPrice := p2
+            rightShoulder := p4
+            patternHigh := patternHighLocal
+            patternLow := patternLowLocal
+            rawStop := math.min(p2, p4) - atr * slBufferAtr
+            headDepthAtr := math.min(p0 - p2, p4 - p2) / atr
+            shoulderGapAtr := math.abs(p4 - p0) / atr
+            neckGapAtr := math.abs(p3 - p1) / atr
+            headDepthOk := headDepthAtr >= effMinHeadDepthAtr
+            shoulderBalanceOk := shoulderGapAtr <= effMaxShoulderGapAtr
+            neckQualityOk := neckGapAtr <= effMaxNeckGapAtr
+            insideMidOk := not effRequireTriggerInsideMid or na(midB1) or b0 >= midB1
+            qualityText := "頭 " + str.tostring(headDepthAtr, "#.##") + " / 肩 " + str.tostring(shoulderGapAtr, "#.##") + " / A-B " + str.tostring(neckGapAtr, "#.##")
+            score += 2.0
+            score += p4 > p0 ? 1.0 : 0.5
+            // BがAより上なら強いが、Bは役割で決めるので必須にはしない。
+            score += p3 >= p1 ? 1.0 : 0.5
+            score += neckQualityOk ? 1.0 : 0.5
+
+    if k0 == 1 and k1 == -1 and k2 == 1 and k3 == -1 and k4 == 1
+        bool hsHead = p2 > p0 and p2 > p4
+        bool shoulderOk = p4 < p2 - atr * 0.15
+        if hsHead and shoulderOk and fresh
+            trigDir := -1
+            triggerName := "三尊"
+            // Synapse A/B definition for short:
+            // A = start of the buy wave that made the highest high/head.
+            // B = reaction low after the highest high/head. B break is the turn trigger.
+            levelA := p1
+            levelB := p3
+            tlBar0 := b1
+            tlBar1 := b3
+            tlPrice0 := p1
+            tlPrice1 := p3
+            tlNow := f_line_value(b1, p1, b3, p3, bar_index)
+            headPrice := p2
+            rightShoulder := p4
+            patternHigh := patternHighLocal
+            patternLow := patternLowLocal
+            rawStop := math.max(p2, p4) + atr * slBufferAtr
+            headDepthAtr := math.min(p2 - p0, p2 - p4) / atr
+            shoulderGapAtr := math.abs(p4 - p0) / atr
+            neckGapAtr := math.abs(p3 - p1) / atr
+            headDepthOk := headDepthAtr >= effMinHeadDepthAtr
+            shoulderBalanceOk := shoulderGapAtr <= effMaxShoulderGapAtr
+            neckQualityOk := neckGapAtr <= effMaxNeckGapAtr
+            insideMidOk := not effRequireTriggerInsideMid or na(midB1) or b0 >= midB1
+            qualityText := "頭 " + str.tostring(headDepthAtr, "#.##") + " / 肩 " + str.tostring(shoulderGapAtr, "#.##") + " / A-B " + str.tostring(neckGapAtr, "#.##")
+            score += 2.0
+            score += p4 < p0 ? 1.0 : 0.5
+            // BがAより下なら強いが、Bは役割で決めるので必須にはしない。
+            score += p3 <= p1 ? 1.0 : 0.5
+            score += neckQualityOk ? 1.0 : 0.5
+
+// Keep the last valid small-wave reversal candidate alive.
+// In practice, Synapse does not require the B break to happen on the same bar
+// where the right shoulder pivot is confirmed. Without this persistence, many
+// visually correct candidates disappear before the break actually happens.
+var int activeTrigDir = 0
+var int activePatternRightBar = na
+var int activePatternStartBar = na
+var int activeTlBar0 = na
+var int activeTlBar1 = na
+var float activeLevelA = na
+var float activeLevelB = na
+var float activeTlPrice0 = na
+var float activeTlPrice1 = na
+var float activeHeadPrice = na
+var float activeRightShoulder = na
+var float activeRawStop = na
+var float activePatternHigh = na
+var float activePatternLow = na
+var float activeHeadDepthAtr = na
+var float activeShoulderGapAtr = na
+var float activeNeckGapAtr = na
+var string activeTriggerName = "NONE"
+var string activeQualityText = "N/A"
+
+bool detectedPatternNow = trigDir != 0 and not na(patternRightBar)
+if detectedPatternNow and (na(activePatternRightBar) or patternRightBar != activePatternRightBar)
+    activeTrigDir := trigDir
+    activePatternRightBar := patternRightBar
+    activePatternStartBar := tlBar0
+    activeTlBar0 := tlBar0
+    activeTlBar1 := tlBar1
+    activeLevelA := levelA
+    activeLevelB := levelB
+    activeTlPrice0 := tlPrice0
+    activeTlPrice1 := tlPrice1
+    activeHeadPrice := headPrice
+    activeRightShoulder := rightShoulder
+    activeRawStop := rawStop
+    activePatternHigh := patternHigh
+    activePatternLow := patternLow
+    activeHeadDepthAtr := headDepthAtr
+    activeShoulderGapAtr := shoulderGapAtr
+    activeNeckGapAtr := neckGapAtr
+    activeTriggerName := triggerName
+    activeQualityText := qualityText
+
+bool activeCandidate = activeTrigDir != 0 and not na(activePatternRightBar) and bar_index - activePatternRightBar <= maxTriggerAge
+if activeCandidate
+    trigDir := activeTrigDir
+    patternRightBar := activePatternRightBar
+    levelA := activeLevelA
+    levelB := activeLevelB
+    tlBar0 := activeTlBar0
+    tlBar1 := activeTlBar1
+    tlPrice0 := activeTlPrice0
+    tlPrice1 := activeTlPrice1
+    tlNow := f_line_value(activeTlBar0, activeTlPrice0, activeTlBar1, activeTlPrice1, bar_index)
+    headPrice := activeHeadPrice
+    rightShoulder := activeRightShoulder
+    rawStop := activeRawStop
+    patternHigh := activePatternHigh
+    patternLow := activePatternLow
+    headDepthAtr := activeHeadDepthAtr
+    shoulderGapAtr := activeShoulderGapAtr
+    neckGapAtr := activeNeckGapAtr
+    triggerName := activeTriggerName
+    qualityText := activeQualityText
+    headDepthOk := headDepthAtr >= effMinHeadDepthAtr
+    shoulderBalanceOk := shoulderGapAtr <= effMaxShoulderGapAtr
+    neckQualityOk := neckGapAtr <= effMaxNeckGapAtr
+    insideMidOk := not effRequireTriggerInsideMid or na(midB1) or activePatternStartBar >= midB1
+else if not detectedPatternNow
+    activeTrigDir := 0
+    activePatternRightBar := na
+
+// =====================================================================
+// Synapse validation
+// =====================================================================
+bool majorOk = not effRequireMajorContext or majorDir == trigDir
+bool midOk = modeStrict or modeStandard ? midDir == trigDir : modeRelax1 ? (midDir == 0 or midDir == trigDir) : true
+bool bBreakLong = trigDir == 1 and close > levelB + buffer
+bool bBreakShort = trigDir == -1 and close < levelB - buffer
+bool aBreakLong = trigDir == 1 and close > levelA + buffer
+bool aBreakShort = trigDir == -1 and close < levelA - buffer
+bool tlBreakLong = trigDir == 1 and close > tlNow + buffer
+bool tlBreakShort = trigDir == -1 and close < tlNow - buffer
+bool rawBBreak = bBreakLong or bBreakShort
+bool rawTLBreak = tlBreakLong or tlBreakShort
+bool bOk = not effRequireBBreak or bBreakLong or bBreakShort
+bool tlOk = not effRequireTrendlineBreak or tlBreakLong or tlBreakShort
+bool aOk = aBreakLong or aBreakShort
+bool stopOk = trigDir == 1 ? rawStop < close : trigDir == -1 ? rawStop > close : false
+chaseAtr := trigDir == 1 and not na(levelB) ? (close - levelB) / atr : trigDir == -1 and not na(levelB) ? (levelB - close) / atr : na
+chaseOk := modeObserve or (trigDir != 0 and not na(chaseAtr) and chaseAtr >= 0 and chaseAtr <= effMaxBreakChaseAtr)
+float longMidLeg = not na(midP1) and not na(midP2) ? midP1 - midP2 : na
+float shortMidLeg = not na(midP1) and not na(midP2) ? midP2 - midP1 : na
+midRecoveryNow := trigDir == 1 and longMidLeg > 0 ? (close - midP2) / longMidLeg : trigDir == -1 and shortMidLeg > 0 ? (midP2 - close) / shortMidLeg : na
+timingOk := modeObserve or (trigDir != 0 and not na(midRecoveryNow) and midRecoveryNow <= effMaxMidRecovery)
+midAgeBars := not na(midB2) ? bar_index - midB2 : na
+midAgeOk := modeObserve or (trigDir != 0 and not na(midAgeBars) and midAgeBars <= int(math.round(midWidthEff * effMaxMidAgeMult)))
+wallDistanceAtr := trigDir == 1 and not na(midP2) and not na(headPrice) and not na(rightShoulder) ? math.abs(math.min(headPrice, rightShoulder) - midP2) / atr : trigDir == -1 and not na(midP2) and not na(headPrice) and not na(rightShoulder) ? math.abs(math.max(headPrice, rightShoulder) - midP2) / atr : na
+wallOk := not effRequireWallReaction or (trigDir != 0 and not na(wallDistanceAtr) and wallDistanceAtr <= effMaxWallDistanceAtr)
+float rawMidBreakDistance = trigDir == 1 and not na(midP1) ? (close - midP1) / atr : trigDir == -1 and not na(midP1) ? (midP1 - close) / atr : na
+midBreakDistanceAtr := rawMidBreakDistance
+freshMidBreakOk := not effRequireFreshMidBreak or (trigDir != 0 and not na(midBreakDistanceAtr) and midBreakDistanceAtr <= effMaxMidBreakDistanceAtr and (not effRequireMiddleBBreak or midBreakDistanceAtr >= 0))
+bool longPatternPriceOk = trigDir == 1 and not na(patternHigh) and not na(midP1) and patternHigh <= midP1 + atr * effMaxPatternBeyondMidAtr
+bool shortPatternPriceOk = trigDir == -1 and not na(patternLow) and not na(midP1) and patternLow >= midP1 - atr * effMaxPatternBeyondMidAtr
+patternPriceInsideMidOk := not effRequirePatternPriceInsideMid or (trigDir != 0 and (longPatternPriceOk or shortPatternPriceOk))
+float riskNow = trigDir == 1 ? close - rawStop : trigDir == -1 ? rawStop - close : na
+halfTarget := trigDir == 1 and longMidLeg > 0 ? midP2 + longMidLeg * halfTargetRatio : trigDir == -1 and shortMidLeg > 0 ? midP2 - shortMidLeg * halfTargetRatio : na
+float practicalReward = trigDir == 1 and not na(halfTarget) ? halfTarget - close : trigDir == -1 and not na(halfTarget) ? close - halfTarget : na
+practicalRR := not na(riskNow) and riskNow > 0 and not na(practicalReward) ? practicalReward / riskNow : na
+practicalRROk := not effRequirePracticalRR or (trigDir != 0 and not na(practicalRR) and practicalRR >= effMinPracticalRR)
+var int lastAcceptedMidB2 = na
+repeatOk := not effOneSignalPerMidWave or na(midB2) or midB2 != lastAcceptedMidB2
+regimeOk := not effRequireNonRange or (not na(adxValue) and adxValue >= effMinAdx)
+bool strictQualityOk = trigDir != 0 and headDepthOk and shoulderBalanceOk and neckQualityOk and insideMidOk and patternPriceInsideMidOk and chaseOk and timingOk and midAgeOk and wallOk and freshMidBreakOk and practicalRROk and repeatOk and regimeOk
+bool looseQualityOk = trigDir != 0 and stopOk and rawBBreak and headDepthOk and shoulderBalanceOk and chaseOk and timingOk and repeatOk
+bool observeQualityOk = trigDir != 0 and stopOk
+bool qualityOk = modeObserve ? observeQualityOk : modeRelax2 ? looseQualityOk : strictQualityOk
+var int lastSignalBar = na
+bool cooldownOk = signalCooldownBarsEff <= 0 or na(lastSignalBar) or bar_index - lastSignalBar >= signalCooldownBarsEff
+
+score += midOk ? 2.5 : 0.0
+score += majorOk ? 1.0 : 0.0
+score += aOk ? 1.0 : 0.0
+score += bOk ? 2.0 : 0.0
+score += tlOk ? 1.5 : 0.0
+score += stopOk ? 1.0 : 0.0
+score += headDepthOk ? 0.8 : 0.0
+score += shoulderBalanceOk ? 0.6 : 0.0
+score += insideMidOk ? 0.6 : 0.0
+score += chaseOk ? 0.8 : 0.0
+score += timingOk ? 0.8 : 0.0
+score += midAgeOk ? 0.6 : 0.0
+score += wallOk ? 1.0 : 0.0
+score += freshMidBreakOk ? 0.8 : 0.0
+score += patternPriceInsideMidOk ? 0.8 : 0.0
+score += practicalRROk ? 1.0 : 0.0
+score += repeatOk ? 0.5 : 0.0
+score += regimeOk ? 0.6 : 0.0
+
+if trigDir == 0
+    skipReason := "小波の三尊/逆三尊なし"
+else if not regimeOk
+    skipReason := "レンジ環境 ADX不足"
+else if not majorOk
+    skipReason := majorDir == 0 ? "大波文脈なし" : "大波が逆方向"
+else if not insideMidOk
+    skipReason := "小波が中波2波外"
+else if not patternPriceInsideMidOk
+    skipReason := "小波が中波1波終点を超過"
+else if not headDepthOk
+    skipReason := "頭の深さ不足"
+else if not shoulderBalanceOk
+    skipReason := "左右肩バランス悪い"
+else if not neckQualityOk
+    skipReason := "A/B役割線が離れすぎ"
+else if not wallOk
+    skipReason := "中波の壁から遠い"
+else if not timingOk
+    skipReason := "中波が伸びきり"
+else if not midAgeOk
+    skipReason := "中波転換から時間経過"
+else if not freshMidBreakOk
+    skipReason := effRequireMiddleBBreak and not na(midBreakDistanceAtr) and midBreakDistanceAtr < 0 ? "中波B未ブレイク" : "中波Bから離れすぎ"
+else if not practicalRROk
+    skipReason := "半値TPまでRR不足"
+else if not repeatOk
+    skipReason := "同じ中波で既に通知"
+else if not chaseOk
+    skipReason := "Bから離れすぎ"
+else if not midOk
+    skipReason := "中波方向が不一致"
+else if not bOk
+    skipReason := "B未ブレイク"
+else if not tlOk
+    skipReason := "斜め未ブレイク"
+else if not stopOk
+    skipReason := "SL位置が不正"
+else if not cooldownOk
+    skipReason := "シグナル間隔待ち"
+else if enableOrders and strategy.position_size != 0
+    skipReason := "保有中"
+else if score < effHalfScore
+    skipReason := "スコア不足"
+else
+    skipReason := "OK"
+
+string lotMode = score >= effNormalScore ? "通常ロット" : score >= effHalfScore ? "半ロット" : "見送り"
+bool breakOkForMode = modeObserve ? true : modeRelax2 ? rawBBreak : modeRelax1 ? rawBBreak and (rawTLBreak or not requireTrendlineBreak) : rawBBreak and rawTLBreak
+bool flatOk = not enableOrders or strategy.position_size == 0
+bool validSignal = trigDir != 0 and qualityOk and midOk and majorOk and breakOkForMode and stopOk and cooldownOk and flatOk and score >= effHalfScore
+
+var int lastSignalRightBar = na
+bool newSignal = validSignal and (na(lastSignalRightBar) or patternRightBar != lastSignalRightBar)
+
+var int rawPatternCount = 0
+var int acceptedSignalCount = 0
+var int lastRawPatternBar = na
+bool newRawPattern = trigDir != 0 and not na(patternRightBar) and (na(lastRawPatternBar) or patternRightBar != lastRawPatternBar)
+if newRawPattern
+    rawPatternCount += 1
+    lastRawPatternBar := patternRightBar
+
+float entryPrice = close
+float risk = trigDir == 1 ? close - rawStop : trigDir == -1 ? rawStop - close : na
+float rrTargetPrice = trigDir == 1 ? close + risk * rrTarget : trigDir == -1 ? close - risk * rrTarget : na
+bool halfTargetAhead = trigDir == 1 and not na(halfTarget) ? halfTarget > close : trigDir == -1 and not na(halfTarget) ? halfTarget < close : false
+float target = useHalfValueTarget and halfTargetAhead ? halfTarget : rrTargetPrice
+
+if newSignal
+    lastSignalRightBar := patternRightBar
+    lastSignalBar := bar_index
+    lastAcceptedMidB2 := midB2
+    acceptedSignalCount += 1
+
+// =====================================================================
+// Strategy orders for optional backtest
+// =====================================================================
+var float activeSL = na
+var float activeTP = na
+
+if enableOrders and newSignal and trigDir == 1
+    activeSL := rawStop
+    activeTP := target
+    strategy.entry("Synapse Long", strategy.long)
+
+if enableOrders and newSignal and trigDir == -1
+    activeSL := rawStop
+    activeTP := target
+    strategy.entry("Synapse Short", strategy.short)
+
+if enableOrders and strategy.position_size > 0 and not na(activeSL) and not na(activeTP)
+    strategy.exit("L Exit", "Synapse Long", stop=activeSL, limit=activeTP)
+
+if enableOrders and strategy.position_size < 0 and not na(activeSL) and not na(activeTP)
+    strategy.exit("S Exit", "Synapse Short", stop=activeSL, limit=activeTP)
+
+// =====================================================================
+// Visual candidate lines
+// =====================================================================
+var line candA = na
+var line candB = na
+var line candTL = na
+var line sigSL = na
+var line sigTP = na
+
+if barstate.islast and showCandidate
+    if not na(candA)
+        line.delete(candA)
+    if not na(candB)
+        line.delete(candB)
+    if not na(candTL)
+        line.delete(candTL)
+    if trigDir != 0
+        candA := line.new(bar_index - 80, levelA, bar_index + 40, levelA, color=color.new(color.white, 35), style=line.style_dashed)
+        candB := line.new(bar_index - 80, levelB, bar_index + 40, levelB, color=color.new(color.yellow, 0), style=line.style_solid, width=2)
+        candTL := line.new(tlBar0, tlPrice0, bar_index + 40, f_line_value(tlBar0, tlPrice0, tlBar1, tlPrice1, bar_index + 40), color=color.new(color.aqua, 0), width=2)
+
+if newSignal
+    if not na(sigSL)
+        line.delete(sigSL)
+    if not na(sigTP)
+        line.delete(sigTP)
+    sigSL := line.new(bar_index, rawStop, bar_index + 60, rawStop, color=color.new(color.red, 0), width=2)
+    sigTP := line.new(bar_index, target, bar_index + 60, target, color=color.new(color.lime, 0), width=2)
+
+plotshape(newSignal and trigDir == 1, title="Synapse Long", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="Syn L")
+plotshape(newSignal and trigDir == -1, title="Synapse Short", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), size=size.small, text="Syn S")
+
+// Signal/skip labels are placed away from price so they do not hide candles.
+if showLabels and (newSignal or (showSkipLabel and trigDir != 0 and not validSignal))
+    int x = bar_index + labelBarsRight
+    bool isLong = trigDir == 1
+    float anchor = isLong ? low : high
+    float y = isLong ? low - atr * labelAtrAway : high + atr * labelAtrAway
+    color bg = validSignal ? (lotMode == "通常ロット" ? color.new(color.yellow, 0) : color.new(color.silver, 0)) : color.new(color.gray, 0)
+    color tc = color.black
+    string head = validSignal ? (isLong ? "LONG候補" : "SHORT候補") : "見送り"
+    string txt = head + "\n" +
+         "小波: " + triggerName + "\n" +
+         "中波: " + (midDir == 1 ? "買い2波" : midDir == -1 ? "売り2波" : "なし") + " / " + fmtPct(midRetr) + "\n" +
+         "A(起点): " + fmt(levelA) + "\n" +
+         "B(確認): " + fmt(levelB) + "\n" +
+         "Entry: " + fmt(entryPrice) + "\n" +
+         "SL: " + fmt(rawStop) + "\n" +
+         "TP: " + fmt(target) + "\n" +
+         "半値TP: " + fmt(halfTarget) + " / 実用RR: " + (na(practicalRR) ? "N/A" : str.tostring(practicalRR, "#.##")) + "\n" +
+         "品質: " + qualityText + "\n" +
+         "回復: " + fmtPct(midRecoveryNow) + " / B距離: " + (na(chaseAtr) ? "N/A" : str.tostring(chaseAtr, "#.##") + "ATR") + "\n" +
+         "壁距離: " + (na(wallDistanceAtr) ? "N/A" : str.tostring(wallDistanceAtr, "#.##") + "ATR") + " / 中波B距離: " + (na(midBreakDistanceAtr) ? "N/A" : str.tostring(midBreakDistanceAtr, "#.##") + "ATR") + "\n" +
+         "中波後: " + (na(midAgeBars) ? "N/A" : str.tostring(midAgeBars) + "本") + "\n" +
+         "ADX: " + (na(adxValue) ? "N/A" : str.tostring(adxValue, "#.#")) + "\n" +
+         "Lot: " + lotMode + " / score " + str.tostring(score, "#.#") + "\n" +
+         "理由: " + skipReason
+    line.new(bar_index, anchor, x, y, color=color.new(isLong ? color.lime : color.red, 0), width=1)
+    label.new(x, y, txt, style=isLong ? label.style_label_up : label.style_label_down, color=bg, textcolor=tc, size=labelSize)
+
+// =====================================================================
+// Table
+// =====================================================================
+var table status = table.new(position.bottom_left, 2, 23, bgcolor=color.new(color.black, 86), border_color=color.new(color.gray, 35), border_width=1)
+
+f_row(int r, string k, string v, color c) =>
+    table.cell(status, 0, r, k, text_color=color.white, bgcolor=color.new(color.gray, 78), text_size=size.tiny)
+    table.cell(status, 1, r, v, text_color=c, bgcolor=color.new(color.black, 65), text_size=size.tiny)
+
+if showTable and barstate.islast
+    f_row(0, "Chart", timeframe.period + " / " + str.tostring(majorWidthEff) + "-" + str.tostring(midWidthEff) + "-" + str.tostring(trigWidthEff) + (showRelaxNotes ? " / " + relaxMode : ""), color.yellow)
+    f_row(1, "大波", majorDir == 1 ? "買い2波" : majorDir == -1 ? "売り2波" : "なし", majorDir == 1 ? color.lime : majorDir == -1 ? color.red : color.gray)
+    f_row(2, "中波", midDir == 1 ? "買い2波" : midDir == -1 ? "売り2波" : "なし", midDir == 1 ? color.lime : midDir == -1 ? color.red : color.gray)
+    f_row(3, "中波戻し", fmtPct(midRetr), color.aqua)
+    f_row(4, "小波", triggerName, trigDir == 1 ? color.lime : trigDir == -1 ? color.red : color.gray)
+    f_row(5, "A 起点", fmt(levelA), color.white)
+    f_row(6, "B 確認", fmt(levelB), color.yellow)
+    f_row(7, "Score", str.tostring(score, "#.#"), score >= effNormalScore ? color.lime : score >= effHalfScore ? color.yellow : color.red)
+    f_row(8, "判定", lotMode, lotMode == "通常ロット" ? color.lime : lotMode == "半ロット" ? color.yellow : color.red)
+    f_row(9, "理由", skipReason, skipReason == "OK" ? color.lime : color.orange)
+    string insideText = trigDir == 0 ? "N/A" : insideMidOk ? "OK" : "NG"
+    color insideColor = trigDir == 0 ? color.gray : insideMidOk ? color.lime : color.red
+    f_row(10, "小波品質", qualityText, qualityOk ? color.lime : trigDir == 0 ? color.gray : color.orange)
+    f_row(11, "中波内", insideText, insideColor)
+    color recoveryColor = trigDir == 0 ? color.gray : timingOk ? color.lime : color.red
+    color chaseColor = trigDir == 0 ? color.gray : chaseOk ? color.lime : color.red
+    color midAgeColor = trigDir == 0 ? color.gray : midAgeOk ? color.lime : color.red
+    color wallColor = trigDir == 0 ? color.gray : wallOk ? color.lime : color.red
+    color midBreakColor = trigDir == 0 ? color.gray : freshMidBreakOk ? color.lime : color.red
+    color adxColor = trigDir == 0 ? color.gray : regimeOk ? color.lime : color.red
+    f_row(12, "回復率", fmtPct(midRecoveryNow), recoveryColor)
+    f_row(13, "B距離", na(chaseAtr) ? "N/A" : str.tostring(chaseAtr, "#.##") + "ATR", chaseColor)
+    f_row(14, "壁距離", na(wallDistanceAtr) ? "N/A" : str.tostring(wallDistanceAtr, "#.##") + "ATR", wallColor)
+    f_row(15, "中波B距離", na(midBreakDistanceAtr) ? "N/A" : str.tostring(midBreakDistanceAtr, "#.##") + "ATR", midBreakColor)
+    f_row(16, "中波後", na(midAgeBars) ? "N/A" : str.tostring(midAgeBars) + "本", midAgeColor)
+    f_row(17, "ADX", na(adxValue) ? "N/A" : str.tostring(adxValue, "#.#"), adxColor)
+    string patternInsideText = trigDir == 0 ? "N/A" : patternPriceInsideMidOk ? "OK" : "NG"
+    color patternInsideColor = trigDir == 0 ? color.gray : patternPriceInsideMidOk ? color.lime : color.red
+    color practicalRRColor = trigDir == 0 ? color.gray : practicalRROk ? color.lime : color.red
+    f_row(18, "小波価格", patternInsideText, patternInsideColor)
+    f_row(19, "半値TP", fmt(halfTarget), color.aqua)
+    f_row(20, "実用RR", na(practicalRR) ? "N/A" : str.tostring(practicalRR, "#.##"), practicalRRColor)
+    f_row(21, "Raw候補数", str.tostring(rawPatternCount), rawPatternCount > 0 ? color.aqua : color.red)
+    f_row(22, "採用Signal数", str.tostring(acceptedSignalCount), acceptedSignalCount > 0 ? color.lime : color.red)
+
+// =====================================================================
+// Alerts
+// =====================================================================
+alertcondition(newSignal and trigDir == 1, title="Synapse MTF LONG", message="Synapse MTF LONG on {{ticker}} {{interval}} close={{close}}")
+alertcondition(newSignal and trigDir == -1, title="Synapse MTF SHORT", message="Synapse MTF SHORT on {{ticker}} {{interval}} close={{close}}")

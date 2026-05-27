@@ -11,6 +11,8 @@
 | ドキュメント | 内容 |
 |---|---|
 | 👉 **[STRATEGY_GUIDE.md](STRATEGY_GUIDE.md)** | **メインの説明書 (これを読めばOK)** |
+| 👉 **[docs/BACKTEST_INDEX.md](docs/BACKTEST_INDEX.md)** | **全検証カタログ (試したもの全部の一覧)** |
+| 📊 [docs/spreadsheet/](docs/spreadsheet/) | **Google スプレッドシート用 CSV/TSV** (9シート) |
 | [docs/two_method_practical_research_2026-05-24.md](docs/two_method_practical_research_2026-05-24.md) | 2本柱研究ノート (公式版) |
 | [docs/h4_t5_macd_bb_practical_audit_2026-05-24.md](docs/h4_t5_macd_bb_practical_audit_2026-05-24.md) | H4 T5 補助手法の実用監査 |
 | [docs/h4_t5_macd_bb_live_ready_notes.md](docs/h4_t5_macd_bb_live_ready_notes.md) | H4 T5 本番運用ノート |
@@ -25,8 +27,8 @@
 
 | 役割 | 戦略 | Pine ファイル | 中身 |
 |---|---|---|---|
-| **主力** | **TrendBreakV1 HYBRID** | [`pine/TrendBreakV1_Final.pine`](pine/TrendBreakV1_Final.pine) | 高安値ブレイクアウト (H1) |
-| **補助** | **H4 T5 + MACD + BB** | [`pine/h4_t5_macd_bb_live_ready.pine`](pine/h4_t5_macd_bb_live_ready.pine) | 急落V字回復後の停滞ブレイク (H4) |
+| **主力** | **TrendBreakV1 HYBRID** | [`pine/production/TrendBreakV1_Final.pine`](pine/production/TrendBreakV1_Final.pine) | 高安値ブレイクアウト (H1) |
+| **補助** | **H4 T5 + MACD + BB** | [`pine/production/h4_t5_macd_bb_live_ready.pine`](pine/production/h4_t5_macd_bb_live_ready.pine) | 急落V字回復後の停滞ブレイク (H4) |
 
 ### 推奨運用構成
 
@@ -60,8 +62,8 @@
 ## 🚀 すぐ使う場合
 
 1. **TradingView** を開く
-2. **H1チャート 6枚** に `pine/TrendBreakV1_Final.pine` (Auto preset)
-3. **H4チャート 6枚** に `pine/h4_t5_macd_bb_live_ready.pine` (デフォルト = Strict + Balanced REC1.2)
+2. **H1チャート 6枚** に `pine/production/TrendBreakV1_Final.pine` (Auto preset)
+3. **H4チャート 6枚** に `pine/production/h4_t5_macd_bb_live_ready.pine` (デフォルト = Strict + Balanced REC1.2)
 4. 通貨: **XAUUSD, USDJPY, EURJPY, GBPJPY, CHFJPY, SILVER** の6つ
 5. アラート設定 → 通知が来たら手動 (または API 経由) で発注
 
@@ -76,20 +78,44 @@ fx-ai/
 ├── README.md                       ← このファイル (入り口)
 ├── STRATEGY_GUIDE.md               ← 戦略の説明書 (本体)
 ├── pine/                           ← TradingView Pine Script
-│   ├── TrendBreakV1_Final.pine        主力 (H1 ブレイクアウト) ⭐
-│   ├── h4_t5_macd_bb_live_ready.pine  補助 (H4 T5+MACD+BB) ⭐
-│   ├── h4_t5_macd_bb_visual.pine      補助の可視化
-│   ├── h4_sharp_drop_v_recovery_visual.pine 急落V字の可視化
-│   ├── sai_h1_visual_scanner.pine     旧版 (archive)
-│   ├── sai_mtf_visual_checker.pine    旧版 (archive)
-│   ├── sai_best_method_strategy.pine  旧版 (archive)
-│   └── trendbreak_v1_final_fixed.pine 旧版 (archive)
+│   ├── production/                    本番運用中 ⭐
+│   │   ├── TrendBreakV1_Final.pine        主力 (H1 ブレイクアウト)
+│   │   └── h4_t5_macd_bb_live_ready.pine  補助 (H4 T5+MACD+BB)
+│   ├── research/                      研究中 (各通貨個別戦略)
+│   │   ├── wavebox_usdjpy_h1_rebreak_v1_2.pine
+│   │   ├── wavebox_gbpjpy_h1_long_rebreak_v0_1.pine
+│   │   ├── synapse_mtf_wave_reversal_v4.pine
+│   │   ├── chfjpy_h1_exhaustion_short_v0_2.pine
+│   │   └── silver_xagusd_h1_short_rebreak_v0_1.pine
+│   ├── visual/                        可視化ツール (Indicator)
+│   │   ├── h4_t5_macd_bb_visual.pine
+│   │   ├── h4_sharp_drop_v_recovery_visual.pine
+│   │   ├── sai_h1_visual_scanner.pine
+│   │   ├── sai_mtf_visual_checker.pine
+│   │   └── synapse_usdjpy_m5_v2_context_visual.pine
+│   └── archive/                       旧版・採用しなかった戦略
+│       ├── sai_best_method_strategy.pine
+│       ├── trendbreak_v1_final_fixed.pine
+│       ├── wavebox_usdjpy_h1_rebreak_v0_3.pine
+│       ├── wavebox_usdjpy_h1_rebreak_v1.pine
+│       ├── wavebox_usdjpy_h1_rebreak_v1_1.pine
+│       └── synapse_mtf_wave_reversal_v3.pine
 ├── docs/                           ← 研究ノート ⭐
+│   ├── BACKTEST_INDEX.md              全検証カタログ
 │   ├── two_method_practical_research_2026-05-24.md  最新の総括
 │   ├── h4_t5_macd_bb_practical_audit_2026-05-24.md  実用監査
 │   ├── h4_t5_macd_bb_live_ready_notes.md            運用ノート
-│   ├── FX検証研究ノート_2015-2024.docx
-│   └── FX検証研究ノート_2015-2024_GoogleDocs.docx
+│   ├── research/                      研究中 (各戦略のメモ)
+│   │   ├── wavebox_*.md (7ファイル)
+│   │   ├── synapse_method_definition_v0_1.md
+│   │   ├── chfjpy_*.md (4ファイル)
+│   │   ├── silver_xagusd_*.md
+│   │   ├── sequential_countertrend_*.md
+│   │   └── original_wavebox_rebreak_*.md
+│   ├── reference/                     参考資料 (Word/Doc 等)
+│   │   ├── FX検証研究ノート_2015-2024.docx
+│   │   └── FX検証研究ノート_2015-2024_GoogleDocs.docx
+│   └── spreadsheet/                   Google スプレッドシート用 CSV
 ├── backtests/                      ← Python バックテスト
 │   ├── ensemble/                      アンサンブル運用検証 ⭐
 │   │   ├── trendbreak_t5_practical_combo_2015_2024/   採用案の検証

@@ -22,3 +22,13 @@ venv/
 
 # OHLC raw data (容量大、別途バックアップ管理)
 F87104_test/
+
+# Node modules (Push対象外、シンボリックリンクの場合もあり)
+node_modules
+node_modules/
+
+# 出力ディレクトリ (実行結果、必要な分は別途管理)
+outputs/
+
+# Data directory (raw data, 別途バックアップ管理)
+data/

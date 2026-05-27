@@ -1,0 +1,44 @@
+﻿カテゴリ,検証名,パス,概要,結論
+TrendBreakV1,HYBRID 標準,backtests/trendbreak_v1/results_2015_2024/,4モード×7通貨×10年,conservative が最安定 +184R
+TrendBreakV1,緩和スタディ,backtests/relaxation/RELAXATION_REPORT.md,19パターン緩和案,"HYBRID最適化で頻度+27%, R+23%"
+TrendBreakV1,コスト監査,backtests/audit/,スプレッド/滑り込み,-21%でも+146R維持
+TrendBreakV1,fakeout 前後比較,backtests/trendbreak_v1/fakeout_before_after_2015_2024/,騙し回避4ルール,"baseline最強, body60+early1でPF最大"
+TrendBreakV1,fakeout feature 詳細,backtests/trendbreak_v1/fakeout_feature_study_2015_2024/,1000+ ルール組合せ,単独フィルタは限定的
+TrendBreakV1,fakeout rule matrix,backtests/trendbreak_v1/fakeout_rule_matrix_2015_2024/,フィルタ組合せ行列,3条件以上重ねるとTrades激減
+TrendBreakV1,Pyramiding スイープ,backtests/trendbreak_v1/pyramiding_sweep_2015_2024/,エントリー数1-5,エントリー数1が最適
+TrendBreakV1,2026-05-24 最新検証,backtests/trendbreak_v1/results_2026_05_24/,NAS100/SPX500参考,FX以外でも機能可能性
+H4 T5 MACD BB,V字回復+T5 検証(本命),backtests/elliott_fibo/results_2015_2024/t5_macd_bb_vshape_validation/,全プリセット網羅,Strict 0.75-1.00+REC1.2 最良
+H4 T5 MACD BB,MACD+BB Harsh 検証,backtests/elliott_fibo/results_2015_2024/t5_macd_bb_harsh_validation/,厳しめフィルタ群,Strict 確認
+H4 T5 MACD BB,OOS 2025-2026,backtests/elliott_fibo/results_2025_2026_oos/t5_macd_bb/,未使用期間,+7.3R/PF2.44/再現性◯
+H4 T5 MACD BB,OOS Vshape版,backtests/elliott_fibo/results_2025_2026_oos/t5_macd_bb_vshape/,OOS V字版,OOS再現確認
+H4 T5 MACD BB,回復比率スイープ,backtests/elliott_fibo/results_2025_2026_oos/t5_recovery_ratio_sweep/,0.80-2.00 全比率,1.20-1.22 が黄金
+H4 T5 MACD BB,失敗フィルタ検証,backtests/elliott_fibo/results_2025_2026_oos/t5_failure_filter_validation/,失敗時特徴抽出,BB高/MACD弱/時間経過が原因
+H4 T5 MACD BB,実用ロバスト監査,backtests/elliott_fibo/results_2026_05_24/t5_practical_robustness_audit/,LOO+閾値感度,BB幅<=4ATR が最重要
+H4 T5 MACD BB,運用堅牢化,backtests/elliott_fibo/results_2026_05_24/t5_operational_hardening/,本番運用想定,live ready 確認
+H4 T5 MACD BB,トリガー研究,backtests/elliott_fibo/results_2015_2024/v_recovery_trigger/,stagnation/rebreak/両方,stagnation+rebreakが最強WR75%
+H4 T5 MACD BB,緩和ラダー,backtests/elliott_fibo/results_2015_2024/v_recovery_relaxation_ladder/,条件緩和の段階検証,緩めすぎは赤字
+H4 T5 MACD BB,H1/H4 比較,backtests/elliott_fibo/results_2015_2024/v_recovery_h1_h4_compare/,TF比較,H4 が圧倒的に優位
+H4 T5 MACD BB,非フィボ系ツール,backtests/elliott_fibo/results_2015_2024/v_recovery_non_fibo_tools/,RSI/MA/VWAPなど,MACD+BBに勝るものなし
+H4 T5 MACD BB,vshape quant filters,backtests/elliott_fibo/results_2015_2024/vshape_quant/,定量フィルタ探索,recovery比率1.20が黄金
+H4 T5 MACD BB,indicator robust search,backtests/elliott_fibo/results_2015_2024/t5_indicator_robust_search/,各種指標組合せ,MACD+BB 確定
+H4 T5 MACD BB,indicator compatibility,backtests/elliott_fibo/results_2015_2024/indicator_compatibility_search/,指標相性,BB幅+MACDが最相性
+H4 T5 MACD BB,indicator deep validation,backtests/elliott_fibo/results_2015_2024/indicator_deep_validation/,深掘り検証,フィルタ強度最終調整
+H4 T5 MACD BB,t5 skeptic audit,backtests/elliott_fibo/results_2015_2024/t5_skeptic_audit/,監査,データ漏洩なし確認
+アンサンブル,TB+T5 採用案検証,backtests/ensemble/trendbreak_t5_practical_combo_2015_2024/,両方フル運用案,+219.9R/PF1.86
+アンサンブル,TB+H4 V字 単独検証,backtests/ensemble/trendbreak_h4_v_combo_2015_2024/,V字単独追加,改善せず
+アンサンブル,TB+Sai Best (v1),backtests/ensemble/ensemble_report.md,旧採用案,Calmar 17 (v1版)
+アンサンブル,通貨フィルタ比較,backtests/ensemble/portfolio_comparison.md,TOP3/5/全 比較,v1: TOP5でCalmar20.8
+Sai H1 系,Sai H1 全体,backtests/sai_h1/results_2015_2024/,4手法 (停滞・V字・急揺戻し・レンジ2回目),全体PF1.05弱い
+Sai H1 系,Best Method 深堀り,backtests/sai_h1/deep_dive_best_method/,急な揺り戻し+高値停滞,PF1.47/+98.8R
+Sai H1 系,TF 比較,backtests/sai_h1/timeframe_comparison_2015_2024/,H1/H4/D1,H4/D1 が有望→V字研究へ
+Sai H1 系,XAUUSD 単独テスト,backtests/sai_h1/test_xau/,アセット分析,参考
+急落V字 単独,Strict V字回復,backtests/elliott_fibo/results_2015_2024/strict_v_recovery/,完全回復・速度重視,単独 -7R 不可
+Elliott V字フィボ,全体 (数百パターン),backtests/elliott_fibo/results_2015_2024/,網羅検証,PF<1.3 / DD大
+Synapse,Synapse v0 H4,backtests/synapse_v0/results_2026_05_24/,エリオット風 H4 全通貨,-42R 不採用
+Synapse,Synapse v1 H1,backtests/synapse_v1/results_2026_05_24/,改善版 H1 全通貨,+14.8R/PF1.42
+Synapse,Synapse v1 USDJPY M1,backtests/synapse_v1/results_usdjpy_m1_timeframes_2026_05_24/,M1時間軸,短期PF低下
+インデックス,TrendBreakV1 NAS100,backtests/trendbreak_v1/results_2026_05_24/nas100_reference/,拡張性検証,参考
+インデックス,TrendBreakV1 SPX500,backtests/trendbreak_v1/results_2026_05_24/spx500_reference/,拡張性検証,参考
+インデックス,T5 NAS100/US100,backtests/elliott_fibo/results_2026_05_24/nas100_us100_validation/,適用可能性,確認
+インデックス,T5 SPX500,backtests/elliott_fibo/results_2026_05_24/spx500_validation/,適用可能性,確認
+比較,戦略間比較,backtests/comparison/,TrendBreakV1 vs Sai,TB圧勝 +551R vs +99R (4モード合計)

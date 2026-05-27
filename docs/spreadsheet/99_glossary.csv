@@ -1,0 +1,21 @@
+﻿用語,意味
+R,1リスクあたりの損益 (1R = SL までの距離 = 口座1%相当)
+Total R,期間中の累計R (例: +100R = 100%リターン @ 1Rリスク)
+PF,Profit Factor = 総利益R / 総損失R (1.0で損益分岐)
+WR,勝率 (%)
+Max DD R,累計R の peak-to-trough 最大ドローダウン (R単位)
+連敗,最大連続損失回数
+IS,In-Sample (検証期間) = 2015-2024
+OOS,Out-of-Sample (未使用期間) = 2025-2026
+TF,Time Frame (時間軸)
+RR,Risk Reward = TP距離 / SL距離
+Calmar,Total R / Max DD R (リスク調整後リターン)
+HYBRID,TrendBreakV1 の通貨別最適化パラメータ集
+REC1.2,V字回復速度: 下落本数の 1.20 倍以内に 61.8-80% 回復
+BB位置,"現在価格のBB内位置 (0=下バンド, 0.5=中央, 1=上バンド)"
+T5,V候補 + Stagnation/Rebreak の総称トリガー
+✅,本番運用採用
+⚠️,archive / 研究中
+❌,不採用 (検証で不合格)
+🔬,研究 (補助検証)
+📊,参考 (拡張性検証)

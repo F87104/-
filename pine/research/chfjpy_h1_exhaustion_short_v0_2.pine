@@ -1,0 +1,465 @@
+//@version=5
+strategy("CHFJPY H1 Exhaustion Short v0.2",
+     overlay=true,
+     pyramiding=0,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500,
+     calc_on_order_fills=true,
+     calc_on_every_tick=true,
+     currency=currency.JPY,
+     initial_capital=1000000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1)
+
+// Compile anchor. Transparent plot keeps TradingView strategy output stable.
+plot(close, title="Compile Anchor", color=color.new(color.gray, 100))
+
+// CHFJPY H1 Exhaustion Short v0.2
+// 検証定義:
+// - CHFJPY / H1 / Short only
+// - H4 neutral
+// - 0時JST除外
+// - USDJPY直近6時間上昇をA条件
+// - CHFJPYがクロス円BB z順位1-2位をA条件
+// - 6時間前より順位改善をA+条件
+// - TP 0.8R / SL シグナル高値 + 0.15ATR / 最大24本
+//
+// 注意:
+// - これは実運用前の可視化・検証用。経済指標/BOJ/FOMC/SNB/VIXは未連携。
+// - request.securityのlookahead_onは使わない。
+// - 相対順位は入力シンボルのデータ品質に依存する。
+
+//------------------------------------------------------------------------------
+// Inputs
+//------------------------------------------------------------------------------
+grpEnv = "Environment"
+enforceChfJpy = input.bool(true, "CHFJPY以外はシグナル停止", group=grpEnv)
+enforceH1 = input.bool(true, "H1以外はシグナル停止", group=grpEnv)
+tradeTz = input.string("Asia/Tokyo", "判定タイムゾーン", group=grpEnv)
+useHourFilter = input.bool(true, "0時JSTを除外", group=grpEnv)
+useHolidayFilter = input.bool(true, "12/15以降と1/10以前を除外", group=grpEnv)
+
+grpSymbols = "Relative JPY Cross Heat"
+usdSymbol = input.symbol("OANDA:USDJPY", "USDJPY", group=grpSymbols)
+chfSymbol = input.symbol("OANDA:CHFJPY", "CHFJPY rank source", group=grpSymbols)
+gbpSymbol = input.symbol("OANDA:GBPJPY", "GBPJPY", group=grpSymbols)
+audSymbol = input.symbol("OANDA:AUDJPY", "AUDJPY", group=grpSymbols)
+eurSymbol = input.symbol("OANDA:EURJPY", "EURJPY", group=grpSymbols)
+relativeTf = input.timeframe("60", "相対比較TF", group=grpSymbols)
+usdUpMinRetAtr = input.float(0.50, "USDJPY 6h上昇 ATR倍", minval=-5.0, step=0.05, group=grpSymbols)
+usdDownAvoidAtr = input.float(-0.50, "USDJPY下落 見送り ATR倍", maxval=0.0, step=0.05, group=grpSymbols)
+crossDropAvoidAtr = input.float(-0.50, "クロス円平均下落 見送り ATR倍", maxval=0.0, step=0.05, group=grpSymbols)
+requireUsdUpForA = input.bool(true, "A以上はUSDJPY上昇必須", group=grpSymbols)
+requireRank12ForA = input.bool(true, "A以上はCHFJPY順位1-2位必須", group=grpSymbols)
+
+grpSignal = "CHFJPY Exhaustion"
+atrLen = input.int(14, "ATR", minval=1, group=grpSignal)
+bbLen = input.int(20, "BB length", minval=2, group=grpSignal)
+bbZMin = input.float(2.10, "BB z 下限", minval=0.1, step=0.1, group=grpSignal)
+rsiLen = input.int(14, "RSI length", minval=2, group=grpSignal)
+rsiHigh = input.float(75.0, "RSI高値側", minval=50.0, maxval=100.0, step=0.5, group=grpSignal)
+moveBars = input.int(6, "直近上昇本数", minval=1, maxval=24, group=grpSignal)
+moveAtrMin = input.float(1.20, "直近上昇 ATR倍", minval=0.0, step=0.05, group=grpSignal)
+emaLen = input.int(20, "EMA距離 length", minval=1, group=grpSignal)
+emaDistAtrMin = input.float(1.00, "EMA20上方乖離 ATR倍", minval=0.0, step=0.05, group=grpSignal)
+wickMin = input.float(0.55, "上ヒゲ比率", minval=0.0, maxval=1.0, step=0.05, group=grpSignal)
+closeLocMin = input.float(0.65, "終値押し戻し short位置", minval=0.0, maxval=1.0, step=0.05, group=grpSignal)
+rangeAtrMin = input.float(0.80, "足の値幅 ATR倍", minval=0.0, step=0.05, group=grpSignal)
+bodyMax = input.float(0.75, "実体比率 上限", minval=0.0, maxval=1.0, step=0.05, group=grpSignal)
+
+grpH4 = "H4 Neutral"
+h4Tf = input.timeframe("240", "H4 TF", group=grpH4)
+h4EmaLen = input.int(100, "H4 EMA", minval=1, group=grpH4)
+h4SlopeBars = input.int(6, "H4 EMA傾き本数", minval=1, maxval=50, group=grpH4)
+h4NeutralSlopeAtr = input.float(0.35, "H4 neutral 傾き/H1 ATR", minval=0.0, step=0.05, group=grpH4)
+requireH4Neutral = input.bool(true, "H4 neutral必須", group=grpH4)
+
+grpRisk = "Risk / Exit"
+rr = input.float(0.80, "TP R倍", minval=0.1, step=0.1, group=grpRisk)
+stopBufferAtr = input.float(0.15, "SL余白 ATR倍", minval=0.0, step=0.05, group=grpRisk)
+maxHoldBars = input.int(24, "最大保有本数", minval=1, maxval=200, group=grpRisk)
+adverseWarnR = input.float(0.80, "危険アラート逆行R", minval=0.1, step=0.1, group=grpRisk)
+spreadPrice = input.float(0.020, "内部R集計 spread price", minval=0.0, step=0.001, group=grpRisk)
+slipPrice = input.float(0.010, "内部R集計 slip price", minval=0.0, step=0.001, group=grpRisk)
+
+grpOrders = "Strategy Orders"
+enableOrders = input.bool(true, "参考strategy注文を出す", group=grpOrders)
+orderTarget = input.string("A/A+ only", "注文対象", options=["A+ only", "A/A+ only", "All B+"] , group=grpOrders)
+
+grpView = "Visual"
+showSignals = input.bool(true, "シグナル表示", group=grpView)
+showEntryExit = input.bool(true, "ENTRY/EXIT表示", group=grpView)
+showTradeLines = input.bool(true, "Entry/SL/TPライン", group=grpView)
+showDanger = input.bool(true, "0.8R逆行アラート表示", group=grpView)
+showTable = input.bool(true, "状態テーブル", group=grpView)
+showRankPlots = input.bool(false, "順位/BB zを下部に表示", group=grpView)
+labelOffsetBars = input.int(3, "ラベル横ずらし", minval=0, maxval=50, group=grpView)
+labelOffsetAtr = input.float(2.0, "ラベル縦ずらし ATR倍", minval=0.0, step=0.1, group=grpView)
+lineBars = input.int(24, "ライン長", minval=1, maxval=200, group=grpView)
+tablePosInput = input.string("bottom_left", "テーブル位置", options=["top_right", "top_left", "bottom_right", "bottom_left"], group=grpView)
+
+//------------------------------------------------------------------------------
+// Helpers
+//------------------------------------------------------------------------------
+f_bb_z(int len) =>
+    float basis = ta.sma(close, len)
+    float dev = ta.stdev(close, len)
+    dev > 0 ? (close - basis) / dev : na
+
+f_ret6_atr(int len) =>
+    float a = ta.atr(len)
+    a > 0 ? (close - close[6]) / a : na
+
+f_rank4(float x, float a, float b, float c) =>
+    na(x) or na(a) or na(b) or na(c) ? na : 1 + (a > x ? 1 : 0) + (b > x ? 1 : 0) + (c > x ? 1 : 0)
+
+f_table_pos(string pos) =>
+    pos == "top_left" ? position.top_left : pos == "bottom_right" ? position.bottom_right : pos == "bottom_left" ? position.bottom_left : position.top_right
+
+f_num(float x) =>
+    na(x) ? "N/A" : str.tostring(x, "#.##")
+
+f_pct(float x) =>
+    na(x) ? "N/A" : str.tostring(x, "#.##") + "%"
+
+//------------------------------------------------------------------------------
+// Local CHFJPY signal features
+//------------------------------------------------------------------------------
+atrValue = ta.atr(atrLen)
+barRange = high - low
+bodyRatio = barRange > 0 ? math.abs(close - open) / barRange : 0.0
+upperWickRatio = barRange > 0 ? (high - math.max(open, close)) / barRange : 0.0
+closeLocShort = barRange > 0 ? (high - close) / barRange : 0.0
+rangeAtr = atrValue > 0 ? barRange / atrValue : na
+
+bbZ = f_bb_z(bbLen)
+rsiValue = ta.rsi(close, rsiLen)
+emaValue = ta.ema(close, emaLen)
+emaDistAtr = atrValue > 0 ? (close - emaValue) / atrValue : na
+riseAtr = atrValue > 0 ? (high - close[moveBars]) / atrValue : na
+
+overextended = (bbZ >= bbZMin or rsiValue >= rsiHigh) and emaDistAtr >= emaDistAtrMin
+wickStall = upperWickRatio >= wickMin and closeLocShort >= closeLocMin
+barQuality = rangeAtr >= rangeAtrMin and bodyRatio <= bodyMax
+moveOk = riseAtr >= moveAtrMin
+
+//------------------------------------------------------------------------------
+// H4 neutral
+//------------------------------------------------------------------------------
+h4Close = request.security(syminfo.tickerid, h4Tf, close, barmerge.gaps_off, barmerge.lookahead_off)
+h4Ema = request.security(syminfo.tickerid, h4Tf, ta.ema(close, h4EmaLen), barmerge.gaps_off, barmerge.lookahead_off)
+h4Slope = request.security(syminfo.tickerid, h4Tf, ta.ema(close, h4EmaLen) - ta.ema(close, h4EmaLen)[h4SlopeBars], barmerge.gaps_off, barmerge.lookahead_off)
+h4AlignShort = h4Close <= h4Ema and h4Slope <= 0
+h4OpposeShort = h4Close > h4Ema and h4Slope > 0
+h4Neutral = ((not h4AlignShort and not h4OpposeShort) or (atrValue > 0 and math.abs(h4Slope / atrValue) <= h4NeutralSlopeAtr))
+h4Ok = not requireH4Neutral or h4Neutral
+
+//------------------------------------------------------------------------------
+// Relative heat
+//------------------------------------------------------------------------------
+usdRet6 = request.security(usdSymbol, relativeTf, f_ret6_atr(atrLen), barmerge.gaps_off, barmerge.lookahead_off)
+chfBbZ = request.security(chfSymbol, relativeTf, f_bb_z(bbLen), barmerge.gaps_off, barmerge.lookahead_off)
+gbpBbZ = request.security(gbpSymbol, relativeTf, f_bb_z(bbLen), barmerge.gaps_off, barmerge.lookahead_off)
+audBbZ = request.security(audSymbol, relativeTf, f_bb_z(bbLen), barmerge.gaps_off, barmerge.lookahead_off)
+eurBbZ = request.security(eurSymbol, relativeTf, f_bb_z(bbLen), barmerge.gaps_off, barmerge.lookahead_off)
+gbpRet6 = request.security(gbpSymbol, relativeTf, f_ret6_atr(atrLen), barmerge.gaps_off, barmerge.lookahead_off)
+audRet6 = request.security(audSymbol, relativeTf, f_ret6_atr(atrLen), barmerge.gaps_off, barmerge.lookahead_off)
+eurRet6 = request.security(eurSymbol, relativeTf, f_ret6_atr(atrLen), barmerge.gaps_off, barmerge.lookahead_off)
+
+chfRankCross = f_rank4(chfBbZ, gbpBbZ, audBbZ, eurBbZ)
+chfRankCrossLag6 = f_rank4(chfBbZ[6], gbpBbZ[6], audBbZ[6], eurBbZ[6])
+rankImprove6 = not na(chfRankCross) and not na(chfRankCrossLag6) ? chfRankCrossLag6 - chfRankCross : na
+
+otherCrossMeanRet = (gbpRet6 + audRet6 + eurRet6) / 3.0
+otherCrossMeanBb = (gbpBbZ + audBbZ + eurBbZ) / 3.0
+chfRelativeOverheat = not na(chfBbZ) and not na(otherCrossMeanBb) and chfBbZ >= otherCrossMeanBb
+usdUp = not na(usdRet6) and usdRet6 > usdUpMinRetAtr
+usdDown = not na(usdRet6) and usdRet6 < usdDownAvoidAtr
+crossDrop = not na(otherCrossMeanRet) and otherCrossMeanRet < crossDropAvoidAtr
+riskOffProxy = usdDown or crossDrop
+rank12 = not na(chfRankCross) and chfRankCross <= 2
+rankTop = not na(chfRankCross) and chfRankCross == 1
+rankImproved = not na(rankImprove6) and rankImprove6 >= 1
+
+//------------------------------------------------------------------------------
+// Environment / time
+//------------------------------------------------------------------------------
+isH1Chart = timeframe.in_seconds(timeframe.period) == 3600
+isChfJpy = str.contains(syminfo.ticker, "CHFJPY") or str.contains(syminfo.tickerid, "CHFJPY")
+envOk = (not enforceChfJpy or isChfJpy) and (not enforceH1 or isH1Chart)
+entryHour = hour(time_close, tradeTz)
+entryMonth = month(time_close, tradeTz)
+entryDay = dayofmonth(time_close, tradeTz)
+hourOk = not useHourFilter or entryHour != 0
+holidayOk = not useHolidayFilter or not ((entryMonth == 12 and entryDay >= 15) or (entryMonth == 1 and entryDay <= 10))
+timeOk = hourOk and holidayOk
+
+//------------------------------------------------------------------------------
+// Signal rank
+//------------------------------------------------------------------------------
+baseSignal = envOk and timeOk and h4Ok and overextended and moveOk and wickStall and barQuality
+avoidSignal = riskOffProxy or not h4Ok or not timeOk or not envOk
+aRank = baseSignal and (not requireUsdUpForA or usdUp) and (not requireRank12ForA or rank12) and not riskOffProxy
+aPlusRank = aRank and rankImproved
+bRank = baseSignal and not aRank
+signalShort = baseSignal and not avoidSignal
+signalShortConfirmed = barstate.isconfirmed and signalShort
+rankScore = aPlusRank ? 2 : aRank ? 1 : bRank ? 0 : -1
+rankText = rankScore == 2 ? "A+" : rankScore == 1 ? "A" : rankScore == 0 ? "B" : "NONE"
+
+orderAllowedByRank = orderTarget == "A+ only" ? aPlusRank : orderTarget == "A/A+ only" ? (aPlusRank or aRank) : signalShort
+
+//------------------------------------------------------------------------------
+// Internal one-position simulation for stable visual / R table
+//------------------------------------------------------------------------------
+var bool simPending = false
+var bool simInTrade = false
+var int pendingBar = na
+var int pendingRank = na
+var float pendingStopAnchor = na
+var float pendingAtr = na
+var string pendingRankText = ""
+
+var int simEntryBar = na
+var float simEntry = na
+var float simStop = na
+var float simTarget = na
+var float simRisk = na
+var int simRank = na
+var string simRankText = ""
+var bool dangerWarned = false
+
+var int simTrades = 0
+var int simWins = 0
+var float simTotalR = 0.0
+var float simGrossProfit = 0.0
+var float simGrossLoss = 0.0
+var float simEquityR = 0.0
+var float simPeakR = 0.0
+var float simMaxDdR = 0.0
+var int rawSignalCount = 0
+var int aSignalCount = 0
+var int aPlusSignalCount = 0
+
+var string lastAction = "WAIT"
+var string lastExitReason = "N/A"
+
+f_short_r_after_cost(float entry, float exitPrice, float risk) =>
+    risk > 0 ? ((entry - spreadPrice / 2.0) - (exitPrice + slipPrice)) / risk : na
+
+// Arm selected trade signal at the close of the signal bar.
+canArm = signalShortConfirmed and orderAllowedByRank and not simPending and not simInTrade
+if canArm
+    simPending := true
+    pendingBar := bar_index
+    pendingRank := rankScore
+    pendingRankText := rankText
+    pendingStopAnchor := high
+    pendingAtr := atrValue
+    rawSignalCount += 1
+    aSignalCount += aRank ? 1 : 0
+    aPlusSignalCount += aPlusRank ? 1 : 0
+    lastAction := rankText
+    if showSignals
+        color sigColor = aPlusRank ? color.new(color.fuchsia, 0) : aRank ? color.new(color.red, 0) : color.new(color.orange, 0)
+        label.new(bar_index, high + atrValue * labelOffsetAtr, "SIGNAL " + rankText + " SELL\nNext H1 open\nRank " + str.tostring(chfRankCross) + " / prev " + str.tostring(chfRankCrossLag6) + "\nUSD6 " + f_num(usdRet6) + "ATR", style=label.style_label_down, color=sigColor, textcolor=color.white, size=size.small)
+
+// Enter internal simulation at next bar open.
+if simPending and not simInTrade and bar_index > pendingBar
+    simPending := false
+    float entryCandidate = open
+    float stopCandidate = pendingStopAnchor + pendingAtr * stopBufferAtr
+    float riskCandidate = stopCandidate - entryCandidate
+    if riskCandidate <= syminfo.mintick
+        lastAction := "SKIP GAP"
+        if showEntryExit
+            label.new(bar_index + labelOffsetBars, high + atrValue * labelOffsetAtr, "SKIP\nOpen above SL\nno entry", style=label.style_label_down, color=color.new(color.gray, 0), textcolor=color.white, size=size.small)
+    else
+        simInTrade := true
+        simEntryBar := bar_index
+        simEntry := entryCandidate
+        simStop := stopCandidate
+        simRisk := riskCandidate
+        simTarget := simEntry - simRisk * rr
+        simRank := pendingRank
+        simRankText := pendingRankText
+        dangerWarned := false
+        if showEntryExit
+            label.new(bar_index + labelOffsetBars, simEntry + atrValue * labelOffsetAtr, "SHORT IN " + simRankText + "\nE: " + str.tostring(simEntry, format.mintick) + "\nSL: " + str.tostring(simStop, format.mintick) + "\nTP: " + str.tostring(simTarget, format.mintick), style=label.style_label_down, color=color.new(color.red, 0), textcolor=color.white, size=size.small)
+        if showTradeLines
+            line.new(bar_index, simEntry, bar_index + lineBars, simEntry, color=color.new(color.white, 0), width=1)
+            line.new(bar_index, simStop, bar_index + lineBars, simStop, color=color.new(color.red, 0), width=2)
+            line.new(bar_index, simTarget, bar_index + lineBars, simTarget, color=color.new(color.lime, 0), width=2)
+
+// Manage internal simulation.
+bool exitedThisBar = false
+float exitPrice = na
+string exitReason = ""
+if simInTrade
+    bool hitDanger = high >= simEntry + simRisk * adverseWarnR
+    if showDanger and hitDanger and not dangerWarned
+        dangerWarned := true
+        label.new(bar_index, high + atrValue * labelOffsetAtr, "DANGER\nMAE " + str.tostring(adverseWarnR, "#.#") + "R\n追加禁止", style=label.style_label_down, color=color.new(color.yellow, 0), textcolor=color.black, size=size.small)
+    bool hitSl = high >= simStop
+    bool hitTp = low <= simTarget
+    bool hitTime = bar_index - simEntryBar >= maxHoldBars
+    if hitSl or hitTp or hitTime
+        exitedThisBar := true
+        exitPrice := hitSl ? simStop : hitTp ? simTarget : close
+        exitReason := hitSl and hitTp ? "SL_first" : hitSl ? "SL" : hitTp ? "TP" : "TIME"
+        float r = f_short_r_after_cost(simEntry, exitPrice, simRisk)
+        simTrades += 1
+        simWins += r > 0 ? 1 : 0
+        simTotalR += r
+        simGrossProfit += r > 0 ? r : 0.0
+        simGrossLoss += r <= 0 ? r : 0.0
+        simEquityR += r
+        simPeakR := math.max(simPeakR, simEquityR)
+        simMaxDdR := math.max(simMaxDdR, simPeakR - simEquityR)
+        lastExitReason := exitReason + " " + str.tostring(r, "#.##") + "R"
+        if showEntryExit
+            color exColor = r > 0 ? color.new(color.lime, 0) : color.new(color.red, 0)
+            label.new(bar_index + labelOffsetBars, exitPrice - atrValue * labelOffsetAtr, "EXIT " + exitReason + "\n" + str.tostring(r, "#.##") + "R\n" + str.tostring(exitPrice, format.mintick), style=label.style_label_up, color=exColor, textcolor=r > 0 ? color.black : color.white, size=size.small)
+        simInTrade := false
+        simEntryBar := na
+        simEntry := na
+        simStop := na
+        simTarget := na
+        simRisk := na
+
+//------------------------------------------------------------------------------
+// Optional TradingView strategy orders
+//------------------------------------------------------------------------------
+var float strategyStop = na
+var float strategyTarget = na
+var float orderStopAnchor = na
+var float orderAtr = na
+
+if enableOrders and canArm and orderAllowedByRank
+    orderStopAnchor := high
+    orderAtr := atrValue
+    strategy.entry("CHF Exhaustion S", strategy.short, comment="S " + rankText)
+
+if enableOrders and strategy.position_size < 0 and strategy.position_size[1] >= 0
+    float e = strategy.position_avg_price
+    strategyStop := orderStopAnchor + orderAtr * stopBufferAtr
+    float risk = strategyStop - e
+    if risk <= syminfo.mintick
+        strategy.close("CHF Exhaustion S", comment="SKIP GAP")
+        strategyTarget := na
+    else
+        strategyTarget := e - risk * rr
+
+if enableOrders and strategy.position_size < 0 and not na(strategyStop) and not na(strategyTarget)
+    strategy.exit("XS", "CHF Exhaustion S", stop=strategyStop, limit=strategyTarget)
+    if strategy.opentrades > 0
+        int barsInTrade = bar_index - strategy.opentrades.entry_bar_index(0)
+        if barsInTrade >= maxHoldBars
+            strategy.close("CHF Exhaustion S", comment="TIME")
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    strategyStop := na
+    strategyTarget := na
+
+//------------------------------------------------------------------------------
+// Visual markers / plots
+//------------------------------------------------------------------------------
+plotshape(showSignals and signalShortConfirmed and aPlusRank, title="CHF Exhaustion A+ SELL", style=shape.triangledown, location=location.abovebar, color=color.new(color.fuchsia, 0), text="A+", size=size.small)
+plotshape(showSignals and signalShortConfirmed and aRank and not aPlusRank, title="CHF Exhaustion A SELL", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), text="A", size=size.small)
+plotshape(showSignals and signalShortConfirmed and bRank, title="CHF Exhaustion B SELL", style=shape.circle, location=location.abovebar, color=color.new(color.orange, 20), text="B", size=size.tiny)
+
+plot(showRankPlots ? chfRankCross : na, title="CHFJPY BB z rank cross4", color=color.new(color.aqua, 0))
+plot(showRankPlots ? bbZ : na, title="CHFJPY local BB z", color=color.new(color.orange, 0))
+plot(showRankPlots ? usdRet6 : na, title="USDJPY 6h ret ATR", color=color.new(color.lime, 0))
+
+//------------------------------------------------------------------------------
+// Warnings
+//------------------------------------------------------------------------------
+var label envWarning = na
+if barstate.islast
+    label.delete(envWarning)
+    if not envOk
+        string reason = not isH1Chart ? "H1以外で停止中: " + timeframe.period : not isChfJpy ? "CHFJPY以外で停止中" : "環境NG"
+        envWarning := label.new(bar_index, high + atrValue * 4.0, "CHF Exhaustion停止中\n" + reason + "\nCHFJPY / H1で使用", style=label.style_label_down, color=color.new(color.red, 0), textcolor=color.white, size=size.normal)
+
+//------------------------------------------------------------------------------
+// Alerts
+//------------------------------------------------------------------------------
+dangerAlertNow = simInTrade and not na(simEntry) and not na(simRisk) and high >= simEntry + simRisk * adverseWarnR
+alertcondition(signalShortConfirmed and aPlusRank, title="CHFJPY Exhaustion SELL A+", message="CHFJPY H1 Exhaustion Short A+. Entry next H1 open.")
+alertcondition(signalShortConfirmed and aRank and not aPlusRank, title="CHFJPY Exhaustion SELL A", message="CHFJPY H1 Exhaustion Short A. Entry next H1 open.")
+alertcondition(signalShortConfirmed and bRank, title="CHFJPY Exhaustion SELL B", message="CHFJPY H1 Exhaustion Short B. Observation or small risk only.")
+alertcondition(signalShortConfirmed, title="CHFJPY Exhaustion SELL ANY", message="CHFJPY H1 Exhaustion Short signal.")
+alertcondition(dangerAlertNow, title="CHFJPY Exhaustion Danger MAE", message="CHFJPY short adverse excursion reached warning R.")
+alertcondition(exitedThisBar, title="CHFJPY Exhaustion EXIT", message="CHFJPY Exhaustion internal exit.")
+
+//------------------------------------------------------------------------------
+// Table
+//------------------------------------------------------------------------------
+var table t = table.new(f_table_pos(tablePosInput), 2, 28, border_width=1)
+if showTable and barstate.islast
+    float winRate = simTrades > 0 ? simWins * 100.0 / simTrades : na
+    float avgR = simTrades > 0 ? simTotalR / simTrades : na
+    float pf = simGrossLoss < 0 ? simGrossProfit / math.abs(simGrossLoss) : na
+    string envText = (isChfJpy ? "CHFJPY OK" : "Not CHFJPY") + " / " + (isH1Chart ? "H1 OK" : "Not H1")
+    string blockText = not envOk ? "環境NG" : not timeOk ? "時間/休日NG" : not h4Ok ? "H4 not neutral" : riskOffProxy ? "risk-off proxy" : not overextended ? "not overextended" : not wickStall ? "no stall" : not moveOk ? "move weak" : "OK"
+    string actionText = signalShortConfirmed ? "SELL " + rankText : simInTrade ? "IN " + simRankText : simPending ? "NEXT " + pendingRankText : "WAIT"
+    color actionColor = signalShortConfirmed and aPlusRank ? color.fuchsia : signalShortConfirmed and aRank ? color.red : signalShortConfirmed ? color.orange : simInTrade ? color.yellow : color.white
+
+    table.cell(t, 0, 0, "CHF Exhaust v0.2", text_color=color.white, bgcolor=color.new(color.black, 0), text_size=size.small)
+    table.cell(t, 1, 0, envText, text_color=color.white, bgcolor=envOk ? color.new(color.green, 70) : color.new(color.red, 60), text_size=size.small)
+    table.cell(t, 0, 1, "Action", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 1, actionText, text_color=actionColor, text_size=size.tiny)
+    table.cell(t, 0, 2, "Block", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 2, blockText, text_color=blockText == "OK" ? color.lime : color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 3, "H4 neutral", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 3, h4Neutral ? "OK" : "NG", text_color=h4Neutral ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 4, "Entry hour", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, str.tostring(entryHour) + (hourOk ? " OK" : " 除外"), text_color=hourOk ? color.white : color.red, text_size=size.tiny)
+    table.cell(t, 0, 5, "USDJPY 6h", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 5, f_num(usdRet6) + " ATR", text_color=usdUp ? color.lime : usdDown ? color.red : color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 6, "Risk-off", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 6, riskOffProxy ? "YES avoid" : "NO", text_color=riskOffProxy ? color.red : color.lime, text_size=size.tiny)
+    table.cell(t, 0, 7, "CHF rank", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 7, str.tostring(chfRankCross) + " / prev " + str.tostring(chfRankCrossLag6), text_color=rankTop ? color.lime : rank12 ? color.yellow : color.red, text_size=size.tiny)
+    table.cell(t, 0, 8, "Rank improve", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 8, f_num(rankImprove6), text_color=rankImproved ? color.lime : color.white, text_size=size.tiny)
+    table.cell(t, 0, 9, "CHF rel BB", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 9, f_num(chfBbZ - otherCrossMeanBb), text_color=chfRelativeOverheat ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 10, "BB z / RSI", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 10, f_num(bbZ) + " / " + f_num(rsiValue), text_color=overextended ? color.lime : color.white, text_size=size.tiny)
+    table.cell(t, 0, 11, "Rise / EMA dist", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 11, f_num(riseAtr) + " / " + f_num(emaDistAtr), text_color=(moveOk and emaDistAtr >= emaDistAtrMin) ? color.lime : color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 12, "Wick / CloseLoc", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 12, f_num(upperWickRatio) + " / " + f_num(closeLocShort), text_color=wickStall ? color.lime : color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 13, "Range / Body", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 13, f_num(rangeAtr) + " / " + f_num(bodyRatio), text_color=barQuality ? color.lime : color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 14, "内部 trades", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 14, str.tostring(simTrades), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 15, "勝率", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 15, f_pct(winRate), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 16, "Total R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 16, str.tostring(simTotalR, "#.##") + "R", text_color=simTotalR >= 0 ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 17, "Avg R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 17, f_num(avgR) + "R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 18, "PF", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 18, f_num(pf), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 19, "Max DD", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 19, str.tostring(simMaxDdR, "#.##") + "R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 20, "Trade/A/A+", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 20, str.tostring(rawSignalCount) + " / " + str.tostring(aSignalCount) + " / " + str.tostring(aPlusSignalCount), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 21, "State", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 21, simInTrade ? "IN " + simRankText : simPending ? "NEXT " + pendingRankText : "WAIT", text_color=simInTrade or simPending ? color.yellow : color.white, text_size=size.tiny)
+    table.cell(t, 0, 22, "Last exit", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 22, lastExitReason, text_color=str.contains(lastExitReason, "-") ? color.red : color.lime, text_size=size.tiny)
+    table.cell(t, 0, 23, "TP / MaxHold", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 23, str.tostring(rr, "#.#") + "R / " + str.tostring(maxHoldBars), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 24, "0.8R warning", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 24, dangerAlertNow ? "DANGER" : "watch", text_color=dangerAlertNow ? color.red : color.white, text_size=size.tiny)
+    table.cell(t, 0, 25, "Orders", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 25, enableOrders ? "ON " + orderTarget : "OFF visual", text_color=enableOrders ? color.yellow : color.lime, text_size=size.tiny)
+    table.cell(t, 0, 26, "A条件", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 26, (usdUp ? "USD " : "") + (rank12 ? "Rank " : "") + (not riskOffProxy ? "NoRisk" : "Risk"), text_color=aRank ? color.lime : color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 27, "A+条件", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 27, rankImproved ? "rank improved" : "no improve", text_color=rankImproved ? color.lime : color.white, text_size=size.tiny)

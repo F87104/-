@@ -1,0 +1,551 @@
+//@version=5
+strategy("SILVER/XAGUSD H1 Short Rebreak v0.2 Practical",
+     overlay=true,
+     pyramiding=0,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500,
+     max_boxes_count=100,
+     calc_on_order_fills=true,
+     calc_on_every_tick=true,
+     currency=currency.USD,
+     initial_capital=100000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1)
+
+// Compile anchor. Transparent plot keeps TradingView strategy output stable.
+plot(close, title="Compile Anchor", color=color.new(color.gray, 100))
+
+// SILVER/XAGUSD H1 Short Rebreak v0.2 Practical
+// Python検証の実戦候補:
+// - SILVER/XAGUSD / H1 / Short only
+// - H4 down
+// - 24本下落 >= 0.8ATR
+// - 8本Box / Box幅 <= 1.5ATR
+// - 直近戻し >= 0.6ATR
+// - Box下抜け >= 0.05ATR
+// - 足の値幅 >= 0.5ATR / 実体 <= 85% / 終値が下側25%
+// - 実行本線: 次H1始値から0.15R戻りを2時間待ってショート
+// - 厳選実行: 次H1始値から0.25R戻りを3時間待ってショート
+// - H1 openは比較用
+// - SL = Box高値 + 0.15ATR
+// - TP = 1.2R
+// - 最大24本保有
+// - entry hour 11/12除外
+//
+// 注意:
+// - TradingViewではチャートの銘柄・セッション・タイムゾーンで検証CSVと差が出る。
+// - H1が判断足。M15はエントリー改善の補助であり、方向判断には使わない。
+// - Pineのリテスト待ちはH1足内の近似。実運用ではM15で0.15R/0.25R到達を確認する。
+// - request.securityのlookahead_onは使わない。
+
+//------------------------------------------------------------------------------
+// Inputs
+//------------------------------------------------------------------------------
+grpCore = "Core"
+enforceSilver = input.bool(true, "SILVER/XAGUSD以外はシグナル停止", group=grpCore)
+enforceH1 = input.bool(true, "H1以外はシグナル停止", group=grpCore)
+atrLen = input.int(14, "ATR", minval=1, group=grpCore)
+boxBars = input.int(8, "Box本数", minval=2, maxval=48, group=grpCore)
+moveBars = input.int(24, "下落確認本数", minval=2, maxval=96, group=grpCore)
+moveAtrMin = input.float(0.80, "下落幅 下限 ATR倍", minval=0.0, step=0.05, group=grpCore)
+pullbackAtrMin = input.float(0.60, "戻し 下限 ATR倍", minval=0.0, step=0.05, group=grpCore)
+breakBufferAtr = input.float(0.05, "Box下抜け余白 ATR倍", minval=0.0, step=0.01, group=grpCore)
+boxWidthMaxAtr = input.float(1.50, "Box幅 上限 ATR倍", minval=0.1, step=0.05, group=grpCore)
+rangeAtrMin = input.float(0.50, "ブレイク足値幅 下限 ATR倍", minval=0.0, step=0.05, group=grpCore)
+bodyMax = input.float(0.85, "ブレイク足 実体率上限", minval=0.0, maxval=1.0, step=0.05, group=grpCore)
+closeLocShortMin = input.float(0.75, "終値位置 下側寄り", minval=0.0, maxval=1.0, step=0.05, group=grpCore)
+
+grpTrend = "Trend"
+h4Tf = input.timeframe("240", "H4 TF", group=grpTrend)
+h4EmaLen = input.int(100, "H4 EMA", minval=1, group=grpTrend)
+h4SlopeBars = input.int(6, "H4 EMA傾き本数", minval=1, maxval=50, group=grpTrend)
+requireH4Down = input.bool(true, "H4 down必須", group=grpTrend)
+
+grpRisk = "Risk / Time"
+rr = input.float(1.20, "TP R倍", minval=0.1, step=0.1, group=grpRisk)
+stopBufferAtr = input.float(0.15, "SL余白 ATR倍", minval=0.0, step=0.05, group=grpRisk)
+maxRiskAtr = input.float(2.50, "最大リスク ATR倍", minval=0.1, step=0.1, group=grpRisk)
+maxHoldBars = input.int(24, "最大保有 H1本数", minval=1, maxval=240, group=grpRisk)
+tradeTz = input.string("UTC", "entry hour判定タイムゾーン", group=grpRisk)
+useHourFilter = input.bool(true, "entry hour 11/12除外", group=grpRisk)
+useHolidayFilter = input.bool(true, "12/15以降と1/10以前を除外", group=grpRisk)
+spreadPrice = input.float(0.030, "内部R集計 spread price", minval=0.0, step=0.001, group=grpRisk)
+slipPrice = input.float(0.010, "内部R集計 slip price", minval=0.0, step=0.001, group=grpRisk)
+
+grpExec = "Execution"
+executionMode = input.string("Standard 0.15R retest", "執行モード", options=["H1 open", "Standard 0.15R retest", "Strict 0.25R retest"], group=grpExec)
+standardRetestR = input.float(0.15, "Standard 戻り待ち R", minval=0.0, maxval=1.0, step=0.01, group=grpExec)
+standardWaitBars = input.int(2, "Standard 待機 H1本数", minval=1, maxval=12, group=grpExec)
+strictRetestR = input.float(0.25, "Strict 戻り待ち R", minval=0.0, maxval=1.0, step=0.01, group=grpExec)
+strictWaitBars = input.int(3, "Strict 待機 H1本数", minval=1, maxval=12, group=grpExec)
+shallowBreakWarnAtr = input.float(0.08, "浅いブレイク警戒 ATR倍未満", minval=0.0, step=0.01, group=grpExec)
+dangerHourWarn = input.bool(true, "entry hour 6/7を危険表示", group=grpExec)
+dangerAction = input.string("Warn only", "危険サインの扱い", options=["Warn only", "Block"], group=grpExec)
+
+grpOrders = "Strategy Orders"
+enableOrders = input.bool(false, "参考strategy注文を出す（H1 open専用）", group=grpOrders)
+showOrderWarning = input.bool(true, "strategy注文の注意表示", group=grpOrders)
+
+grpView = "Visual"
+showBox = input.bool(false, "ローリングBox上下限表示", group=grpView)
+showSignalBoxLines = input.bool(true, "シグナル時だけBox線表示", group=grpView)
+showSignals = input.bool(true, "SIG表示", group=grpView)
+showEntryExitMarks = input.bool(true, "ENTRY/EXIT価格マーカー", group=grpView)
+showEntryExitText = input.bool(true, "ENTRY/EXIT情報ボックス", group=grpView)
+showTradeLines = input.bool(true, "Entry/SL/TP短線表示", group=grpView)
+showM15RetestGuide = input.bool(true, "M15 0.15R/0.25R戻り候補ライン", group=grpView)
+lineBars = input.int(28, "ライン長", minval=1, maxval=200, group=grpView)
+labelOffsetBars = input.int(5, "ラベル横ずらし", minval=0, maxval=50, group=grpView)
+labelOffsetAtr = input.float(2.5, "ラベル縦ずらし ATR倍", minval=0.0, step=0.1, group=grpView)
+showTable = input.bool(true, "状態テーブル", group=grpView)
+showEnvWarning = input.bool(true, "環境NG警告", group=grpView)
+tablePosInput = input.string("bottom_left", "テーブル位置", options=["top_right", "top_left", "bottom_right", "bottom_left"], group=grpView)
+
+//------------------------------------------------------------------------------
+// Helpers
+//------------------------------------------------------------------------------
+f_table_pos(string pos) =>
+    pos == "top_left" ? position.top_left : pos == "bottom_right" ? position.bottom_right : pos == "bottom_left" ? position.bottom_left : position.top_right
+
+f_num(float x) =>
+    na(x) ? "N/A" : str.tostring(x, "#.##")
+
+f_pct(float x) =>
+    na(x) ? "N/A" : str.tostring(x, "#.##") + "%"
+
+f_short_r_after_cost(float entry, float exitPrice, float risk) =>
+    risk > 0 ? ((entry - spreadPrice / 2.0) - (exitPrice + slipPrice)) / risk : na
+
+//------------------------------------------------------------------------------
+// Core series
+//------------------------------------------------------------------------------
+atrValue = ta.atr(atrLen)
+barRange = high - low
+bodyRatio = barRange > 0 ? math.abs(close - open) / barRange : na
+closeLocShort = barRange > 0 ? (high - close) / barRange : na
+rangeAtr = atrValue > 0 ? barRange / atrValue : na
+
+boxHigh = ta.highest(high[1], boxBars)
+boxLow = ta.lowest(low[1], boxBars)
+boxWidth = boxHigh - boxLow
+boxWidthAtr = atrValue > 0 ? boxWidth / atrValue : na
+
+downMoveAtr = atrValue > 0 ? (close[moveBars] - close) / atrValue : na
+rise6Atr = atrValue > 0 ? (high - close[6]) / atrValue : na
+rise12Atr = atrValue > 0 ? (high - close[12]) / atrValue : na
+pullbackAtr = math.max(nz(rise6Atr, -999.0), nz(rise12Atr, -999.0))
+triggerAtr = atrValue > 0 ? (boxLow - close) / atrValue : na
+
+isH1Chart = timeframe.in_seconds(timeframe.period) == 3600
+isSilver = str.contains(syminfo.ticker, "XAG") or str.contains(syminfo.tickerid, "XAG") or str.contains(syminfo.ticker, "SILVER") or str.contains(syminfo.tickerid, "SILVER")
+envOk = (not enforceSilver or isSilver) and (not enforceH1 or isH1Chart)
+
+entryHour = hour(time_close, tradeTz)
+entryMonth = month(time_close, tradeTz)
+entryDay = dayofmonth(time_close, tradeTz)
+hourOk = not useHourFilter or not (entryHour == 11 or entryHour == 12)
+holidayOk = not useHolidayFilter or not ((entryMonth == 12 and entryDay >= 15) or (entryMonth == 1 and entryDay <= 10))
+timeOk = hourOk and holidayOk
+
+//------------------------------------------------------------------------------
+// H4 context
+//------------------------------------------------------------------------------
+h4Close = request.security(syminfo.tickerid, h4Tf, close, barmerge.gaps_off, barmerge.lookahead_off)
+h4Ema = request.security(syminfo.tickerid, h4Tf, ta.ema(close, h4EmaLen), barmerge.gaps_off, barmerge.lookahead_off)
+h4Slope = request.security(syminfo.tickerid, h4Tf, ta.ema(close, h4EmaLen) - ta.ema(close, h4EmaLen)[h4SlopeBars], barmerge.gaps_off, barmerge.lookahead_off)
+h4Down = h4Close <= h4Ema and h4Slope <= 0
+h4Ok = not requireH4Down or h4Down
+
+//------------------------------------------------------------------------------
+// Signal
+//------------------------------------------------------------------------------
+boxOk = not na(boxWidthAtr) and boxWidth > 0 and boxWidthAtr <= boxWidthMaxAtr
+moveOk = not na(downMoveAtr) and downMoveAtr >= moveAtrMin
+pullbackOk = not na(pullbackAtr) and pullbackAtr >= pullbackAtrMin
+breakOk = not na(triggerAtr) and close < boxLow - atrValue * breakBufferAtr and triggerAtr >= breakBufferAtr
+rangeOk = not na(rangeAtr) and rangeAtr >= rangeAtrMin
+bodyOk = not na(bodyRatio) and bodyRatio <= bodyMax
+closeLocOk = not na(closeLocShort) and closeLocShort >= closeLocShortMin
+
+rawSignalShort = envOk and timeOk and h4Ok and boxOk and moveOk and pullbackOk and breakOk and rangeOk and bodyOk and closeLocOk
+signalShort = barstate.isconfirmed and rawSignalShort
+
+stopCandidate = boxHigh + atrValue * stopBufferAtr
+signalRiskAtClose = stopCandidate - close
+riskCloseOk = signalRiskAtClose > 0 and atrValue > 0 and signalRiskAtClose / atrValue <= maxRiskAtr
+
+isRetestMode = executionMode != "H1 open"
+selectedRetestR = executionMode == "Strict 0.25R retest" ? strictRetestR : executionMode == "Standard 0.15R retest" ? standardRetestR : 0.0
+selectedWaitBars = executionMode == "Strict 0.25R retest" ? strictWaitBars : executionMode == "Standard 0.15R retest" ? standardWaitBars : 1
+warnShallowBreak = rawSignalShort and not na(triggerAtr) and triggerAtr < shallowBreakWarnAtr
+warnDangerHour = rawSignalShort and dangerHourWarn and (entryHour == 6 or entryHour == 7)
+warnDanger = warnShallowBreak or warnDangerHour
+dangerText = warnShallowBreak and warnDangerHour ? "WARN shallow + hour" : warnShallowBreak ? "WARN shallow break" : warnDangerHour ? "WARN hour 6/7" : "OK"
+
+//------------------------------------------------------------------------------
+// Internal H1 next-open simulation
+//------------------------------------------------------------------------------
+var bool simPending = false
+var bool simInTrade = false
+var int pendingBar = na
+var float pendingStop = na
+var float pendingAtr = na
+var float pendingBoxHigh = na
+var float pendingBoxLow = na
+var float pendingBaseOpen = na
+var float pendingRetestPrice = na
+var float pendingStdRetestPrice = na
+var float pendingStrictRetestPrice = na
+var float pendingRetestR = na
+var int pendingWaitBars = na
+var bool pendingWarnDanger = false
+var string pendingDangerText = ""
+var string pendingModeText = ""
+
+var int simEntryBar = na
+var float simEntry = na
+var float simStop = na
+var float simTarget = na
+var float simRisk = na
+var float simRetestPrice = na
+var bool simEntryFromRetest = false
+
+var int simTrades = 0
+var int simWins = 0
+var float simTotalR = 0.0
+var float simGrossProfit = 0.0
+var float simGrossLoss = 0.0
+var float simPeakR = 0.0
+var float simMaxDdR = 0.0
+var int rawSignalCount = 0
+var int skippedRiskCount = 0
+var int skippedRetestCount = 0
+var int blockedDangerCount = 0
+var string lastAction = "WAIT"
+var string lastExitReason = "N/A"
+var float lastExitR = na
+
+bool simEnteredThisBar = false
+bool simExitedThisBar = false
+float simExitPrice = na
+float simExitR = na
+string simExitReason = ""
+
+if simPending and bar_index > pendingBar
+    bool doEnter = false
+    float entry = na
+    string entryReason = ""
+    if na(pendingBaseOpen)
+        pendingBaseOpen := open
+        float baseRisk = pendingStop - pendingBaseOpen
+        bool baseRiskOk = baseRisk > 0 and pendingAtr > 0 and baseRisk / pendingAtr <= maxRiskAtr
+        if baseRiskOk
+            pendingStdRetestPrice := pendingBaseOpen + baseRisk * standardRetestR
+            pendingStrictRetestPrice := pendingBaseOpen + baseRisk * strictRetestR
+            pendingRetestPrice := pendingBaseOpen + baseRisk * pendingRetestR
+            if showTradeLines and showM15RetestGuide and isRetestMode
+                line.new(bar_index, pendingStdRetestPrice, bar_index + standardWaitBars, pendingStdRetestPrice, xloc=xloc.bar_index, color=color.new(color.orange, 0), style=line.style_dashed, width=2)
+                line.new(bar_index, pendingStrictRetestPrice, bar_index + strictWaitBars, pendingStrictRetestPrice, xloc=xloc.bar_index, color=color.new(color.purple, 0), style=line.style_dashed, width=2)
+            if not isRetestMode
+                doEnter := true
+                entry := pendingBaseOpen
+                entryReason := "H1 open"
+            else if high >= pendingRetestPrice
+                doEnter := true
+                entry := pendingRetestPrice
+                entryReason := pendingModeText
+        else
+            skippedRiskCount += 1
+            lastAction := "SKIP RISK"
+            simPending := false
+            pendingBar := na
+            pendingStop := na
+            pendingAtr := na
+            pendingBoxHigh := na
+            pendingBoxLow := na
+            pendingBaseOpen := na
+            pendingRetestPrice := na
+            pendingStdRetestPrice := na
+            pendingStrictRetestPrice := na
+            pendingRetestR := na
+            pendingWaitBars := na
+            pendingWarnDanger := false
+            pendingDangerText := ""
+            pendingModeText := ""
+    else
+        if isRetestMode and high >= pendingRetestPrice
+            doEnter := true
+            entry := pendingRetestPrice
+            entryReason := pendingModeText
+
+    if doEnter
+        float risk = pendingStop - entry
+        bool riskOk = risk > 0 and pendingAtr > 0 and risk / pendingAtr <= maxRiskAtr
+        if riskOk
+            simInTrade := true
+            simEnteredThisBar := true
+            simEntryBar := bar_index
+            simEntry := entry
+            simStop := pendingStop
+            simRisk := risk
+            simTarget := entry - risk * rr
+            simRetestPrice := entry
+            simEntryFromRetest := isRetestMode
+            lastAction := "SHORT IN"
+            if showEntryExitText
+                string entryInfo = "SHORT IN" +
+                     "\n" + entryReason +
+                     "\nE: " + str.tostring(entry, format.mintick) +
+                     "\nSL: " + str.tostring(simStop, format.mintick) +
+                     "\nTP: " + str.tostring(simTarget, format.mintick) +
+                     (pendingWarnDanger ? "\n" + pendingDangerText : "")
+                label.new(bar_index + labelOffsetBars, entry + atrValue * labelOffsetAtr, entryInfo, xloc=xloc.bar_index, yloc=yloc.price, style=label.style_label_left, color=pendingWarnDanger ? color.new(color.orange, 0) : color.new(color.yellow, 0), textcolor=color.black, size=size.small)
+            if showTradeLines
+                line.new(bar_index, entry, bar_index + lineBars, entry, xloc=xloc.bar_index, color=color.new(color.aqua, 0), width=2)
+                line.new(bar_index, simStop, bar_index + lineBars, simStop, xloc=xloc.bar_index, color=color.new(color.red, 0), width=2)
+                line.new(bar_index, simTarget, bar_index + lineBars, simTarget, xloc=xloc.bar_index, color=color.new(color.lime, 0), width=2)
+        else
+            skippedRiskCount += 1
+            lastAction := "SKIP RISK"
+        simPending := false
+        pendingBar := na
+        pendingStop := na
+        pendingAtr := na
+        pendingBoxHigh := na
+        pendingBoxLow := na
+        pendingBaseOpen := na
+        pendingRetestPrice := na
+        pendingStdRetestPrice := na
+        pendingStrictRetestPrice := na
+        pendingRetestR := na
+        pendingWaitBars := na
+        pendingWarnDanger := false
+        pendingDangerText := ""
+        pendingModeText := ""
+    else if simPending and isRetestMode and not na(pendingBaseOpen) and bar_index - pendingBar >= pendingWaitBars
+        skippedRetestCount += 1
+        lastAction := "MISS RETEST"
+        simPending := false
+        pendingBar := na
+        pendingStop := na
+        pendingAtr := na
+        pendingBoxHigh := na
+        pendingBoxLow := na
+        pendingBaseOpen := na
+        pendingRetestPrice := na
+        pendingStdRetestPrice := na
+        pendingStrictRetestPrice := na
+        pendingRetestR := na
+        pendingWaitBars := na
+        pendingWarnDanger := false
+        pendingDangerText := ""
+        pendingModeText := ""
+
+if simInTrade
+    int heldBars = bar_index - simEntryBar
+    bool retestEntryBar = simEnteredThisBar and simEntryFromRetest
+    bool hitSl = high >= simStop
+    bool hitTp = low <= simTarget and not retestEntryBar
+    if hitSl or hitTp
+        simExitPrice := hitSl ? simStop : simTarget
+        simExitReason := hitSl and hitTp ? "SL_first_same_bar" : hitSl ? "SL" : "TP"
+        simExitedThisBar := true
+    else if heldBars >= maxHoldBars
+        simExitPrice := close
+        simExitReason := "TIME"
+        simExitedThisBar := true
+
+    if simExitedThisBar
+        simExitR := f_short_r_after_cost(simEntry, simExitPrice, simRisk)
+        simTrades += 1
+        simWins += simExitR > 0 ? 1 : 0
+        simTotalR += simExitR
+        simGrossProfit += simExitR > 0 ? simExitR : 0.0
+        simGrossLoss += simExitR <= 0 ? simExitR : 0.0
+        simPeakR := math.max(simPeakR, simTotalR)
+        simMaxDdR := math.max(simMaxDdR, simPeakR - simTotalR)
+        lastExitReason := simExitReason
+        lastExitR := simExitR
+        lastAction := "EXIT " + simExitReason
+        color exitColor = simExitR > 0 ? color.new(color.lime, 0) : color.new(color.red, 0)
+        if showEntryExitText
+            string exitInfo = "EXIT " + simExitReason +
+                 "\n" + str.tostring(simExitPrice, format.mintick) +
+                 "\n" + str.tostring(simExitR, "#.##") + "R"
+            float exitY = simExitR > 0 ? simExitPrice - atrValue * labelOffsetAtr : simExitPrice + atrValue * labelOffsetAtr
+            label.new(bar_index + labelOffsetBars, exitY, exitInfo, xloc=xloc.bar_index, yloc=yloc.price, style=label.style_label_left, color=exitColor, textcolor=simExitR > 0 ? color.black : color.white, size=size.small)
+        simInTrade := false
+        simEntryBar := na
+        simEntry := na
+        simStop := na
+        simTarget := na
+        simRisk := na
+        simRetestPrice := na
+        simEntryFromRetest := false
+
+bool canConsiderSignal = signalShort and not simInTrade and not simPending and not simExitedThisBar
+bool dangerBlockSignal = canConsiderSignal and warnDanger and dangerAction == "Block"
+bool canArmSignal = canConsiderSignal and not dangerBlockSignal
+if dangerBlockSignal
+    blockedDangerCount += 1
+    lastAction := "BLOCK WARN"
+
+if canArmSignal
+    rawSignalCount += 1
+    simPending := true
+    pendingBar := bar_index
+    pendingStop := stopCandidate
+    pendingAtr := atrValue
+    pendingBoxHigh := boxHigh
+    pendingBoxLow := boxLow
+    pendingBaseOpen := na
+    pendingRetestPrice := na
+    pendingStdRetestPrice := na
+    pendingStrictRetestPrice := na
+    pendingRetestR := selectedRetestR
+    pendingWaitBars := selectedWaitBars
+    pendingWarnDanger := warnDanger
+    pendingDangerText := dangerText
+    pendingModeText := executionMode
+    lastAction := "SIGNAL"
+    if showSignalBoxLines
+        line.new(bar_index - boxBars, boxHigh, bar_index + 1, boxHigh, xloc=xloc.bar_index, color=color.new(color.orange, 0), width=2)
+        line.new(bar_index - boxBars, boxLow, bar_index + 1, boxLow, xloc=xloc.bar_index, color=color.new(color.teal, 0), width=2)
+        line.new(bar_index, stopCandidate, bar_index + 1, stopCandidate, xloc=xloc.bar_index, color=color.new(color.red, 0), style=line.style_dashed)
+
+//------------------------------------------------------------------------------
+// Optional TradingView strategy orders
+//------------------------------------------------------------------------------
+var float strategyStop = na
+var int strategyEntryBar = na
+
+if enableOrders and not isRetestMode and canArmSignal and riskCloseOk and strategy.position_size == 0
+    strategyStop := stopCandidate
+    strategy.entry("S", strategy.short, comment="SILVER H1 SHORT")
+
+if strategy.position_size < 0 and strategy.position_size[1] == 0
+    strategyEntryBar := bar_index
+
+if enableOrders and strategy.position_size < 0 and not na(strategyStop)
+    float orderRisk = strategyStop - strategy.position_avg_price
+    if orderRisk > 0
+        strategy.exit("XS", "S", stop=strategyStop, limit=strategy.position_avg_price - orderRisk * rr)
+
+if enableOrders and strategy.position_size < 0 and not na(strategyEntryBar)
+    if bar_index - strategyEntryBar >= maxHoldBars
+        strategy.close("S", comment="TIME")
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    strategyStop := na
+    strategyEntryBar := na
+
+//------------------------------------------------------------------------------
+// Visuals
+//------------------------------------------------------------------------------
+plot(showBox ? boxHigh : na, title="Box High", color=color.new(color.orange, 25), linewidth=1, style=plot.style_linebr)
+plot(showBox ? boxLow : na, title="Box Low", color=color.new(color.teal, 25), linewidth=1, style=plot.style_linebr)
+
+plotshape(showSignals and canConsiderSignal and not warnDanger, title="SILVER Short Signal", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), text="SIG", textcolor=color.white, size=size.small)
+plotshape(showSignals and canConsiderSignal and warnDanger, title="SILVER Short Signal Warning", style=shape.triangledown, location=location.abovebar, color=color.new(color.orange, 0), text="WARN", textcolor=color.black, size=size.small)
+plotshape((showEntryExitMarks and simEnteredThisBar) ? simEntry : na, title="SILVER Entry Short Price", style=shape.labeldown, location=location.absolute, color=color.new(color.red, 0), textcolor=color.white, size=size.small, text="SHORT")
+plotshape((showEntryExitMarks and simExitedThisBar and simExitReason == "TP") ? simExitPrice : na, title="SILVER Exit TP Price", style=shape.labelup, location=location.absolute, color=color.new(color.lime, 0), textcolor=color.black, size=size.small, text="TP")
+plotshape((showEntryExitMarks and simExitedThisBar and (simExitReason == "SL" or simExitReason == "SL_first_same_bar")) ? simExitPrice : na, title="SILVER Exit SL Price", style=shape.labeldown, location=location.absolute, color=color.new(color.red, 0), textcolor=color.white, size=size.small, text="SL")
+plotshape((showEntryExitMarks and simExitedThisBar and simExitReason == "TIME") ? simExitPrice : na, title="SILVER Exit Time Price", style=shape.labelup, location=location.absolute, color=color.new(color.gray, 0), textcolor=color.white, size=size.small, text="TIME")
+
+var label envWarningLabel = na
+if showEnvWarning and barstate.islast
+    label.delete(envWarningLabel)
+    if not envOk
+        string reason = enforceH1 and not isH1Chart ? "H1ではありません: " + timeframe.period : enforceSilver and not isSilver ? "SILVER/XAGUSDではありません" : "環境NG"
+        envWarningLabel := label.new(bar_index, high + atrValue * 3.0, "SILVER v0.2 停止中\n" + reason, style=label.style_label_down, color=color.new(color.red, 0), textcolor=color.white, size=size.normal)
+
+var label orderWarningLabel = na
+if showOrderWarning and barstate.islast
+    label.delete(orderWarningLabel)
+    if enableOrders
+        string orderWarnText = isRetestMode ? "strategy注文はH1 open専用\nリテストは内部表示を優先" : "strategy注文は参考\n内部R表示を優先"
+        orderWarningLabel := label.new(bar_index, low - atrValue * 4.0, orderWarnText, style=label.style_label_up, color=color.new(color.orange, 15), textcolor=color.black, size=size.small)
+
+//------------------------------------------------------------------------------
+// Alerts
+//------------------------------------------------------------------------------
+alertcondition(canArmSignal, title="SILVER H1 SHORT SIGNAL", message="SILVER/XAGUSD H1 short signal. Entry depends on execution mode.")
+alertcondition(canConsiderSignal and warnDanger, title="SILVER H1 SHORT WARNING", message="SILVER/XAGUSD H1 short signal has danger warning.")
+alertcondition(simEnteredThisBar, title="SILVER H1 SHORT ENTRY", message="SILVER/XAGUSD H1 short entry fired.")
+alertcondition(simExitedThisBar and simExitReason == "TP", title="SILVER H1 EXIT TP", message="SILVER/XAGUSD H1 short exit TP.")
+alertcondition(simExitedThisBar and (simExitReason == "SL" or simExitReason == "SL_first_same_bar"), title="SILVER H1 EXIT SL", message="SILVER/XAGUSD H1 short exit SL.")
+alertcondition(simExitedThisBar and simExitReason == "TIME", title="SILVER H1 EXIT TIME", message="SILVER/XAGUSD H1 short exit TIME.")
+alertcondition(simExitedThisBar, title="SILVER H1 EXIT ANY", message="SILVER/XAGUSD H1 short exit.")
+
+//------------------------------------------------------------------------------
+// Table
+//------------------------------------------------------------------------------
+var table t = table.new(f_table_pos(tablePosInput), 2, 30, border_width=1)
+if showTable and barstate.islast
+    float winRate = simTrades > 0 ? simWins * 100.0 / simTrades : na
+    float avgR = simTrades > 0 ? simTotalR / simTrades : na
+    float pf = simGrossLoss < 0 ? simGrossProfit / math.abs(simGrossLoss) : na
+    string envText = (isSilver ? "SILVER OK" : "Not SILVER") + " / " + (isH1Chart ? "H1 OK" : "Not H1")
+    color envColor = envOk ? color.new(color.green, 70) : color.new(color.red, 60)
+    string strategyText = enableOrders ? (isRetestMode ? "OFF in retest" : "ON H1 open") : "OFF"
+    table.cell(t, 0, 0, "SILVER v0.2", text_color=color.white, bgcolor=color.new(color.black, 0), text_size=size.small)
+    table.cell(t, 1, 0, envText, text_color=color.white, bgcolor=envColor, text_size=size.small)
+    table.cell(t, 0, 1, "判断足", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 1, "H1 setup", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 2, "strategy", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 2, strategyText, text_color=enableOrders and not isRetestMode ? color.yellow : color.white, text_size=size.tiny)
+    table.cell(t, 0, 3, "内部 trades", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 3, str.tostring(simTrades), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 4, "勝率", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, f_pct(winRate), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 5, "Total R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 5, str.tostring(simTotalR, "#.##") + "R", text_color=simTotalR >= 0 ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 6, "Avg R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 6, f_num(avgR) + "R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 7, "PF", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 7, f_num(pf), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 8, "Max DD", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 8, str.tostring(simMaxDdR, "#.##") + "R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 9, "Armed signals", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 9, str.tostring(rawSignalCount), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 10, "Risk skips", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 10, str.tostring(skippedRiskCount), text_color=skippedRiskCount == 0 ? color.lime : color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 11, "Last action", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 11, lastAction, text_color=lastAction == "SHORT IN" ? color.lime : lastAction == "SIGNAL" ? color.yellow : lastAction == "SKIP RISK" ? color.red : color.white, text_size=size.tiny)
+    table.cell(t, 0, 12, "Last exit", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 12, lastExitReason + " " + f_num(lastExitR) + "R", text_color=na(lastExitR) ? color.white : lastExitR >= 0 ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 13, "H4", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 13, h4Down ? "DOWN" : "not down", text_color=h4Ok ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 14, "Entry hour", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 14, str.tostring(entryHour) + (hourOk ? " OK" : " 除外"), text_color=hourOk ? color.white : color.red, text_size=size.tiny)
+    table.cell(t, 0, 15, "Down", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 15, f_num(downMoveAtr) + "ATR", text_color=moveOk ? color.lime : color.white, text_size=size.tiny)
+    table.cell(t, 0, 16, "Pullback", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 16, f_num(pullbackAtr) + "ATR", text_color=pullbackOk ? color.lime : color.white, text_size=size.tiny)
+    table.cell(t, 0, 17, "Box", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 17, f_num(boxWidthAtr) + "ATR", text_color=boxOk ? color.lime : color.white, text_size=size.tiny)
+    table.cell(t, 0, 18, "Break", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 18, f_num(triggerAtr) + "ATR", text_color=breakOk ? color.lime : color.white, text_size=size.tiny)
+    table.cell(t, 0, 19, "Range", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 19, f_num(rangeAtr) + "ATR", text_color=rangeOk ? color.lime : color.white, text_size=size.tiny)
+    table.cell(t, 0, 20, "Close loc", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 20, f_num(closeLocShort), text_color=closeLocOk ? color.lime : color.white, text_size=size.tiny)
+    table.cell(t, 0, 21, "M15補助", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 21, executionMode, text_color=isRetestMode ? color.orange : color.white, text_size=size.tiny)
+    table.cell(t, 0, 22, "除外日", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 22, holidayOk ? "OK" : "年末年始", text_color=holidayOk ? color.white : color.red, text_size=size.tiny)
+    table.cell(t, 0, 23, "Now", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 23, rawSignalShort ? "SIGNAL" : simInTrade ? "IN" : simPending ? "NEXT" : "WAIT", text_color=rawSignalShort ? color.yellow : simInTrade ? color.lime : color.white, text_size=size.tiny)
+    table.cell(t, 0, 24, "Retest", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 24, isRetestMode ? str.tostring(selectedRetestR, "#.##") + "R / " + str.tostring(selectedWaitBars) + "H" : "OFF", text_color=isRetestMode ? color.orange : color.white, text_size=size.tiny)
+    table.cell(t, 0, 25, "Retest miss", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 25, str.tostring(skippedRetestCount), text_color=skippedRetestCount == 0 ? color.white : color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 26, "Danger blocks", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 26, str.tostring(blockedDangerCount), text_color=blockedDangerCount == 0 ? color.white : color.red, text_size=size.tiny)
+    table.cell(t, 0, 27, "Shallow", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 27, warnShallowBreak ? "WARN < " + str.tostring(shallowBreakWarnAtr, "#.##") : "OK", text_color=warnShallowBreak ? color.orange : color.white, text_size=size.tiny)
+    table.cell(t, 0, 28, "Hour 6/7", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 28, warnDangerHour ? "WARN" : "OK", text_color=warnDangerHour ? color.orange : color.white, text_size=size.tiny)
+    table.cell(t, 0, 29, "Danger action", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 29, dangerAction, text_color=dangerAction == "Block" ? color.red : color.yellow, text_size=size.tiny)

@@ -117,7 +117,7 @@ Status: 検証途中。まだ本番採用ではない。
 - エントリー後6本以内に1Rへ届くか。
 - エントリー後6本以内に停滞レンジ中央へ戻るか。
 
-主な結果:
+主な結果。これは複数lookbackを含む研究グリッド上の集計で、実戦単位の重複除去前:
 
 | 角度 | 良かった形 | 結果/解釈 |
 |---|---|---|
@@ -127,7 +127,7 @@ Status: 検証途中。まだ本番採用ではない。
 | 直後反応 | 6本以内に1R到達 | Practical Allで75 trades / +47.34R / PF 2.31 |
 | 戻り | 6本以内に停滞レンジ中央へ戻らない | Practical Allで69 trades / +58.91R / PF 3.09 |
 
-通貨別では、Practical Allの利益はGBPJPYに大きく寄っています。
+通貨別では、重複除去前のPractical Allの利益はGBPJPYに大きく寄っています。
 
 | 通貨 | trades | total_r | PF | 解釈 |
 |---|---:|---:|---:|---|
@@ -139,7 +139,7 @@ Status: 検証途中。まだ本番採用ではない。
 | USDJPY | 6 | -6.03R | 0.00 | 除外候補 |
 | AUDJPY | 24 | -18.58R | 0.18 | 除外候補 |
 
-出口管理の比較:
+出口管理の比較。これも重複除去前の研究グリッド:
 
 | サンプル | 出口 | trades | total_r | PF | maxDD |
 |---|---|---:|---:|---:|---:|
@@ -157,6 +157,30 @@ Status: 検証途中。まだ本番採用ではない。
 - 12本で1R未達なら撤退は、広いPractical Allとサポート60-119本で改善したため、次の検証候補。
 - Primary 1ヶ月安値停滞は18件だけでは固定2Rがまだ最も素直。
 - 直後フォロースルーや中央戻りは、エントリー前には分からないため、入口フィルタではなく建玉後の観察・管理ルールとして扱う。
+
+### H4安値停滞の追加検証: 重複除去後
+
+上の集計には、複数lookbackや `either` で同じエントリー時刻が重複して入るものがありました。実戦では同じ通貨・同じ時刻で1回しか入らないため、`trigger_mode=stagnation` を基準にして重複除去した版も確認しました。
+
+重複除去後の主な結果:
+
+| ルール | trades | winrate | total_r | avg_r | PF | maxDD | 解釈 |
+|---|---:|---:|---:|---:|---:|---:|---|
+| Primary L120 all | 18 | 61.11% | +13.61R | +0.76R | 2.78 | 2.42R | 既存本命。固定2Rで良い |
+| Primary L120 core4 | 11 | 72.73% | +12.55R | +1.14R | 4.98 | 1.08R | 最もきれい。core4は GBPJPY/CHFJPY/XAUUSD/EURJPY |
+| Primary L120 no AUD/USD | 15 | 66.67% | +13.71R | +0.91R | 3.46 | 2.42R | SILVERを残すならこちら |
+| Practical no AUD/USD + 12本撤退 | 37 | 48.65% | +11.71R | +0.32R | 1.59 | 4.76R | 広げると薄くなる |
+| support60-119 all + 12本撤退 | 8 | 87.50% | +11.23R | +1.40R | 11.56 | 0.00R | 強いが件数不足 |
+| support60-119 no AUD/USD + 12本撤退 | 7 | 100.00% | +12.29R | +1.76R | inf | 0.00R | 強い観察タグ。OOSなし |
+
+重複除去で見えた修正点:
+
+- `support60-119本` は、研究グリッド上では26件だったが、実戦単位では8件。優秀だが、本番ルールにするにはまだ少ない。
+- 一番実戦候補に近いのは、`1ヶ月安値更新 + 安値停滞下抜け + ADX>=30 + risk<=1.5ATR + BB幅3-8ATR + core4通貨 + 固定2R`。
+- core4は `GBPJPY, CHFJPY, XAUUSD, EURJPY`。SILVER/AUDJPY/USDJPYは現時点では外す候補。
+- 12本以内1R未達撤退は、Primary L120では効果がほぼない。広いPracticalやsupport60-119には効くが、補助管理案に留める。
+- 6本撤退は早すぎる。10-12本が候補。16-20本でも大崩れしないが、24本は固定2Rとほぼ同じ。
+- GBPJPYは優先監視だが、重複除去後は11件だけなので、GBPJPY専用と断定するにはまだ早い。
 
 ### H1版の追加検証
 
@@ -269,7 +293,7 @@ H4本命と同じ考え方、つまり `1ヶ月安値更新 + 安値停滞下抜
 
 | 優先 | 手法 | 状態 | 理由 |
 |---:|---|---|---|
-| 1 | H4 1ヶ月安値更新後の安値停滞ブレイクショート | 検証途中の本命候補 | PF 2.78、train/test/OOSが一応プラス。ただし件数不足 |
+| 1 | H4 1ヶ月安値更新後の安値停滞ブレイクショート | 検証途中の本命候補 | Primary L120 core4 が 11 trades / +12.55R / PF 4.98。ただし件数不足 |
 | 2 | 高ボラ下落継続ショート | 観察候補 | 断片はあるがOOS弱い |
 | 3 | H4 T5 ショート反転ミラー | 不採用 | 明確にマイナス |
 
@@ -277,10 +301,11 @@ H4本命と同じ考え方、つまり `1ヶ月安値更新 + 安値停滞下抜
 
 1. H4 1ヶ月安値更新後の安値停滞ブレイクを Pine の可視化ラベルにする。
 2. ラベルは `候補`, `実戦候補`, `見送り理由` に分ける。
-3. GBPJPYだけ先にアラート監視し、CHFJPY/XAUUSD/EURJPYは記録のみ、AUDJPY/USDJPYは原則除外で見る。
-4. H4安値停滞は、12本以内に1R未達なら撤退する管理案を追加検証する。
-5. TrendBreakV1 と同じ通貨・同時期に出た場合の重複ルールを決める。
-6. フォワードで30から50件記録するまで、本番ロットに上げない。
+3. Primary L120 core4を中心に監視する。core4は GBPJPY/CHFJPY/XAUUSD/EURJPY。
+4. SILVER/AUDJPY/USDJPYは原則除外、support60-119は強い観察タグとして記録する。
+5. 広いPractical条件を使う場合だけ、10-12本以内に1R未達なら撤退する管理案を検証する。
+6. TrendBreakV1 と同じ通貨・同時期に出た場合の重複ルールを決める。
+7. フォワードで30から50件記録するまで、本番ロットに上げない。
 
 ## 関連ファイル
 
@@ -295,6 +320,8 @@ H4本命と同じ考え方、つまり `1ヶ月安値更新 + 安値停滞下抜
 | H1安値更新ショート結果 | `backtests/elliott_fibo/results_2026_05_28/h1_low_break_lookback_exit_study/report_ja.md` |
 | H4安値停滞の別角度分析 | `backtests/elliott_fibo/run_h4_stagnation_deep_dive.py` |
 | H4安値停滞の別角度分析結果 | `backtests/elliott_fibo/results_2026_05_28/h4_stagnation_deep_dive/report_ja.md` |
+| H4安値停滞の追加検証 | `backtests/elliott_fibo/run_h4_stagnation_followup_validation.py` |
+| H4安値停滞の追加検証結果 | `backtests/elliott_fibo/results_2026_05_28/h4_stagnation_followup_validation/report_ja.md` |
 | ショート反転ミラー検証 | `backtests/elliott_fibo/run_t5_short_mirror_validation.py` |
 | 高ボラ下落継続検証 | `backtests/elliott_fibo/run_t5_short_high_vol_continuation.py` |
 | 実戦化監査 | `backtests/elliott_fibo/run_t5_short_practical_hardening.py` |

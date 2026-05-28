@@ -116,12 +116,13 @@
 | **安値更新期間・利確基準の深掘り** | [`backtests/elliott_fibo/results_2026_05_28/low_break_lookback_exit_study/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/low_break_lookback_exit_study/report_ja.md) | 0.5〜6ヶ月lookback、レンジ/トレンド分類、利確基準を比較 | 1ヶ月が最も強い。3ヶ月以上は強くならず、長期lookbackは戻りやすい |
 | **H1安値更新ショート検証** | [`backtests/elliott_fibo/results_2026_05_28/h1_low_break_lookback_exit_study/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/h1_low_break_lookback_exit_study/report_ja.md) | H4本命をH1へ換算し、0.5〜6ヶ月lookbackを比較 | H1安値停滞型は弱い。GBPJPY 0.5ヶ月rebreakは別候補として有望 |
 | **H4安値停滞 深掘り** | [`backtests/elliott_fibo/results_2026_05_28/h4_stagnation_deep_dive/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/h4_stagnation_deep_dive/report_ja.md) | 停滞レンジ品質、下抜け足、サポート保持期間、直後フォロースルー、出口管理を比較 | サポート保持60-119本とGBPJPYが強い。12本以内1R未達撤退が次の候補 |
+| **H4安値停滞 追加検証** | [`backtests/elliott_fibo/results_2026_05_28/h4_stagnation_followup_validation/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/h4_stagnation_followup_validation/report_ja.md) | 重複除去後に、通貨除外、support age、時間切れ撤退を再評価 | Primary L120 core4 + 固定2Rが最もきれい。support60-119は強いが実質8件 |
 
 **暫定ルール**: H4で過去120本の安値を終値更新 → 安値圏の停滞下抜け → ADX>=30, BB幅3-8ATR, risk<=1.5ATR → 次足ショート, SLは停滞レンジ上, TPは2R。
 
-追加メモ: lookbackを3ヶ月以上に伸ばすより、H4で60-119本ほど保持されたサポート割れを別フィルタ化する方が有望。H4安値停滞はGBPJPYに寄せ、AUDJPY/USDJPYは除外候補。6本以内撤退は早すぎ、12本以内に1R未達なら撤退が次の検証候補。
+追加メモ: 重複除去後は、広いPracticalより `Primary L120 core4` が最も実戦候補に近い。core4は GBPJPY/CHFJPY/XAUUSD/EURJPY。support60-119は強いが実質8件なので観察タグ扱い。6本以内撤退は早すぎ、広い条件では10-12本以内に1R未達なら撤退が候補。
 
-**判定**: 本番未採用。GBPJPY中心にアラート監視し、30から50件のフォワード記録が必要。
+**判定**: 本番未採用。Primary L120 core4を中心にアラート監視し、30から50件のフォワード記録が必要。
 
 ---
 

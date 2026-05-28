@@ -21,6 +21,7 @@ venv/
 .ipynb_checkpoints/
 
 # OHLC raw data (容量大、別途バックアップ管理)
+F87104_test
 F87104_test/
 
 # Node modules (Push対象外、シンボリックリンクの場合もあり)

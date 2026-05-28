@@ -114,6 +114,7 @@
 | **高ボラ下落継続 実戦化監査** | [`backtests/elliott_fibo/results_2026_05_28/t5_short_practical_hardening/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/t5_short_practical_hardening/report_ja.md) | 出口、建値移動、時間撤退を検証 | DDは抑えられるが本番採用には不足 |
 | **1ヶ月安値更新後の安値停滞ブレイク** | [`backtests/elliott_fibo/results_2026_05_28/monthly_low_rebreak_short/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/monthly_low_rebreak_short/report_ja.md) | 1〜3ヶ月安値更新後の戻り再下落/安値停滞を検証 | 暫定本命。18 trades / +10.62R / PF 2.22。ただしOOS1件のみ |
 | **安値更新期間・利確基準の深掘り** | [`backtests/elliott_fibo/results_2026_05_28/low_break_lookback_exit_study/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/low_break_lookback_exit_study/report_ja.md) | 0.5〜6ヶ月lookback、レンジ/トレンド分類、利確基準を比較 | 1ヶ月が最も強い。3ヶ月以上は強くならず、長期lookbackは戻りやすい |
+| **H1安値更新ショート検証** | [`backtests/elliott_fibo/results_2026_05_28/h1_low_break_lookback_exit_study/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/h1_low_break_lookback_exit_study/report_ja.md) | H4本命をH1へ換算し、0.5〜6ヶ月lookbackを比較 | H1安値停滞型は弱い。GBPJPY 0.5ヶ月rebreakは別候補として有望 |
 
 **暫定ルール**: H4で過去120本の安値を終値更新 → 安値圏の停滞下抜け → ADX>=30, BB幅3-8ATR, risk<=1.5ATR → 次足ショート, SLは停滞レンジ上, TPは2R。
 

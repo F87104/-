@@ -104,6 +104,41 @@ Status: 検証途中。まだ本番採用ではない。
 - 3ヶ月以上は固定2Rを待つより、1Rから1.25Rで逃げる方が合う可能性がある。ただし件数不足。
 - 「伸びたのに戻る」問題は、長期lookbackほど出やすい。長期安値ブレイクを使うなら固定2Rではなく、1R到達後の保護が必須候補。
 
+### H1版の追加検証
+
+H4で有望だった安値更新ショートを、H1にも換算して検証しました。
+
+H1換算:
+
+- 1ヶ月: 480本
+- 3ヶ月: 1440本
+- 6ヶ月: 2880本
+- 安値停滞: 12本。H4の3本停滞と時間を合わせた。
+- シグナル期限: 192本。H4の48本以内と時間を合わせた。
+
+H4本命と同じ考え方、つまり `1ヶ月安値更新 + 安値停滞下抜け` はH1では弱くなりました。
+
+| 手法 | trades | total_r | avg_r | PF | test_total_r | OOS |
+|---|---:|---:|---:|---:|---:|---:|
+| H1 1ヶ月安値更新 + 安値停滞下抜け | 18 | +1.40R | +0.08R | 1.12 | -0.21R | 0.00R |
+| H4 1ヶ月安値更新 + 安値停滞下抜け | 18 | +13.61R | +0.76R | 2.78 | +5.73R | +1.98R |
+
+このため、H4本命をH1へ落とすのは不採用寄りです。H1は早く入れる利点よりも、ノイズと戻りの悪化が大きいです。
+
+ただし、H1独自の別候補として次が残りました。
+
+| H1候補 | trades | winrate | total_r | avg_r | PF | maxDD | OOS |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| GBPJPY + 0.5ヶ月安値更新 + rebreak + ADX>=25 + risk<=4H1ATR + BB幅3-14H1ATR | 37 | 56.76% | +25.01R | +0.68R | 2.52 | 2.14R | +2.95R |
+
+解釈:
+
+- H1で使うなら、安値停滞型ではなく短期rebreak型。
+- 通貨はGBPJPYに寄せる。
+- lookbackは1ヶ月ではなく0.5ヶ月、約240本が良い。
+- これはH4本命とは別手法候補として扱う。
+ 
+
 ## 途中で検証したもの
 
 ### 1. H4 T5 + MACD + BB ショート反転
@@ -201,6 +236,8 @@ Status: 検証途中。まだ本番採用ではない。
 | 月次安値更新ショート結果 | `backtests/elliott_fibo/results_2026_05_28/monthly_low_rebreak_short/report_ja.md` |
 | 安値更新期間・利確基準の深掘り | `backtests/elliott_fibo/run_low_break_lookback_exit_study.py` |
 | 安値更新期間・利確基準の結果 | `backtests/elliott_fibo/results_2026_05_28/low_break_lookback_exit_study/report_ja.md` |
+| H1安値更新ショート検証 | `backtests/elliott_fibo/run_h1_low_break_lookback_exit_study.py` |
+| H1安値更新ショート結果 | `backtests/elliott_fibo/results_2026_05_28/h1_low_break_lookback_exit_study/report_ja.md` |
 | ショート反転ミラー検証 | `backtests/elliott_fibo/run_t5_short_mirror_validation.py` |
 | 高ボラ下落継続検証 | `backtests/elliott_fibo/run_t5_short_high_vol_continuation.py` |
 | 実戦化監査 | `backtests/elliott_fibo/run_t5_short_practical_hardening.py` |

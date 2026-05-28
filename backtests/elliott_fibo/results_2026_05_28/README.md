@@ -19,6 +19,7 @@ Status: 検証途中。ここにある手法はまだ本番採用ではない。
 | `t5_short_practical_hardening/` | 観察候補 | 高ボラ下落継続の出口や撤退を実戦向けに調整 | DDは抑えられるが、利益が薄くOOS不足 |
 | `monthly_low_rebreak_short/` | 検証途中の本命候補 | 1ヶ月から3ヶ月の安値更新後、戻り再下落または安値停滞下抜けを売る | 1ヶ月安値更新後の安値停滞下抜けが最有望 |
 | `low_break_lookback_exit_study/` | 検証途中の深掘り | 安値更新期間を0.5ヶ月から6ヶ月に拡張し、レンジ/トレンド分類と利確基準を比較 | 1ヶ月が最も強く、3ヶ月以上は強くならない。サポート保持60-119本が有望 |
+| `h1_low_break_lookback_exit_study/` | H1検証 | H4本命をH1へ換算し、0.5〜6ヶ月lookbackと利確基準を比較 | H1安値停滞型は弱い。別候補としてGBPJPY 0.5ヶ月rebreakが有望 |
 
 ## 現時点の本命候補
 
@@ -55,7 +56,8 @@ Status: 検証途中。ここにある手法はまだ本番採用ではない。
 3. `monthly_low_rebreak_short/report_ja.md` で暫定候補を確認する。
 4. 必要なら `monthly_low_rebreak_short/trades.csv` で個別トレードを見る。
 5. 期間・利確基準を見る場合は `low_break_lookback_exit_study/report_ja.md` を読む。
-6. Pine可視化または追加OOS検証に進む。
+6. H1版を見る場合は `h1_low_break_lookback_exit_study/report_ja.md` を読む。
+7. Pine可視化または追加OOS検証に進む。
 
 ## 再実行コマンド
 
@@ -67,6 +69,7 @@ python3 backtests/elliott_fibo/run_t5_short_high_vol_continuation.py
 python3 backtests/elliott_fibo/run_t5_short_practical_hardening.py
 python3 backtests/elliott_fibo/run_monthly_low_rebreak_short.py
 python3 backtests/elliott_fibo/run_low_break_lookback_exit_study.py
+python3 backtests/elliott_fibo/run_h1_low_break_lookback_exit_study.py
 ```
 
 ## ファイルの見方

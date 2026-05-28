@@ -18,14 +18,15 @@ Status: 検証途中。ここにある手法はまだ本番採用ではない。
 | `t5_short_high_vol_continuation/` | 観察候補 | ミラーを捨て、高ボラ下落継続だけを狙うショート | プラス断片はあるがOOS不足。採用ではなく研究継続 |
 | `t5_short_practical_hardening/` | 観察候補 | 高ボラ下落継続の出口や撤退を実戦向けに調整 | DDは抑えられるが、利益が薄くOOS不足 |
 | `monthly_low_rebreak_short/` | 検証途中の本命候補 | 1ヶ月から3ヶ月の安値更新後、戻り再下落または安値停滞下抜けを売る | 1ヶ月安値更新後の安値停滞下抜けが最有望 |
+| `low_break_lookback_exit_study/` | 検証途中の深掘り | 安値更新期間を0.5ヶ月から6ヶ月に拡張し、レンジ/トレンド分類と利確基準を比較 | 1ヶ月が最も強く、3ヶ月以上は強くならない。サポート保持60-119本が有望 |
 
 ## 現時点の本命候補
 
-`monthly_low_rebreak_short/` の中では、以下が暫定ベストです。
+`monthly_low_rebreak_short/` と `low_break_lookback_exit_study/` の中では、以下が暫定ベストです。
 
 | ルール | trades | winrate | total_r | avg_r | PF | maxDD |
 |---|---:|---:|---:|---:|---:|---:|
-| L120_STAG_ONLY__ADX30_RISK_LE1_5_BBW3_8 | 18 | 55.56% | +10.62R | +0.59R | 2.22 | 3.41R |
+| L120_STAG_ONLY__ADX30_RISK_LE1_5_BBW3_8 | 18 | 61.11% | +13.61R | +0.76R | 2.78 | 3.41R |
 
 意味:
 
@@ -36,6 +37,8 @@ Status: 検証途中。ここにある手法はまだ本番採用ではない。
 - TPは2R。
 
 この候補は、戻り高値再ブレイクよりも安値停滞下抜けの方が重要です。
+
+追加検証では、3ヶ月や6ヶ月へ伸ばしても成績は強くなりませんでした。むしろ、安値がH4で60-119本ほど保持されたあとに割れる形が最も良く、これは「長期トレンドの途中」より「見えているサポートが割れる」形に近いです。
 
 ## まだ本番採用しない理由
 
@@ -51,7 +54,8 @@ Status: 検証途中。ここにある手法はまだ本番採用ではない。
 2. `../../../docs/research/short_side_research_2026-05-28_in_progress.md` を読む。
 3. `monthly_low_rebreak_short/report_ja.md` で暫定候補を確認する。
 4. 必要なら `monthly_low_rebreak_short/trades.csv` で個別トレードを見る。
-5. Pine可視化または追加OOS検証に進む。
+5. 期間・利確基準を見る場合は `low_break_lookback_exit_study/report_ja.md` を読む。
+6. Pine可視化または追加OOS検証に進む。
 
 ## 再実行コマンド
 
@@ -62,6 +66,7 @@ python3 backtests/elliott_fibo/run_t5_short_mirror_validation.py
 python3 backtests/elliott_fibo/run_t5_short_high_vol_continuation.py
 python3 backtests/elliott_fibo/run_t5_short_practical_hardening.py
 python3 backtests/elliott_fibo/run_monthly_low_rebreak_short.py
+python3 backtests/elliott_fibo/run_low_break_lookback_exit_study.py
 ```
 
 ## ファイルの見方
@@ -74,4 +79,7 @@ python3 backtests/elliott_fibo/run_monthly_low_rebreak_short.py
 | `by_symbol.csv` | 通貨別集計 |
 | `by_trigger.csv` | トリガー別集計 |
 | `selected_*` | 実戦化監査で選んだ候補の詳細 |
-
+| `lookback_strength.csv` | 安値更新期間ごとの強さ |
+| `exit_summary.csv` | 利確/撤退ルールごとの比較 |
+| `regime_summary.csv` | 事前状態がレンジ割れかトレンド継続かの比較 |
+| `support_age_summary.csv` | サポート保持期間別の比較 |

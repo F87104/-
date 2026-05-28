@@ -31,5 +31,8 @@ node_modules/
 # 出力ディレクトリ (実行結果、必要な分は別途管理)
 outputs/
 
+# Large generated research detail. Summary CSV/report are committed instead.
+backtests/elliott_fibo/results_2026_05_28/low_break_lookback_exit_study/exit_model_trades.csv
+
 # Data directory (raw data, 別途バックアップ管理)
 data/

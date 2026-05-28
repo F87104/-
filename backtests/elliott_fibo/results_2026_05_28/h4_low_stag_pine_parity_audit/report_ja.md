@@ -19,6 +19,7 @@ Status: Pine変換監査用。Python検証を正として、TradingView Pine str
 - entryMode: `実戦候補` または `厳選候補`
 - default quantityは成績比較用ではなく、まずシグナル一致確認用。
 - strategy版には `PY期待`, `一致`, `余計` マーカーを追加済み。GBPJPYでは `Matched=4 / Extra=0` になるまで不一致扱い。
+- `[Parity Check v2]` では、発注モードを `Pineロジック` と `GBPJPY Python期待のみ` に分離。`Python期待のみ` は約定/SLTPの照合専用。
 
 ## 期待サマリー
 

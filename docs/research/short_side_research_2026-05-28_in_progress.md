@@ -182,6 +182,56 @@ Status: 検証途中。まだ本番採用ではない。
 - 6本撤退は早すぎる。10-12本が候補。16-20本でも大崩れしないが、24本は固定2Rとほぼ同じ。
 - GBPJPYは優先監視だが、重複除去後は11件だけなので、GBPJPY専用と断定するにはまだ早い。
 
+### H4安値停滞の精度向上検証
+
+Pine実装に向けて、説明しやすい品質フィルタだけで精度を上げられるか確認しました。
+
+追加した品質フィルタ:
+
+- 品質フィルタ: 下抜け深さが `0.10ATR以上`、かつ下抜け足の終値位置が `0.50以下`。つまり終値が足の下半分で終わる。
+- 厳選フィルタ: 品質フィルタに加えて、support age が10本以内なら、下抜け深さ `0.20ATR以上` を要求する。
+- 目的: 浅い下抜けや、新しい安値を弱く割っただけの形を避ける。
+
+結果:
+
+| ルール | trades | winrate | total_r | avg_r | PF | maxDD | 解釈 |
+|---|---:|---:|---:|---:|---:|---:|---|
+| Primary L120 core4 | 11 | 72.73% | +12.55R | +1.14R | 4.98 | 1.08R | ベース候補 |
+| Primary L120 core4 + 品質フィルタ | 9 | 88.89% | +14.67R | +1.63R | 15.12 | 0.00R | 実戦候補 |
+| Primary L120 core4 + 厳選フィルタ | 8 | 100.00% | +15.71R | +1.96R | inf | 0.00R | 厳選候補。ただし件数不足 |
+| Primary L120 no AUD/USD + 厳選フィルタ | 10 | 90.00% | +16.19R | +1.62R | 13.53 | 1.29R | SILVERを戻す広め候補 |
+
+期間別では、core4厳選フィルタは train/test/OOS すべてプラスでした。
+
+| period | trades | total_r | avg_r | PF |
+|---|---:|---:|---:|---:|
+| train_2015_2020 | 4 | +7.80R | +1.95R | inf |
+| test_2021_2024 | 3 | +5.93R | +1.98R | inf |
+| oos_2025_2026 | 1 | +1.98R | +1.98R | inf |
+
+負けの除外理由:
+
+| 負け | 理由 |
+|---|---|
+| XAUUSD 2017-06-21 | 下抜け深さ0.086ATRで浅い。終値位置も0.525で足の下半分に届かない |
+| EURJPY 2021-11-10 | 下抜け深さ0.077ATRで浅い |
+| CHFJPY 2017-01-17 | support age 9本の新しい安値なのに、下抜け深さ0.179ATRで0.20ATR未満 |
+
+実装候補:
+
+| ラベル | 条件 |
+|---|---|
+| 候補 | Primary L120 core4 |
+| 実戦候補 | 候補 + 下抜け深さ>=0.10ATR + 下抜け足の終値位置<=0.50 |
+| 厳選候補 | 実戦候補 + support age>10 または 下抜け深さ>=0.20ATR |
+| 強い観察タグ | support age 60-119 |
+
+注意:
+
+- 厳選候補は8件全勝だが、件数が少なすぎる。過信しない。
+- SILVERを戻すと総Rは増えるが、SILVERの急落継続失敗も拾う。精度重視ではcore4維持。
+- 出口は固定2Rがまだ最も素直。Primary L120では12本撤退を入れても改善が小さい。
+
 ### H1版の追加検証
 
 H4で有望だった安値更新ショートを、H1にも換算して検証しました。
@@ -293,7 +343,7 @@ H4本命と同じ考え方、つまり `1ヶ月安値更新 + 安値停滞下抜
 
 | 優先 | 手法 | 状態 | 理由 |
 |---:|---|---|---|
-| 1 | H4 1ヶ月安値更新後の安値停滞ブレイクショート | 検証途中の本命候補 | Primary L120 core4 が 11 trades / +12.55R / PF 4.98。ただし件数不足 |
+| 1 | H4 1ヶ月安値更新後の安値停滞ブレイクショート | 検証途中の本命候補 | Primary L120 core4厳選が 8 trades / +15.71R / 全勝。ただし件数不足 |
 | 2 | 高ボラ下落継続ショート | 観察候補 | 断片はあるがOOS弱い |
 | 3 | H4 T5 ショート反転ミラー | 不採用 | 明確にマイナス |
 
@@ -302,10 +352,11 @@ H4本命と同じ考え方、つまり `1ヶ月安値更新 + 安値停滞下抜
 1. H4 1ヶ月安値更新後の安値停滞ブレイクを Pine の可視化ラベルにする。
 2. ラベルは `候補`, `実戦候補`, `見送り理由` に分ける。
 3. Primary L120 core4を中心に監視する。core4は GBPJPY/CHFJPY/XAUUSD/EURJPY。
-4. SILVER/AUDJPY/USDJPYは原則除外、support60-119は強い観察タグとして記録する。
-5. 広いPractical条件を使う場合だけ、10-12本以内に1R未達なら撤退する管理案を検証する。
-6. TrendBreakV1 と同じ通貨・同時期に出た場合の重複ルールを決める。
-7. フォワードで30から50件記録するまで、本番ロットに上げない。
+4. Pineでは `候補`, `実戦候補`, `厳選候補`, `強い観察タグ` に分ける。
+5. SILVER/AUDJPY/USDJPYは原則除外、support60-119は強い観察タグとして記録する。
+6. 広いPractical条件を使う場合だけ、10-12本以内に1R未達なら撤退する管理案を検証する。
+7. TrendBreakV1 と同じ通貨・同時期に出た場合の重複ルールを決める。
+8. フォワードで30から50件記録するまで、本番ロットに上げない。
 
 ## 関連ファイル
 
@@ -322,6 +373,8 @@ H4本命と同じ考え方、つまり `1ヶ月安値更新 + 安値停滞下抜
 | H4安値停滞の別角度分析結果 | `backtests/elliott_fibo/results_2026_05_28/h4_stagnation_deep_dive/report_ja.md` |
 | H4安値停滞の追加検証 | `backtests/elliott_fibo/run_h4_stagnation_followup_validation.py` |
 | H4安値停滞の追加検証結果 | `backtests/elliott_fibo/results_2026_05_28/h4_stagnation_followup_validation/report_ja.md` |
+| H4安値停滞の精度向上検証 | `backtests/elliott_fibo/run_h4_stagnation_precision_hardening.py` |
+| H4安値停滞の精度向上結果 | `backtests/elliott_fibo/results_2026_05_28/h4_stagnation_precision_hardening/report_ja.md` |
 | ショート反転ミラー検証 | `backtests/elliott_fibo/run_t5_short_mirror_validation.py` |
 | 高ボラ下落継続検証 | `backtests/elliott_fibo/run_t5_short_high_vol_continuation.py` |
 | 実戦化監査 | `backtests/elliott_fibo/run_t5_short_practical_hardening.py` |

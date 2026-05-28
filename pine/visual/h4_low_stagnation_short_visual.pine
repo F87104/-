@@ -185,28 +185,7 @@ f_h4_low_stag_short() =>
     float pullbackAtrOut = rawSignal ? signalPullbackAtr : active and atrValue > 0 ? (pullbackHigh - lowExtreme) / atrValue : na
     float lowExtremeOut = active or rawSignal ? lowExtreme : na
 
-    [
-        rawSignal,
-        firstBreak,
-        active,
-        pulledBack,
-        barsAfterOut,
-        supportAgeOut,
-        signalBreakDepthAtr,
-        signalCloseLocation,
-        signalRiskAtr,
-        adxValue,
-        bbWidthAtr,
-        signalStop,
-        signalTarget,
-        signalZoneHigh,
-        signalZoneLow,
-        rawSignal ? activePriorLow : active ? activePriorLow : na,
-        lowExtremeOut,
-        pullbackAtrOut,
-        signalClose,
-        originalBreakDepthAtr
-    ]
+    [rawSignal, firstBreak, active, pulledBack, barsAfterOut, supportAgeOut, signalBreakDepthAtr, signalCloseLocation, signalRiskAtr, adxValue, bbWidthAtr, signalStop, signalTarget, signalZoneHigh, signalZoneLow, rawSignal ? activePriorLow : active ? activePriorLow : na, lowExtremeOut, pullbackAtrOut, signalClose, originalBreakDepthAtr]
 
 [rawStagH4, firstBreakH4, activeH4, pulledBackH4, barsAfterH4, supportAgeH4, breakDepthH4, closeLocationH4, riskAtrH4, adxH4, bbWidthAtrH4, stopH4, targetH4, zoneHighH4, zoneLowH4, priorLowH4, lowExtremeH4, pullbackAtrH4, signalCloseH4, originalBreakDepthH4] = request.security(syminfo.tickerid, analysisTf, f_h4_low_stag_short(), barmerge.gaps_off, barmerge.lookahead_off)
 

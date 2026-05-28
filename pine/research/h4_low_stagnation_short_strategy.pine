@@ -40,8 +40,8 @@ freshSupportBars = input.int(10, "新しい安値の判定本数", minval=1, max
 freshDepthAtr = input.float(0.20, "新しい安値に必要な下抜け深さ(ATR)", minval=0.0, step=0.01, group=grpFilters)
 
 grpTrade = "売買設定"
-testStart = input.time(timestamp(2015, 01, 01, 00, 00), "検証開始", group=grpTrade)
-testEnd = input.time(timestamp(2026, 12, 31, 23, 59), "検証終了", group=grpTrade)
+testStart = input.time(timestamp("01 Jan 2015 00:00 +0000"), "検証開始", group=grpTrade)
+testEnd = input.time(timestamp("31 Dec 2026 23:59 +0000"), "検証終了", group=grpTrade)
 useHolidayFilter = input.bool(true, "12/15-1/10を除外", group=grpTrade)
 useRiskSizing = input.bool(false, "リスク%で数量計算", group=grpTrade)
 riskPct = input.float(1.0, "リスク%/trade", minval=0.01, step=0.1, group=grpTrade)

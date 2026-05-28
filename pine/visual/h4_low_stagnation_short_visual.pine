@@ -1,0 +1,309 @@
+//@version=5
+indicator("H4 Low Stagnation Short Visual [Research]", overlay=true, max_lines_count=500, max_labels_count=300, max_bars_back=5000)
+
+// =====================================================================
+// H4 1ヶ月安値更新後の安値停滞ブレイクショート 可視化
+// =====================================================================
+// 検証途中のショート補助手法です。本番売買用ではなく、フォワード記録用。
+//
+// 研究ルール:
+//   - H4で過去120本の安値を終値で下抜ける。
+//   - 安値更新直後には売らず、48本以内に安値圏で3本の狭い停滞を待つ。
+//   - 停滞レンジ安値を終値で下抜けたらショート候補。
+//   - 候補      : Primary L120 core4 + ADX>=30 + risk<=1.5ATR + BB幅3-8ATR
+//   - 実戦候補  : 候補 + 下抜け深さ>=0.10ATR + 終値位置<=0.50
+//   - 厳選候補  : 実戦候補 + support age>10 or 下抜け深さ>=0.20ATR
+//   - 強い観察  : support age 60-119本
+//
+// 注意:
+//   検証は次足始値エントリー。TradingView上のSL/TP目安はシグナル足終値基準です。
+// =====================================================================
+
+grpCore = "基本条件"
+analysisTf = input.timeframe("240", "判定時間足", group=grpCore)
+lookbackBars = input.int(120, "安値更新 lookback", minval=30, maxval=1000, group=grpCore)
+maxAfterBreak = input.int(48, "安値更新後の最大監視本数", minval=4, maxval=200, group=grpCore)
+minWaitBars = input.int(2, "安値更新後の最小待機本数", minval=1, maxval=20, group=grpCore)
+stagBars = input.int(3, "停滞レンジ本数", minval=2, maxval=12, group=grpCore)
+stagRangeAtr = input.float(1.0, "停滞レンジ最大幅(ATR)", minval=0.1, step=0.1, group=grpCore)
+nearLevelAtr = input.float(1.0, "停滞レンジ上限の許容(ATR)", minval=0.1, step=0.1, group=grpCore)
+touchLevelAtr = input.float(0.30, "停滞レンジ下限の安値接近(ATR)", minval=0.0, step=0.05, group=grpCore)
+breakBufferAtr = input.float(0.06, "下抜け余白(ATR)", minval=0.0, step=0.01, group=grpCore)
+stopBufferAtr = input.float(0.25, "SL余白(ATR)", minval=0.0, step=0.05, group=grpCore)
+rr = input.float(2.0, "仮TP RR", minval=0.5, step=0.25, group=grpCore)
+
+grpFilters = "実戦フィルタ"
+coreOnly = input.bool(true, "core4のみ表示", group=grpFilters, tooltip="core4: GBPJPY, CHFJPY, XAUUSD, EURJPY")
+includeSilver = input.bool(false, "SILVER/XAGUSDも許可", group=grpFilters, tooltip="精度重視ではOFF。件数確認用の広め候補です。")
+adxLen = input.int(14, "ADX期間", minval=2, group=grpFilters)
+adxMin = input.float(30.0, "ADX下限", minval=0.0, step=0.5, group=grpFilters)
+atrLen = input.int(14, "ATR期間", minval=1, group=grpFilters)
+riskMaxAtr = input.float(1.5, "リスク幅上限(ATR)", minval=0.1, step=0.1, group=grpFilters)
+bbLen = input.int(20, "BB期間", minval=2, group=grpFilters)
+bbMult = input.float(2.0, "BB倍率", minval=0.1, step=0.1, group=grpFilters)
+bbWidthMinAtr = input.float(3.0, "BB幅下限(ATR)", minval=0.0, step=0.25, group=grpFilters)
+bbWidthMaxAtr = input.float(8.0, "BB幅上限(ATR)", minval=0.1, step=0.25, group=grpFilters)
+qualityDepthAtr = input.float(0.10, "実戦候補 下抜け深さ(ATR)", minval=0.0, step=0.01, group=grpFilters)
+qualityCloseLocation = input.float(0.50, "実戦候補 終値位置上限", minval=0.0, maxval=1.0, step=0.05, group=grpFilters)
+freshSupportBars = input.int(10, "新しい安値の判定本数", minval=1, maxval=60, group=grpFilters)
+freshDepthAtr = input.float(0.20, "新しい安値に必要な下抜け深さ(ATR)", minval=0.0, step=0.01, group=grpFilters)
+strongAgeMin = input.int(60, "強い観察 support age下限", minval=1, group=grpFilters)
+strongAgeMax = input.int(119, "強い観察 support age上限", minval=1, group=grpFilters)
+
+grpView = "表示"
+showBreaks = input.bool(true, "安値更新マーカー", group=grpView)
+showSignals = input.bool(true, "候補ラベル", group=grpView)
+showRejected = input.bool(true, "見送り理由ラベル", group=grpView)
+showLevels = input.bool(true, "Signal/SL/TPライン", group=grpView)
+showTable = input.bool(true, "状態テーブル", group=grpView)
+showHistoricalLabels = input.bool(true, "過去ラベルを残す", group=grpView)
+labelMode = input.string("右上に逃がす", "詳細ラベル位置", options=["右上に逃がす", "右下に逃がす", "足元"], group=grpView)
+labelShiftBars = input.int(10, "ラベルを右へずらす本数", minval=0, maxval=80, group=grpView)
+labelOffsetAtr = input.float(3.0, "ラベル上下余白(ATR)", minval=0.5, step=0.5, group=grpView)
+lineExtendBars = input.int(12, "SL/TPライン延長(H4本数)", minval=1, maxval=100, group=grpView)
+
+fmt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, format.mintick)
+    out
+
+fmtNum(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#.##")
+    out
+
+fmtInt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#")
+    out
+
+f_h4_low_stag_short() =>
+    float atrValue = ta.atr(atrLen)
+    float priorLow = ta.lowest(low[1], lookbackBars)
+    float priorLowPrev = ta.lowest(low[2], lookbackBars)
+    float breakBuffer = atrValue * breakBufferAtr
+    bool hasBase = not na(atrValue) and atrValue > 0 and not na(priorLow)
+    bool breakNow = hasBase and close < priorLow - breakBuffer
+    bool wasBroken = not na(priorLowPrev) and not na(atrValue[1]) and atrValue[1] > 0 and close[1] < priorLowPrev - atrValue[1] * breakBufferAtr
+    bool firstBreak = breakNow and not wasBroken
+    int supportAgeCalc = -ta.lowestbars(low[1], lookbackBars) + 1
+    int supportAgeNow = hasBase and not na(supportAgeCalc) ? math.max(supportAgeCalc, 1) : na
+
+    [plusDi, minusDi, adxValue] = ta.dmi(adxLen, adxLen)
+    float bbBasis = ta.sma(close, bbLen)
+    float bbDev = ta.stdev(close, bbLen) * bbMult
+    float bbUpper = bbBasis + bbDev
+    float bbLower = bbBasis - bbDev
+    float bbWidthAtr = atrValue > 0 ? (bbUpper - bbLower) / atrValue : na
+    float zoneHighNow = ta.highest(high[1], stagBars)
+    float zoneLowNow = ta.lowest(low[1], stagBars)
+
+    var bool active = false
+    var int breakBar = na
+    var float activePriorLow = na
+    var float lowExtreme = na
+    var float pullbackHigh = na
+    var bool pulledBack = false
+    var int activeSupportAge = na
+    var float originalBreakDepthAtr = na
+
+    bool rawSignal = false
+    float signalStop = na
+    float signalTarget = na
+    float signalZoneHigh = na
+    float signalZoneLow = na
+    float signalBreakDepthAtr = na
+    float signalCloseLocation = na
+    float signalRiskAtr = na
+    float signalPullbackAtr = na
+    float signalClose = na
+    int signalBarsAfter = na
+    int signalSupportAge = na
+    float activeBarsOut = na
+
+    if firstBreak
+        active := true
+        breakBar := bar_index
+        activePriorLow := priorLow
+        lowExtreme := low
+        pullbackHigh := high
+        pulledBack := false
+        activeSupportAge := supportAgeNow
+        originalBreakDepthAtr := atrValue > 0 ? (priorLow - close) / atrValue : na
+
+    if active and not firstBreak
+        int barsAfter = bar_index - breakBar
+        activeBarsOut := barsAfter
+        if barsAfter > maxAfterBreak
+            active := false
+            breakBar := na
+            activePriorLow := na
+            lowExtreme := na
+            pullbackHigh := na
+            pulledBack := false
+            activeSupportAge := na
+            originalBreakDepthAtr := na
+        else if barsAfter >= minWaitBars and hasBase
+            if not pulledBack
+                if low < lowExtreme
+                    lowExtreme := low
+                    pullbackHigh := high
+                if high >= lowExtreme + atrValue * 0.75
+                    pulledBack := true
+                    pullbackHigh := math.max(pullbackHigh, high)
+            else
+                pullbackHigh := math.max(pullbackHigh, high)
+
+            float zoneHigh = zoneHighNow
+            float zoneLow = zoneLowNow
+            float zoneRange = zoneHigh - zoneLow
+            bool enoughBars = barsAfter >= stagBars + 1
+            bool tight = enoughBars and zoneRange <= atrValue * stagRangeAtr
+            bool nearBrokenLow = enoughBars and zoneHigh <= activePriorLow + atrValue * nearLevelAtr
+            bool touchedLowArea = enoughBars and zoneLow <= activePriorLow + atrValue * touchLevelAtr
+            bool brokeZoneLow = enoughBars and close < zoneLow - breakBuffer
+            bool stagnationOk = tight and nearBrokenLow and touchedLowArea and brokeZoneLow
+
+            if stagnationOk
+                float stop = zoneHigh + atrValue * stopBufferAtr
+                float risk = stop - close
+                if risk > 0
+                    rawSignal := true
+                    signalStop := stop
+                    signalTarget := close - risk * rr
+                    signalZoneHigh := zoneHigh
+                    signalZoneLow := zoneLow
+                    signalBreakDepthAtr := (zoneLow - close) / atrValue
+                    float signalRange = high - low
+                    signalCloseLocation := signalRange > 0 ? (close - low) / signalRange : na
+                    signalRiskAtr := risk / atrValue
+                    signalPullbackAtr := atrValue > 0 ? (pullbackHigh - lowExtreme) / atrValue : na
+                    signalClose := close
+                    signalBarsAfter := barsAfter
+                    signalSupportAge := activeSupportAge
+                    active := false
+
+    float supportAgeOut = rawSignal ? signalSupportAge : active ? activeSupportAge : na
+    float barsAfterOut = rawSignal ? signalBarsAfter : active ? activeBarsOut : na
+    float pullbackAtrOut = rawSignal ? signalPullbackAtr : active and atrValue > 0 ? (pullbackHigh - lowExtreme) / atrValue : na
+    float lowExtremeOut = active or rawSignal ? lowExtreme : na
+
+    [
+        rawSignal,
+        firstBreak,
+        active,
+        pulledBack,
+        barsAfterOut,
+        supportAgeOut,
+        signalBreakDepthAtr,
+        signalCloseLocation,
+        signalRiskAtr,
+        adxValue,
+        bbWidthAtr,
+        signalStop,
+        signalTarget,
+        signalZoneHigh,
+        signalZoneLow,
+        rawSignal ? activePriorLow : active ? activePriorLow : na,
+        lowExtremeOut,
+        pullbackAtrOut,
+        signalClose,
+        originalBreakDepthAtr
+    ]
+
+[rawStagH4, firstBreakH4, activeH4, pulledBackH4, barsAfterH4, supportAgeH4, breakDepthH4, closeLocationH4, riskAtrH4, adxH4, bbWidthAtrH4, stopH4, targetH4, zoneHighH4, zoneLowH4, priorLowH4, lowExtremeH4, pullbackAtrH4, signalCloseH4, originalBreakDepthH4] = request.security(syminfo.tickerid, analysisTf, f_h4_low_stag_short(), barmerge.gaps_off, barmerge.lookahead_off)
+
+string tickerText = syminfo.ticker
+bool symbolCore4 = str.contains(tickerText, "GBPJPY") or str.contains(tickerText, "CHFJPY") or str.contains(tickerText, "XAUUSD") or str.contains(tickerText, "GOLD") or str.contains(tickerText, "EURJPY")
+bool symbolSilver = str.contains(tickerText, "SILVER") or str.contains(tickerText, "XAGUSD")
+bool symbolOk = coreOnly ? (symbolCore4 or (includeSilver and symbolSilver)) : true
+
+bool adxOk = not na(adxH4) and adxH4 >= adxMin
+bool riskOk = not na(riskAtrH4) and riskAtrH4 <= riskMaxAtr
+bool bbWidthOk = not na(bbWidthAtrH4) and bbWidthAtrH4 >= bbWidthMinAtr and bbWidthAtrH4 <= bbWidthMaxAtr
+bool candidateH4 = rawStagH4 and symbolOk and adxOk and riskOk and bbWidthOk
+bool practicalH4 = candidateH4 and not na(breakDepthH4) and breakDepthH4 >= qualityDepthAtr and not na(closeLocationH4) and closeLocationH4 <= qualityCloseLocation
+bool strictH4 = practicalH4 and (supportAgeH4 > freshSupportBars or breakDepthH4 >= freshDepthAtr)
+bool strongAgeH4 = candidateH4 and supportAgeH4 >= strongAgeMin and supportAgeH4 <= strongAgeMax
+bool rejectedH4 = rawStagH4 and not candidateH4
+
+bool newRaw = rawStagH4 and not rawStagH4[1]
+bool newBreak = firstBreakH4 and not firstBreakH4[1]
+bool newCandidate = candidateH4 and not candidateH4[1]
+bool newPractical = practicalH4 and not practicalH4[1]
+bool newStrict = strictH4 and not strictH4[1]
+bool newRejected = rejectedH4 and not rejectedH4[1]
+
+plotshape(showBreaks and newBreak, title="H4 Low Break", style=shape.triangledown, location=location.abovebar, color=color.new(color.gray, 0), size=size.tiny, text="安値")
+plotshape(showSignals and newCandidate and not practicalH4, title="H4 Low Stag Candidate", style=shape.triangledown, location=location.abovebar, color=color.new(color.yellow, 0), size=size.tiny, text="候補")
+plotshape(showSignals and newPractical and not strictH4, title="H4 Low Stag Practical", style=shape.triangledown, location=location.abovebar, color=color.new(color.orange, 0), size=size.small, text="実戦")
+plotshape(showSignals and newStrict, title="H4 Low Stag Strict", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), size=size.small, text="厳選")
+plotshape(showSignals and newCandidate and strongAgeH4, title="Support Age 60-119", style=shape.circle, location=location.abovebar, color=color.new(color.blue, 0), size=size.tiny, text="S")
+plotshape(showRejected and newRejected, title="Rejected H4 Low Stag", style=shape.xcross, location=location.abovebar, color=color.new(color.gray, 0), size=size.tiny, text="見送")
+
+plot(showLevels and newRaw ? zoneHighH4 : na, title="Stagnation Zone High", color=color.new(color.gray, 0), linewidth=2, style=plot.style_circles)
+plot(showLevels and newRaw ? zoneLowH4 : na, title="Stagnation Zone Low", color=color.new(color.gray, 25), linewidth=2, style=plot.style_circles)
+plot(showLevels and newCandidate ? stopH4 : na, title="Signal SL", color=color.new(color.red, 0), linewidth=2, style=plot.style_circles)
+plot(showLevels and newCandidate ? targetH4 : na, title="Signal TP", color=color.new(color.lime, 0), linewidth=2, style=plot.style_circles)
+
+var label latestLabel = na
+var line latestConnector = na
+
+if (showSignals and newCandidate) or (showRejected and newRejected)
+    float chartAtr = ta.atr(14)
+    int labelX = labelMode == "足元" ? bar_index : bar_index + labelShiftBars
+    float labelY = labelMode == "右下に逃がす" ? low - chartAtr * labelOffsetAtr : high + chartAtr * labelOffsetAtr
+    string labelStyle = labelMode == "右下に逃がす" ? label.style_label_up : label.style_label_down
+    color stageColor = strictH4 ? color.new(color.red, 0) : practicalH4 ? color.new(color.orange, 0) : candidateH4 ? color.new(color.yellow, 0) : color.new(color.gray, 0)
+    string stageText = strictH4 ? "厳選候補 SHORT" : practicalH4 ? "実戦候補 SHORT" : candidateH4 ? "候補 SHORT" : "見送り"
+    string rejectReason = not symbolOk ? "通貨対象外" : not adxOk ? "ADX不足" : not riskOk ? "リスク幅大" : not bbWidthOk ? "BB幅条件外" : "条件外"
+    string qualityText = "\nDepth: " + fmtNum(breakDepthH4) + "ATR" +
+         "\nCloseLoc: " + fmtNum(closeLocationH4) +
+         "\nRisk: " + fmtNum(riskAtrH4) + "ATR" +
+         "\nADX: " + fmtNum(adxH4) +
+         "\nBB幅: " + fmtNum(bbWidthAtrH4) + "ATR" +
+         "\nAge: " + fmtInt(supportAgeH4) +
+         (strongAgeH4 ? "\n強い観察: S60-119" : "")
+    string signalText = candidateH4 ? stageText + qualityText + "\nSL: " + fmt(stopH4) + "\nTP: " + fmt(targetH4) : stageText + "\n" + rejectReason + qualityText
+    if not showHistoricalLabels
+        if not na(latestLabel)
+            label.delete(latestLabel)
+        if not na(latestConnector)
+            line.delete(latestConnector)
+        latestLabel := na
+        latestConnector := na
+    if labelMode != "足元"
+        latestConnector := line.new(bar_index, high, labelX, labelY, xloc=xloc.bar_index, color=stageColor, width=1, style=line.style_dotted)
+    latestLabel := label.new(labelX, labelY, signalText, xloc=xloc.bar_index, style=labelStyle, color=stageColor, textcolor=candidateH4 and not practicalH4 ? color.black : color.white, size=size.small)
+
+if showLevels and newCandidate
+    int lineEnd = time + int(timeframe.in_seconds(analysisTf)) * 1000 * lineExtendBars
+    line.new(time, stopH4, lineEnd, stopH4, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2, style=line.style_dashed)
+    line.new(time, targetH4, lineEnd, targetH4, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2, style=line.style_dashed)
+    line.new(time, zoneHighH4, lineEnd, zoneHighH4, xloc=xloc.bar_time, color=color.new(color.gray, 25), width=1, style=line.style_dotted)
+    line.new(time, zoneLowH4, lineEnd, zoneLowH4, xloc=xloc.bar_time, color=color.new(color.gray, 45), width=1, style=line.style_dotted)
+
+var table info = table.new(position.top_right, 2, 13, bgcolor=color.new(color.black, 82), frame_color=color.new(color.white, 70), frame_width=1)
+
+f_row(int row, string key, string value, color valueColor) =>
+    table.cell(info, 0, row, key, text_color=color.new(color.white, 15), text_size=size.tiny)
+    table.cell(info, 1, row, value, text_color=valueColor, text_size=size.tiny)
+
+if showTable and barstate.islast
+    string stateText = strictH4 ? "厳選候補" : practicalH4 ? "実戦候補" : candidateH4 ? "候補" : activeH4 ? "監視中" : rejectedH4 ? "見送り" : "待機"
+    color stateColor = strictH4 ? color.red : practicalH4 ? color.orange : candidateH4 ? color.yellow : activeH4 ? color.aqua : rejectedH4 ? color.gray : color.white
+    f_row(0, "H4 Low Stag", stateText, stateColor)
+    f_row(1, "Symbol OK", symbolOk ? "OK" : "対象外", symbolOk ? color.lime : color.gray)
+    f_row(2, "Active bars", fmtInt(barsAfterH4), color.white)
+    f_row(3, "Pulled back", pulledBackH4 ? "Yes" : "No", pulledBackH4 ? color.lime : color.gray)
+    f_row(4, "Support age", fmtInt(supportAgeH4), strongAgeH4 ? color.aqua : color.white)
+    f_row(5, "Depth", fmtNum(breakDepthH4) + " ATR", not na(breakDepthH4) and breakDepthH4 >= qualityDepthAtr ? color.lime : color.gray)
+    f_row(6, "Close loc", fmtNum(closeLocationH4), not na(closeLocationH4) and closeLocationH4 <= qualityCloseLocation ? color.lime : color.gray)
+    f_row(7, "Risk", fmtNum(riskAtrH4) + " ATR", riskOk ? color.lime : color.gray)
+    f_row(8, "ADX", fmtNum(adxH4), adxOk ? color.lime : color.gray)
+    f_row(9, "BB width", fmtNum(bbWidthAtrH4) + " ATR", bbWidthOk ? color.lime : color.gray)
+    f_row(10, "Zone", fmt(zoneLowH4) + " - " + fmt(zoneHighH4), color.white)
+    f_row(11, "SL / TP", fmt(stopH4) + " / " + fmt(targetH4), color.white)
+    f_row(12, "Status", "検証途中", color.orange)
+
+alertcondition(newCandidate, title="H4 Low Stag Short Candidate", message="H4 low-stagnation short candidate on {{ticker}}.")
+alertcondition(newPractical, title="H4 Low Stag Short Practical", message="H4 low-stagnation short practical candidate on {{ticker}}.")
+alertcondition(newStrict, title="H4 Low Stag Short Strict", message="H4 low-stagnation short strict candidate on {{ticker}}.")
+alertcondition(newRejected, title="H4 Low Stag Short Rejected", message="H4 low-stagnation raw signal rejected by practical filters on {{ticker}}.")

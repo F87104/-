@@ -108,17 +108,18 @@
 | 検証 | パス | 概要 | 結論 |
 |---|---|---|---|
 | **研究ノート** | [`docs/research/short_side_research_2026-05-28_in_progress.md`](research/short_side_research_2026-05-28_in_progress.md) | ショート側検証の途中経過まとめ | まずここを読む |
-| **結果フォルダ入口** | [`backtests/elliott_fibo/results_2026_05_28/README.md`](../backtests/elliott_fibo/results_2026_05_28/README.md) | 4つのショート検証フォルダの地図 | 検証途中であることを明記 |
+| **結果フォルダ入口** | [`backtests/elliott_fibo/results_2026_05_28/README.md`](../backtests/elliott_fibo/results_2026_05_28/README.md) | ショート検証フォルダの地図 | 検証途中であることを明記 |
 | **T5ショート反転ミラー** | [`backtests/elliott_fibo/results_2026_05_28/t5_short_mirror_validation/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/t5_short_mirror_validation/report_ja.md) | ロング版 H4 V候補 T5 + MACD + BB の上下反転 | 実戦ミラーは 18 trades / -12.82R / PF 0.15 で不採用 |
 | **高ボラ下落継続** | [`backtests/elliott_fibo/results_2026_05_28/t5_short_high_vol_continuation/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/t5_short_high_vol_continuation/report_ja.md) | ADX高め、BB幅7-10ATR、rebreakなどを検証 | プラス断片はあるがOOS不足 |
 | **高ボラ下落継続 実戦化監査** | [`backtests/elliott_fibo/results_2026_05_28/t5_short_practical_hardening/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/t5_short_practical_hardening/report_ja.md) | 出口、建値移動、時間撤退を検証 | DDは抑えられるが本番採用には不足 |
-| **1ヶ月安値更新後の安値停滞ブレイク** | [`backtests/elliott_fibo/results_2026_05_28/monthly_low_rebreak_short/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/monthly_low_rebreak_short/report_ja.md) | 1〜3ヶ月安値更新後の戻り再下落/安値停滞を検証 | 暫定本命。18 trades / +10.62R / PF 2.22。ただしOOS1件のみ |
+| **1ヶ月安値更新後の安値停滞ブレイク** | [`backtests/elliott_fibo/results_2026_05_28/monthly_low_rebreak_short/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/monthly_low_rebreak_short/report_ja.md) | 1〜3ヶ月安値更新後の戻り再下落/安値停滞を検証 | 暫定本命。深掘り後の主条件は18 trades / +13.61R / PF 2.78。ただしOOS1件のみ |
 | **安値更新期間・利確基準の深掘り** | [`backtests/elliott_fibo/results_2026_05_28/low_break_lookback_exit_study/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/low_break_lookback_exit_study/report_ja.md) | 0.5〜6ヶ月lookback、レンジ/トレンド分類、利確基準を比較 | 1ヶ月が最も強い。3ヶ月以上は強くならず、長期lookbackは戻りやすい |
 | **H1安値更新ショート検証** | [`backtests/elliott_fibo/results_2026_05_28/h1_low_break_lookback_exit_study/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/h1_low_break_lookback_exit_study/report_ja.md) | H4本命をH1へ換算し、0.5〜6ヶ月lookbackを比較 | H1安値停滞型は弱い。GBPJPY 0.5ヶ月rebreakは別候補として有望 |
+| **H4安値停滞 深掘り** | [`backtests/elliott_fibo/results_2026_05_28/h4_stagnation_deep_dive/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/h4_stagnation_deep_dive/report_ja.md) | 停滞レンジ品質、下抜け足、サポート保持期間、直後フォロースルー、出口管理を比較 | サポート保持60-119本とGBPJPYが強い。12本以内1R未達撤退が次の候補 |
 
 **暫定ルール**: H4で過去120本の安値を終値更新 → 安値圏の停滞下抜け → ADX>=30, BB幅3-8ATR, risk<=1.5ATR → 次足ショート, SLは停滞レンジ上, TPは2R。
 
-追加メモ: lookbackを3ヶ月以上に伸ばすより、H4で60-119本ほど保持されたサポート割れを別フィルタ化する方が有望。
+追加メモ: lookbackを3ヶ月以上に伸ばすより、H4で60-119本ほど保持されたサポート割れを別フィルタ化する方が有望。H4安値停滞はGBPJPYに寄せ、AUDJPY/USDJPYは除外候補。6本以内撤退は早すぎ、12本以内に1R未達なら撤退が次の検証候補。
 
 **判定**: 本番未採用。GBPJPY中心にアラート監視し、30から50件のフォワード記録が必要。
 

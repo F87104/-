@@ -20,6 +20,7 @@ Status: 検証途中。ここにある手法はまだ本番採用ではない。
 | `monthly_low_rebreak_short/` | 検証途中の本命候補 | 1ヶ月から3ヶ月の安値更新後、戻り再下落または安値停滞下抜けを売る | 1ヶ月安値更新後の安値停滞下抜けが最有望 |
 | `low_break_lookback_exit_study/` | 検証途中の深掘り | 安値更新期間を0.5ヶ月から6ヶ月に拡張し、レンジ/トレンド分類と利確基準を比較 | 1ヶ月が最も強く、3ヶ月以上は強くならない。サポート保持60-119本が有望 |
 | `h1_low_break_lookback_exit_study/` | H1検証 | H4本命をH1へ換算し、0.5〜6ヶ月lookbackと利確基準を比較 | H1安値停滞型は弱い。別候補としてGBPJPY 0.5ヶ月rebreakが有望 |
+| `h4_stagnation_deep_dive/` | H4安値停滞の別角度分析 | 停滞レンジ品質、下抜け足、サポート保持期間、直後フォロースルー、出口管理を比較 | サポート保持60-119本、下抜け終値位置、12本以内1R未達撤退が次の検証候補 |
 
 ## 現時点の本命候補
 
@@ -41,6 +42,8 @@ Status: 検証途中。ここにある手法はまだ本番採用ではない。
 
 追加検証では、3ヶ月や6ヶ月へ伸ばしても成績は強くなりませんでした。むしろ、安値がH4で60-119本ほど保持されたあとに割れる形が最も良く、これは「長期トレンドの途中」より「見えているサポートが割れる」形に近いです。
 
+H4安値停滞の別角度分析では、6本以内に停滞レンジ中央へ戻るものは弱い傾向がありました。ただし即撤退は期待値を削るため、実戦管理としては「12本以内に1Rへ届かなければ撤退」の方が候補です。通貨はGBPJPYが最も強く、AUDJPY/USDJPYは除外候補です。
+
 ## まだ本番採用しない理由
 
 - OOS 2025-2026 がまだ1件だけ。
@@ -56,8 +59,9 @@ Status: 検証途中。ここにある手法はまだ本番採用ではない。
 3. `monthly_low_rebreak_short/report_ja.md` で暫定候補を確認する。
 4. 必要なら `monthly_low_rebreak_short/trades.csv` で個別トレードを見る。
 5. 期間・利確基準を見る場合は `low_break_lookback_exit_study/report_ja.md` を読む。
-6. H1版を見る場合は `h1_low_break_lookback_exit_study/report_ja.md` を読む。
-7. Pine可視化または追加OOS検証に進む。
+6. H4安値停滞の質と出口管理を見る場合は `h4_stagnation_deep_dive/report_ja.md` を読む。
+7. H1版を見る場合は `h1_low_break_lookback_exit_study/report_ja.md` を読む。
+8. Pine可視化または追加OOS検証に進む。
 
 ## 再実行コマンド
 
@@ -70,6 +74,7 @@ python3 backtests/elliott_fibo/run_t5_short_practical_hardening.py
 python3 backtests/elliott_fibo/run_monthly_low_rebreak_short.py
 python3 backtests/elliott_fibo/run_low_break_lookback_exit_study.py
 python3 backtests/elliott_fibo/run_h1_low_break_lookback_exit_study.py
+python3 backtests/elliott_fibo/run_h4_stagnation_deep_dive.py
 ```
 
 ## ファイルの見方
@@ -86,3 +91,5 @@ python3 backtests/elliott_fibo/run_h1_low_break_lookback_exit_study.py
 | `exit_summary.csv` | 利確/撤退ルールごとの比較 |
 | `regime_summary.csv` | 事前状態がレンジ割れかトレンド継続かの比較 |
 | `support_age_summary.csv` | サポート保持期間別の比較 |
+| `stagnation_feature_summary.csv` | H4安値停滞をレンジ幅、下抜け足、通貨、期間、戻り方で分解した集計 |
+| `stagnation_management_summary.csv` | H4安値停滞の出口管理比較 |

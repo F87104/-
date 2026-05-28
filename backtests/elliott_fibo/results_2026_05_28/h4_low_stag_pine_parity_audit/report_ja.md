@@ -7,6 +7,7 @@ Status: Pine変換監査用。Python検証を正として、TradingView Pine str
 - Pineのストラテジーテスター成績は、Pythonの期待シグナルと一致するまで採用判断に使わない。
 - TradingView側はデータ提供元、タイムゾーン、過去データ開始日、年末年始除外、コスト処理がPythonと違う可能性がある。
 - まずは単体通貨で `entry_time` と件数が一致するかだけを見る。PFや勝率はその後。
+- 2026-05-29時点で、TradingView GBPJPY H4はPython期待4件に対してPine側7件が出る不一致を確認。`勝ちトレード57.14% / PF 2.447` は採用しない。
 
 ## Pine設定
 
@@ -17,6 +18,7 @@ Status: Pine変換監査用。Python検証を正として、TradingView Pine str
 - core4のみ: ON
 - entryMode: `実戦候補` または `厳選候補`
 - default quantityは成績比較用ではなく、まずシグナル一致確認用。
+- strategy版には `PY期待`, `一致`, `余計` マーカーを追加済み。GBPJPYでは `Matched=4 / Extra=0` になるまで不一致扱い。
 
 ## 期待サマリー
 

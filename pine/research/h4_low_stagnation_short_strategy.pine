@@ -53,6 +53,10 @@ showLevels = input.bool(true, "SL/TP/割れた安値ライン", group=grpView)
 showTable = input.bool(true, "状態テーブル", group=grpView)
 lineExtendBars = input.int(24, "ライン延長本数", minval=1, maxval=200, group=grpView)
 
+grpParity = "Python照合"
+showExpectedGbpjpy = input.bool(true, "GBPJPY Python期待4件を表示", group=grpParity)
+showExtraSignals = input.bool(true, "Python期待外の実シグナルを表示", group=grpParity)
+
 fmt(float v) =>
     string out = na(v) ? "N/A" : str.tostring(v, format.mintick)
     out
@@ -89,7 +93,7 @@ flatNow = strategy.position_size == 0
 
 [plusDi, minusDi, adxValue] = ta.dmi(adxLen, adxLen)
 bbBasis = ta.sma(close, bbLen)
-bbDev = ta.stdev(close, bbLen) * bbMult
+bbDev = ta.stdev(close, bbLen, false) * bbMult
 bbUpper = bbBasis + bbDev
 bbLower = bbBasis - bbDev
 bbWidthAtr = atrValue > 0 ? (bbUpper - bbLower) / atrValue : na
@@ -171,7 +175,8 @@ if active and flatNow and not firstBreak
                 active := false
 
 tickerText = syminfo.ticker
-symbolCore4 = str.contains(tickerText, "GBPJPY") or str.contains(tickerText, "CHFJPY") or str.contains(tickerText, "XAUUSD") or str.contains(tickerText, "GOLD") or str.contains(tickerText, "EURJPY")
+symbolGbpjpy = str.contains(tickerText, "GBPJPY")
+symbolCore4 = symbolGbpjpy or str.contains(tickerText, "CHFJPY") or str.contains(tickerText, "XAUUSD") or str.contains(tickerText, "GOLD") or str.contains(tickerText, "EURJPY")
 symbolSilver = str.contains(tickerText, "SILVER") or str.contains(tickerText, "XAGUSD")
 symbolOk = coreOnly ? (symbolCore4 or (includeSilver and symbolSilver)) : true
 adxOk = not na(adxValue) and adxValue >= adxMin
@@ -181,6 +186,29 @@ candidateSignal = rawSignal and symbolOk and adxOk and riskOk and bbWidthOk
 practicalSignal = candidateSignal and not na(signalBreakDepthAtr) and signalBreakDepthAtr >= qualityDepthAtr and not na(signalCloseLocation) and signalCloseLocation <= qualityCloseLocation
 strictSignal = practicalSignal and (signalSupportAge > freshSupportBars or signalBreakDepthAtr >= freshDepthAtr)
 entrySignal = (entryMode == "候補" ? candidateSignal : entryMode == "実戦候補" ? practicalSignal : strictSignal) and tradeWindowOk and flatNow
+
+pyGbpjpy1 = timestamp("10 Oct 2016 00:00 +0000")
+pyGbpjpy2 = timestamp("25 May 2018 04:00 +0000")
+pyGbpjpy3 = timestamp("13 Dec 2023 08:00 +0000")
+pyGbpjpy4 = timestamp("15 Jan 2025 04:00 +0000")
+expectedGbpjpySignal = symbolGbpjpy and (time == pyGbpjpy1 or time == pyGbpjpy2 or time == pyGbpjpy3 or time == pyGbpjpy4)
+matchedGbpjpySignal = symbolGbpjpy and entrySignal and expectedGbpjpySignal
+extraGbpjpySignal = symbolGbpjpy and entrySignal and not expectedGbpjpySignal
+
+var int pineEntryCount = 0
+var int expectedSeenCount = 0
+var int matchedCount = 0
+var int extraCount = 0
+
+if expectedGbpjpySignal
+    expectedSeenCount += 1
+
+if entrySignal
+    pineEntryCount += 1
+    if matchedGbpjpySignal
+        matchedCount += 1
+    else if symbolGbpjpy
+        extraCount += 1
 
 var float tradeStop = na
 var float tradeTarget = na
@@ -210,16 +238,20 @@ plotshape(firstBreak, title="1M Low Break", style=shape.triangledown, location=l
 plotshape(candidateSignal and not practicalSignal, title="Candidate", style=shape.triangledown, location=location.abovebar, color=color.new(color.yellow, 0), size=size.tiny, text="候補")
 plotshape(practicalSignal and not strictSignal, title="Practical", style=shape.triangledown, location=location.abovebar, color=color.new(color.orange, 0), size=size.small, text="実戦")
 plotshape(strictSignal, title="Strict", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), size=size.small, text="厳選")
+plotshape(showExpectedGbpjpy and expectedGbpjpySignal, title="Python Expected GBPJPY Practical", style=shape.circle, location=location.belowbar, color=color.new(color.fuchsia, 0), size=size.small, text="PY期待")
+plotshape(showExpectedGbpjpy and matchedGbpjpySignal, title="Python/Pine Matched GBPJPY", style=shape.diamond, location=location.abovebar, color=color.new(color.lime, 0), size=size.small, text="一致")
+plotshape(showExtraSignals and extraGbpjpySignal, title="Pine Extra GBPJPY Signal", style=shape.xcross, location=location.abovebar, color=color.new(color.white, 0), size=size.small, text="余計")
 plot(showLevels and active ? activePriorLow : na, title="Broken 1M Low", color=color.new(color.blue, 20), linewidth=1, style=plot.style_linebr)
 plot(showLevels and strategy.position_size < 0 ? tradeStop : na, title="Active SL", color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
 plot(showLevels and strategy.position_size < 0 ? tradeTarget : na, title="Active TP", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
 
 if showLabels and entrySignal
     stageText = strictSignal ? "厳選 SHORT" : practicalSignal ? "実戦 SHORT" : "候補 SHORT"
-    labelText = stageText + "\nDepth: " + fmtNum(signalBreakDepthAtr) + "ATR\nRisk: " + fmtNum(signalRiskAtr) + "ATR\nAge: " + fmtInt(signalSupportAge) + "\nSL: " + fmt(signalStop) + "\nTP: " + fmt(signalTarget)
-    label.new(bar_index, high + atrValue * 1.5, labelText, style=label.style_label_down, color=strictSignal ? color.new(color.red, 0) : practicalSignal ? color.new(color.orange, 0) : color.new(color.yellow, 0), textcolor=strictSignal ? color.white : color.black, size=size.small)
+    parityText = symbolGbpjpy ? (matchedGbpjpySignal ? "\nParity: 一致" : "\nParity: 余計") : ""
+    labelText = stageText + parityText + "\nDepth: " + fmtNum(signalBreakDepthAtr) + "ATR\nCloseLoc: " + fmtNum(signalCloseLocation) + "\nRisk: " + fmtNum(signalRiskAtr) + "ATR\nADX: " + fmtNum(adxValue) + "\nBBW: " + fmtNum(bbWidthAtr) + "ATR\nAge: " + fmtInt(signalSupportAge) + "\nAfter: " + fmtInt(signalBarsAfter) + "\nSL: " + fmt(signalStop) + "\nTP: " + fmt(signalTarget)
+    label.new(bar_index, high + atrValue * 1.5, labelText, style=label.style_label_down, color=strictSignal ? color.new(color.red, 0) : practicalSignal ? color.new(color.orange, 0) : color.new(color.yellow, 0), textcolor=strictSignal ? color.white : color.black, size=size.tiny)
 
-var table info = table.new(position.top_right, 2, 10, bgcolor=color.new(color.black, 82), frame_color=color.new(color.white, 70), frame_width=1)
+var table info = table.new(position.top_right, 2, 14, bgcolor=color.new(color.black, 82), frame_color=color.new(color.white, 70), frame_width=1)
 f_row(int row, string key, string value, color valueColor) =>
     table.cell(info, 0, row, key, text_color=color.new(color.white, 15), text_size=size.tiny)
     table.cell(info, 1, row, value, text_color=valueColor, text_size=size.tiny)
@@ -236,6 +268,10 @@ if showTable and barstate.islast
     f_row(6, "ADX", fmtNum(adxValue), adxOk ? color.lime : color.gray)
     f_row(7, "BB width", fmtNum(bbWidthAtr) + " ATR", bbWidthOk ? color.lime : color.gray)
     f_row(8, "Risk", fmtNum(signalRiskAtr) + " ATR", riskOk ? color.lime : color.gray)
-    f_row(9, "Status", "検証用strategy", color.orange)
+    f_row(9, "Pine entries", str.tostring(pineEntryCount), color.orange)
+    f_row(10, "PY expected", symbolGbpjpy ? str.tostring(expectedSeenCount) + "/4" : "GBPJPYのみ", symbolGbpjpy ? color.fuchsia : color.gray)
+    f_row(11, "Matched", symbolGbpjpy ? str.tostring(matchedCount) : "N/A", symbolGbpjpy and matchedCount == 4 ? color.lime : color.orange)
+    f_row(12, "Extra", symbolGbpjpy ? str.tostring(extraCount) : "N/A", symbolGbpjpy and extraCount == 0 ? color.lime : color.red)
+    f_row(13, "Status", "Python照合中", color.orange)
 
 alertcondition(entrySignal, title="H4 Low Stag Short Strategy Entry", message="H4 low-stagnation short strategy entry on {{ticker}}.")

@@ -51,7 +51,8 @@ strongAgeMin = input.int(60, "強い観察 support age下限", minval=1, group=g
 strongAgeMax = input.int(119, "強い観察 support age上限", minval=1, group=grpFilters)
 
 grpView = "表示"
-showBreaks = input.bool(true, "安値更新マーカー", group=grpView)
+showBreaks = input.bool(true, "1ヶ月安値更新マーカー", group=grpView)
+showBrokenLowLevel = input.bool(true, "割れた1ヶ月安値ライン", group=grpView)
 showSignals = input.bool(true, "候補ラベル", group=grpView)
 showRejected = input.bool(true, "見送り理由ラベル", group=grpView)
 showLevels = input.bool(true, "Signal/SL/TPライン", group=grpView)
@@ -210,7 +211,8 @@ bool newPractical = practicalH4 and not practicalH4[1]
 bool newStrict = strictH4 and not strictH4[1]
 bool newRejected = rejectedH4 and not rejectedH4[1]
 
-plotshape(showBreaks and newBreak, title="H4 Low Break", style=shape.triangledown, location=location.abovebar, color=color.new(color.gray, 0), size=size.tiny, text="安値")
+plotshape(showBreaks and newBreak, title="H4 1M Low Break Bar", style=shape.triangledown, location=location.belowbar, color=color.new(color.blue, 0), size=size.tiny, text="1m割れ")
+plot(showBrokenLowLevel and activeH4 ? priorLowH4 : na, title="Active Broken 1M Low", color=color.new(color.blue, 20), linewidth=1, style=plot.style_linebr)
 plotshape(showSignals and newCandidate and not practicalH4, title="H4 Low Stag Candidate", style=shape.triangledown, location=location.abovebar, color=color.new(color.yellow, 0), size=size.tiny, text="候補")
 plotshape(showSignals and newPractical and not strictH4, title="H4 Low Stag Practical", style=shape.triangledown, location=location.abovebar, color=color.new(color.orange, 0), size=size.small, text="実戦")
 plotshape(showSignals and newStrict, title="H4 Low Stag Strict", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), size=size.small, text="厳選")
@@ -224,6 +226,20 @@ plot(showLevels and newCandidate ? targetH4 : na, title="Signal TP", color=color
 
 var label latestLabel = na
 var line latestConnector = na
+var label latestBreakLabel = na
+var line latestBreakLine = na
+
+if showBrokenLowLevel and newBreak and not na(priorLowH4)
+    int breakLineEnd = time + int(timeframe.in_seconds(analysisTf)) * 1000 * lineExtendBars
+    if not showHistoricalLabels
+        if not na(latestBreakLabel)
+            label.delete(latestBreakLabel)
+        if not na(latestBreakLine)
+            line.delete(latestBreakLine)
+        latestBreakLabel := na
+        latestBreakLine := na
+    latestBreakLine := line.new(time, priorLowH4, breakLineEnd, priorLowH4, xloc=xloc.bar_time, color=color.new(color.blue, 0), width=1, style=line.style_dashed)
+    latestBreakLabel := label.new(time, priorLowH4, "割れた1ヶ月安値\n" + fmt(priorLowH4), xloc=xloc.bar_time, style=label.style_label_up, color=color.new(color.blue, 0), textcolor=color.white, size=size.tiny)
 
 if (showSignals and newCandidate) or (showRejected and newRejected)
     float chartAtr = ta.atr(14)

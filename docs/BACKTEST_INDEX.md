@@ -119,6 +119,7 @@
 | **H4安値停滞 追加検証** | [`backtests/elliott_fibo/results_2026_05_28/h4_stagnation_followup_validation/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/h4_stagnation_followup_validation/report_ja.md) | 重複除去後に、通貨除外、support age、時間切れ撤退を再評価 | Primary L120 core4 + 固定2Rが最もきれい。support60-119は強いが実質8件 |
 | **H4安値停滞 精度向上** | [`backtests/elliott_fibo/results_2026_05_28/h4_stagnation_precision_hardening/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/h4_stagnation_precision_hardening/report_ja.md) | Pine実装に向け、下抜け深さ、終値位置、新しい支持線の強さを検証 | core4厳選は8 trades / +15.71R / 全勝。ただし件数不足 |
 | **H4安値停滞 Pine可視化** | [`pine/visual/h4_low_stagnation_short_visual.pine`](../pine/visual/h4_low_stagnation_short_visual.pine) | 候補/実戦候補/厳選候補/見送り理由をTradingView上で表示 | 検証用。CSV照合とフォワード記録に使う |
+| **H4安値停滞 Pine strategy** | [`pine/research/h4_low_stagnation_short_strategy.pine`](../pine/research/h4_low_stagnation_short_strategy.pine) | TradingViewのストラテジーテスターで候補/実戦候補/厳選候補を検証 | H4チャート専用の研究版 |
 
 **暫定ルール**: H4で過去120本の安値を終値更新 → 安値圏の停滞下抜け → ADX>=30, BB幅3-8ATR, risk<=1.5ATR → 次足ショート, SLは停滞レンジ上, TPは2R。
 

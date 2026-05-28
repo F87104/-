@@ -1,0 +1,234 @@
+//@version=5
+strategy("H4 Low Stagnation Short Strategy [Research]", overlay=true, pyramiding=0, initial_capital=1000000, default_qty_type=strategy.fixed, default_qty_value=1, process_orders_on_close=false, max_lines_count=500, max_labels_count=300, max_bars_back=5000)
+
+// =====================================================================
+// H4 1ヶ月安値更新後の安値停滞ブレイクショート 検証用strategy
+// =====================================================================
+// TradingViewのストラテジーテスターで確認するための研究版です。
+// H4チャートで使う前提。注文はシグナル確定後、次足始値で約定します。
+// =====================================================================
+
+grpCore = "基本条件"
+lookbackBars = input.int(120, "安値更新 lookback", minval=30, maxval=1000, group=grpCore)
+maxAfterBreak = input.int(48, "安値更新後の最大監視本数", minval=4, maxval=200, group=grpCore)
+minWaitBars = input.int(2, "安値更新後の最小待機本数", minval=1, maxval=20, group=grpCore)
+pullbackMinAtr = input.float(0.75, "安値更新後の最低戻り幅(ATR)", minval=0.0, step=0.05, group=grpCore)
+stagBars = input.int(3, "停滞レンジ本数", minval=2, maxval=12, group=grpCore)
+stagRangeAtr = input.float(1.0, "停滞レンジ最大幅(ATR)", minval=0.1, step=0.1, group=grpCore)
+nearLevelAtr = input.float(1.0, "停滞レンジ上限の許容(ATR)", minval=0.1, step=0.1, group=grpCore)
+touchLevelAtr = input.float(0.30, "停滞レンジ下限の安値接近(ATR)", minval=0.0, step=0.05, group=grpCore)
+breakBufferAtr = input.float(0.06, "下抜け余白(ATR)", minval=0.0, step=0.01, group=grpCore)
+stopBufferAtr = input.float(0.25, "SL余白(ATR)", minval=0.0, step=0.05, group=grpCore)
+rr = input.float(2.0, "TP RR", minval=0.5, step=0.25, group=grpCore)
+maxHoldBars = input.int(180, "最大保有本数", minval=1, maxval=1000, group=grpCore)
+
+grpFilters = "実戦フィルタ"
+entryMode = input.string("実戦候補", "検証するラベル", options=["候補", "実戦候補", "厳選候補"], group=grpFilters)
+coreOnly = input.bool(true, "core4のみ", group=grpFilters, tooltip="core4: GBPJPY, CHFJPY, XAUUSD/GOLD, EURJPY")
+includeSilver = input.bool(false, "SILVER/XAGUSDも許可", group=grpFilters)
+adxLen = input.int(14, "ADX期間", minval=2, group=grpFilters)
+adxMin = input.float(30.0, "ADX下限", minval=0.0, step=0.5, group=grpFilters)
+atrLen = input.int(14, "ATR期間", minval=1, group=grpFilters)
+riskMaxAtr = input.float(1.5, "リスク幅上限(ATR)", minval=0.1, step=0.1, group=grpFilters)
+bbLen = input.int(20, "BB期間", minval=2, group=grpFilters)
+bbMult = input.float(2.0, "BB倍率", minval=0.1, step=0.1, group=grpFilters)
+bbWidthMinAtr = input.float(3.0, "BB幅下限(ATR)", minval=0.0, step=0.25, group=grpFilters)
+bbWidthMaxAtr = input.float(8.0, "BB幅上限(ATR)", minval=0.1, step=0.25, group=grpFilters)
+qualityDepthAtr = input.float(0.10, "実戦候補 下抜け深さ(ATR)", minval=0.0, step=0.01, group=grpFilters)
+qualityCloseLocation = input.float(0.50, "実戦候補 終値位置上限", minval=0.0, maxval=1.0, step=0.05, group=grpFilters)
+freshSupportBars = input.int(10, "新しい安値の判定本数", minval=1, maxval=60, group=grpFilters)
+freshDepthAtr = input.float(0.20, "新しい安値に必要な下抜け深さ(ATR)", minval=0.0, step=0.01, group=grpFilters)
+
+grpTrade = "売買設定"
+useRiskSizing = input.bool(false, "リスク%で数量計算", group=grpTrade)
+riskPct = input.float(1.0, "リスク%/trade", minval=0.01, step=0.1, group=grpTrade)
+fixedQty = input.float(1.0, "固定数量", minval=0.0, step=0.1, group=grpTrade)
+
+grpView = "表示"
+showLabels = input.bool(true, "シグナルラベル", group=grpView)
+showLevels = input.bool(true, "SL/TP/割れた安値ライン", group=grpView)
+showTable = input.bool(true, "状態テーブル", group=grpView)
+lineExtendBars = input.int(24, "ライン延長本数", minval=1, maxval=200, group=grpView)
+
+fmt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, format.mintick)
+    out
+
+fmtNum(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#.##")
+    out
+
+fmtInt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#")
+    out
+
+calcQty(float stopPrice, float signalPrice) =>
+    float riskDist = stopPrice - signalPrice
+    float qtyOut = fixedQty
+    if useRiskSizing and riskDist > 0
+        qtyOut := (strategy.equity * riskPct / 100.0) / riskDist
+    qtyOut
+
+atrValue = ta.atr(atrLen)
+priorLow = ta.lowest(low[1], lookbackBars)
+priorLowPrev = ta.lowest(low[2], lookbackBars)
+breakBuffer = atrValue * breakBufferAtr
+hasBase = not na(atrValue) and atrValue > 0 and not na(priorLow)
+breakNow = hasBase and close < priorLow - breakBuffer
+wasBroken = not na(priorLowPrev) and not na(atrValue[1]) and atrValue[1] > 0 and close[1] < priorLowPrev - atrValue[1] * breakBufferAtr
+firstBreak = breakNow and not wasBroken
+int supportAgeCalc = -ta.lowestbars(low[1], lookbackBars) + 1
+int supportAgeNow = hasBase and not na(supportAgeCalc) ? math.max(supportAgeCalc, 1) : na
+
+[plusDi, minusDi, adxValue] = ta.dmi(adxLen, adxLen)
+bbBasis = ta.sma(close, bbLen)
+bbDev = ta.stdev(close, bbLen) * bbMult
+bbUpper = bbBasis + bbDev
+bbLower = bbBasis - bbDev
+bbWidthAtr = atrValue > 0 ? (bbUpper - bbLower) / atrValue : na
+zoneHighNow = ta.highest(high[1], stagBars)
+zoneLowNow = ta.lowest(low[1], stagBars)
+
+var bool active = false
+var int breakBar = na
+var float activePriorLow = na
+var float lowExtreme = na
+var float pullbackHigh = na
+var bool pulledBack = false
+var int activeSupportAge = na
+
+bool rawSignal = false
+float signalStop = na
+float signalTarget = na
+float signalZoneHigh = na
+float signalZoneLow = na
+float signalBreakDepthAtr = na
+float signalCloseLocation = na
+float signalRiskAtr = na
+int signalBarsAfter = na
+int signalSupportAge = na
+
+if firstBreak
+    active := true
+    breakBar := bar_index
+    activePriorLow := priorLow
+    lowExtreme := low
+    pullbackHigh := high
+    pulledBack := false
+    activeSupportAge := supportAgeNow
+
+if active and not firstBreak
+    barsAfter = bar_index - breakBar
+    if barsAfter > maxAfterBreak
+        active := false
+        breakBar := na
+        activePriorLow := na
+        lowExtreme := na
+        pullbackHigh := na
+        pulledBack := false
+        activeSupportAge := na
+    else if barsAfter >= minWaitBars and hasBase
+        if not pulledBack
+            if low < lowExtreme
+                lowExtreme := low
+                pullbackHigh := high
+            if high >= lowExtreme + atrValue * pullbackMinAtr
+                pulledBack := true
+                pullbackHigh := math.max(pullbackHigh, high)
+        else
+            pullbackHigh := math.max(pullbackHigh, high)
+        zoneHigh = zoneHighNow
+        zoneLow = zoneLowNow
+        zoneRange = zoneHigh - zoneLow
+        enoughBars = barsAfter >= stagBars + 1
+        tight = enoughBars and zoneRange <= atrValue * stagRangeAtr
+        nearBrokenLow = enoughBars and zoneHigh <= activePriorLow + atrValue * nearLevelAtr
+        touchedLowArea = enoughBars and zoneLow <= activePriorLow + atrValue * touchLevelAtr
+        brokeZoneLow = enoughBars and close < zoneLow - breakBuffer
+        stagnationOk = tight and nearBrokenLow and touchedLowArea and brokeZoneLow
+        if stagnationOk
+            stopPrice = zoneHigh + atrValue * stopBufferAtr
+            riskDist = stopPrice - close
+            if riskDist > 0
+                rawSignal := true
+                signalStop := stopPrice
+                signalTarget := close - riskDist * rr
+                signalZoneHigh := zoneHigh
+                signalZoneLow := zoneLow
+                signalBreakDepthAtr := (zoneLow - close) / atrValue
+                signalRange = high - low
+                signalCloseLocation := signalRange > 0 ? (close - low) / signalRange : na
+                signalRiskAtr := riskDist / atrValue
+                signalBarsAfter := barsAfter
+                signalSupportAge := activeSupportAge
+                active := false
+
+tickerText = syminfo.ticker
+symbolCore4 = str.contains(tickerText, "GBPJPY") or str.contains(tickerText, "CHFJPY") or str.contains(tickerText, "XAUUSD") or str.contains(tickerText, "GOLD") or str.contains(tickerText, "EURJPY")
+symbolSilver = str.contains(tickerText, "SILVER") or str.contains(tickerText, "XAGUSD")
+symbolOk = coreOnly ? (symbolCore4 or (includeSilver and symbolSilver)) : true
+adxOk = not na(adxValue) and adxValue >= adxMin
+riskOk = not na(signalRiskAtr) and signalRiskAtr <= riskMaxAtr
+bbWidthOk = not na(bbWidthAtr) and bbWidthAtr >= bbWidthMinAtr and bbWidthAtr <= bbWidthMaxAtr
+candidateSignal = rawSignal and symbolOk and adxOk and riskOk and bbWidthOk
+practicalSignal = candidateSignal and not na(signalBreakDepthAtr) and signalBreakDepthAtr >= qualityDepthAtr and not na(signalCloseLocation) and signalCloseLocation <= qualityCloseLocation
+strictSignal = practicalSignal and (signalSupportAge > freshSupportBars or signalBreakDepthAtr >= freshDepthAtr)
+entrySignal = entryMode == "候補" ? candidateSignal : entryMode == "実戦候補" ? practicalSignal : strictSignal
+
+var float tradeStop = na
+var float tradeTarget = na
+var int entryBar = na
+
+if entrySignal and strategy.position_size == 0
+    tradeStop := signalStop
+    tradeTarget := signalTarget
+    strategy.entry("H4-LowStag-S", strategy.short, qty=calcQty(signalStop, close), comment=entryMode)
+    strategy.exit("SL/TP", "H4-LowStag-S", stop=tradeStop, limit=tradeTarget)
+
+if not na(tradeStop)
+    strategy.exit("SL/TP", "H4-LowStag-S", stop=tradeStop, limit=tradeTarget)
+
+if strategy.position_size < 0 and strategy.position_size[1] == 0
+    entryBar := bar_index
+
+if strategy.position_size < 0 and not na(entryBar) and bar_index - entryBar >= maxHoldBars
+    strategy.close("H4-LowStag-S", comment="MaxHold")
+
+if strategy.position_size == 0 and strategy.position_size[1] < 0
+    tradeStop := na
+    tradeTarget := na
+    entryBar := na
+
+plotshape(firstBreak, title="1M Low Break", style=shape.triangledown, location=location.belowbar, color=color.new(color.blue, 0), size=size.tiny, text="1m割れ")
+plotshape(candidateSignal and not practicalSignal, title="Candidate", style=shape.triangledown, location=location.abovebar, color=color.new(color.yellow, 0), size=size.tiny, text="候補")
+plotshape(practicalSignal and not strictSignal, title="Practical", style=shape.triangledown, location=location.abovebar, color=color.new(color.orange, 0), size=size.small, text="実戦")
+plotshape(strictSignal, title="Strict", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), size=size.small, text="厳選")
+plot(showLevels and active ? activePriorLow : na, title="Broken 1M Low", color=color.new(color.blue, 20), linewidth=1, style=plot.style_linebr)
+plot(showLevels and strategy.position_size < 0 ? tradeStop : na, title="Active SL", color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
+plot(showLevels and strategy.position_size < 0 ? tradeTarget : na, title="Active TP", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
+
+if showLabels and entrySignal
+    stageText = strictSignal ? "厳選 SHORT" : practicalSignal ? "実戦 SHORT" : "候補 SHORT"
+    labelText = stageText + "\nDepth: " + fmtNum(signalBreakDepthAtr) + "ATR\nRisk: " + fmtNum(signalRiskAtr) + "ATR\nAge: " + fmtInt(signalSupportAge) + "\nSL: " + fmt(signalStop) + "\nTP: " + fmt(signalTarget)
+    label.new(bar_index, high + atrValue * 1.5, labelText, style=label.style_label_down, color=strictSignal ? color.new(color.red, 0) : practicalSignal ? color.new(color.orange, 0) : color.new(color.yellow, 0), textcolor=strictSignal ? color.white : color.black, size=size.small)
+
+var table info = table.new(position.top_right, 2, 10, bgcolor=color.new(color.black, 82), frame_color=color.new(color.white, 70), frame_width=1)
+f_row(int row, string key, string value, color valueColor) =>
+    table.cell(info, 0, row, key, text_color=color.new(color.white, 15), text_size=size.tiny)
+    table.cell(info, 1, row, value, text_color=valueColor, text_size=size.tiny)
+
+if showTable and barstate.islast
+    isH4 = timeframe.isintraday and timeframe.multiplier == 240
+    stateText = entrySignal ? "Signal" : active ? "監視中" : "待機"
+    f_row(0, "Mode", entryMode, color.orange)
+    f_row(1, "Chart TF", isH4 ? "H4 OK" : "H4推奨", isH4 ? color.lime : color.red)
+    f_row(2, "State", stateText, entrySignal ? color.orange : active ? color.aqua : color.white)
+    f_row(3, "Symbol OK", symbolOk ? "OK" : "対象外", symbolOk ? color.lime : color.gray)
+    f_row(4, "ADX", fmtNum(adxValue), adxOk ? color.lime : color.gray)
+    f_row(5, "BB width", fmtNum(bbWidthAtr) + " ATR", bbWidthOk ? color.lime : color.gray)
+    f_row(6, "Depth", fmtNum(signalBreakDepthAtr) + " ATR", not na(signalBreakDepthAtr) and signalBreakDepthAtr >= qualityDepthAtr ? color.lime : color.gray)
+    f_row(7, "Risk", fmtNum(signalRiskAtr) + " ATR", riskOk ? color.lime : color.gray)
+    f_row(8, "Support age", fmtInt(rawSignal ? signalSupportAge : activeSupportAge), color.white)
+    f_row(9, "Status", "検証用strategy", color.orange)
+
+alertcondition(entrySignal, title="H4 Low Stag Short Strategy Entry", message="H4 low-stagnation short strategy entry on {{ticker}}.")

@@ -1,5 +1,5 @@
 //@version=5
-strategy("H4 Low Stag Short Strategy [Parity Check v2]", overlay=true, pyramiding=0, initial_capital=1000000, default_qty_type=strategy.fixed, default_qty_value=1, process_orders_on_close=false, max_lines_count=500, max_labels_count=300, max_bars_back=5000)
+strategy("H4 Low Stag Short Strategy [Parity Check v3]", overlay=true, pyramiding=0, initial_capital=1000000, default_qty_type=strategy.fixed, default_qty_value=1, process_orders_on_close=false, max_lines_count=500, max_labels_count=300, max_bars_back=5000)
 
 // =====================================================================
 // H4 1ヶ月安値更新後の安値停滞ブレイクショート 検証用strategy
@@ -90,7 +90,11 @@ int supportAgeNow = hasBase and not na(supportAgeCalc) ? math.max(supportAgeCalc
 inDateRange = time >= testStart and time <= testEnd
 holidayBar = (month == 12 and dayofmonth >= 15) or (month == 1 and dayofmonth <= 10)
 tradeWindowOk = inDateRange and (not useHolidayFilter or not holidayBar)
+closedTradeCount = strategy.closedtrades
+closedTradeNow = closedTradeCount > nz(closedTradeCount[1])
 flatNow = strategy.position_size == 0
+closedThisBar = flatNow and (nz(strategy.position_size[1]) != 0 or closedTradeNow)
+canScan = flatNow and not closedThisBar
 
 [plusDi, minusDi, adxValue] = ta.dmi(adxLen, adxLen)
 bbBasis = ta.sma(close, bbLen)
@@ -120,7 +124,7 @@ float signalRiskAtr = na
 int signalBarsAfter = na
 int signalSupportAge = na
 
-if firstBreak and tradeWindowOk and flatNow and not active
+if firstBreak and tradeWindowOk and canScan and not active
     active := true
     breakBar := bar_index
     activePriorLow := priorLow
@@ -129,7 +133,7 @@ if firstBreak and tradeWindowOk and flatNow and not active
     pulledBack := false
     activeSupportAge := supportAgeNow
 
-if active and flatNow and not firstBreak
+if active and canScan and not firstBreak
     barsAfter = bar_index - breakBar
     if barsAfter > maxAfterBreak
         active := false
@@ -173,7 +177,6 @@ if active and flatNow and not firstBreak
                 signalRiskAtr := riskDist / atrValue
                 signalBarsAfter := barsAfter
                 signalSupportAge := activeSupportAge
-                active := false
 
 tickerText = syminfo.ticker
 symbolGbpjpy = str.contains(tickerText, "GBPJPY")
@@ -186,7 +189,7 @@ bbWidthOk = not na(bbWidthAtr) and bbWidthAtr >= bbWidthMinAtr and bbWidthAtr <=
 candidateSignal = rawSignal and symbolOk and adxOk and riskOk and bbWidthOk
 practicalSignal = candidateSignal and not na(signalBreakDepthAtr) and signalBreakDepthAtr >= qualityDepthAtr and not na(signalCloseLocation) and signalCloseLocation <= qualityCloseLocation
 strictSignal = practicalSignal and (signalSupportAge > freshSupportBars or signalBreakDepthAtr >= freshDepthAtr)
-logicEntrySignal = (entryMode == "候補" ? candidateSignal : entryMode == "実戦候補" ? practicalSignal : strictSignal) and tradeWindowOk and flatNow
+logicEntrySignal = (entryMode == "候補" ? candidateSignal : entryMode == "実戦候補" ? practicalSignal : strictSignal) and tradeWindowOk and canScan
 
 pyGbpjpy1 = timestamp("10 Oct 2016 00:00 +0000")
 pyGbpjpy2 = timestamp("25 May 2018 04:00 +0000")
@@ -196,13 +199,22 @@ expectedGbpjpySignal = symbolGbpjpy and (time == pyGbpjpy1 or time == pyGbpjpy2 
 matchedGbpjpySignal = symbolGbpjpy and logicEntrySignal and expectedGbpjpySignal
 extraGbpjpySignal = symbolGbpjpy and logicEntrySignal and not expectedGbpjpySignal
 expectedOnlyMode = executionMode == "GBPJPY Python期待のみ"
-expectedEntrySignal = expectedOnlyMode and expectedGbpjpySignal and tradeWindowOk and flatNow
+expectedEntrySignal = expectedOnlyMode and expectedGbpjpySignal and tradeWindowOk and canScan
 entrySignal = expectedOnlyMode ? expectedEntrySignal : logicEntrySignal
 
 expectedStop = time == pyGbpjpy1 ? 128.825290 : time == pyGbpjpy2 ? 146.848599 : time == pyGbpjpy3 ? 183.247884 : time == pyGbpjpy4 ? 193.201875 : na
 expectedTarget = time == pyGbpjpy1 ? 124.939419 : time == pyGbpjpy2 ? 144.212802 : time == pyGbpjpy3 ? 180.464233 : time == pyGbpjpy4 ? 189.362250 : na
 orderStop = expectedOnlyMode ? expectedStop : signalStop
 orderTarget = expectedOnlyMode ? expectedTarget : signalTarget
+
+if rawSignal and (expectedOnlyMode or not logicEntrySignal)
+    active := false
+    breakBar := na
+    activePriorLow := na
+    lowExtreme := na
+    pullbackHigh := na
+    pulledBack := false
+    activeSupportAge := na
 
 var int pineEntryCount = 0
 var int logicSignalCount = 0
@@ -227,7 +239,7 @@ var float tradeStop = na
 var float tradeTarget = na
 var int entryBar = na
 
-if entrySignal and strategy.position_size == 0
+if entrySignal and canScan
     tradeStop := orderStop
     tradeTarget := orderTarget
     orderComment = expectedOnlyMode ? "PY_EXPECTED" : entryMode
@@ -243,10 +255,17 @@ if strategy.position_size < 0 and strategy.position_size[1] == 0
 if strategy.position_size < 0 and not na(entryBar) and bar_index - entryBar >= maxHoldBars
     strategy.close("H4-LowStag-S", comment="MaxHold")
 
-if strategy.position_size == 0 and strategy.position_size[1] < 0
+if closedThisBar
     tradeStop := na
     tradeTarget := na
     entryBar := na
+    active := false
+    breakBar := na
+    activePriorLow := na
+    lowExtreme := na
+    pullbackHigh := na
+    pulledBack := false
+    activeSupportAge := na
 
 plotshape(firstBreak, title="1M Low Break", style=shape.triangledown, location=location.belowbar, color=color.new(color.blue, 0), size=size.tiny, text="1m割れ")
 plotshape(candidateSignal and not practicalSignal, title="Candidate", style=shape.triangledown, location=location.abovebar, color=color.new(color.yellow, 0), size=size.tiny, text="候補")

@@ -85,6 +85,7 @@ int supportAgeNow = hasBase and not na(supportAgeCalc) ? math.max(supportAgeCalc
 inDateRange = time >= testStart and time <= testEnd
 holidayBar = (month == 12 and dayofmonth >= 15) or (month == 1 and dayofmonth <= 10)
 tradeWindowOk = inDateRange and (not useHolidayFilter or not holidayBar)
+flatNow = strategy.position_size == 0
 
 [plusDi, minusDi, adxValue] = ta.dmi(adxLen, adxLen)
 bbBasis = ta.sma(close, bbLen)
@@ -114,7 +115,7 @@ float signalRiskAtr = na
 int signalBarsAfter = na
 int signalSupportAge = na
 
-if firstBreak and tradeWindowOk
+if firstBreak and tradeWindowOk and flatNow and not active
     active := true
     breakBar := bar_index
     activePriorLow := priorLow
@@ -123,7 +124,7 @@ if firstBreak and tradeWindowOk
     pulledBack := false
     activeSupportAge := supportAgeNow
 
-if active and not firstBreak
+if active and flatNow and not firstBreak
     barsAfter = bar_index - breakBar
     if barsAfter > maxAfterBreak
         active := false
@@ -179,7 +180,7 @@ bbWidthOk = not na(bbWidthAtr) and bbWidthAtr >= bbWidthMinAtr and bbWidthAtr <=
 candidateSignal = rawSignal and symbolOk and adxOk and riskOk and bbWidthOk
 practicalSignal = candidateSignal and not na(signalBreakDepthAtr) and signalBreakDepthAtr >= qualityDepthAtr and not na(signalCloseLocation) and signalCloseLocation <= qualityCloseLocation
 strictSignal = practicalSignal and (signalSupportAge > freshSupportBars or signalBreakDepthAtr >= freshDepthAtr)
-entrySignal = (entryMode == "候補" ? candidateSignal : entryMode == "実戦候補" ? practicalSignal : strictSignal) and tradeWindowOk
+entrySignal = (entryMode == "候補" ? candidateSignal : entryMode == "実戦候補" ? practicalSignal : strictSignal) and tradeWindowOk and flatNow
 
 var float tradeStop = na
 var float tradeTarget = na
@@ -230,10 +231,10 @@ if showTable and barstate.islast
     f_row(1, "Chart TF", isH4 ? "H4 OK" : "H4推奨", isH4 ? color.lime : color.red)
     f_row(2, "State", stateText, entrySignal ? color.orange : active ? color.aqua : color.white)
     f_row(3, "Window", tradeWindowOk ? "OK" : "除外中", tradeWindowOk ? color.lime : color.gray)
-    f_row(4, "Symbol OK", symbolOk ? "OK" : "対象外", symbolOk ? color.lime : color.gray)
-    f_row(5, "ADX", fmtNum(adxValue), adxOk ? color.lime : color.gray)
-    f_row(6, "BB width", fmtNum(bbWidthAtr) + " ATR", bbWidthOk ? color.lime : color.gray)
-    f_row(7, "Depth", fmtNum(signalBreakDepthAtr) + " ATR", not na(signalBreakDepthAtr) and signalBreakDepthAtr >= qualityDepthAtr ? color.lime : color.gray)
+    f_row(4, "Flat", flatNow ? "Yes" : "In trade", flatNow ? color.lime : color.orange)
+    f_row(5, "Symbol OK", symbolOk ? "OK" : "対象外", symbolOk ? color.lime : color.gray)
+    f_row(6, "ADX", fmtNum(adxValue), adxOk ? color.lime : color.gray)
+    f_row(7, "BB width", fmtNum(bbWidthAtr) + " ATR", bbWidthOk ? color.lime : color.gray)
     f_row(8, "Risk", fmtNum(signalRiskAtr) + " ATR", riskOk ? color.lime : color.gray)
     f_row(9, "Status", "検証用strategy", color.orange)
 

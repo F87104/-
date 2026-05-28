@@ -3,7 +3,7 @@
 > このリポジトリで実施した **全バックテスト** の一覧。
 > 何をやったか・どこに結果があるか・採用/不採用の判定 を一覧化。
 
-**最終更新**: 2026-05-24
+**最終更新**: 2026-05-28
 **対応戦略バージョン**: v2.0 (TrendBreakV1 HYBRID + H4 T5 MACD BB)
 
 ---
@@ -41,6 +41,7 @@
 | 12 | TrendBreakV1 (SPX500) | 2015-2024 | (参考) | - | - | - | - | 📊 参考 | インデックス検証 |
 | 13 | TrendBreakV1 Pyramiding sweep | 2015-2024 | 各種 | - | - | - | - | 🔬 研究 | エントリー数1が最適確認 |
 | 14 | TrendBreakV1 騙し回避フィルタ | 2015-2024 | 各種 | - | - | - | - | 🔬 研究 | body60+early1 が候補 |
+| 15 | ショート側研究 2026-05-28 | 2015-2026 | 各種 | - | - | - | - | 🔬 検証途中 | ロング版ミラーは不採用。1ヶ月安値更新後の安値停滞下抜けが暫定候補 |
 
 **凡例**:
 - ✅ 採用 = 現在の本番運用に使用中
@@ -99,6 +100,23 @@
 - MACD: ヒストグラムが3本前より上昇
 - 騙し回避: BB<=0.95 + 16本以内 + 弱いrebreak除外
 - SL: V字の安値 - ATR×0.25, TP: RR 1:2
+
+---
+
+### 2-2.5. ショート側研究 2026-05-28 (🔬 検証途中)
+
+| 検証 | パス | 概要 | 結論 |
+|---|---|---|---|
+| **研究ノート** | [`docs/research/short_side_research_2026-05-28_in_progress.md`](research/short_side_research_2026-05-28_in_progress.md) | ショート側検証の途中経過まとめ | まずここを読む |
+| **結果フォルダ入口** | [`backtests/elliott_fibo/results_2026_05_28/README.md`](../backtests/elliott_fibo/results_2026_05_28/README.md) | 4つのショート検証フォルダの地図 | 検証途中であることを明記 |
+| **T5ショート反転ミラー** | [`backtests/elliott_fibo/results_2026_05_28/t5_short_mirror_validation/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/t5_short_mirror_validation/report_ja.md) | ロング版 H4 V候補 T5 + MACD + BB の上下反転 | 実戦ミラーは 18 trades / -12.82R / PF 0.15 で不採用 |
+| **高ボラ下落継続** | [`backtests/elliott_fibo/results_2026_05_28/t5_short_high_vol_continuation/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/t5_short_high_vol_continuation/report_ja.md) | ADX高め、BB幅7-10ATR、rebreakなどを検証 | プラス断片はあるがOOS不足 |
+| **高ボラ下落継続 実戦化監査** | [`backtests/elliott_fibo/results_2026_05_28/t5_short_practical_hardening/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/t5_short_practical_hardening/report_ja.md) | 出口、建値移動、時間撤退を検証 | DDは抑えられるが本番採用には不足 |
+| **1ヶ月安値更新後の安値停滞ブレイク** | [`backtests/elliott_fibo/results_2026_05_28/monthly_low_rebreak_short/report_ja.md`](../backtests/elliott_fibo/results_2026_05_28/monthly_low_rebreak_short/report_ja.md) | 1〜3ヶ月安値更新後の戻り再下落/安値停滞を検証 | 暫定本命。18 trades / +10.62R / PF 2.22。ただしOOS1件のみ |
+
+**暫定ルール**: H4で過去120本の安値を終値更新 → 安値圏の停滞下抜け → ADX>=30, BB幅3-8ATR, risk<=1.5ATR → 次足ショート, SLは停滞レンジ上, TPは2R。
+
+**判定**: 本番未採用。GBPJPY中心にアラート監視し、30から50件のフォワード記録が必要。
 
 ---
 

@@ -233,13 +233,14 @@ if (showSignals and newCandidate) or (showRejected and newRejected)
     color stageColor = strictH4 ? color.new(color.red, 0) : practicalH4 ? color.new(color.orange, 0) : candidateH4 ? color.new(color.yellow, 0) : color.new(color.gray, 0)
     string stageText = strictH4 ? "厳選候補 SHORT" : practicalH4 ? "実戦候補 SHORT" : candidateH4 ? "候補 SHORT" : "見送り"
     string rejectReason = not symbolOk ? "通貨対象外" : not adxOk ? "ADX不足" : not riskOk ? "リスク幅大" : not bbWidthOk ? "BB幅条件外" : "条件外"
-    string qualityText = "\nDepth: " + fmtNum(breakDepthH4) + "ATR" +
-         "\nCloseLoc: " + fmtNum(closeLocationH4) +
-         "\nRisk: " + fmtNum(riskAtrH4) + "ATR" +
-         "\nADX: " + fmtNum(adxH4) +
-         "\nBB幅: " + fmtNum(bbWidthAtrH4) + "ATR" +
-         "\nAge: " + fmtInt(supportAgeH4) +
-         (strongAgeH4 ? "\n強い観察: S60-119" : "")
+    string qualityText = "\nDepth: " + fmtNum(breakDepthH4) + "ATR"
+    qualityText := qualityText + "\nCloseLoc: " + fmtNum(closeLocationH4)
+    qualityText := qualityText + "\nRisk: " + fmtNum(riskAtrH4) + "ATR"
+    qualityText := qualityText + "\nADX: " + fmtNum(adxH4)
+    qualityText := qualityText + "\nBB幅: " + fmtNum(bbWidthAtrH4) + "ATR"
+    qualityText := qualityText + "\nAge: " + fmtInt(supportAgeH4)
+    if strongAgeH4
+        qualityText := qualityText + "\n強い観察: S60-119"
     string signalText = candidateH4 ? stageText + qualityText + "\nSL: " + fmt(stopH4) + "\nTP: " + fmt(targetH4) : stageText + "\n" + rejectReason + qualityText
     if not showHistoricalLabels
         if not na(latestLabel)

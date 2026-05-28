@@ -435,6 +435,7 @@ H4本命と同じ考え方、つまり `1ヶ月安値更新 + 安値停滞下抜
 | H4安値停滞 Pine可視化 | `pine/visual/h4_low_stagnation_short_visual.pine` |
 | H4安値停滞 Pine strategy検証 | `pine/research/h4_low_stagnation_short_strategy.pine` |
 | H4安値停滞 Pine変換監査 | `backtests/elliott_fibo/results_2026_05_28/h4_low_stag_pine_parity_audit/report_ja.md` |
+| H4安値停滞 Pine不一致問題まとめ | `docs/research/pine_parity_issue_h4_low_stag_short_2026-05-29.md` |
 | ショート反転ミラー検証 | `backtests/elliott_fibo/run_t5_short_mirror_validation.py` |
 | 高ボラ下落継続検証 | `backtests/elliott_fibo/run_t5_short_high_vol_continuation.py` |
 | 実戦化監査 | `backtests/elliott_fibo/run_t5_short_practical_hardening.py` |

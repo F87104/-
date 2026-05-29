@@ -78,7 +78,7 @@ d1SlowLen = input.int(50, "D1 EMA slow", minval=1, group=grpTrend)
 maxEmaStretchAtr = input.float(3.5, "EMA20からの最大乖離(ATR)", minval=0.1, step=0.1, group=grpTrend)
 
 grpView = "表示"
-showCandidates = input.bool(true, "候補表示", group=grpView)
+showCandidates = input.bool(false, "候補表示", group=grpView, tooltip="OFF推奨。候補が多く出るため、実戦確認ではEntry/見送りを主役にします。")
 showSignals = input.bool(true, "Entry表示", group=grpView)
 showSkips = input.bool(true, "見送り表示", group=grpView)
 showLevels = input.bool(true, "SL/TP/棚ライン", group=grpView)
@@ -313,7 +313,7 @@ bool newCandidate = candidateNow
 bool newSignal = signalNow
 bool newSkip = breakoutNow and not signalNow and showSkips
 
-plotshape(newCandidate, title="V Shelf Candidate", style=shape.circle, location=location.belowbar, color=color.new(color.aqua, 0), size=size.tiny, text="V棚")
+plotshape(showCandidates and newCandidate, title="V Shelf Candidate", style=shape.circle, location=location.belowbar, color=color.new(color.aqua, 0), size=size.tiny, text="V棚")
 plotshape(newSignal, title="V Shelf Breakout Long", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="棚B")
 plotshape(newSkip, title="V Shelf Skip", style=shape.xcross, location=location.abovebar, color=color.new(color.gray, 0), size=size.tiny, text="見送り")
 

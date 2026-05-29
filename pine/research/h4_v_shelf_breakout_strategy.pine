@@ -36,13 +36,13 @@ strategy("H4 V Shelf Breakout [Research]",
 grpMode = "基本"
 requireH4 = input.bool(true, "H4チャートのみ売買", group=grpMode)
 skipHoliday = input.bool(true, "12/15〜1/10は新規停止", group=grpMode)
-trendMode = input.string("H4またはD1", "地合いフィルタ", options=["なし","H4","D1","H4またはD1","H4かつD1"], group=grpMode)
+trendMode = input.string("H4かつD1", "地合いフィルタ", options=["なし","H4","D1","H4またはD1","H4かつD1"], group=grpMode)
 
 grpV = "Vショック条件"
 pivotWidth = input.int(3, "Pivot幅", minval=1, maxval=20, group=grpV)
 atrLen = input.int(14, "ATR期間", minval=1, group=grpV)
 minSwingAtr = input.float(2.0, "Pivot間の最小スイング(ATR)", minval=0.1, step=0.1, group=grpV)
-minDropAtr = input.float(2.8, "急落幅の最小ATR", minval=0.1, step=0.1, group=grpV)
+minDropAtr = input.float(3.2, "急落幅の最小ATR", minval=0.1, step=0.1, group=grpV)
 minDropSpeed = input.float(0.25, "急落速度の下限(ATR/本)", minval=0.0, step=0.05, group=grpV)
 minDropBars = input.int(2, "急落の最小本数", minval=1, group=grpV)
 maxDropBars = input.int(24, "急落の最大本数", minval=2, group=grpV)
@@ -55,11 +55,12 @@ lowBreakInvalidAtr = input.float(0.20, "谷割れ失効(ATR)", minval=0.0, step=
 grpShelf = "棚ブレイク条件"
 shelfBars = input.int(5, "棚の本数", minval=3, maxval=20, group=grpShelf)
 shelfRangeAtr = input.float(1.25, "棚の最大値幅(ATR)", minval=0.1, step=0.05, group=grpShelf)
-shelfHoldFib = input.float(0.50, "棚の安値保持ライン", minval=0.0, maxval=1.0, step=0.05, group=grpShelf)
-shelfHoldBufferAtr = input.float(0.20, "保持ライン許容(ATR)", minval=0.0, step=0.05, group=grpShelf)
+shelfHoldFib = input.float(0.618, "棚の安値保持ライン", minval=0.0, maxval=1.0, step=0.001, group=grpShelf)
+shelfHoldBufferAtr = input.float(0.10, "保持ライン許容(ATR)", minval=0.0, step=0.05, group=grpShelf)
 breakBufferAtr = input.float(0.05, "棚上抜け余白(ATR)", minval=0.0, step=0.01, group=grpShelf)
 minBodyRatio = input.float(0.45, "ブレイク足の実体比率", minval=0.0, maxval=1.0, step=0.05, group=grpShelf)
 minCloseLocation = input.float(0.60, "ブレイク足の終値位置", minval=0.0, maxval=1.0, step=0.05, group=grpShelf)
+maxEntryFib = input.float(1.02, "Entry回復率上限", minval=0.5, maxval=1.5, step=0.01, group=grpShelf, tooltip="元の急落開始高値を大きく超えてからの棚ブレイクは、押し目というより高値追いになりやすいため除外します。")
 
 grpRisk = "リスク/利確"
 stopBasis = input.string("棚安値", "SL基準", options=["棚安値","V谷"], group=grpRisk)
@@ -74,7 +75,7 @@ h4FastLen = input.int(20, "H4 EMA fast", minval=1, group=grpTrend)
 h4SlowLen = input.int(50, "H4 EMA slow", minval=1, group=grpTrend)
 d1FastLen = input.int(20, "D1 EMA fast", minval=1, group=grpTrend)
 d1SlowLen = input.int(50, "D1 EMA slow", minval=1, group=grpTrend)
-maxEmaStretchAtr = input.float(6.0, "EMA20からの最大乖離(ATR)", minval=0.1, step=0.1, group=grpTrend)
+maxEmaStretchAtr = input.float(3.5, "EMA20からの最大乖離(ATR)", minval=0.1, step=0.1, group=grpTrend)
 
 grpView = "表示"
 showCandidates = input.bool(true, "候補表示", group=grpView)
@@ -83,7 +84,7 @@ showSkips = input.bool(true, "見送り表示", group=grpView)
 showLevels = input.bool(true, "SL/TP/棚ライン", group=grpView)
 showTable = input.bool(true, "状態テーブル", group=grpView)
 maxLabels = input.int(80, "残すラベル数", minval=10, maxval=300, group=grpView)
-labelShiftBars = input.int(8, "ラベル右ずらし", minval=0, maxval=80, group=grpView)
+labelShiftBars = input.int(0, "ラベル右ずらし", minval=0, maxval=80, group=grpView, tooltip="0推奨。シグナル足に固定してズレを防ぎます。")
 labelOffsetAtr = input.float(3.0, "ラベル上下余白(ATR)", minval=0.5, step=0.5, group=grpView)
 
 fmt(float v) =>
@@ -105,6 +106,7 @@ skipText(int code) =>
          code == 8 ? "既に保有中" :
          code == 9 ? "候補が古い" :
          code == 10 ? "年末年始停止" :
+         code == 11 ? "回復しすぎ" :
          "見送り"
     out
 
@@ -283,6 +285,7 @@ if vPair and not na(atrValue) and atrValue > 0
                 bool shelfTight = shelfRange <= atrValue * shelfRangeAtr
                 bool shelfHolds = shelfLowPrev >= holdLine - atrValue * shelfHoldBufferAtr
                 breakoutNow := enoughShelfBars and close > shelfHighPrev + atrValue * breakBufferAtr
+                bool entryNotTooLate = recoverFib <= maxEntryFib
                 bool breakQuality = bodyRatio >= minBodyRatio and closeLocation >= minCloseLocation
                 float stopFromShelf = shelfLowPrev - atrValue * stopBufferAtr
                 float stopFromV = lastPrice - atrValue * stopBufferAtr
@@ -299,6 +302,7 @@ if vPair and not na(atrValue) and atrValue > 0
                      not stretchOk ? 7 :
                      strategy.position_size != 0 ? 8 :
                      not holidayOk ? 10 :
+                     not entryNotTooLate ? 11 :
                      0
                 signalNow := breakoutNow and skipCode == 0
                 if signalNow
@@ -314,25 +318,28 @@ plotshape(newSignal, title="V Shelf Breakout Long", style=shape.triangleup, loca
 plotshape(newSkip, title="V Shelf Skip", style=shape.xcross, location=location.abovebar, color=color.new(color.gray, 0), size=size.tiny, text="見送り")
 
 float labelAtr = ta.atr(14)
+int barMs = timeframe.in_seconds(timeframe.period) * 1000
+int labelTime = time + barMs * labelShiftBars
+int levelEndTime = time + barMs * 20
 if newCandidate and showCandidates
     string cTxt = "V棚候補\nFib: " + fmtNum(recoverFib) + "\nDrop: " + fmtNum(dropAtr) + "ATR"
-    keepLabel(label.new(bar_index + labelShiftBars, low - labelAtr * labelOffsetAtr, cTxt, xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.aqua, 0), textcolor=color.black, size=size.tiny))
+    keepLabel(label.new(labelTime, low - labelAtr * labelOffsetAtr, cTxt, xloc=xloc.bar_time, style=label.style_label_up, color=color.new(color.aqua, 0), textcolor=color.black, size=size.tiny))
     if showLevels
         keepLine(line.new(prevTime, prevPrice, lastTime, lastPrice, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2))
         keepLine(line.new(lastTime, lastPrice, time, close, xloc=xloc.bar_time, color=color.new(color.aqua, 0), width=2))
 
 if newSkip
     string sTxt = "見送り\n" + skipText(skipCode)
-    keepLabel(label.new(bar_index + labelShiftBars, high + labelAtr * labelOffsetAtr, sTxt, xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.gray, 10), textcolor=color.white, size=size.tiny))
+    keepLabel(label.new(labelTime, high + labelAtr * labelOffsetAtr, sTxt, xloc=xloc.bar_time, style=label.style_label_down, color=color.new(color.gray, 10), textcolor=color.white, size=size.tiny))
 
 if newSignal and showSignals
     string eTxt = "V棚ブレイク\nE: next open\nSL: " + fmt(signalStop) + "\nTP: " + fmt(signalTarget) + "\nRisk: " + fmtNum(signalRiskAtr) + "ATR"
-    keepLabel(label.new(bar_index + labelShiftBars, low - labelAtr * labelOffsetAtr, eTxt, xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
+    keepLabel(label.new(labelTime, low - labelAtr * labelOffsetAtr, eTxt, xloc=xloc.bar_time, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
     if showLevels
-        keepLine(line.new(bar_index - shelfBars, shelfHighPrev, bar_index, shelfHighPrev, color=color.new(color.yellow, 0), width=2))
-        keepLine(line.new(bar_index - shelfBars, shelfLowPrev, bar_index, shelfLowPrev, color=color.new(color.orange, 0), width=1))
-        keepLine(line.new(bar_index, signalStop, bar_index + 20, signalStop, color=color.new(color.red, 0), width=2, style=line.style_dashed))
-        keepLine(line.new(bar_index, signalTarget, bar_index + 20, signalTarget, color=color.new(color.lime, 0), width=2, style=line.style_dashed))
+        keepLine(line.new(time[shelfBars], shelfHighPrev, time, shelfHighPrev, xloc=xloc.bar_time, color=color.new(color.yellow, 0), width=2))
+        keepLine(line.new(time[shelfBars], shelfLowPrev, time, shelfLowPrev, xloc=xloc.bar_time, color=color.new(color.orange, 0), width=1))
+        keepLine(line.new(time, signalStop, levelEndTime, signalStop, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2, style=line.style_dashed))
+        keepLine(line.new(time, signalTarget, levelEndTime, signalTarget, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2, style=line.style_dashed))
 
 var float pendingStop = na
 var float pendingTarget = na

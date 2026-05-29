@@ -1,0 +1,2 @@
+timeframe,strategy,trades,win_rate,total_r_after_cost,avg_r_after_cost,pf_after_cost,max_dd_r,max_losing_streak,avg_hold_bars
+H4,RS120_BODY45_CLOSE60_RR15,103,51.45631067961165,26.752750293010944,0.2597354397379703,1.5718213665501166,9.091198892118452,9,80.45631067961165

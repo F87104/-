@@ -1,0 +1,448 @@
+//@version=5
+strategy("H4 Low Stag Short D1 Regime [Research]", overlay=true, pyramiding=0, initial_capital=1000000, default_qty_type=strategy.fixed, default_qty_value=1, process_orders_on_close=false, max_labels_count=500, max_lines_count=500, max_bars_back=5000)
+
+// =====================================================================
+// H4 安値停滞ショート + 前日D1 RSI地合いフィルタ 検証用strategy
+// ---------------------------------------------------------------------
+// 目的:
+//   Python検証で有望だった「前日D1 RSI 35-55 + H4品質/厳選」を
+//   TradingView上で確認するための研究版。
+//
+// 重要:
+//   - H4チャートで使う前提。
+//   - D1 RSIは未確定日足を使わず、前日確定足 [1] のみ使用。
+//   - 複数lookbackはPythonの actual_trade_sample と同じ優先順を意識。
+//     120 -> 90 -> 180 -> 240 -> 60 -> 360 -> 480 -> 720
+// =====================================================================
+
+grpCore = "基本条件"
+maxAfterBreak = input.int(48, "安値更新後の最大監視本数", minval=4, maxval=200, group=grpCore)
+minWaitBars = input.int(2, "安値更新後の最小待機本数", minval=1, maxval=20, group=grpCore)
+pullbackMinAtr = input.float(0.75, "安値更新後の最低戻り幅(ATR)", minval=0.0, step=0.05, group=grpCore)
+stagBars = input.int(3, "停滞レンジ本数", minval=2, maxval=12, group=grpCore)
+stagRangeAtr = input.float(1.0, "停滞レンジ最大幅(ATR)", minval=0.1, step=0.1, group=grpCore)
+nearLevelAtr = input.float(1.0, "停滞レンジ上限の許容(ATR)", minval=0.1, step=0.1, group=grpCore)
+touchLevelAtr = input.float(0.30, "停滞レンジ下限の安値接近(ATR)", minval=0.0, step=0.05, group=grpCore)
+breakBufferAtr = input.float(0.06, "下抜け余白(ATR)", minval=0.0, step=0.01, group=grpCore)
+stopBufferAtr = input.float(0.25, "SL余白(ATR)", minval=0.0, step=0.05, group=grpCore)
+rr = input.float(2.0, "TP RR", minval=0.5, step=0.25, group=grpCore)
+maxHoldBars = input.int(180, "最大保有本数", minval=1, maxval=1000, group=grpCore)
+
+grpLookback = "lookback優先順"
+useLb120 = input.bool(true, "120本", group=grpLookback)
+useLb90 = input.bool(true, "90本", group=grpLookback)
+useLb180 = input.bool(true, "180本", group=grpLookback)
+useLb240 = input.bool(true, "240本", group=grpLookback)
+useLb60 = input.bool(true, "60本", group=grpLookback)
+useLb360 = input.bool(true, "360本", group=grpLookback)
+useLb480 = input.bool(true, "480本", group=grpLookback)
+useLb720 = input.bool(true, "720本", group=grpLookback)
+
+grpFilters = "実戦フィルタ"
+entryMode = input.string("D1厳選", "検証するラベル", options=["候補", "H4品質", "H4厳選", "D1品質", "D1厳選"], group=grpFilters)
+symbolMode = input.string("Core4+SILVER", "対象通貨", options=["Core4", "Core4+SILVER", "全通貨"], group=grpFilters)
+adxLen = input.int(14, "ADX期間", minval=2, group=grpFilters)
+adxMin = input.float(30.0, "ADX下限", minval=0.0, step=0.5, group=grpFilters)
+atrLen = input.int(14, "ATR期間", minval=1, group=grpFilters)
+riskMaxAtr = input.float(1.5, "リスク幅上限(ATR)", minval=0.1, step=0.1, group=grpFilters)
+bbLen = input.int(20, "BB期間", minval=2, group=grpFilters)
+bbMult = input.float(2.0, "BB倍率", minval=0.1, step=0.1, group=grpFilters)
+bbWidthMinAtr = input.float(3.0, "BB幅下限(ATR)", minval=0.0, step=0.25, group=grpFilters)
+bbWidthMaxAtr = input.float(8.0, "BB幅上限(ATR)", minval=0.1, step=0.25, group=grpFilters)
+qualityDepthAtr = input.float(0.10, "H4品質 下抜け深さ(ATR)", minval=0.0, step=0.01, group=grpFilters)
+qualityCloseLocation = input.float(0.50, "H4品質 終値位置上限", minval=0.0, maxval=1.0, step=0.05, group=grpFilters)
+freshSupportBars = input.int(10, "新しい安値の判定本数", minval=1, maxval=60, group=grpFilters)
+freshDepthAtr = input.float(0.20, "新しい安値に必要な下抜け深さ(ATR)", minval=0.0, step=0.01, group=grpFilters)
+
+grpD1 = "D1地合い"
+d1RsiLen = input.int(14, "D1 RSI期間", minval=2, group=grpD1)
+d1RsiMin = input.float(35.0, "前日D1 RSI下限", minval=0.0, maxval=100.0, step=0.5, group=grpD1)
+d1RsiMax = input.float(55.0, "前日D1 RSI上限", minval=0.0, maxval=100.0, step=0.5, group=grpD1)
+showD1Tags = input.bool(true, "D1条件タグ表示", group=grpD1)
+
+grpTrade = "売買設定"
+testStart = timestamp("01 Jan 2015 00:00 +0000")
+testEnd = timestamp("31 Dec 2026 23:59 +0000")
+useHolidayFilter = input.bool(true, "12/15-1/10を除外", group=grpTrade)
+useRiskSizing = input.bool(false, "リスク%で数量計算", group=grpTrade)
+riskPct = input.float(1.0, "リスク%/trade", minval=0.01, step=0.1, group=grpTrade)
+fixedQty = input.float(1.0, "固定数量", minval=0.0, step=0.1, group=grpTrade)
+
+grpView = "表示"
+showLabels = input.bool(true, "シグナルラベル", group=grpView)
+showLevels = input.bool(true, "SL/TP/割れた安値ライン", group=grpView)
+showTable = input.bool(true, "状態テーブル", group=grpView)
+
+fmt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, format.mintick)
+    out
+
+fmtNum(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#.##")
+    out
+
+fmtInt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#")
+    out
+
+calcQty(float stopPrice, float signalPrice) =>
+    float riskDist = stopPrice - signalPrice
+    float qtyOut = fixedQty
+    if useRiskSizing and riskDist > 0
+        qtyOut := (strategy.equity * riskPct / 100.0) / riskDist
+    qtyOut
+
+closedTradeCount = strategy.closedtrades
+closedTradeNow = closedTradeCount > nz(closedTradeCount[1])
+flatNow = strategy.position_size == 0
+closedThisBar = flatNow and (nz(strategy.position_size[1]) != 0 or closedTradeNow)
+canScan = flatNow and not closedThisBar
+inDateRange = time >= testStart and time <= testEnd
+holidayBar = (month == 12 and dayofmonth >= 15) or (month == 1 and dayofmonth <= 10)
+tradeWindowOk = inDateRange and (not useHolidayFilter or not holidayBar)
+
+f_low_stag(int lb) =>
+    float atrValue = ta.atr(atrLen)
+    float priorLow = ta.lowest(low[1], lb)
+    float priorLowPrev = ta.lowest(low[2], lb)
+    float breakBuffer = atrValue * breakBufferAtr
+    bool hasBase = not na(atrValue) and atrValue > 0 and not na(priorLow)
+    bool breakNow = hasBase and close < priorLow - breakBuffer
+    bool wasBroken = not na(priorLowPrev) and not na(atrValue[1]) and atrValue[1] > 0 and close[1] < priorLowPrev - atrValue[1] * breakBufferAtr
+    bool firstBreak = breakNow and not wasBroken
+    int supportAgeCalc = -ta.lowestbars(low[1], lb) + 1
+    int supportAgeNow = hasBase and not na(supportAgeCalc) ? math.max(supportAgeCalc, 1) : na
+
+    [plusDi, minusDi, adxValue] = ta.dmi(adxLen, adxLen)
+    float bbBasis = ta.sma(close, bbLen)
+    float bbDev = ta.stdev(close, bbLen) * bbMult
+    float bbUpper = bbBasis + bbDev
+    float bbLower = bbBasis - bbDev
+    float bbWidthAtr = atrValue > 0 ? (bbUpper - bbLower) / atrValue : na
+    float zoneHighNow = ta.highest(high[1], stagBars)
+    float zoneLowNow = ta.lowest(low[1], stagBars)
+
+    var bool active = false
+    var int breakBar = na
+    var float activePriorLow = na
+    var float lowExtreme = na
+    var float pullbackHigh = na
+    var bool pulledBack = false
+    var int activeSupportAge = na
+
+    bool rawSignal = false
+    float signalStop = na
+    float signalTarget = na
+    float signalZoneHigh = na
+    float signalZoneLow = na
+    float signalBreakDepthAtr = na
+    float signalCloseLocation = na
+    float signalRiskAtr = na
+    int signalBarsAfter = na
+    int signalSupportAge = na
+
+    if closedThisBar
+        active := false
+        breakBar := na
+        activePriorLow := na
+        lowExtreme := na
+        pullbackHigh := na
+        pulledBack := false
+        activeSupportAge := na
+
+    if firstBreak and tradeWindowOk and canScan and not active
+        active := true
+        breakBar := bar_index
+        activePriorLow := priorLow
+        lowExtreme := low
+        pullbackHigh := high
+        pulledBack := false
+        activeSupportAge := supportAgeNow
+
+    if active and canScan and not firstBreak
+        int barsAfter = bar_index - breakBar
+        if barsAfter > maxAfterBreak
+            active := false
+            breakBar := na
+            activePriorLow := na
+            lowExtreme := na
+            pullbackHigh := na
+            pulledBack := false
+            activeSupportAge := na
+        else if barsAfter >= minWaitBars and hasBase and tradeWindowOk
+            if not pulledBack
+                if low < lowExtreme
+                    lowExtreme := low
+                    pullbackHigh := high
+                if high >= lowExtreme + atrValue * pullbackMinAtr
+                    pulledBack := true
+                    pullbackHigh := math.max(pullbackHigh, high)
+            else
+                pullbackHigh := math.max(pullbackHigh, high)
+
+            float zoneHigh = zoneHighNow
+            float zoneLow = zoneLowNow
+            float zoneRange = zoneHigh - zoneLow
+            bool enoughBars = barsAfter >= stagBars + 1
+            bool tight = enoughBars and zoneRange <= atrValue * stagRangeAtr
+            bool nearBrokenLow = enoughBars and zoneHigh <= activePriorLow + atrValue * nearLevelAtr
+            bool touchedLowArea = enoughBars and zoneLow <= activePriorLow + atrValue * touchLevelAtr
+            bool brokeZoneLow = enoughBars and close < zoneLow - breakBuffer
+            bool stagnationOk = tight and nearBrokenLow and touchedLowArea and brokeZoneLow
+            if stagnationOk
+                float stopPrice = zoneHigh + atrValue * stopBufferAtr
+                float riskDist = stopPrice - close
+                if riskDist > 0
+                    rawSignal := true
+                    signalStop := stopPrice
+                    signalTarget := close - riskDist * rr
+                    signalZoneHigh := zoneHigh
+                    signalZoneLow := zoneLow
+                    signalBreakDepthAtr := (zoneLow - close) / atrValue
+                    float signalRange = high - low
+                    signalCloseLocation := signalRange > 0 ? (close - low) / signalRange : na
+                    signalRiskAtr := riskDist / atrValue
+                    signalBarsAfter := barsAfter
+                    signalSupportAge := activeSupportAge
+                    active := false
+
+    [rawSignal, firstBreak, active, signalStop, signalTarget, signalZoneHigh, signalZoneLow, signalBreakDepthAtr, signalCloseLocation, signalRiskAtr, signalBarsAfter, signalSupportAge, activePriorLow, adxValue, bbWidthAtr]
+
+[raw120, break120, active120, stop120, target120, zoneHigh120, zoneLow120, depth120, closeLoc120, risk120, after120, age120, prior120, adx120, bbw120] = f_low_stag(120)
+[raw90, break90, active90, stop90, target90, zoneHigh90, zoneLow90, depth90, closeLoc90, risk90, after90, age90, prior90, adx90, bbw90] = f_low_stag(90)
+[raw180, break180, active180, stop180, target180, zoneHigh180, zoneLow180, depth180, closeLoc180, risk180, after180, age180, prior180, adx180, bbw180] = f_low_stag(180)
+[raw240, break240, active240, stop240, target240, zoneHigh240, zoneLow240, depth240, closeLoc240, risk240, after240, age240, prior240, adx240, bbw240] = f_low_stag(240)
+[raw60, break60, active60, stop60, target60, zoneHigh60, zoneLow60, depth60, closeLoc60, risk60, after60, age60, prior60, adx60, bbw60] = f_low_stag(60)
+[raw360, break360, active360, stop360, target360, zoneHigh360, zoneLow360, depth360, closeLoc360, risk360, after360, age360, prior360, adx360, bbw360] = f_low_stag(360)
+[raw480, break480, active480, stop480, target480, zoneHigh480, zoneLow480, depth480, closeLoc480, risk480, after480, age480, prior480, adx480, bbw480] = f_low_stag(480)
+[raw720, break720, active720, stop720, target720, zoneHigh720, zoneLow720, depth720, closeLoc720, risk720, after720, age720, prior720, adx720, bbw720] = f_low_stag(720)
+
+string tickerText = syminfo.ticker
+bool symbolCore4 = str.contains(tickerText, "GBPJPY") or str.contains(tickerText, "CHFJPY") or str.contains(tickerText, "XAUUSD") or str.contains(tickerText, "GOLD") or str.contains(tickerText, "EURJPY")
+bool symbolSilver = str.contains(tickerText, "SILVER") or str.contains(tickerText, "XAGUSD")
+bool symbolOk = symbolMode == "全通貨" ? true : symbolMode == "Core4" ? symbolCore4 : (symbolCore4 or symbolSilver)
+
+baseOk(bool raw, float riskAtr, float adxVal, float bbwVal) =>
+    raw and symbolOk and not na(riskAtr) and riskAtr <= riskMaxAtr and not na(adxVal) and adxVal >= adxMin and not na(bbwVal) and bbwVal >= bbWidthMinAtr and bbwVal <= bbWidthMaxAtr
+
+base120 = useLb120 and baseOk(raw120, risk120, adx120, bbw120)
+base90 = useLb90 and baseOk(raw90, risk90, adx90, bbw90)
+base180 = useLb180 and baseOk(raw180, risk180, adx180, bbw180)
+base240 = useLb240 and baseOk(raw240, risk240, adx240, bbw240)
+base60 = useLb60 and baseOk(raw60, risk60, adx60, bbw60)
+base360 = useLb360 and baseOk(raw360, risk360, adx360, bbw360)
+base480 = useLb480 and baseOk(raw480, risk480, adx480, bbw480)
+base720 = useLb720 and baseOk(raw720, risk720, adx720, bbw720)
+
+bool candidateSignal = false
+int selLookback = na
+float selStop = na
+float selTarget = na
+float selZoneHigh = na
+float selZoneLow = na
+float selDepth = na
+float selCloseLoc = na
+float selRiskAtr = na
+float selAfter = na
+float selAge = na
+float selPriorLow = na
+float selAdx = na
+float selBbw = na
+
+if base120
+    candidateSignal := true
+    selLookback := 120
+    selStop := stop120
+    selTarget := target120
+    selZoneHigh := zoneHigh120
+    selZoneLow := zoneLow120
+    selDepth := depth120
+    selCloseLoc := closeLoc120
+    selRiskAtr := risk120
+    selAfter := after120
+    selAge := age120
+    selPriorLow := prior120
+    selAdx := adx120
+    selBbw := bbw120
+else if base90
+    candidateSignal := true
+    selLookback := 90
+    selStop := stop90
+    selTarget := target90
+    selZoneHigh := zoneHigh90
+    selZoneLow := zoneLow90
+    selDepth := depth90
+    selCloseLoc := closeLoc90
+    selRiskAtr := risk90
+    selAfter := after90
+    selAge := age90
+    selPriorLow := prior90
+    selAdx := adx90
+    selBbw := bbw90
+else if base180
+    candidateSignal := true
+    selLookback := 180
+    selStop := stop180
+    selTarget := target180
+    selZoneHigh := zoneHigh180
+    selZoneLow := zoneLow180
+    selDepth := depth180
+    selCloseLoc := closeLoc180
+    selRiskAtr := risk180
+    selAfter := after180
+    selAge := age180
+    selPriorLow := prior180
+    selAdx := adx180
+    selBbw := bbw180
+else if base240
+    candidateSignal := true
+    selLookback := 240
+    selStop := stop240
+    selTarget := target240
+    selZoneHigh := zoneHigh240
+    selZoneLow := zoneLow240
+    selDepth := depth240
+    selCloseLoc := closeLoc240
+    selRiskAtr := risk240
+    selAfter := after240
+    selAge := age240
+    selPriorLow := prior240
+    selAdx := adx240
+    selBbw := bbw240
+else if base60
+    candidateSignal := true
+    selLookback := 60
+    selStop := stop60
+    selTarget := target60
+    selZoneHigh := zoneHigh60
+    selZoneLow := zoneLow60
+    selDepth := depth60
+    selCloseLoc := closeLoc60
+    selRiskAtr := risk60
+    selAfter := after60
+    selAge := age60
+    selPriorLow := prior60
+    selAdx := adx60
+    selBbw := bbw60
+else if base360
+    candidateSignal := true
+    selLookback := 360
+    selStop := stop360
+    selTarget := target360
+    selZoneHigh := zoneHigh360
+    selZoneLow := zoneLow360
+    selDepth := depth360
+    selCloseLoc := closeLoc360
+    selRiskAtr := risk360
+    selAfter := after360
+    selAge := age360
+    selPriorLow := prior360
+    selAdx := adx360
+    selBbw := bbw360
+else if base480
+    candidateSignal := true
+    selLookback := 480
+    selStop := stop480
+    selTarget := target480
+    selZoneHigh := zoneHigh480
+    selZoneLow := zoneLow480
+    selDepth := depth480
+    selCloseLoc := closeLoc480
+    selRiskAtr := risk480
+    selAfter := after480
+    selAge := age480
+    selPriorLow := prior480
+    selAdx := adx480
+    selBbw := bbw480
+else if base720
+    candidateSignal := true
+    selLookback := 720
+    selStop := stop720
+    selTarget := target720
+    selZoneHigh := zoneHigh720
+    selZoneLow := zoneLow720
+    selDepth := depth720
+    selCloseLoc := closeLoc720
+    selRiskAtr := risk720
+    selAfter := after720
+    selAge := age720
+    selPriorLow := prior720
+    selAdx := adx720
+    selBbw := bbw720
+
+prevD1Rsi = request.security(syminfo.tickerid, "D", ta.rsi(close, d1RsiLen)[1], barmerge.gaps_off, barmerge.lookahead_off)
+d1Ok = not na(prevD1Rsi) and prevD1Rsi >= d1RsiMin and prevD1Rsi <= d1RsiMax
+h4QualitySignal = candidateSignal and not na(selDepth) and selDepth >= qualityDepthAtr and not na(selCloseLoc) and selCloseLoc <= qualityCloseLocation
+h4StrictSignal = h4QualitySignal and (selAge > freshSupportBars or selDepth >= freshDepthAtr)
+d1QualitySignal = h4QualitySignal and d1Ok
+d1StrictSignal = h4StrictSignal and d1Ok
+
+entrySignal = entryMode == "候補" ? candidateSignal : entryMode == "H4品質" ? h4QualitySignal : entryMode == "H4厳選" ? h4StrictSignal : entryMode == "D1品質" ? d1QualitySignal : d1StrictSignal
+entrySignal := entrySignal and tradeWindowOk and canScan
+
+var float tradeStop = na
+var float tradeTarget = na
+var int entryBar = na
+
+if entrySignal
+    tradeStop := selStop
+    tradeTarget := selTarget
+    strategy.entry("H4-D1-Stag-S", strategy.short, qty=calcQty(selStop, close), comment=entryMode + " L" + str.tostring(selLookback))
+    strategy.exit("SL/TP", "H4-D1-Stag-S", stop=tradeStop, limit=tradeTarget)
+
+if not na(tradeStop)
+    strategy.exit("SL/TP", "H4-D1-Stag-S", stop=tradeStop, limit=tradeTarget)
+
+if strategy.position_size < 0 and strategy.position_size[1] == 0
+    entryBar := bar_index
+
+if strategy.position_size < 0 and not na(entryBar) and bar_index - entryBar >= maxHoldBars
+    strategy.close("H4-D1-Stag-S", comment="MaxHold")
+
+if closedThisBar
+    tradeStop := na
+    tradeTarget := na
+    entryBar := na
+
+anyBreak = break120 or break90 or break180 or break240 or break60 or break360 or break480 or break720
+anyActive = active120 or active90 or active180 or active240 or active60 or active360 or active480 or active720
+
+plotshape(anyBreak, title="Low Break", style=shape.triangledown, location=location.belowbar, color=color.new(color.blue, 0), size=size.tiny, text="安値割れ")
+plotshape(candidateSignal and not h4QualitySignal, title="Candidate", style=shape.triangledown, location=location.abovebar, color=color.new(color.yellow, 0), size=size.tiny, text="候補")
+plotshape(h4QualitySignal and not h4StrictSignal, title="H4 Quality", style=shape.triangledown, location=location.abovebar, color=color.new(color.orange, 0), size=size.small, text="H4品")
+plotshape(h4StrictSignal and not d1Ok, title="H4 Strict", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), size=size.small, text="H4厳")
+plotshape(showD1Tags and d1QualitySignal and not d1StrictSignal, title="D1 Quality", style=shape.diamond, location=location.abovebar, color=color.new(color.aqua, 0), size=size.small, text="D1品")
+plotshape(showD1Tags and d1StrictSignal, title="D1 Strict", style=shape.diamond, location=location.abovebar, color=color.new(color.lime, 0), size=size.small, text="D1厳")
+plot(showLevels and anyActive ? selPriorLow : na, title="Selected Broken Low", color=color.new(color.blue, 35), linewidth=1, style=plot.style_linebr)
+plot(showLevels and strategy.position_size < 0 ? tradeStop : na, title="Active SL", color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
+plot(showLevels and strategy.position_size < 0 ? tradeTarget : na, title="Active TP", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
+
+if showLabels and candidateSignal
+    string stageText = d1StrictSignal ? "D1厳選 SHORT" : d1QualitySignal ? "D1品質 SHORT" : h4StrictSignal ? "H4厳選 SHORT" : h4QualitySignal ? "H4品質 SHORT" : "候補 SHORT"
+    string labelText = stageText + "\nLB: " + str.tostring(selLookback) + "\nD1 RSI[1]: " + fmtNum(prevD1Rsi) + "\nDepth: " + fmtNum(selDepth) + "ATR\nCloseLoc: " + fmtNum(selCloseLoc) + "\nRisk: " + fmtNum(selRiskAtr) + "ATR\nADX: " + fmtNum(selAdx) + "\nBBW: " + fmtNum(selBbw) + "ATR\nAge: " + fmtInt(selAge) + "\nAfter: " + fmtInt(selAfter) + "\nSL: " + fmt(selStop) + "\nTP: " + fmt(selTarget)
+    color labelColor = d1StrictSignal ? color.new(color.lime, 0) : d1QualitySignal ? color.new(color.aqua, 0) : h4StrictSignal ? color.new(color.red, 0) : h4QualitySignal ? color.new(color.orange, 0) : color.new(color.yellow, 0)
+    color txtColor = d1StrictSignal or d1QualitySignal or h4StrictSignal ? color.black : color.black
+    label.new(bar_index, high + ta.atr(atrLen) * 1.5, labelText, style=label.style_label_down, color=labelColor, textcolor=txtColor, size=size.tiny)
+
+var table info = table.new(position.top_right, 2, 13, bgcolor=color.new(color.black, 82), frame_color=color.new(color.white, 70), frame_width=1)
+f_row(int row, string key, string value, color valueColor) =>
+    table.cell(info, 0, row, key, text_color=color.new(color.white, 15), text_size=size.tiny)
+    table.cell(info, 1, row, value, text_color=valueColor, text_size=size.tiny)
+
+if showTable and barstate.islast
+    bool isH4 = timeframe.isintraday and timeframe.multiplier == 240
+    f_row(0, "Chart TF", isH4 ? "H4 OK" : "H4推奨", isH4 ? color.lime : color.red)
+    f_row(1, "Mode", entryMode, color.orange)
+    f_row(2, "Symbol", symbolOk ? symbolMode : "対象外", symbolOk ? color.lime : color.gray)
+    f_row(3, "State", entrySignal ? "Signal" : anyActive ? "監視中" : "待機", entrySignal ? color.orange : anyActive ? color.aqua : color.white)
+    f_row(4, "D1 RSI[1]", fmtNum(prevD1Rsi), d1Ok ? color.lime : color.gray)
+    f_row(5, "Selected LB", na(selLookback) ? "N/A" : str.tostring(selLookback), candidateSignal ? color.lime : color.gray)
+    f_row(6, "Depth", fmtNum(selDepth), h4QualitySignal ? color.lime : color.gray)
+    f_row(7, "CloseLoc", fmtNum(selCloseLoc), h4QualitySignal ? color.lime : color.gray)
+    f_row(8, "Strict", h4StrictSignal ? "OK" : "No", h4StrictSignal ? color.lime : color.gray)
+    f_row(9, "D1 Quality", d1QualitySignal ? "OK" : "No", d1QualitySignal ? color.lime : color.gray)
+    f_row(10, "D1 Strict", d1StrictSignal ? "OK" : "No", d1StrictSignal ? color.lime : color.gray)
+    f_row(11, "Window", tradeWindowOk ? "OK" : "除外中", tradeWindowOk ? color.lime : color.gray)
+    f_row(12, "Orders", str.tostring(strategy.closedtrades + strategy.opentrades), color.orange)
+
+alertcondition(entrySignal, title="H4 Low Stag D1 Regime Short Entry", message="H4 low-stagnation short with previous D1 RSI regime filter on {{ticker}}.")

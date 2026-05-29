@@ -356,6 +356,17 @@ Pine: [`pine/visual/h4_sharp_drop_v_recovery_visual.pine`](../pine/visual/h4_sha
 - H4否定シグナル単独逆張りは不採用寄り
 - 次はD1否定を環境認識にして、H4 V右肩優位・棚ブレイクと組み合わせる
 
+### 6-6. D1売り否定 + H4 V右肩リクレイム 深掘り 2026-05-29
+
+| 検証 | パス | 結論 |
+|---|---|---|
+| 研究ノート | [`docs/research/d1_bear_trap_h4_v_reclaim_2026-05-29.md`](research/d1_bear_trap_h4_v_reclaim_2026-05-29.md) | D1売り否定直後に買うより、直近D1売り否定なしが強い |
+| 検証結果 | [`backtests/elliott_fibo/results_2026_05_29/d1_bear_trap_h4_v_reclaim/report_ja.md`](../backtests/elliott_fibo/results_2026_05_29/d1_bear_trap_h4_v_reclaim/report_ja.md) | `Clean H4 V Reclaim` 候補 |
+
+- XAUUSD除外 baseline RS120_BODY45_CLOSE60: 103 trades / +26.75R / PF 1.57 / DD 9.09R
+- XAUUSD除外 AVOID_D20_OR_RSI_30D + RS120_BODY45_CLOSE60: 73 trades / +30.55R / PF 2.08 / DD 4.51R
+- 解釈: D1売り否定はH4 V買いの理由ではなく、直近に出ていたら見送るフィルタ
+
 ---
 
 ## 7. インデックス系

@@ -1,0 +1,187 @@
+//@version=5
+indicator("H4 N-Wave Filter Probe [Research]", overlay=true, max_lines_count=500, max_labels_count=500)
+
+grpP = "N-wave detection"
+pivLen = input.int(3, "Pivot length", minval=1, group=grpP)
+nWaves = input.int(3, "N waves", minval=2, maxval=20, group=grpP)
+ampTol = input.float(45.0, "Amplitude tolerance (%)", minval=0, maxval=100, group=grpP)
+barTol = input.float(45.0, "Bar tolerance (%)", minval=0, maxval=100, group=grpP)
+minBars = input.int(3, "Minimum bars per leg", minval=1, group=grpP)
+minLegAtr = input.float(0.5, "Minimum leg size (ATR)", minval=0.0, step=0.1, group=grpP)
+atrLen = input.int(14, "ATR length", minval=1, group=grpP)
+nonOverlap = input.bool(true, "Non-overlap display mode", group=grpP)
+
+grpC = "Filter candidates"
+recentLowMax = input.int(24, "Danger: low-ended N-wave within bars", minval=1, group=grpC)
+matureLowMin = input.int(49, "Candidate: low-ended N-wave min age", minval=1, group=grpC)
+matureLowMax = input.int(240, "Candidate: low-ended N-wave max age", minval=1, group=grpC)
+highMax = input.int(240, "Check: high-ended N-wave max age", minval=1, group=grpC)
+
+grpV = "Display"
+showLines = input.bool(true, "Show N-wave lines", group=grpV)
+showLabels = input.bool(true, "Show N-wave labels", group=grpV)
+showBackground = input.bool(true, "Show filter background", group=grpV)
+showTable = input.bool(true, "Show status table", group=grpV)
+colHigh = input.color(color.new(color.aqua, 0), "High-ended N-wave color", group=grpV)
+colLow = input.color(color.new(color.orange, 0), "Low-ended N-wave color", group=grpV)
+
+atrValue = ta.atr(atrLen)
+ph = ta.pivothigh(pivLen, pivLen)
+pl = ta.pivotlow(pivLen, pivLen)
+
+float npx = na
+float natr = na
+int nbar = na
+bool nhi = na
+
+if not na(ph)
+    npx := ph
+    natr := atrValue[pivLen]
+    nbar := bar_index - pivLen
+    nhi := true
+else if not na(pl)
+    npx := pl
+    natr := atrValue[pivLen]
+    nbar := bar_index - pivLen
+    nhi := false
+
+var pPrice = array.new_float()
+var pAtr = array.new_float()
+var pBar = array.new_int()
+var pHigh = array.new_bool()
+var int lastDetectEnd = -1
+var int lastConfirmBar = na
+var int lastEndBar = na
+var bool lastEndsHigh = na
+var float lastAmpRatio = na
+var float lastBarRatio = na
+var float lastMinLegAtr = na
+var int lastTotalBars = na
+
+if not na(npx)
+    sz0 = array.size(pPrice)
+    if sz0 == 0
+        array.push(pPrice, npx)
+        array.push(pAtr, natr)
+        array.push(pBar, nbar)
+        array.push(pHigh, nhi)
+    else
+        lastHigh = array.get(pHigh, sz0 - 1)
+        if nhi == lastHigh
+            lastP = array.get(pPrice, sz0 - 1)
+            replace = nhi ? npx > lastP : npx < lastP
+            if replace
+                array.set(pPrice, sz0 - 1, npx)
+                array.set(pAtr, sz0 - 1, natr)
+                array.set(pBar, sz0 - 1, nbar)
+        else
+            array.push(pPrice, npx)
+            array.push(pAtr, natr)
+            array.push(pBar, nbar)
+            array.push(pHigh, nhi)
+
+            need = nWaves + 1
+            sz = array.size(pPrice)
+            if sz >= need
+                base = sz - need
+                okWin = not nonOverlap or base >= lastDetectEnd
+                if okWin
+                    float ampMin = na
+                    float ampMax = na
+                    float legAtrMin = na
+                    int barMin = na
+                    int barMax = na
+                    for i = base to sz - 2
+                        amp = math.abs(array.get(pPrice, i + 1) - array.get(pPrice, i))
+                        barSpan = array.get(pBar, i + 1) - array.get(pBar, i)
+                        atrRef = array.get(pAtr, i + 1)
+                        legAtr = atrRef > 0 ? amp / atrRef : na
+                        ampMin := na(ampMin) ? amp : math.min(ampMin, amp)
+                        ampMax := na(ampMax) ? amp : math.max(ampMax, amp)
+                        legAtrMin := na(legAtrMin) ? legAtr : math.min(legAtrMin, legAtr)
+                        barMin := na(barMin) ? barSpan : math.min(barMin, barSpan)
+                        barMax := na(barMax) ? barSpan : math.max(barMax, barSpan)
+
+                    ampRatio = ampMax > 0 ? ampMin / ampMax : 0.0
+                    barRatio = barMax > 0 ? barMin / barMax : 0.0
+                    ampOK = ampRatio >= 1.0 - ampTol / 100.0
+                    barOK = barRatio >= 1.0 - barTol / 100.0
+                    sizeOK = barMin >= minBars and (minLegAtr <= 0 or legAtrMin >= minLegAtr)
+                    isSym = ampOK and barOK and sizeOK
+
+                    if isSym
+                        endsHigh = array.get(pHigh, sz - 1)
+                        col = endsHigh ? colHigh : colLow
+                        lastConfirmBar := bar_index
+                        lastEndBar := array.get(pBar, sz - 1)
+                        lastEndsHigh := endsHigh
+                        lastAmpRatio := ampRatio
+                        lastBarRatio := barRatio
+                        lastMinLegAtr := legAtrMin
+                        lastTotalBars := array.get(pBar, sz - 1) - array.get(pBar, base)
+
+                        if showLines
+                            for i = base to sz - 2
+                                line.new(array.get(pBar, i), array.get(pPrice, i), array.get(pBar, i + 1), array.get(pPrice, i + 1), xloc.bar_index, color=col, width=2)
+
+                        if showLabels
+                            txt = "N=" + str.tostring(nWaves) + "\nAmp " + str.tostring(ampRatio * 100, "#") + "%\nBars " + str.tostring(barRatio * 100, "#") + "%"
+                            label.new(array.get(pBar, sz - 1), array.get(pPrice, sz - 1), txt, xloc.bar_index, yloc=endsHigh ? yloc.abovebar : yloc.belowbar, style=endsHigh ? label.style_label_down : label.style_label_up, color=color.new(col, 75), textcolor=color.white, size=size.small)
+
+                        lastDetectEnd := sz - 1
+
+    if array.size(pPrice) > 200
+        array.shift(pPrice)
+        array.shift(pAtr)
+        array.shift(pBar)
+        array.shift(pHigh)
+        lastDetectEnd := lastDetectEnd - 1
+
+latestAge = not na(lastConfirmBar) ? bar_index - lastConfirmBar : na
+latestLow = not na(lastEndsHigh) and not lastEndsHigh
+latestHigh = not na(lastEndsHigh) and lastEndsHigh
+recentLow = latestLow and latestAge <= recentLowMax
+matureLow = latestLow and latestAge >= matureLowMin and latestAge <= matureLowMax
+highCheck = latestHigh and latestAge <= highMax
+matureLowStart = matureLow and not nz(matureLow[1], false)
+recentLowStart = recentLow and not nz(recentLow[1], false)
+
+plot(matureLow ? 1 : 0, "N mature low 49-240", color=color.new(color.teal, 0), display=display.status_line)
+plot(recentLow ? 1 : 0, "N recent low danger", color=color.new(color.orange, 0), display=display.status_line)
+plot(highCheck ? 1 : 0, "N high <= max age", color=color.new(color.aqua, 0), display=display.status_line)
+plotshape(matureLowStart, title="N mature low starts", text="N low\n49-240", style=shape.labeldown, location=location.abovebar, color=color.new(color.teal, 0), textcolor=color.white, size=size.tiny)
+plotshape(recentLowStart, title="N recent low danger starts", text="N low\n<=24", style=shape.labelup, location=location.belowbar, color=color.new(color.orange, 0), textcolor=color.white, size=size.tiny)
+
+bgcolor(showBackground and matureLow ? color.new(color.teal, 91) : na)
+bgcolor(showBackground and recentLow ? color.new(color.orange, 89) : na)
+
+fmtBool(bool v) =>
+    v ? "ON" : "off"
+
+fmtFloat(float v) =>
+    na(v) ? "N/A" : str.tostring(v, "#.##")
+
+fmtInt(float v) =>
+    na(v) ? "N/A" : str.tostring(v, "#")
+
+var table t = table.new(position.top_right, 2, 8, border_width=1)
+if barstate.islast and showTable
+    table.cell(t, 0, 0, "N-Wave", bgcolor=color.new(color.gray, 80), text_color=color.white)
+    table.cell(t, 1, 0, timeframe.period, bgcolor=color.new(color.gray, 80), text_color=color.white)
+    table.cell(t, 0, 1, "Latest")
+    table.cell(t, 1, 1, na(lastEndsHigh) ? "N/A" : lastEndsHigh ? "High end" : "Low end")
+    table.cell(t, 0, 2, "Age")
+    table.cell(t, 1, 2, fmtInt(latestAge))
+    table.cell(t, 0, 3, "Mature low")
+    table.cell(t, 1, 3, fmtBool(matureLow), text_color=matureLow ? color.lime : color.gray)
+    table.cell(t, 0, 4, "Recent low")
+    table.cell(t, 1, 4, fmtBool(recentLow), text_color=recentLow ? color.orange : color.gray)
+    table.cell(t, 0, 5, "High check")
+    table.cell(t, 1, 5, fmtBool(highCheck), text_color=highCheck ? color.aqua : color.gray)
+    table.cell(t, 0, 6, "Amp/Bar")
+    table.cell(t, 1, 6, fmtFloat(lastAmpRatio * 100) + "% / " + fmtFloat(lastBarRatio * 100) + "%")
+    table.cell(t, 0, 7, "LegATR/Bars")
+    table.cell(t, 1, 7, fmtFloat(lastMinLegAtr) + " / " + fmtInt(lastTotalBars))
+
+alertcondition(matureLowStart, "N mature low 49-240", "Low-ended symmetric N-wave is mature: 49-240 bars old.")
+alertcondition(recentLowStart, "N recent low danger", "Low-ended symmetric N-wave is very recent: possible exhaustion/rebound risk.")

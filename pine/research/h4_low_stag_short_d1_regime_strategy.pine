@@ -328,17 +328,17 @@ else if useLb720 and raw720
     rawAdx := adx720
     rawBbw := bbw720
 
-baseOk(bool raw, int lb, float riskAtr, float adxVal, float bbwVal, float supportAge, float breakDepth) =>
-    raw and symbolOk and not na(riskAtr) and riskAtr <= riskMaxAtr and not na(adxVal) and adxVal >= adxMin and not na(bbwVal) and bbwVal >= bbWidthMinAtr and bbwVal <= bbWidthMaxAtr and l60GuardOk(lb, supportAge, breakDepth)
+baseOk(bool raw, float riskAtr, float adxVal, float bbwVal) =>
+    raw and symbolOk and not na(riskAtr) and riskAtr <= riskMaxAtr and not na(adxVal) and adxVal >= adxMin and not na(bbwVal) and bbwVal >= bbWidthMinAtr and bbwVal <= bbWidthMaxAtr
 
-base120 = useLb120 and baseOk(raw120, 120, risk120, adx120, bbw120, age120, depth120)
-base90 = useLb90 and baseOk(raw90, 90, risk90, adx90, bbw90, age90, depth90)
-base180 = useLb180 and baseOk(raw180, 180, risk180, adx180, bbw180, age180, depth180)
-base240 = useLb240 and baseOk(raw240, 240, risk240, adx240, bbw240, age240, depth240)
-base60 = useLb60 and baseOk(raw60, 60, risk60, adx60, bbw60, age60, depth60)
-base360 = useLb360 and baseOk(raw360, 360, risk360, adx360, bbw360, age360, depth360)
-base480 = useLb480 and baseOk(raw480, 480, risk480, adx480, bbw480, age480, depth480)
-base720 = useLb720 and baseOk(raw720, 720, risk720, adx720, bbw720, age720, depth720)
+base120 = useLb120 and baseOk(raw120, risk120, adx120, bbw120)
+base90 = useLb90 and baseOk(raw90, risk90, adx90, bbw90)
+base180 = useLb180 and baseOk(raw180, risk180, adx180, bbw180)
+base240 = useLb240 and baseOk(raw240, risk240, adx240, bbw240)
+base60 = useLb60 and baseOk(raw60, risk60, adx60, bbw60)
+base360 = useLb360 and baseOk(raw360, risk360, adx360, bbw360)
+base480 = useLb480 and baseOk(raw480, risk480, adx480, bbw480)
+base720 = useLb720 and baseOk(raw720, risk720, adx720, bbw720)
 
 bool candidateSignal = false
 int selLookback = na
@@ -478,12 +478,14 @@ else if base720
 
 prevD1Rsi = request.security(syminfo.tickerid, "D", ta.rsi(close, d1RsiLen)[1], barmerge.gaps_off, barmerge.lookahead_off)
 d1Ok = not na(prevD1Rsi) and prevD1Rsi >= d1RsiMin and prevD1Rsi <= d1RsiMax
-h4QualitySignal = candidateSignal and not na(selDepth) and selDepth >= qualityDepthAtr and not na(selCloseLoc) and selCloseLoc <= qualityCloseLocation
+l60SelectedOk = candidateSignal and l60GuardOk(selLookback, selAge, selDepth)
+tradableCandidateSignal = candidateSignal and l60SelectedOk
+h4QualitySignal = tradableCandidateSignal and not na(selDepth) and selDepth >= qualityDepthAtr and not na(selCloseLoc) and selCloseLoc <= qualityCloseLocation
 h4StrictSignal = h4QualitySignal and (selAge > freshSupportBars or selDepth >= freshDepthAtr)
 d1QualitySignal = h4QualitySignal and d1Ok
 d1StrictSignal = h4StrictSignal and d1Ok
 
-entrySignal = entryMode == "候補" ? candidateSignal : entryMode == "H4品質" ? h4QualitySignal : entryMode == "H4厳選" ? h4StrictSignal : entryMode == "D1品質" ? d1QualitySignal : d1StrictSignal
+entrySignal = entryMode == "候補" ? tradableCandidateSignal : entryMode == "H4品質" ? h4QualitySignal : entryMode == "H4厳選" ? h4StrictSignal : entryMode == "D1品質" ? d1QualitySignal : d1StrictSignal
 entrySignal := entrySignal and tradeWindowOk and canScan
 
 float reasonDepth = candidateSignal ? selDepth : rawDepth
@@ -513,7 +515,7 @@ if (rawSelected or candidateSignal) and not entrySignal
         noEntryReason := addReason(noEntryReason, "BB幅不足: " + fmtNum(reasonBbw) + "ATR")
     if not na(reasonBbw) and reasonBbw > bbWidthMaxAtr
         noEntryReason := addReason(noEntryReason, "BB幅過大: " + fmtNum(reasonBbw) + "ATR")
-    if rawLookback == 60 and not l60GuardOk(rawLookback, reasonAge, reasonDepth)
+    if reasonLookback == 60 and not l60GuardOk(reasonLookback, reasonAge, reasonDepth)
         noEntryReason := addReason(noEntryReason, "60本条件不足: Age " + fmtInt(reasonAge) + " / Depth " + fmtNum(reasonDepth) + "ATR")
     if candidateSignal and entryMode != "候補"
         if na(reasonDepth) or reasonDepth < qualityDepthAtr
@@ -570,7 +572,8 @@ anyActive = active120 or active90 or active180 or active240 or active60 or activ
 string currentNoEntryState = entrySignal ? "ENTRY" : noEntryReason != "" ? noEntryReason : anyActive ? "監視中: 戻り/停滞/再下抜け待ち" : anyBreak ? "安値更新直後: 条件待ち" : "安値更新なし"
 
 plotshape(anyBreak, title="Low Break", style=shape.triangledown, location=location.belowbar, color=color.new(color.blue, 0), size=size.tiny, text="安値割れ")
-plotshape(candidateSignal and not h4QualitySignal, title="Candidate", style=shape.triangledown, location=location.abovebar, color=color.new(color.yellow, 0), size=size.tiny, text="候補")
+plotshape(candidateSignal and not l60SelectedOk, title="L60 Guard Reject", style=shape.xcross, location=location.abovebar, color=color.new(color.gray, 0), size=size.tiny, text="60×")
+plotshape(tradableCandidateSignal and not h4QualitySignal, title="Candidate", style=shape.triangledown, location=location.abovebar, color=color.new(color.yellow, 0), size=size.tiny, text="候補")
 plotshape(h4QualitySignal and not h4StrictSignal, title="H4 Quality", style=shape.triangledown, location=location.abovebar, color=color.new(color.orange, 0), size=size.small, text="H4品")
 plotshape(h4StrictSignal and not d1Ok, title="H4 Strict", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), size=size.small, text="H4厳")
 plotshape(showD1Tags and d1QualitySignal and not d1StrictSignal, title="D1 Quality", style=shape.diamond, location=location.abovebar, color=color.new(color.aqua, 0), size=size.small, text="D1品")
@@ -581,7 +584,7 @@ plot(showLevels and strategy.position_size < 0 ? tradeStop : na, title="Active S
 plot(showLevels and strategy.position_size < 0 ? tradeTarget : na, title="Active TP", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
 
 if showLabels and candidateSignal
-    string stageText = d1StrictSignal ? "D1厳選 SHORT" : d1QualitySignal ? "D1品質 SHORT" : h4StrictSignal ? "H4厳選 SHORT" : h4QualitySignal ? "H4品質 SHORT" : "候補 SHORT"
+    string stageText = not l60SelectedOk ? "60本除外" : d1StrictSignal ? "D1厳選 SHORT" : d1QualitySignal ? "D1品質 SHORT" : h4StrictSignal ? "H4厳選 SHORT" : h4QualitySignal ? "H4品質 SHORT" : "候補 SHORT"
     string labelText = stageText + "\nLB: " + str.tostring(selLookback) + "\nD1 RSI[1]: " + fmtNum(prevD1Rsi) + "\nDepth: " + fmtNum(selDepth) + "ATR\nCloseLoc: " + fmtNum(selCloseLoc) + "\nRisk: " + fmtNum(selRiskAtr) + "ATR\nADX: " + fmtNum(selAdx) + "\nBBW: " + fmtNum(selBbw) + "ATR\nAge: " + fmtInt(selAge) + "\nAfter: " + fmtInt(selAfter) + "\nSL: " + fmt(selStop) + "\nSig TP: " + fmt(selTarget)
     color labelColor = d1StrictSignal ? color.new(color.lime, 0) : d1QualitySignal ? color.new(color.aqua, 0) : h4StrictSignal ? color.new(color.red, 0) : h4QualitySignal ? color.new(color.orange, 0) : color.new(color.yellow, 0)
     color txtColor = d1StrictSignal or d1QualitySignal or h4StrictSignal ? color.black : color.black

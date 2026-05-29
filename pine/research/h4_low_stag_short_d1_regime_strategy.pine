@@ -53,6 +53,9 @@ qualityDepthAtr = input.float(0.10, "H4品質 下抜け深さ(ATR)", minval=0.0,
 qualityCloseLocation = input.float(0.50, "H4品質 終値位置上限", minval=0.0, maxval=1.0, step=0.05, group=grpFilters)
 freshSupportBars = input.int(10, "新しい安値の判定本数", minval=1, maxval=60, group=grpFilters)
 freshDepthAtr = input.float(0.20, "新しい安値に必要な下抜け深さ(ATR)", minval=0.0, step=0.01, group=grpFilters)
+useL60Guard = input.bool(true, "60本lookbackを厳格化", group=grpFilters)
+l60MaxSupportAge = input.int(24, "60本 最大support age", minval=1, maxval=120, group=grpFilters)
+l60MinDepthAtr = input.float(0.25, "60本 最小下抜け深さ(ATR)", minval=0.0, step=0.01, group=grpFilters)
 
 grpD1 = "D1地合い"
 d1RsiLen = input.int(14, "D1 RSI期間", minval=2, group=grpD1)
@@ -95,6 +98,10 @@ calcQty(float stopPrice, float signalPrice) =>
 
 addReason(string current, string reason) =>
     string out = current == "" ? reason : current + "\n" + reason
+    out
+
+l60GuardOk(int lb, float supportAge, float breakDepth) =>
+    bool out = not useL60Guard or lb != 60 or (not na(supportAge) and not na(breakDepth) and supportAge <= l60MaxSupportAge and breakDepth >= l60MinDepthAtr)
     out
 
 closedTradeCount = strategy.closedtrades
@@ -318,17 +325,17 @@ else if useLb720 and raw720
     rawAdx := adx720
     rawBbw := bbw720
 
-baseOk(bool raw, float riskAtr, float adxVal, float bbwVal) =>
-    raw and symbolOk and not na(riskAtr) and riskAtr <= riskMaxAtr and not na(adxVal) and adxVal >= adxMin and not na(bbwVal) and bbwVal >= bbWidthMinAtr and bbwVal <= bbWidthMaxAtr
+baseOk(bool raw, int lb, float riskAtr, float adxVal, float bbwVal, float supportAge, float breakDepth) =>
+    raw and symbolOk and not na(riskAtr) and riskAtr <= riskMaxAtr and not na(adxVal) and adxVal >= adxMin and not na(bbwVal) and bbwVal >= bbWidthMinAtr and bbwVal <= bbWidthMaxAtr and l60GuardOk(lb, supportAge, breakDepth)
 
-base120 = useLb120 and baseOk(raw120, risk120, adx120, bbw120)
-base90 = useLb90 and baseOk(raw90, risk90, adx90, bbw90)
-base180 = useLb180 and baseOk(raw180, risk180, adx180, bbw180)
-base240 = useLb240 and baseOk(raw240, risk240, adx240, bbw240)
-base60 = useLb60 and baseOk(raw60, risk60, adx60, bbw60)
-base360 = useLb360 and baseOk(raw360, risk360, adx360, bbw360)
-base480 = useLb480 and baseOk(raw480, risk480, adx480, bbw480)
-base720 = useLb720 and baseOk(raw720, risk720, adx720, bbw720)
+base120 = useLb120 and baseOk(raw120, 120, risk120, adx120, bbw120, age120, depth120)
+base90 = useLb90 and baseOk(raw90, 90, risk90, adx90, bbw90, age90, depth90)
+base180 = useLb180 and baseOk(raw180, 180, risk180, adx180, bbw180, age180, depth180)
+base240 = useLb240 and baseOk(raw240, 240, risk240, adx240, bbw240, age240, depth240)
+base60 = useLb60 and baseOk(raw60, 60, risk60, adx60, bbw60, age60, depth60)
+base360 = useLb360 and baseOk(raw360, 360, risk360, adx360, bbw360, age360, depth360)
+base480 = useLb480 and baseOk(raw480, 480, risk480, adx480, bbw480, age480, depth480)
+base720 = useLb720 and baseOk(raw720, 720, risk720, adx720, bbw720, age720, depth720)
 
 bool candidateSignal = false
 int selLookback = na
@@ -501,6 +508,8 @@ if (rawSelected or candidateSignal) and not entrySignal
         noEntryReason := addReason(noEntryReason, "BB幅不足: " + fmtNum(reasonBbw) + "ATR")
     if not na(reasonBbw) and reasonBbw > bbWidthMaxAtr
         noEntryReason := addReason(noEntryReason, "BB幅過大: " + fmtNum(reasonBbw) + "ATR")
+    if rawLookback == 60 and not l60GuardOk(rawLookback, reasonAge, reasonDepth)
+        noEntryReason := addReason(noEntryReason, "60本条件不足: Age " + fmtInt(reasonAge) + " / Depth " + fmtNum(reasonDepth) + "ATR")
     if candidateSignal and entryMode != "候補"
         if na(reasonDepth) or reasonDepth < qualityDepthAtr
             noEntryReason := addReason(noEntryReason, "下抜け浅い: " + fmtNum(reasonDepth) + "ATR")

@@ -1,5 +1,5 @@
 //@version=5
-strategy("H4 Low Stag Short D1 Regime [Research]", overlay=true, pyramiding=0, initial_capital=1000000, default_qty_type=strategy.fixed, default_qty_value=1, process_orders_on_close=false, max_labels_count=500, max_lines_count=500, max_bars_back=5000)
+strategy("H4 Low Stag Short D1 Regime [Research]", overlay=true, pyramiding=0, initial_capital=1000000, default_qty_type=strategy.fixed, default_qty_value=1, process_orders_on_close=false, calc_on_order_fills=true, max_labels_count=500, max_lines_count=500, max_bars_back=5000)
 
 // =====================================================================
 // H4 安値停滞ショート + 前日D1 RSI地合いフィルタ 検証用strategy
@@ -534,19 +534,22 @@ if noEntrySignal
 
 var float tradeStop = na
 var float tradeTarget = na
+var float pendingStop = na
 var int entryBar = na
 
 if entrySignal
-    tradeStop := selStop
-    tradeTarget := selTarget
+    pendingStop := selStop
     strategy.entry("H4-D1-Stag-S", strategy.short, qty=calcQty(selStop, close), comment=entryMode + " L" + str.tostring(selLookback))
-    strategy.exit("SL/TP", "H4-D1-Stag-S", stop=tradeStop, limit=tradeTarget)
 
-if not na(tradeStop)
-    strategy.exit("SL/TP", "H4-D1-Stag-S", stop=tradeStop, limit=tradeTarget)
-
-if strategy.position_size < 0 and strategy.position_size[1] == 0
+if strategy.position_size < 0 and na(entryBar)
     entryBar := bar_index
+    tradeStop := na(pendingStop) ? selStop : pendingStop
+    float entryRisk = tradeStop - strategy.position_avg_price
+    tradeTarget := entryRisk > 0 ? strategy.position_avg_price - entryRisk * rr : na
+    pendingStop := na
+
+if strategy.position_size < 0 and not na(tradeStop) and not na(tradeTarget)
+    strategy.exit("SL/TP", "H4-D1-Stag-S", stop=tradeStop, limit=tradeTarget)
 
 if strategy.position_size < 0 and not na(entryBar) and bar_index - entryBar >= maxHoldBars
     strategy.close("H4-D1-Stag-S", comment="MaxHold")
@@ -554,6 +557,7 @@ if strategy.position_size < 0 and not na(entryBar) and bar_index - entryBar >= m
 if closedThisBar
     tradeStop := na
     tradeTarget := na
+    pendingStop := na
     entryBar := na
 
 anyBreak = break120 or break90 or break180 or break240 or break60 or break360 or break480 or break720
@@ -573,7 +577,7 @@ plot(showLevels and strategy.position_size < 0 ? tradeTarget : na, title="Active
 
 if showLabels and candidateSignal
     string stageText = d1StrictSignal ? "D1厳選 SHORT" : d1QualitySignal ? "D1品質 SHORT" : h4StrictSignal ? "H4厳選 SHORT" : h4QualitySignal ? "H4品質 SHORT" : "候補 SHORT"
-    string labelText = stageText + "\nLB: " + str.tostring(selLookback) + "\nD1 RSI[1]: " + fmtNum(prevD1Rsi) + "\nDepth: " + fmtNum(selDepth) + "ATR\nCloseLoc: " + fmtNum(selCloseLoc) + "\nRisk: " + fmtNum(selRiskAtr) + "ATR\nADX: " + fmtNum(selAdx) + "\nBBW: " + fmtNum(selBbw) + "ATR\nAge: " + fmtInt(selAge) + "\nAfter: " + fmtInt(selAfter) + "\nSL: " + fmt(selStop) + "\nTP: " + fmt(selTarget)
+    string labelText = stageText + "\nLB: " + str.tostring(selLookback) + "\nD1 RSI[1]: " + fmtNum(prevD1Rsi) + "\nDepth: " + fmtNum(selDepth) + "ATR\nCloseLoc: " + fmtNum(selCloseLoc) + "\nRisk: " + fmtNum(selRiskAtr) + "ATR\nADX: " + fmtNum(selAdx) + "\nBBW: " + fmtNum(selBbw) + "ATR\nAge: " + fmtInt(selAge) + "\nAfter: " + fmtInt(selAfter) + "\nSL: " + fmt(selStop) + "\nSig TP: " + fmt(selTarget)
     color labelColor = d1StrictSignal ? color.new(color.lime, 0) : d1QualitySignal ? color.new(color.aqua, 0) : h4StrictSignal ? color.new(color.red, 0) : h4QualitySignal ? color.new(color.orange, 0) : color.new(color.yellow, 0)
     color txtColor = d1StrictSignal or d1QualitySignal or h4StrictSignal ? color.black : color.black
     label.new(bar_index, high + ta.atr(atrLen) * 1.5, labelText, style=label.style_label_down, color=labelColor, textcolor=txtColor, size=size.tiny)

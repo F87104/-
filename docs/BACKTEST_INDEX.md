@@ -344,6 +344,18 @@ Pine: [`pine/visual/h4_sharp_drop_v_recovery_visual.pine`](../pine/visual/h4_sha
 - 通貨ごとに最適パラメータが違う
 - **HYBRID 最適化案** で **頻度 +27%, R +23%**
 
+### 6-5. 一般インジケータ否定後の相場反応 2026-05-29
+
+| 検証 | パス | 結論 |
+|---|---|---|
+| 研究ノート | [`docs/research/indicator_denial_reaction_2026-05-29.md`](research/indicator_denial_reaction_2026-05-29.md) | D1の下方向シグナル否定後ロングが候補 |
+| 検証結果 | [`backtests/elliott_fibo/results_2026_05_29/indicator_denial_reaction/report_ja.md`](../backtests/elliott_fibo/results_2026_05_29/indicator_denial_reaction/report_ja.md) | H4直接逆張りは弱い。D1 Donchian20/RSI否定ロングが有望 |
+
+- D1 Donchian20下抜け否定ロング: 368 trades / +63.29R / PF 1.32
+- D1 RSI 70/30否定ロング: 163 trades / +40.81R / PF 1.50
+- H4否定シグナル単独逆張りは不採用寄り
+- 次はD1否定を環境認識にして、H4 V右肩優位・棚ブレイクと組み合わせる
+
 ---
 
 ## 7. インデックス系

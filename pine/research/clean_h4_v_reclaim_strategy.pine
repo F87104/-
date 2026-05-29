@@ -97,61 +97,25 @@ fmtInt(int v) =>
     string out = na(v) ? "N/A" : str.tostring(v)
     out
 
-f_d1_bear_denial_state() =>
-    float dayRange = high - low
-    float dayBody = math.abs(close - open)
-    float dayBodyRatio = dayRange > 0 ? dayBody / dayRange : 0.0
-    float dayCloseLocation = dayRange > 0 ? (close - low) / dayRange : 0.5
-    float rsiValue = ta.rsi(close, d1RsiLen)
-    float priorDonchianLow = ta.lowest(low, d1DonchianLen)[1]
+float d1CalcRange = high - low
+float d1CalcBodyRatio = d1CalcRange > 0 ? math.abs(close - open) / d1CalcRange : 0.0
+float d1CalcCloseLocation = d1CalcRange > 0 ? (close - low) / d1CalcRange : 0.5
+float d1CalcRsi = ta.rsi(close, d1RsiLen)
+float d1CalcPriorD20Low = ta.lowest(low, d1DonchianLen)[1]
+bool d1CalcQuality = d1CalcBodyRatio >= d1BodyMin and d1CalcCloseLocation >= d1CloseLocationMin
+bool d1CalcD20Break = not na(d1CalcPriorD20Low) and close < d1CalcPriorD20Low
+int d1CalcD20Bars = ta.barssince(d1CalcD20Break)
+float d1CalcD20Level = ta.valuewhen(d1CalcD20Break, d1CalcPriorD20Low, 0)
+bool d1CalcD20DenialRaw = d1CalcD20Bars > 0 and d1CalcD20Bars <= d1FailWindow and close > d1CalcD20Level and d1CalcQuality
+bool d1CalcD20Denial = d1CalcD20DenialRaw and (na(d1CalcD20DenialRaw[1]) or not d1CalcD20DenialRaw[1])
+bool d1CalcRsiBreak = ta.crossunder(d1CalcRsi, d1RsiLow)
+int d1CalcRsiBars = ta.barssince(d1CalcRsiBreak)
+bool d1CalcRsiDenial = d1CalcRsiBars > 0 and d1CalcRsiBars <= d1FailWindow and ta.crossover(d1CalcRsi, d1RsiLow) and d1CalcQuality
+bool d1CalcAnyDenial = d1CalcD20Denial or d1CalcRsiDenial
+int d1CalcType = d1CalcD20Denial and d1CalcRsiDenial ? 3 : d1CalcD20Denial ? 1 : d1CalcRsiDenial ? 2 : 0
+int d1CalcFailBars = d1CalcD20Denial ? d1CalcD20Bars : d1CalcRsiDenial ? d1CalcRsiBars : na
 
-    var int pendingD20Bar = na
-    var float pendingD20Level = na
-    var int pendingRsiBar = na
-    var int lastDenialTime = na
-    var int lastDenialType = 0
-    var int lastFailBars = na
-    var float lastDenialBody = na
-    var float lastDenialCloseLocation = na
-
-    bool d20Break = not na(priorDonchianLow) and close < priorDonchianLow
-    if d20Break
-        pendingD20Bar := bar_index
-        pendingD20Level := priorDonchianLow
-
-    if not na(pendingD20Bar) and bar_index - pendingD20Bar > d1FailWindow
-        pendingD20Bar := na
-        pendingD20Level := na
-
-    bool d20QualityOk = dayBodyRatio >= d1BodyMin and dayCloseLocation >= d1CloseLocationMin
-    bool d20Denial = not na(pendingD20Bar) and bar_index > pendingD20Bar and close > pendingD20Level and d20QualityOk
-
-    bool rsiBreak = not na(rsiValue[1]) and rsiValue[1] >= d1RsiLow and rsiValue < d1RsiLow
-    if rsiBreak
-        pendingRsiBar := bar_index
-
-    if not na(pendingRsiBar) and bar_index - pendingRsiBar > d1FailWindow
-        pendingRsiBar := na
-
-    bool rsiQualityOk = dayBodyRatio >= d1BodyMin and dayCloseLocation >= d1CloseLocationMin
-    bool rsiDenial = not na(pendingRsiBar) and bar_index > pendingRsiBar and not na(rsiValue[1]) and rsiValue[1] <= d1RsiLow and rsiValue > d1RsiLow and rsiQualityOk
-
-    if d20Denial or rsiDenial
-        lastDenialTime := time
-        lastDenialType := d20Denial and rsiDenial ? 3 : d20Denial ? 1 : 2
-        lastFailBars := d20Denial ? bar_index - pendingD20Bar : bar_index - pendingRsiBar
-        lastDenialBody := dayBodyRatio
-        lastDenialCloseLocation := dayCloseLocation
-
-    if d20Denial
-        pendingD20Bar := na
-        pendingD20Level := na
-    if rsiDenial
-        pendingRsiBar := na
-
-    [lastDenialTime, lastDenialType, lastFailBars, lastDenialBody, lastDenialCloseLocation]
-
-[d1LastDenialTime, d1LastDenialType, d1LastFailBars, d1LastBody, d1LastCloseLocation] = request.security(syminfo.tickerid, "D", f_d1_bear_denial_state(), barmerge.gaps_off, barmerge.lookahead_off)
+[d1LastDenialTime, d1LastDenialType, d1LastFailBars, d1LastBody, d1LastCloseLocation] = request.security(syminfo.tickerid, "D", [ta.valuewhen(d1CalcAnyDenial, time, 0), ta.valuewhen(d1CalcAnyDenial, d1CalcType, 0), ta.valuewhen(d1CalcAnyDenial, d1CalcFailBars, 0), ta.valuewhen(d1CalcAnyDenial, d1CalcBodyRatio, 0), ta.valuewhen(d1CalcAnyDenial, d1CalcCloseLocation, 0)], barmerge.gaps_off, barmerge.lookahead_off)
 
 var label[] labels = array.new_label()
 var line[] lines = array.new_line()

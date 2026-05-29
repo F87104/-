@@ -66,6 +66,7 @@ showD1Tags = input.bool(true, "D1条件タグ表示", group=grpD1)
 grpTrade = "売買設定"
 testStart = timestamp("01 Jan 2015 00:00 +0000")
 testEnd = timestamp("31 Dec 2026 23:59 +0000")
+requireH4Chart = input.bool(true, "H4以外は停止", group=grpTrade)
 useHolidayFilter = input.bool(true, "12/15-1/10を除外", group=grpTrade)
 useRiskSizing = input.bool(false, "リスク%で数量計算", group=grpTrade)
 riskPct = input.float(1.0, "リスク%/trade", minval=0.01, step=0.1, group=grpTrade)
@@ -111,7 +112,9 @@ closedThisBar = flatNow and (nz(strategy.position_size[1]) != 0 or closedTradeNo
 canScan = flatNow and not closedThisBar
 inDateRange = time >= testStart and time <= testEnd
 holidayBar = (month == 12 and dayofmonth >= 15) or (month == 1 and dayofmonth <= 10)
-tradeWindowOk = inDateRange and (not useHolidayFilter or not holidayBar)
+chartIsH4 = timeframe.isintraday and timeframe.multiplier == 240
+chartTfOk = not requireH4Chart or chartIsH4
+tradeWindowOk = chartTfOk and inDateRange and (not useHolidayFilter or not holidayBar)
 
 f_low_stag(int lb) =>
     float atrValue = ta.atr(atrLen)
@@ -496,6 +499,8 @@ string noEntryReason = ""
 if (rawSelected or candidateSignal) and not entrySignal
     if not symbolOk
         noEntryReason := addReason(noEntryReason, "対象通貨外")
+    if not chartTfOk
+        noEntryReason := addReason(noEntryReason, "H4以外のため停止")
     if not tradeWindowOk
         noEntryReason := addReason(noEntryReason, "検証期間外/年末年始除外")
     if not canScan
@@ -592,8 +597,7 @@ f_row(int row, string key, string value, color valueColor) =>
     table.cell(info, 1, row, value, text_color=valueColor, text_size=size.tiny)
 
 if showTable and barstate.islast
-    bool isH4 = timeframe.isintraday and timeframe.multiplier == 240
-    f_row(0, "Chart TF", isH4 ? "H4 OK" : "H4推奨", isH4 ? color.lime : color.red)
+    f_row(0, "Chart TF", chartIsH4 ? "H4 OK" : requireH4Chart ? "H4のみ" : "H4推奨", chartIsH4 ? color.lime : color.red)
     f_row(1, "Mode", entryMode, color.orange)
     f_row(2, "Symbol", symbolOk ? symbolMode : "対象外", symbolOk ? color.lime : color.gray)
     f_row(3, "State", entrySignal ? "Signal" : anyActive ? "監視中" : "待機", entrySignal ? color.orange : anyActive ? color.aqua : color.white)
@@ -604,7 +608,7 @@ if showTable and barstate.islast
     f_row(8, "Strict", h4StrictSignal ? "OK" : "No", h4StrictSignal ? color.lime : color.gray)
     f_row(9, "D1 Quality", d1QualitySignal ? "OK" : "No", d1QualitySignal ? color.lime : color.gray)
     f_row(10, "D1 Strict", d1StrictSignal ? "OK" : "No", d1StrictSignal ? color.lime : color.gray)
-    f_row(11, "Window", tradeWindowOk ? "OK" : "除外中", tradeWindowOk ? color.lime : color.gray)
+    f_row(11, "Window", tradeWindowOk ? "OK" : not chartTfOk ? "H4以外停止" : "除外中", tradeWindowOk ? color.lime : color.gray)
     f_row(12, "Orders", str.tostring(strategy.closedtrades + strategy.opentrades), color.orange)
     f_row(13, "No entry", str.tostring(noEntryCount), noEntryCount > 0 ? color.yellow : color.gray)
     f_row(14, "Now reason", currentNoEntryState, entrySignal ? color.lime : color.yellow)

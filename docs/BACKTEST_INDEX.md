@@ -362,6 +362,8 @@ Pine: [`pine/visual/h4_sharp_drop_v_recovery_visual.pine`](../pine/visual/h4_sha
 |---|---|---|
 | 研究ノート | [`docs/research/d1_bear_trap_h4_v_reclaim_2026-05-29.md`](research/d1_bear_trap_h4_v_reclaim_2026-05-29.md) | D1売り否定直後に買うより、直近D1売り否定なしが強い |
 | 検証結果 | [`backtests/elliott_fibo/results_2026_05_29/d1_bear_trap_h4_v_reclaim/report_ja.md`](../backtests/elliott_fibo/results_2026_05_29/d1_bear_trap_h4_v_reclaim/report_ja.md) | `Clean H4 V Reclaim` 候補 |
+| Pine実装 | [`pine/research/clean_h4_v_reclaim_strategy.pine`](../pine/research/clean_h4_v_reclaim_strategy.pine) | H4専用・D1売り否定30日見送りフィルタ付き |
+| Pineメモ | [`docs/research/clean_h4_v_reclaim_pine_note_2026-05-29.md`](research/clean_h4_v_reclaim_pine_note_2026-05-29.md) | Python照合手順とズレ要因 |
 
 - XAUUSD除外 baseline RS120_BODY45_CLOSE60: 103 trades / +26.75R / PF 1.57 / DD 9.09R
 - XAUUSD除外 AVOID_D20_OR_RSI_30D + RS120_BODY45_CLOSE60: 73 trades / +30.55R / PF 2.08 / DD 4.51R

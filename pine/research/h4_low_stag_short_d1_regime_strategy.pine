@@ -70,6 +70,7 @@ fixedQty = input.float(1.0, "固定数量", minval=0.0, step=0.1, group=grpTrade
 
 grpView = "表示"
 showLabels = input.bool(true, "シグナルラベル", group=grpView)
+showNoEntryReasons = input.bool(true, "見送り理由ラベル", group=grpView)
 showLevels = input.bool(true, "SL/TP/割れた安値ライン", group=grpView)
 showTable = input.bool(true, "状態テーブル", group=grpView)
 
@@ -91,6 +92,10 @@ calcQty(float stopPrice, float signalPrice) =>
     if useRiskSizing and riskDist > 0
         qtyOut := (strategy.equity * riskPct / 100.0) / riskDist
     qtyOut
+
+addReason(string current, string reason) =>
+    string out = current == "" ? reason : current + "\n" + reason
+    out
 
 closedTradeCount = strategy.closedtrades
 closedTradeNow = closedTradeCount > nz(closedTradeCount[1])
@@ -221,6 +226,97 @@ string tickerText = syminfo.ticker
 bool symbolCore4 = str.contains(tickerText, "GBPJPY") or str.contains(tickerText, "CHFJPY") or str.contains(tickerText, "XAUUSD") or str.contains(tickerText, "GOLD") or str.contains(tickerText, "EURJPY")
 bool symbolSilver = str.contains(tickerText, "SILVER") or str.contains(tickerText, "XAGUSD")
 bool symbolOk = symbolMode == "全通貨" ? true : symbolMode == "Core4" ? symbolCore4 : (symbolCore4 or symbolSilver)
+
+bool rawSelected = false
+int rawLookback = na
+float rawDepth = na
+float rawCloseLoc = na
+float rawRiskAtr = na
+float rawAge = na
+float rawAfter = na
+float rawAdx = na
+float rawBbw = na
+
+if useLb120 and raw120
+    rawSelected := true
+    rawLookback := 120
+    rawDepth := depth120
+    rawCloseLoc := closeLoc120
+    rawRiskAtr := risk120
+    rawAge := age120
+    rawAfter := after120
+    rawAdx := adx120
+    rawBbw := bbw120
+else if useLb90 and raw90
+    rawSelected := true
+    rawLookback := 90
+    rawDepth := depth90
+    rawCloseLoc := closeLoc90
+    rawRiskAtr := risk90
+    rawAge := age90
+    rawAfter := after90
+    rawAdx := adx90
+    rawBbw := bbw90
+else if useLb180 and raw180
+    rawSelected := true
+    rawLookback := 180
+    rawDepth := depth180
+    rawCloseLoc := closeLoc180
+    rawRiskAtr := risk180
+    rawAge := age180
+    rawAfter := after180
+    rawAdx := adx180
+    rawBbw := bbw180
+else if useLb240 and raw240
+    rawSelected := true
+    rawLookback := 240
+    rawDepth := depth240
+    rawCloseLoc := closeLoc240
+    rawRiskAtr := risk240
+    rawAge := age240
+    rawAfter := after240
+    rawAdx := adx240
+    rawBbw := bbw240
+else if useLb60 and raw60
+    rawSelected := true
+    rawLookback := 60
+    rawDepth := depth60
+    rawCloseLoc := closeLoc60
+    rawRiskAtr := risk60
+    rawAge := age60
+    rawAfter := after60
+    rawAdx := adx60
+    rawBbw := bbw60
+else if useLb360 and raw360
+    rawSelected := true
+    rawLookback := 360
+    rawDepth := depth360
+    rawCloseLoc := closeLoc360
+    rawRiskAtr := risk360
+    rawAge := age360
+    rawAfter := after360
+    rawAdx := adx360
+    rawBbw := bbw360
+else if useLb480 and raw480
+    rawSelected := true
+    rawLookback := 480
+    rawDepth := depth480
+    rawCloseLoc := closeLoc480
+    rawRiskAtr := risk480
+    rawAge := age480
+    rawAfter := after480
+    rawAdx := adx480
+    rawBbw := bbw480
+else if useLb720 and raw720
+    rawSelected := true
+    rawLookback := 720
+    rawDepth := depth720
+    rawCloseLoc := closeLoc720
+    rawRiskAtr := risk720
+    rawAge := age720
+    rawAfter := after720
+    rawAdx := adx720
+    rawBbw := bbw720
 
 baseOk(bool raw, float riskAtr, float adxVal, float bbwVal) =>
     raw and symbolOk and not na(riskAtr) and riskAtr <= riskMaxAtr and not na(adxVal) and adxVal >= adxMin and not na(bbwVal) and bbwVal >= bbWidthMinAtr and bbwVal <= bbWidthMaxAtr
@@ -380,6 +476,53 @@ d1StrictSignal = h4StrictSignal and d1Ok
 entrySignal = entryMode == "候補" ? candidateSignal : entryMode == "H4品質" ? h4QualitySignal : entryMode == "H4厳選" ? h4StrictSignal : entryMode == "D1品質" ? d1QualitySignal : d1StrictSignal
 entrySignal := entrySignal and tradeWindowOk and canScan
 
+float reasonDepth = candidateSignal ? selDepth : rawDepth
+float reasonCloseLoc = candidateSignal ? selCloseLoc : rawCloseLoc
+float reasonRiskAtr = candidateSignal ? selRiskAtr : rawRiskAtr
+float reasonAge = candidateSignal ? selAge : rawAge
+float reasonAfter = candidateSignal ? selAfter : rawAfter
+float reasonAdx = candidateSignal ? selAdx : rawAdx
+float reasonBbw = candidateSignal ? selBbw : rawBbw
+int reasonLookback = candidateSignal ? selLookback : rawLookback
+
+string noEntryReason = ""
+if (rawSelected or candidateSignal) and not entrySignal
+    if not symbolOk
+        noEntryReason := addReason(noEntryReason, "対象通貨外")
+    if not tradeWindowOk
+        noEntryReason := addReason(noEntryReason, "検証期間外/年末年始除外")
+    if not canScan
+        noEntryReason := addReason(noEntryReason, "保有中または決済直後")
+    if na(reasonAdx) or reasonAdx < adxMin
+        noEntryReason := addReason(noEntryReason, "ADX不足: " + fmtNum(reasonAdx))
+    if na(reasonRiskAtr) or reasonRiskAtr > riskMaxAtr
+        noEntryReason := addReason(noEntryReason, "Risk過大: " + fmtNum(reasonRiskAtr) + "ATR")
+    if na(reasonBbw) or reasonBbw < bbWidthMinAtr
+        noEntryReason := addReason(noEntryReason, "BB幅不足: " + fmtNum(reasonBbw) + "ATR")
+    if not na(reasonBbw) and reasonBbw > bbWidthMaxAtr
+        noEntryReason := addReason(noEntryReason, "BB幅過大: " + fmtNum(reasonBbw) + "ATR")
+    if candidateSignal and entryMode != "候補"
+        if na(reasonDepth) or reasonDepth < qualityDepthAtr
+            noEntryReason := addReason(noEntryReason, "下抜け浅い: " + fmtNum(reasonDepth) + "ATR")
+        if na(reasonCloseLoc) or reasonCloseLoc > qualityCloseLocation
+            noEntryReason := addReason(noEntryReason, "終値位置が高い: " + fmtNum(reasonCloseLoc))
+    if h4QualitySignal and (entryMode == "H4厳選" or entryMode == "D1厳選")
+        if not h4StrictSignal
+            noEntryReason := addReason(noEntryReason, "新しい安値で深さ不足")
+    if h4QualitySignal and (entryMode == "D1品質" or entryMode == "D1厳選")
+        if not d1Ok
+            noEntryReason := addReason(noEntryReason, "前日D1 RSI範囲外: " + fmtNum(prevD1Rsi))
+    if noEntryReason == ""
+        noEntryReason := "選択モード未達"
+
+bool noEntrySignal = showNoEntryReasons and (rawSelected or candidateSignal) and not entrySignal
+
+var int noEntryCount = 0
+var string lastNoEntryReason = "N/A"
+if noEntrySignal
+    noEntryCount += 1
+    lastNoEntryReason := noEntryReason
+
 var float tradeStop = na
 var float tradeTarget = na
 var int entryBar = na
@@ -406,6 +549,7 @@ if closedThisBar
 
 anyBreak = break120 or break90 or break180 or break240 or break60 or break360 or break480 or break720
 anyActive = active120 or active90 or active180 or active240 or active60 or active360 or active480 or active720
+string currentNoEntryState = entrySignal ? "ENTRY" : noEntryReason != "" ? noEntryReason : anyActive ? "監視中: 戻り/停滞/再下抜け待ち" : anyBreak ? "安値更新直後: 条件待ち" : "安値更新なし"
 
 plotshape(anyBreak, title="Low Break", style=shape.triangledown, location=location.belowbar, color=color.new(color.blue, 0), size=size.tiny, text="安値割れ")
 plotshape(candidateSignal and not h4QualitySignal, title="Candidate", style=shape.triangledown, location=location.abovebar, color=color.new(color.yellow, 0), size=size.tiny, text="候補")
@@ -413,6 +557,7 @@ plotshape(h4QualitySignal and not h4StrictSignal, title="H4 Quality", style=shap
 plotshape(h4StrictSignal and not d1Ok, title="H4 Strict", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), size=size.small, text="H4厳")
 plotshape(showD1Tags and d1QualitySignal and not d1StrictSignal, title="D1 Quality", style=shape.diamond, location=location.abovebar, color=color.new(color.aqua, 0), size=size.small, text="D1品")
 plotshape(showD1Tags and d1StrictSignal, title="D1 Strict", style=shape.diamond, location=location.abovebar, color=color.new(color.lime, 0), size=size.small, text="D1厳")
+plotshape(noEntrySignal, title="No Entry Reason", style=shape.xcross, location=location.abovebar, color=color.new(color.gray, 0), size=size.tiny, text="見送")
 plot(showLevels and anyActive ? selPriorLow : na, title="Selected Broken Low", color=color.new(color.blue, 35), linewidth=1, style=plot.style_linebr)
 plot(showLevels and strategy.position_size < 0 ? tradeStop : na, title="Active SL", color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
 plot(showLevels and strategy.position_size < 0 ? tradeTarget : na, title="Active TP", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
@@ -424,7 +569,11 @@ if showLabels and candidateSignal
     color txtColor = d1StrictSignal or d1QualitySignal or h4StrictSignal ? color.black : color.black
     label.new(bar_index, high + ta.atr(atrLen) * 1.5, labelText, style=label.style_label_down, color=labelColor, textcolor=txtColor, size=size.tiny)
 
-var table info = table.new(position.top_right, 2, 13, bgcolor=color.new(color.black, 82), frame_color=color.new(color.white, 70), frame_width=1)
+if noEntrySignal
+    string noEntryText = "見送り\nLB: " + str.tostring(reasonLookback) + "\n" + noEntryReason + "\nD1 RSI[1]: " + fmtNum(prevD1Rsi) + "\nDepth: " + fmtNum(reasonDepth) + "\nCloseLoc: " + fmtNum(reasonCloseLoc) + "\nRisk: " + fmtNum(reasonRiskAtr) + "\nADX: " + fmtNum(reasonAdx) + "\nBBW: " + fmtNum(reasonBbw) + "\nAge: " + fmtInt(reasonAge) + "\nAfter: " + fmtInt(reasonAfter)
+    label.new(bar_index, high + ta.atr(atrLen) * 2.8, noEntryText, style=label.style_label_down, color=color.new(color.gray, 10), textcolor=color.white, size=size.tiny)
+
+var table info = table.new(position.top_right, 2, 16, bgcolor=color.new(color.black, 82), frame_color=color.new(color.white, 70), frame_width=1)
 f_row(int row, string key, string value, color valueColor) =>
     table.cell(info, 0, row, key, text_color=color.new(color.white, 15), text_size=size.tiny)
     table.cell(info, 1, row, value, text_color=valueColor, text_size=size.tiny)
@@ -444,5 +593,8 @@ if showTable and barstate.islast
     f_row(10, "D1 Strict", d1StrictSignal ? "OK" : "No", d1StrictSignal ? color.lime : color.gray)
     f_row(11, "Window", tradeWindowOk ? "OK" : "除外中", tradeWindowOk ? color.lime : color.gray)
     f_row(12, "Orders", str.tostring(strategy.closedtrades + strategy.opentrades), color.orange)
+    f_row(13, "No entry", str.tostring(noEntryCount), noEntryCount > 0 ? color.yellow : color.gray)
+    f_row(14, "Now reason", currentNoEntryState, entrySignal ? color.lime : color.yellow)
+    f_row(15, "Last reason", lastNoEntryReason, color.yellow)
 
 alertcondition(entrySignal, title="H4 Low Stag D1 Regime Short Entry", message="H4 low-stagnation short with previous D1 RSI regime filter on {{ticker}}.")

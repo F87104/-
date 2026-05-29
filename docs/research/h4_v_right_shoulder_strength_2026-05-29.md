@@ -99,3 +99,18 @@ RS120_BODY45_CLOSE60_RR1.5:
 - `backtests/elliott_fibo/results_2026_05_29/v_right_shoulder_strength/trades.csv`
 - `backtests/elliott_fibo/results_2026_05_29/v_right_shoulder_strength/summary_practical_ex_xau.csv`
 - `backtests/elliott_fibo/results_2026_05_29/v_right_shoulder_strength/summary_practical_ex_xau_by_period.csv`
+- `pine/research/h4_v_right_shoulder_strength_strategy.pine`
+
+## Pine化メモ
+
+Pine版は `RS120_BODY45_CLOSE60_RR1.5 / XAUUSD除外` を初期値にした。
+
+Parity上の注意:
+
+- Pythonは銘柄別スプレッド・スリッページをRで集計する。
+- Pine Strategy Testerは価格損益ベースなので、勝率・PFは完全一致しない。
+- ただし、シグナル条件はPythonと同じになるようにした。
+- confirmed pivot配列を保持し、直近12個のH→Lペアを走査する。
+- 同じVペアは `startBar-lowBar` キーで一度しか使わない。
+- ポジション保有中、未約定pending中、決済バーでは新規シグナルを抑制する。
+- ラベルとラインは `xloc.bar_time` 固定。チャートを動かしてもシグナル位置がずれにくい。

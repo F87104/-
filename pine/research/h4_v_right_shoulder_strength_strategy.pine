@@ -1,0 +1,367 @@
+//@version=5
+strategy("H4 V Right Shoulder Strength [Research]", overlay=true, initial_capital=10000, default_qty_type=strategy.fixed, default_qty_value=1, pyramiding=0, calc_on_order_fills=true, calc_on_every_tick=false, process_orders_on_close=false, commission_type=strategy.commission.percent, commission_value=0.0, slippage=2, max_bars_back=5000, max_lines_count=500, max_labels_count=500)
+
+// =====================================================================
+// H4 V Right Shoulder Strength [Research]
+// ---------------------------------------------------------------------
+// Python study target:
+//   RS120_BODY45_CLOSE60_RR15 / XAUUSD excluded
+//
+// Core idea:
+//   Buy only the V recovery where the right shoulder is steeper than the
+//   left shoulder and the recovery close reclaims the left-shoulder origin.
+//
+// Conditions:
+//   - H4 long only.
+//   - Confirmed pivot high -> confirmed pivot low sharp drop.
+//   - Drop >= 3.2 ATR, drop speed >= 0.25 ATR/bar.
+//   - Drop bars 2-30, recovery bars <= 30.
+//   - Close crosses above the pivot-high origin + 0.05 ATR.
+//   - Recovery speed >= drop speed x 1.20.
+//   - Signal body >= 45%, close location >= 60%.
+//   - SL = V low - 0.25 ATR.
+//   - TP = signal close + 1.5 * (signal close - SL).
+//
+// Notes:
+//   - TradingView strategy results will not exactly equal Python R results
+//     because Python uses symbol-specific spread/slippage and R accounting.
+//   - Run on H4 for parity. Labels/lines are anchored by bar time to avoid
+//     visual drift when chart scale changes.
+// =====================================================================
+
+grpMode = "基本"
+requireH4 = input.bool(true, "H4チャートのみ売買", group=grpMode)
+skipHoliday = input.bool(true, "12/15〜1/10は新規停止", group=grpMode)
+excludeXau = input.bool(true, "XAUUSD/XAUは除外", group=grpMode)
+useDateFilter = input.bool(true, "2015〜2026のみ検証", group=grpMode)
+
+grpPivot = "Pivot / V条件"
+pivotWidth = input.int(3, "Pivot幅", minval=1, maxval=20, group=grpPivot)
+atrLen = input.int(14, "ATR期間", minval=1, group=grpPivot)
+minSwingAtr = input.float(2.0, "Pivot間の最小スイング(ATR)", minval=0.1, step=0.1, group=grpPivot)
+minDropAtr = input.float(3.2, "下落幅の最小ATR", minval=0.1, step=0.1, group=grpPivot)
+minDropSpeed = input.float(0.25, "左肩速度の下限(ATR/本)", minval=0.0, step=0.05, group=grpPivot)
+minSpeedRatio = input.float(1.20, "右肩速度/左肩速度の下限", minval=0.1, step=0.05, group=grpPivot)
+minDropBars = input.int(2, "左肩の最小本数", minval=1, group=grpPivot)
+maxDropBars = input.int(30, "左肩の最大本数", minval=2, group=grpPivot)
+maxRecoveryBars = input.int(30, "右肩の最大本数", minval=1, maxval=300, group=grpPivot)
+crossBufferAtr = input.float(0.05, "左肩起点上抜け余白(ATR)", minval=0.0, step=0.01, group=grpPivot)
+lowBreakInvalidAtr = input.float(0.10, "V安値割れ失効(ATR)", minval=0.0, step=0.05, group=grpPivot)
+scanPairs = input.int(12, "走査する直近Vペア数", minval=1, maxval=40, group=grpPivot)
+
+grpQuality = "シグナル足品質"
+minBodyRatio = input.float(0.45, "実体比率下限", minval=0.0, maxval=1.0, step=0.05, group=grpQuality)
+minCloseLocation = input.float(0.60, "終値位置下限", minval=0.0, maxval=1.0, step=0.05, group=grpQuality)
+
+grpRisk = "売買"
+rr = input.float(1.5, "TP RR", minval=0.1, step=0.1, group=grpRisk)
+stopBufferAtr = input.float(0.25, "SL余白(ATR)", minval=0.0, step=0.05, group=grpRisk)
+maxHoldBars = input.int(180, "最大保有本数", minval=1, group=grpRisk)
+
+grpView = "表示"
+showSignals = input.bool(true, "シグナル表示", group=grpView)
+showRejected = input.bool(false, "見送り候補を表示", group=grpView)
+showVLines = input.bool(true, "Vライン", group=grpView)
+showLevels = input.bool(true, "SL/TP/起点ライン", group=grpView)
+showTable = input.bool(true, "状態テーブル", group=grpView)
+maxLabels = input.int(80, "残すラベル数", minval=10, maxval=300, group=grpView)
+labelShiftBars = input.int(0, "ラベル右ずらし", minval=0, maxval=80, group=grpView)
+labelOffsetAtr = input.float(3.0, "ラベル上下余白(ATR)", minval=0.5, step=0.5, group=grpView)
+
+fmt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, format.mintick)
+    out
+
+fmtNum(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#.##")
+    out
+
+var label[] labels = array.new_label()
+var line[] lines = array.new_line()
+
+keepLabel(label lb) =>
+    array.push(labels, lb)
+    while array.size(labels) > maxLabels
+        label.delete(array.shift(labels))
+
+keepLine(line ln) =>
+    array.push(lines, ln)
+    while array.size(lines) > maxLabels * 4
+        line.delete(array.shift(lines))
+
+float atrValue = ta.atr(atrLen)
+float barRange = high - low
+float bodyRatio = barRange > 0 ? math.abs(close - open) / barRange : 0.0
+float closeLocation = barRange > 0 ? (close - low) / barRange : 0.0
+int chartSec = timeframe.in_seconds(timeframe.period)
+int barMs = chartSec * 1000
+
+bool h4Ok = not requireH4 or chartSec == 240 * 60
+bool holidayOk = not skipHoliday or not ((month == 12 and dayofmonth >= 15) or (month == 1 and dayofmonth <= 10))
+bool dateOk = not useDateFilter or (year >= 2015 and year <= 2026)
+string tickerText = syminfo.ticker
+bool xauSymbol = str.contains(tickerText, "XAU")
+bool symbolOk = not excludeXau or not xauSymbol
+
+// ---------------------------------------------------------------------
+// Confirmed alternating pivots, matching the Python build_confirmed_pivots
+// process as closely as Pine allows.
+// ---------------------------------------------------------------------
+float ph = ta.pivothigh(high, pivotWidth, pivotWidth)
+float pl = ta.pivotlow(low, pivotWidth, pivotWidth)
+
+var int[] pKinds = array.new_int()
+var float[] pPrices = array.new_float()
+var int[] pBars = array.new_int()
+var int[] pTimes = array.new_int()
+var float[] pAtrs = array.new_float()
+var string[] usedPairs = array.new_string()
+
+bool acceptedPivot = false
+int newKind = 0
+float newPrice = na
+int newBar = na
+int newTime = na
+float newAtr = na
+
+if not na(ph) and na(pl)
+    newKind := 1
+    newPrice := ph
+    newBar := bar_index - pivotWidth
+    newTime := time[pivotWidth]
+    newAtr := atrValue[pivotWidth]
+else if not na(pl) and na(ph)
+    newKind := -1
+    newPrice := pl
+    newBar := bar_index - pivotWidth
+    newTime := time[pivotWidth]
+    newAtr := atrValue[pivotWidth]
+
+if newKind != 0 and not na(newAtr) and newAtr > 0
+    int n = array.size(pKinds)
+    if n == 0
+        array.push(pKinds, newKind)
+        array.push(pPrices, newPrice)
+        array.push(pBars, newBar)
+        array.push(pTimes, newTime)
+        array.push(pAtrs, newAtr)
+        acceptedPivot := true
+    else
+        int lastKind = array.get(pKinds, n - 1)
+        float lastPrice = array.get(pPrices, n - 1)
+        if newKind == lastKind
+            bool moreExtreme = (newKind == 1 and newPrice > lastPrice) or (newKind == -1 and newPrice < lastPrice)
+            if moreExtreme
+                array.set(pPrices, n - 1, newPrice)
+                array.set(pBars, n - 1, newBar)
+                array.set(pTimes, n - 1, newTime)
+                array.set(pAtrs, n - 1, newAtr)
+                acceptedPivot := true
+        else
+            float swing = math.abs(newPrice - lastPrice)
+            float lastAtr = array.get(pAtrs, n - 1)
+            float threshold = math.max(newAtr, lastAtr) * minSwingAtr
+            if swing >= threshold
+                array.push(pKinds, newKind)
+                array.push(pPrices, newPrice)
+                array.push(pBars, newBar)
+                array.push(pTimes, newTime)
+                array.push(pAtrs, newAtr)
+                acceptedPivot := true
+
+while array.size(pKinds) > 90
+    array.shift(pKinds)
+    array.shift(pPrices)
+    array.shift(pBars)
+    array.shift(pTimes)
+    array.shift(pAtrs)
+
+while array.size(usedPairs) > 300
+    array.shift(usedPairs)
+
+// ---------------------------------------------------------------------
+// Scan recent confirmed H->L V pairs.
+// ---------------------------------------------------------------------
+bool rawSignal = false
+bool rejectedCandidate = false
+string rejectText = ""
+float signalStop = na
+float signalTarget = na
+float signalStart = na
+float signalLow = na
+float signalDropAtr = na
+float signalDropSpeed = na
+float signalRecoverySpeed = na
+float signalSpeedRatio = na
+float signalFib = na
+float signalBody = na
+float signalCloseLocation = na
+int signalStartTime = na
+int signalLowTime = na
+int signalDropBars = na
+int signalRecoveryBars = na
+string signalPairKey = ""
+
+var bool pendingLong = false
+var int pendingSignalBar = na
+var int entryBar = na
+var int lastExitBar = na
+var float activeStop = na
+var float activeTarget = na
+
+bool exitedThisBar = strategy.position_size == 0 and strategy.position_size[1] != 0
+if exitedThisBar
+    lastExitBar := bar_index
+
+bool flatNow = strategy.position_size == 0 and not pendingLong and (na(lastExitBar) or bar_index > lastExitBar)
+bool baseOk = h4Ok and holidayOk and dateOk and symbolOk and flatNow
+
+if array.size(pKinds) >= 2 and not na(atrValue) and atrValue > 0
+    int nP = array.size(pKinds)
+    int maxScan = math.min(scanPairs, nP - 1)
+    for k = 0 to 39
+        if k < maxScan and not rawSignal
+            int j = nP - 2 - k
+            int k0 = array.get(pKinds, j)
+            int k1 = array.get(pKinds, j + 1)
+            if k0 == 1 and k1 == -1
+                float startPrice = array.get(pPrices, j)
+                float lowPrice = array.get(pPrices, j + 1)
+                int startBar = array.get(pBars, j)
+                int lowBar = array.get(pBars, j + 1)
+                int startTime = array.get(pTimes, j)
+                int lowTime = array.get(pTimes, j + 1)
+                string pairKey = str.tostring(startBar) + "-" + str.tostring(lowBar)
+                if not array.includes(usedPairs, pairKey)
+                    float drop = startPrice - lowPrice
+                    int dropBars = math.max(lowBar - startBar, 1)
+                    int recoveryBars = math.max(bar_index - lowBar, 1)
+                    float trigger = startPrice
+                    float buffer = atrValue * crossBufferAtr
+                    bool crossedStart = close[1] <= trigger + buffer and close > trigger + buffer
+                    float postLow = low
+                    for m = 1 to 300
+                        if m < recoveryBars and m <= maxRecoveryBars and not na(low[m])
+                            postLow := math.min(postLow, low[m])
+                    float recovery = close - lowPrice
+                    float dropAtr = drop / atrValue
+                    float dropSpeed = drop / dropBars / atrValue
+                    float recoverySpeed = recovery / recoveryBars / atrValue
+                    float speedRatio = dropSpeed > 0 ? recoverySpeed / dropSpeed : na
+                    float fibAtSignal = drop > 0 ? recovery / drop : na
+                    bool dropOk = drop > 0 and dropAtr >= minDropAtr and dropSpeed >= minDropSpeed
+                    bool barsOk = dropBars >= minDropBars and dropBars <= maxDropBars and recoveryBars <= maxRecoveryBars
+                    bool lowHeld = postLow >= lowPrice - atrValue * lowBreakInvalidAtr
+                    bool speedOk = not na(speedRatio) and speedRatio >= minSpeedRatio
+                    bool qualityOk = bodyRatio >= minBodyRatio and closeLocation >= minCloseLocation
+                    bool setupOk = baseOk and dropOk and barsOk and lowHeld and crossedStart and speedOk and qualityOk
+
+                    if crossedStart and dropOk and barsOk and lowHeld
+                        rejectedCandidate := true
+                        rejectText := not baseOk ? "環境NG" : not speedOk ? "右肩速度不足" : not qualityOk ? "足品質不足" : "見送り"
+
+                    if setupOk
+                        float stopPrice = lowPrice - atrValue * stopBufferAtr
+                        float targetPrice = close + (close - stopPrice) * rr
+                        if stopPrice < close and targetPrice > close
+                            rawSignal := true
+                            signalStop := stopPrice
+                            signalTarget := targetPrice
+                            signalStart := startPrice
+                            signalLow := lowPrice
+                            signalDropAtr := dropAtr
+                            signalDropSpeed := dropSpeed
+                            signalRecoverySpeed := recoverySpeed
+                            signalSpeedRatio := speedRatio
+                            signalFib := fibAtSignal
+                            signalBody := bodyRatio
+                            signalCloseLocation := closeLocation
+                            signalStartTime := startTime
+                            signalLowTime := lowTime
+                            signalDropBars := dropBars
+                            signalRecoveryBars := recoveryBars
+                            signalPairKey := pairKey
+
+// ---------------------------------------------------------------------
+// Orders. Market entry is filled at next bar open because
+// process_orders_on_close=false, matching the Python next-open model.
+// ---------------------------------------------------------------------
+if rawSignal and not pendingLong and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("LX", "Long", stop=signalStop, limit=signalTarget)
+    pendingLong := true
+    pendingSignalBar := bar_index
+    activeStop := signalStop
+    activeTarget := signalTarget
+    array.push(usedPairs, signalPairKey)
+
+if pendingLong and strategy.position_size > 0
+    pendingLong := false
+    entryBar := bar_index
+
+if pendingLong and bar_index > pendingSignalBar + 2 and strategy.position_size == 0
+    pendingLong := false
+
+if exitedThisBar
+    entryBar := na
+    activeStop := na
+    activeTarget := na
+
+if strategy.position_size > 0 and not na(entryBar) and bar_index - entryBar >= maxHoldBars
+    strategy.close("Long", comment="Time")
+
+// ---------------------------------------------------------------------
+// Visuals fixed by bar time.
+// ---------------------------------------------------------------------
+plotshape(showSignals and rawSignal, title="RS120 V Long", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.tiny, text="RS120")
+plot(showLevels and strategy.position_size > 0 ? activeStop : na, title="Active SL", color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
+plot(showLevels and strategy.position_size > 0 ? activeTarget : na, title="Active TP", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
+
+if rawSignal and showSignals
+    int labelTime = time + barMs * labelShiftBars
+    int lineEndTime = time + barMs * 36
+    float labelY = low - atrValue * labelOffsetAtr
+    string txt = "RS120 LONG\nSpeed: " + fmtNum(signalSpeedRatio) + "x\nFib: " + fmtNum(signalFib) + "\nDrop: " + fmtNum(signalDropAtr) + "ATR\nSL: " + fmt(signalStop) + "\nTP: " + fmt(signalTarget)
+    label lb = label.new(labelTime, labelY, txt, xloc=xloc.bar_time, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+    keepLabel(lb)
+    if showVLines
+        keepLine(line.new(signalStartTime, signalStart, signalLowTime, signalLow, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2))
+        keepLine(line.new(signalLowTime, signalLow, time, close, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2))
+    if showLevels
+        keepLine(line.new(signalStartTime, signalStart, lineEndTime, signalStart, xloc=xloc.bar_time, color=color.new(color.aqua, 0), width=1, style=line.style_dashed))
+        keepLine(line.new(time, signalStop, lineEndTime, signalStop, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2, style=line.style_dashed))
+        keepLine(line.new(time, signalTarget, lineEndTime, signalTarget, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2, style=line.style_dashed))
+
+if showRejected and rejectedCandidate and not rawSignal
+    int rejectTime = time + barMs * labelShiftBars
+    label rb = label.new(rejectTime, high + atrValue * labelOffsetAtr, rejectText, xloc=xloc.bar_time, style=label.style_label_down, color=color.new(color.gray, 20), textcolor=color.white, size=size.tiny)
+    keepLabel(rb)
+
+var table t = table.new(position.top_right, 2, 12, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+if showTable and barstate.islast
+    table.cell(t, 0, 0, "Method", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 0, "RS120 V", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 1, "Chart", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 1, h4Ok ? "H4 OK" : "H4以外", text_color=h4Ok ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 2, "Symbol", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 2, symbolOk ? syminfo.ticker : "XAU除外", text_color=symbolOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 3, "Holiday", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 3, holidayOk ? "OK" : "停止", text_color=holidayOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 4, "Pivots", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, str.tostring(array.size(pKinds)), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 5, "Last signal", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 5, rawSignal ? "ON" : "OFF", text_color=rawSignal ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 6, "Speed ratio", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 6, fmtNum(signalSpeedRatio), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 7, "Drop ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 7, fmtNum(signalDropAtr), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 8, "Bars L/R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 8, na(signalDropBars) ? "N/A" : str.tostring(signalDropBars) + " / " + str.tostring(signalRecoveryBars), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 9, "Body/Close", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 9, fmtNum(bodyRatio) + " / " + fmtNum(closeLocation), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 10, "Position", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 10, strategy.position_size > 0 ? "LONG" : pendingLong ? "PENDING" : "FLAT", text_color=strategy.position_size > 0 ? color.lime : pendingLong ? color.yellow : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 11, "Python target", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 11, "H4 ex-XAU PF 1.57", text_color=color.aqua, text_size=size.tiny)
+
+alertcondition(rawSignal, title="H4 RS120 V Long", message="H4 RS120 right-shoulder V long on {{ticker}} @ {{close}}")

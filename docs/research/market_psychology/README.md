@@ -4,6 +4,7 @@
 
 **最終更新**: 2026-05-30
 **親ドキュメント**: [`docs/BACKTEST_INDEX.md`](../../BACKTEST_INDEX.md) §6-4.5 〜 §6-6 / [`README.md`](../../../README.md)
+**AI エージェント版**: [`skills/market_psychology/SKILL.md`](../../../skills/market_psychology/SKILL.md) (本ハブの内容を AI エージェント用の指示書に再編成した版)
 
 ---
 
@@ -19,6 +20,17 @@
 
 各ファイル本体は移動していない (リンク先・コミット履歴の互換性のため)。
 このハブは「入り口と地図」の役割。
+
+### 関連: 2つの市場心理フォルダ
+
+このリポジトリには市場心理関係のフォルダが 2 つある。役割が違うので使い分け:
+
+| パス | 役割 | 読み手 |
+|---|---|---|
+| **`docs/research/market_psychology/`** (このフォルダ) | 個別研究 R1〜R7 の地図 + 結果数字 + 次の検証計画 | 人間 (本人) が研究状態を俯瞰するため |
+| **`skills/market_psychology/`** | 同じ知見を AI エージェント用の指示書に再編成した版 (SKILL.md / framework.md / pattern_library.md / status.md) | エージェントに「市場心理リサーチャー」として動いてもらう時に読み込ませる |
+
+両者の内容はほぼ同期しているが、`skills/` 側は別リポジトリ ([F87104/skill](https://github.com/F87104/skill)) にも同じ構成で配布する想定。
 
 ---
 

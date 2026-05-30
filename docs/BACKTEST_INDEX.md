@@ -190,6 +190,7 @@
 | 検証 | パス | 概要 | 結論 |
 |---|---|---|---|
 | **研究メモ** | [`docs/research/market_psychology_squeeze_strict_2026-05-30.md`](research/market_psychology_squeeze_strict_2026-05-30.md) | ユーザー提示の Market Psychology Strategy をShort Squeeze/Capitulationに分解 | Squeeze strict はフォワード候補。Capitulation直買いは保留 |
+| **通貨相性分析** | [`docs/research/market_psychology_squeeze_currency_compatibility_2026-05-30.md`](research/market_psychology_squeeze_currency_compatibility_2026-05-30.md) | SQZ strict/defaultを通貨別・組み合わせ別に確認 | XAUUSDが本命。USDJPY/AUDJPYが次点。GBPJPYは除外 |
 | **結果レポート** | [`backtests/elliott_fibo/results_2026_05_30/market_psychology_strategy_tv_check/report_ja.md`](../backtests/elliott_fibo/results_2026_05_30/market_psychology_strategy_tv_check/report_ja.md) | SQZ/CAPのdefault/strict/RR違いを比較 | SQZ_STRICT_RR2 ex GBPJPY が 43 trades / +24.72R / PF 2.21 |
 | **検証コード** | [`backtests/elliott_fibo/run_market_psychology_strategy_tv_check.py`](../backtests/elliott_fibo/run_market_psychology_strategy_tv_check.py) | ユーザー提示PineをローカルOHLCでR建て検証 | TradingView照合前の正データ |
 | **Pine Strategy** | [`pine/research/market_psychology_squeeze_strict_strategy.pine`](../pine/research/market_psychology_squeeze_strict_strategy.pine) | H4専用、急落後の6本棚上抜け、GBPJPY除外初期値 | TV確認用 |

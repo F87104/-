@@ -1,0 +1,8 @@
+symbol,tier,default_trades,default_wr,default_total_r,default_pf,default_oos_r,strict_trades,strict_wr,strict_total_r,strict_pf,strict_dd,strict_oos_trades,strict_oos_r,reason
+AUDJPY,B strict候補,19,47.37,6.93,1.68,4.21,6,50.0,2.9,1.95,2.04,1,1.99,strictでプラス。件数は中〜少なのでフォワード確認。
+CHFJPY,C 保留,9,33.33,0.76,1.15,0.98,1,100.0,1.97,inf,0.0,0,0.0,strictは1件のみ。defaultは弱い。判断材料不足。
+EURJPY,B default向き,25,52.0,13.27,2.09,2.96,6,16.67,-3.09,0.39,3.05,1,-1.02,defaultは安定、strictでは件数が減って悪化。厳しすぎ注意。
+GBPJPY,除外候補,28,32.14,-3.19,0.83,1.94,8,12.5,-6.66,0.07,5.64,1,-1.02,strictで大幅マイナス。defaultでもPF1未満でDD/連敗が重い。
+SILVER,B- 監視候補,16,37.5,0.62,1.06,-1.19,7,71.43,7.33,4.47,1.03,0,0.0,strictは強いがOOS件数ゼロ。採用前に直近確認が必要。
+USDJPY,B strict候補,22,36.36,1.78,1.13,-1.04,13,46.15,4.87,1.69,2.02,4,1.98,strictでプラス。件数は中〜少なのでフォワード確認。
+XAUUSD,A 本命,16,68.75,16.19,4.14,7.95,10,70.0,10.73,4.45,2.07,3,5.95,default/strict両方で高PF。OOSも強い。

@@ -380,6 +380,16 @@ Pine: [`pine/visual/h4_sharp_drop_v_recovery_visual.pine`](../pine/visual/h4_sha
 - 通貨ごとに最適パラメータが違う
 - **HYBRID 最適化案** で **頻度 +27%, R +23%**
 
+### 6-4.5. Market Psychology Pattern Library 2026-05-30
+
+| 検証 | パス | 結論 |
+|---|---|---|
+| 心理パターン辞書 | [`docs/research/market_psychology_pattern_library_2026-05-30.md`](research/market_psychology_pattern_library_2026-05-30.md) | Capitulation, Short Squeeze, Long Liquidation, Trap, Expectation Failure, Compression, FOMO, Relief Rally, Pain Trade, Dormant Breakoutを検証可能な条件に変換 |
+
+- 現時点で最も相性がよい合成は **Short Squeeze + Expectation Failure + Volatility Expansion**
+- `H4 Ignition Strict` がこの合成に近い
+- Long Liquidation、Capitulation/Relief Rally、Dormant Breakoutは次の独立検証候補
+
 ### 6-5. 一般インジケータ否定後の相場反応 2026-05-29
 
 | 検証 | パス | 結論 |

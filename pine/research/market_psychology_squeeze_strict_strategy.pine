@@ -15,6 +15,11 @@ strategy("Market Psychology Squeeze Strict [Research]",
      max_lines_count=500,
      max_labels_count=500)
 
+// TradingView can show "strategy must contain..." when a pasted script is
+// incomplete or it fails to detect later conditional orders. This invisible
+// anchor keeps the strategy valid without changing signals or results.
+plot(na, title="Compiler Anchor", display=display.none)
+
 // =====================================================================
 // Market Psychology Squeeze Strict [Research]
 // ---------------------------------------------------------------------

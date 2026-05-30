@@ -154,6 +154,16 @@
 
 自作「大トレンドブレイク検出」ラインは、H4 V棚ブレイクの硬い追加フィルタとしては改善せず。現時点では裁量の節目確認、または別手法として研究する方が自然。
 
+### 2-2.7. H4 Ignition Pattern Search 2026-05-30 (🔬 研究)
+
+| 検証 | パス | 概要 | 結論 |
+|---|---|---|---|
+| **探索レポート** | [`backtests/elliott_fibo/results_2026_05_30/h4_ignition_pattern_search/report_ja.md`](../backtests/elliott_fibo/results_2026_05_30/h4_ignition_pattern_search/report_ja.md) | 急落、出来高代理増加、急反発、高値更新、戻り売り失敗、ボラ拡大を探索 | Strictは8件 / +4.32R / PF 2.40。XAU除外で7件 / +5.36R / PF 3.62 |
+| **該当箇所CSV** | [`backtests/elliott_fibo/results_2026_05_30/h4_ignition_pattern_search/ignition_events_trades.csv`](../backtests/elliott_fibo/results_2026_05_30/h4_ignition_pattern_search/ignition_events_trades.csv) | 条件一致イベントと仮想売買結果 | Pineでは実volumeで再確認 |
+| **検証コード** | [`backtests/elliott_fibo/run_h4_ignition_pattern_search.py`](../backtests/elliott_fibo/run_h4_ignition_pattern_search.py) | OHLCのみなので出来高はTrue Range活動量で代用 | スキャナー候補 |
+
+**注意**: ローカルデータにvolumeが無いため、出来高増加は価格活動量の代理指標。TradingViewでは `volume > sma(volume, 20) * 1.3〜1.8` を追加して検証する。
+
 ---
 
 ### 2-3. Sai H1 系 (⚠️ archive)

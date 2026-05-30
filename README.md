@@ -95,6 +95,8 @@ fx-ai/
 │   │   ├── chfjpy_h1_exhaustion_short_v0_2.pine
 │   │   ├── silver_xagusd_h1_short_rebreak_v0_1.pine
 │   │   └── v_reclaim_pullback_d1_trend.pine    V字回復応用 Variant A (D1整合プルバック)
+│   │       ├ docs/research/v_reclaim_simple_guide_2026-05-30.md     やさしい解説 (見直し用)
+│   │       └ docs/research/v_reclaim_applied_methods_2026-05-30.md  詳細仕様 (7候補)
 │   ├── visual/                        可視化ツール (Indicator)
 │   │   ├── h4_t5_macd_bb_visual.pine
 │   │   ├── h4_sharp_drop_v_recovery_visual.pine

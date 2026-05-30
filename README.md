@@ -22,6 +22,19 @@
 
 ---
 
+## 🧠 スキル一覧
+
+| スキル | 概要 |
+|---|---|
+| 👉 **[Market Psychology Research](skills/market_psychology_research/SKILL.md)** | 市場参加者の期待・失望・損切り・踏み上げを構造として研究するためのスキル |
+
+> **Market Psychology Research Framework** は「手法集」ではなく「市場心理構造研究所」。
+> 価格ではなく、市場参加者の期待がどこで崩壊したかを研究する（Expectation Failure / Short Squeeze /
+> Long Liquidation / Trap / Capitulation / Compression / FOMO / Dormant Breakout）。
+> PF最適化ではなく、説明可能性・OOS・再現性・市場構造を重視する。
+
+---
+
 ## 🎯 結論 (TL;DR)
 
 ### 採用戦略 — 2本柱
@@ -142,6 +155,17 @@ fx-ai/
 │   ├── audit/                         コスト・OOS監査
 │   ├── relaxation/                    パラメータ緩和スタディ
 │   └── comparison/                    戦略間比較
+├── skills/                         ← スキル (研究フレームワーク) 🧠
+│   └── market_psychology_research/    市場心理構造研究所
+│       ├── SKILL.md                      フレームワーク全体の思想
+│       ├── EXPECTATION_FAILURE.md        期待崩壊
+│       ├── SHORT_SQUEEZE.md              売り方の踏み上げ
+│       ├── LONG_LIQUIDATION.md           買い方の投げ
+│       ├── TRAP.md                       閉じ込め
+│       ├── CAPITULATION.md               降伏
+│       ├── COMPRESSION.md                圧縮
+│       ├── FOMO.md                       乗り遅れ恐怖
+│       └── DORMANT_BREAKOUT.md           休眠節目の更新
 ├── backtest/                       ← 既存のバックテストツール (archive)
 ├── F87104_test/                    ← OHLCデータ (gitignore済)
 └── scripts/                        ← ユーティリティ

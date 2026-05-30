@@ -331,16 +331,25 @@ if signalLong and strategy.position_size == 0
     entryBar   := bar_index
     cntTrade   := cntTrade + 1
 
+// Place exit orders while position is open
 if strategy.position_size > 0 and not na(slPrice) and not na(tpPrice)
     strategy.exit("VRP Exit", from_entry="VRP Long", stop=slPrice, limit=tpPrice)
     if not na(entryBar) and bar_index - entryBar >= maxHoldBars
         strategy.close("VRP Long", comment="Time Exit")
 
-if strategy.position_size == 0
+// IMPORTANT: only reset SL/TP/entryBar when the position TRANSITIONS from
+// open to closed. Previously these were reset whenever position_size == 0,
+// which also fires on the signal bar (entry not yet filled) and instantly
+// nukes the slPrice/tpPrice we just set, so strategy.exit on the next bar
+// never had valid stop/limit prices. Result: 1 trade in 13 years that
+// never closed. Tracking lastPosSize lets us reset only on real close.
+var float lastPosSize = 0.0
+if strategy.position_size == 0 and lastPosSize != 0
     entryPrice := na
     slPrice    := na
     tpPrice    := na
     entryBar   := na
+lastPosSize := strategy.position_size
 
 // =====================================================================
 // Visualization

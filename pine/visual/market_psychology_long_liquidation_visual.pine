@@ -1,0 +1,58 @@
+//@version=5
+// =============================================================================
+// Market Psychology — Long Liquidation Visual Scanner
+//
+// Long Liquidation Strategy と同じシグナル条件を、エントリーせずに
+// 観測 / アラート用に表示するインジケーター版。
+//
+// 詳細仕様: pine/research/market_psychology_long_liquidation_strategy.pine
+// 設計書:  backtests/.../market_psychology_v2_deep_research/r5_long_liquidation_plan.md
+// =============================================================================
+indicator("本命v2 Market Psychology Long Liquidation Visual (Short)",
+     overlay=true, max_labels_count=500)
+
+// ---------------------------------------------------------------------
+// Inputs (mirror the strategy)
+// ---------------------------------------------------------------------
+atrLen     = input.int(14, "ATR period", minval=1)
+
+grpLL      = "Long Liquidation"
+showLL     = input.bool(true,  "シグナル表示",            group=grpLL)
+rallyBars  = input.int(6,    "急騰の窓",                  minval=3, group=grpLL)
+rallyPrior = input.int(12,   "急騰の比較窓",              minval=6, group=grpLL)
+rallyAtr   = input.float(3.0,"急騰幅 >= ?×ATR",           minval=1.0, step=0.1, group=grpLL)
+shelfBars  = input.int(6,    "棚の本数",                  minval=2, group=grpLL)
+shelfAtr   = input.float(2.0,"棚幅上限 (ATR)",            minval=0.5, step=0.1, group=grpLL)
+showShelf  = input.bool(true,  "棚ライン表示",            group=grpLL)
+
+// ---------------------------------------------------------------------
+// Compute (identical to the strategy)
+// ---------------------------------------------------------------------
+atr       = ta.atr(atrLen)
+rallyHigh = ta.highest(high, rallyBars)[1]
+rallyLow  = ta.lowest(low, rallyPrior)[1 + rallyBars]
+hadRally  = (rallyHigh - rallyLow) >= rallyAtr * atr
+
+shelfHi   = ta.highest(high, shelfBars)[1]
+shelfLo   = ta.lowest(low,  shelfBars)[1]
+compressed = (shelfHi - shelfLo) <= shelfAtr * atr
+
+swingHi   = ta.highest(high, rallyBars + shelfBars)[1]
+failedNewHigh = shelfHi < swingHi - 0.05 * atr
+
+freshBreak = close[1] >= shelfLo and close < shelfLo
+
+shortSig = showLL and hadRally and compressed and failedNewHigh and freshBreak
+
+// ---------------------------------------------------------------------
+// Visuals
+// ---------------------------------------------------------------------
+plot(showShelf ? shelfHi : na, title="棚高値", color=color.new(color.fuchsia, 0),
+     style=plot.style_linebr, linewidth=1)
+plot(showShelf ? shelfLo : na, title="棚安値", color=color.new(color.aqua, 0),
+     style=plot.style_linebr, linewidth=1)
+plotshape(shortSig, title="Long Liquidation Short", style=shape.triangledown,
+     location=location.abovebar, color=color.new(color.red, 0), size=size.small, text="LL")
+
+alertcondition(shortSig, title="Long Liquidation Short",
+     message="LL short on {{ticker}} {{interval}} @ {{close}}")

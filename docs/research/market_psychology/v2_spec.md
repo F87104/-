@@ -141,12 +141,15 @@ volume > sma(volume, 20) * 1.3
 
 - [ ] **フォワード 30 件記録** (Squeeze v2)
 - [ ] **フォワード 30 件記録** (Capitulation v2)
+- [ ] **フォワード 30 件記録** (Long Liquidation) ← 🆕 Pine 実装済み
+- [ ] **フォワード 30 件記録** (Dormant Breakout) ← 🆕 Pine 実装済み
 - [ ] **Pine ↔ Python parity** (v2 のシグナル時刻を Python で再現できるか)
 - [ ] **Volume フィルタの効果検証** (TV 上で ON/OFF 比較)
-- [ ] **Long Liquidation 実装** (#5、OHLC スキャン)
-- [ ] **Dormant Breakout 実装** (#6、OHLC スキャン)
+- [ ] **Long Liquidation / Dormant Breakout の OHLC 検証** (OHLC が利用可能になった時点で Python で過去全期間を回す)
 
 これら満了で初めて **🟢 本線採用** へ昇格。
+
+フォワード記録は [`forward_log_template.md`](./forward_log_template.md) を月初にコピーして始める。
 
 ---
 
@@ -164,9 +167,21 @@ volume > sma(volume, 20) * 1.3
 
 ## 8. 関連ファイル
 
+### 検証 / レポート
 - 検証コード: [`backtests/elliott_fibo/run_market_psychology_v2_deep_research.py`](../../../backtests/elliott_fibo/run_market_psychology_v2_deep_research.py)
 - 結果フォルダ: [`backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/`](../../../backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/)
 - 詳細レポート: [`report_ja.md`](../../../backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md)
-- v2 Pine: [`pine/research/market_psychology_strict_v2_strategy.pine`](../../../pine/research/market_psychology_strict_v2_strategy.pine)
-- v1 Pine: [`pine/research/market_psychology_strategy.pine`](../../../pine/research/market_psychology_strategy.pine)
+
+### Pine (本命 v2)
+- v2 統合 strategy: [`pine/research/market_psychology_strict_v2_strategy.pine`](../../../pine/research/market_psychology_strict_v2_strategy.pine)
+- 🆕 Long Liquidation strategy: [`pine/research/market_psychology_long_liquidation_strategy.pine`](../../../pine/research/market_psychology_long_liquidation_strategy.pine)
+- 🆕 Long Liquidation visual: [`pine/visual/market_psychology_long_liquidation_visual.pine`](../../../pine/visual/market_psychology_long_liquidation_visual.pine)
+- 🆕 Dormant Breakout strategy: [`pine/research/market_psychology_dormant_breakout_strategy.pine`](../../../pine/research/market_psychology_dormant_breakout_strategy.pine)
+- 🆕 Dormant Breakout visual: [`pine/visual/market_psychology_dormant_breakout_visual.pine`](../../../pine/visual/market_psychology_dormant_breakout_visual.pine)
+
+### フォワード記録
+- 月次テンプレート: [`forward_log_template.md`](./forward_log_template.md)
+
+### Pine (v1 比較用)
+- v1 default Pine: [`pine/research/market_psychology_strategy.pine`](../../../pine/research/market_psychology_strategy.pine)
 - v1 strict Pine: [`pine/research/market_psychology_squeeze_strict_strategy.pine`](../../../pine/research/market_psychology_squeeze_strict_strategy.pine)

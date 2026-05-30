@@ -8,7 +8,9 @@
 
 ## 🏆 最新: 市場心理 v2 (Deep Research 統合版)
 
-10 項目の深掘り検証 ([#1〜#10](backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md)) を統合した **現時点の最強仕様**。
+10 項目の深掘り検証 ([#1〜#10](backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md)) を統合した **現時点の最強仕様 + 拡張パターン 2 種**。
+
+### 🎯 主力 (Squeeze + Capitulation v2)
 
 | 種類 | ファイル | TradingView 表示名 |
 |---|---|---|
@@ -16,6 +18,24 @@
 | 📋 v2 仕様書 | **[`docs/research/market_psychology/v2_spec.md`](docs/research/market_psychology/v2_spec.md)** | — |
 | 📊 検証レポート | **[`backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md`](backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md)** | — |
 | 🐍 検証コード | [`backtests/elliott_fibo/run_market_psychology_v2_deep_research.py`](backtests/elliott_fibo/run_market_psychology_v2_deep_research.py) | — |
+
+### 🆕 拡張パターン (#5 Long Liquidation + #6 Dormant Breakout)
+
+両方とも v2 と同じ R 固定 / Pine v5 / 推奨 H4 (Dormant は D1 も可)。
+Python 検証は未実施 (ローカル OHLC 不在のため) → TradingView Strategy Tester + フォワードで初期確認。
+
+| 種類 | ファイル | TradingView 表示名 |
+|---|---|---|
+| Short 専用 strategy | [`pine/research/market_psychology_long_liquidation_strategy.pine`](pine/research/market_psychology_long_liquidation_strategy.pine) | `本命v2 Market Psychology Long Liquidation [Short]` |
+| Short 観測 visual | [`pine/visual/market_psychology_long_liquidation_visual.pine`](pine/visual/market_psychology_long_liquidation_visual.pine) | `本命v2 Market Psychology Long Liquidation Visual (Short)` |
+| 両方向 strategy | [`pine/research/market_psychology_dormant_breakout_strategy.pine`](pine/research/market_psychology_dormant_breakout_strategy.pine) | `本命v2 Market Psychology Dormant Breakout [両方向]` |
+| 両方向 観測 visual | [`pine/visual/market_psychology_dormant_breakout_visual.pine`](pine/visual/market_psychology_dormant_breakout_visual.pine) | `本命v2 Market Psychology Dormant Breakout Visual` |
+
+### 📝 フォワード記録
+
+| 種類 | ファイル |
+|---|---|
+| 記録テンプレート (月次) | **[`docs/research/market_psychology/forward_log_template.md`](docs/research/market_psychology/forward_log_template.md)** |
 
 ### v1 比較
 

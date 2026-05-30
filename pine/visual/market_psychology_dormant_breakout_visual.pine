@@ -1,0 +1,54 @@
+//@version=5
+// =============================================================================
+// Market Psychology — Dormant Breakout Visual Scanner
+//
+// Strategy 版と同じシグナル条件を、エントリーせず観測 / アラート用に表示する。
+// 詳細: pine/research/market_psychology_dormant_breakout_strategy.pine
+// =============================================================================
+indicator("本命v2 Market Psychology Dormant Breakout Visual",
+     overlay=true, max_labels_count=500)
+
+atrLen = input.int(14, "ATR period", minval=1)
+dormN  = input.int(120, "休眠期間 N (本)", minval=20)
+pbWin  = input.int(5,   "押し戻り窓 (本)", minval=2, maxval=20)
+useLong  = input.bool(true,  "ロング側を表示")
+useShort = input.bool(true,  "ショート側を表示")
+showLevel = input.bool(true, "休眠節目ライン表示")
+
+atr = ta.atr(atrLen)
+
+// Long
+donHi_long = ta.highest(high, dormN)[1 + pbWin]
+lookBack = pbWin * 3
+maxCloseBack = ta.highest(close, lookBack)[1]
+breakHappened_long = maxCloseBack > donHi_long
+pbLowestLong = ta.lowest(low, pbWin)[1]
+pbHeldLong = pbLowestLong >= donHi_long
+pbHighLong = ta.highest(high, pbWin)[1]
+reBreakLong = close[1] <= pbHighLong and close > pbHighLong
+longSig = useLong and breakHappened_long and pbHeldLong and reBreakLong
+
+// Short
+donLo_short = ta.lowest(low, dormN)[1 + pbWin]
+minCloseBack = ta.lowest(close, lookBack)[1]
+breakHappened_short = minCloseBack < donLo_short
+pbHighestShort = ta.highest(high, pbWin)[1]
+pbHeldShort = pbHighestShort <= donLo_short
+pbLowShort = ta.lowest(low, pbWin)[1]
+reBreakShort = close[1] >= pbLowShort and close < pbLowShort
+shortSig = useShort and breakHappened_short and pbHeldShort and reBreakShort
+
+plot(showLevel ? donHi_long  : na, title="Dormant High",
+     color=color.new(color.orange, 50), style=plot.style_circles, linewidth=1)
+plot(showLevel ? donLo_short : na, title="Dormant Low",
+     color=color.new(color.purple, 50), style=plot.style_circles, linewidth=1)
+
+plotshape(longSig,  title="Dormant Long",  style=shape.triangleup,
+     location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="DBL")
+plotshape(shortSig, title="Dormant Short", style=shape.triangledown,
+     location=location.abovebar, color=color.new(color.red, 0),  size=size.small, text="DBS")
+
+alertcondition(longSig,  title="Dormant Breakout Long",
+     message="Dormant Breakout LONG on {{ticker}} {{interval}} @ {{close}}")
+alertcondition(shortSig, title="Dormant Breakout Short",
+     message="Dormant Breakout SHORT on {{ticker}} {{interval}} @ {{close}}")

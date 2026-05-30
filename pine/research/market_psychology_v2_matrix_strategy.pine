@@ -268,7 +268,9 @@ if strategy.position_size == 0 and strategy.position_size[1] != 0
 // ---------------------------------------------------------------------
 grpVz       = "表示オプション"
 showLevels  = input.bool(true, "Entry / SL / TP の価格ライン表示", group=grpVz)
-levelExtend = input.int(24, "ライン延長 (バー数)", minval=1, group=grpVz)
+keepHistory = input.bool(true, "過去全シグナルのラベルを残す", group=grpVz,
+     tooltip="OFF にすると最新シグナルだけ表示")
+levelExtend = input.int(10, "ライン延長 (バー数)", minval=1, group=grpVz)
 
 plotshape(sqzLong, title="Squeeze Long", style=shape.triangleup,
      location=location.belowbar, color=color.new(color.lime, 0),
@@ -297,14 +299,16 @@ if showLevels and anySig and not na(sigStop)
     float riskNow    = sigIsLong ? (entryPrice - sigStop) : (sigStop - entryPrice)
     float tpPrice    = sigIsLong ? (entryPrice + rr * riskNow) : (entryPrice - rr * riskNow)
 
-    if not na(entryLine)
-        line.delete(entryLine)
-    if not na(slLine)
-        line.delete(slLine)
-    if not na(tpLine)
-        line.delete(tpLine)
-    if not na(sigLabel)
-        label.delete(sigLabel)
+    // keepHistory が OFF の時だけ、前回のオブジェクトを削除する
+    if not keepHistory
+        if not na(entryLine)
+            line.delete(entryLine)
+        if not na(slLine)
+            line.delete(slLine)
+        if not na(tpLine)
+            line.delete(tpLine)
+        if not na(sigLabel)
+            label.delete(sigLabel)
 
     entryLine := line.new(bar_index, entryPrice, bar_index + levelExtend, entryPrice,
          xloc=xloc.bar_index, color=color.new(sigColor, 0), width=2, style=line.style_solid)
@@ -320,6 +324,9 @@ if showLevels and anySig and not na(sigStop)
     sigLabel := label.new(bar_index, sigIsLong ? low : high, txt, xloc=xloc.bar_index,
          style=sigIsLong ? label.style_label_up : label.style_label_down,
          color=color.new(sigColor, 0), textcolor=color.black, size=size.small)
+
+// Pine v5 のオブジェクト上限 (max_labels_count=500, max_lines_count=500) を超えた場合は
+// 古いオブジェクトから自動的に削除される (FIFO)。多くの通貨で 50-130 件程度なので余裕。
 
 alertcondition(sqzLong, title="Sqz v2.1 Long",
      message="SQZ v2.1 long on {{ticker}} {{interval}} @ {{close}}")

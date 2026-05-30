@@ -1,0 +1,112 @@
+//@version=5
+// =============================================================================
+// Market Psychology Research — Strategy (検証結果を TradingView で確認する版)
+//
+// 目的: Python検証(verify_from_raw_ohlc.py / verify_capitulation_reversal.py)と
+//       同じルールを Strategy として実装し、Strategy Tester で
+//       PF・勝率・トレード数を自分のチャートで確認できるようにする。
+//
+//   ① 踏み上げ Short Squeeze (買い): 急落→安値棚(圧縮)→上抜け
+//   ② Capitulation 底買い (買い)    : 長期下落→投げ切り(ATR急拡大+下ヒゲ)→反転
+//
+// 検証との整合:
+//   - シグナルは確定足、エントリは次足始値 (strategy.entry はデフォルトで次足約定)
+//   - SL = 構造の外側 - 0.25ATR, TP = RR(既定2)倍, 最大保有 MAX_HOLD 本でクローズ
+//   - 1トレードのリスクを口座の risk% に固定 → Strategy Tester の Profit Factor が
+//     検証のR建てPFと比較可能になる
+//
+// ⚠ 注意: TradingViewのデータ/セッション/バー数制限により数値は検証と完全一致しない。
+//         「踏み上げ買いがプラス傾向か」等の“形”を確認する用途。
+//         GBPJPY は検証で全条件負け → このストラテジーの対象外。
+//         推奨時間足: H4。足の確定後に評価される。
+// =============================================================================
+strategy("Market Psychology Strategy (Squeeze + Capitulation)", overlay=true,
+     default_qty_type=strategy.fixed, default_qty_value=1,
+     commission_type=strategy.commission.percent, commission_value=0.0,
+     slippage=0, calc_on_every_tick=false, process_orders_on_close=false)
+
+// ---- 共通 -------------------------------------------------------------------
+grpG     = "共通"
+atrLen   = input.int(14, "ATR period", group=grpG)
+rr       = input.float(2.0, "RR (利確倍率)", group=grpG)
+maxHold  = input.int(120, "最大保有(本)", group=grpG)
+riskPct  = input.float(1.0, "1トレードのリスク (%)", group=grpG)
+useDate  = input.bool(false, "期間を限定する", group=grpG)
+fromY    = input.int(2015, "開始年", group=grpG)
+toY      = input.int(2026, "終了年", group=grpG)
+
+atr   = ta.atr(atrLen)
+rng   = high - low
+rngOk = rng > 0
+inWin = (not useDate) or (year >= fromY and year <= toY)
+
+// ---- 構造の有効化 -----------------------------------------------------------
+grpEn   = "使う構造 (片方ずつ推奨)"
+useSqz  = input.bool(true,  "① 踏み上げ Short Squeeze", group=grpEn)
+useCap  = input.bool(false, "② Capitulation 底買い",     group=grpEn)
+
+// ============================================================================
+//  ① Short Squeeze (買い)
+// ============================================================================
+grpS       = "① 踏み上げ"
+shelfBars  = input.int(6,   "棚の本数",            group=grpS)
+dropWin    = input.int(6,   "棚直前の急変窓",       group=grpS)
+shelfAtr   = input.float(2.5, "棚レンジ <= ?×ATR",  group=grpS)
+moveAtr    = input.float(3.0, "急落幅 >= ?×ATR",    group=grpS)
+
+shelfHi    = ta.highest(high, shelfBars)[1]
+shelfLo    = ta.lowest(low,  shelfBars)[1]
+sqzCompd   = (shelfHi - shelfLo) <= shelfAtr * atr
+priorHiS   = ta.highest(high, dropWin)[1 + shelfBars]
+sqzSharp   = (priorHiS - shelfHi) >= moveAtr * atr
+sqzFresh   = close[1] <= shelfHi and close > shelfHi
+sqzLong    = useSqz and sqzCompd and sqzSharp and sqzFresh
+sqzStop    = shelfLo - 0.25 * atr
+
+// ============================================================================
+//  ② Capitulation 底買い (買い)
+// ============================================================================
+grpC        = "② Capitulation"
+declineBars = input.int(24,  "長期下落の窓",          group=grpC)
+dropAtrCap  = input.float(4.0, "下落幅 >= ?×ATR",      group=grpC)
+spikeAtr    = input.float(1.8, "投げ切り足 >= ?×ATR",  group=grpC)
+wickThr     = input.float(0.5, "下ヒゲ/全体 >= ?",     group=grpC)
+closeLocC   = input.float(0.5, "終値の位置 >= ?",      group=grpC)
+useDownD1   = input.bool(true, "日足が下降中のみ(counter)", group=grpC)
+
+capNewLow   = low <= ta.lowest(low, declineBars)
+capProlong  = (ta.highest(high, declineBars) - low) >= dropAtrCap * atr
+capBig      = rng >= spikeAtr * atr
+capWick     = rngOk and ((math.min(open, close) - low) / rng) >= wickThr
+capCloseLoc = rngOk and ((close - low) / rng) >= closeLocC
+d1ema       = request.security(syminfo.tickerid, "D", ta.ema(close, 50), lookahead=barmerge.lookahead_off)
+capDown     = (not useDownD1) or (close < d1ema)
+capLong     = useCap and capNewLow and capProlong and capBig and capWick and capCloseLoc and capDown
+capStop     = low - 0.25 * atr
+
+// ============================================================================
+//  発注 (R固定サイジング → Strategy Tester の PF が検証のR建てPFと比較可能)
+// ============================================================================
+var float entryStop = na
+longSig  = inWin and (sqzLong or capLong)
+theStop  = sqzLong ? sqzStop : capStop
+
+if longSig and strategy.position_size == 0
+    stopDist = close - theStop
+    if stopDist > 0
+        qty = (strategy.equity * (riskPct / 100.0)) / stopDist
+        entryStop := theStop
+        strategy.entry("L", strategy.long, qty=qty)
+
+if strategy.position_size > 0 and not na(entryStop)
+    risk0  = strategy.position_avg_price - entryStop
+    target = strategy.position_avg_price + rr * risk0
+    strategy.exit("X", from_entry="L", stop=entryStop, limit=target)
+    if bar_index - strategy.opentrades.entry_bar_index(0) >= maxHold
+        strategy.close("L", comment="timeout")
+
+// ---- 目印 -------------------------------------------------------------------
+plotshape(sqzLong, title="踏み上げ", style=shape.triangleup, location=location.belowbar,
+     color=color.new(color.lime, 0), size=size.tiny)
+plotshape(capLong, title="投げ切り", style=shape.triangleup, location=location.belowbar,
+     color=color.new(color.aqua, 0), size=size.tiny)

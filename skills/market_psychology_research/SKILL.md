@@ -132,6 +132,9 @@
 - [`pine/market_psychology_visual.pine`](pine/market_psychology_visual.pine):
   検証済みの2構造（**踏み上げ Short Squeeze** と **投げ切り Capitulation 底買い**）を
   TradingView チャート上に自動マークする観測用インジケーター（推奨 H4）。
+- [`pine/market_psychology_strategy.pine`](pine/market_psychology_strategy.pine):
+  同じルールを Strategy 化し、**Strategy Tester で PF・勝率を自分のチャートで確認**できる版。
+  手順は [`pine/HOW_TO_VIEW_IN_TRADINGVIEW.md`](pine/HOW_TO_VIEW_IN_TRADINGVIEW.md)。
 
 ---
 

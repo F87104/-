@@ -1,0 +1,470 @@
+//@version=5
+strategy(
+     title                  = "V-Reclaim Pullback (D1 Trend Aligned) [Research]",
+     overlay                = true,
+     initial_capital        = 10000,
+     default_qty_type       = strategy.fixed,
+     default_qty_value      = 1,
+     pyramiding             = 0,
+     calc_on_order_fills    = false,
+     calc_on_every_tick     = false,
+     process_orders_on_close= false,
+     commission_type        = strategy.commission.percent,
+     commission_value       = 0.0,
+     slippage               = 2,
+     max_bars_back          = 5000,
+     max_lines_count        = 500,
+     max_labels_count       = 500,
+     max_boxes_count        = 100)
+
+// =====================================================================
+// V-Reclaim Pullback (D1 Trend Aligned)  -  Variant A
+// ---------------------------------------------------------------------
+// Spec: docs/research/v_reclaim_applied_methods_2026-05-30.md
+//
+// 狙う局面: D1 上昇トレンドの押し目で H4 急落 → 右肩急回復 → reclaim ブレイク
+//
+// 4 段階プリセット + Manual + 全フィルタ一括 OFF モード:
+//   Strict      : 厳選 (年 1-3 / 通貨)
+//   Balanced    : 中庸  (年 4-8 / 通貨)
+//   Loose       : 多め  (年 10-20 / 通貨)
+//   Very Loose  : 最大  (年 20-40 / 通貨)
+//   Manual      : 個別入力
+//   ALL OFF MODE: useTrendFilter / useNearEma / useNearHighFilter / useLowVolFilter
+//                 を全部 OFF にすると、V 検出と Reclaim だけのナマ状態になる
+//
+// デバッグ機能:
+//   左下にカウンタテーブルが出る。どのフィルタで何件落ちたかで原因特定。
+//
+// 安全 (TradingView 先読みバイアス警告対策):
+//   - calc_on_order_fills = false
+//   - process_orders_on_close = false
+//   - request.security は lookahead=barmerge.lookahead_off
+//   - Entry は次足始値 (TradingView デフォルト動作)
+// =====================================================================
+
+// =====================================================================
+// Inputs
+// =====================================================================
+grpPreset = "■ プリセット (まずここを選ぶ)"
+preset = input.string("Loose", "フィルタ厳しさプリセット",
+     options=["Strict", "Balanced", "Loose", "Very Loose", "Manual"],
+     group=grpPreset,
+     tooltip="トレード数の目安 (年/通貨): Strict 1-3 / Balanced 4-8 / Loose 10-20 / Very Loose 20-40 / Manual=下の個別入力を使用")
+allOff = input.bool(false, "全フィルタを一括 OFF (HTF / EMA近接 / 高値距離 / 低ボラ)", group=grpPreset,
+     tooltip="ON にすると、V 検出と Reclaim 以外の全フィルタを無効化。デバッグ・最大化用。")
+
+grpBase = "■ 基本"
+analysisTf     = input.timeframe("240", "判定時間足",        group=grpBase, tooltip="H4 想定。H1/H8 等で実行する場合は本数系パラメータも調整。")
+requireTfMatch = input.bool(true, "判定時間足チャートでのみ売買", group=grpBase)
+atrLen         = input.int(14, "ATR 期間", minval=1, group=grpBase)
+pivotLen       = input.int(3,  "Pivot 幅 (左右本数)", minval=1, maxval=20, group=grpBase, tooltip="左右ともこの本数で確定。検出は pivotLen 本遅延。")
+
+grpV = "■ V 検出 (Manual 時のみ有効)"
+m_minDropAtr        = input.float(2.5, "急落幅の最小 ATR 倍",      minval=0.1, step=0.1, group=grpV)
+minDropBars         = input.int(2,    "急落の最小本数",            minval=1, group=grpV)
+maxDropBars         = input.int(30,   "急落の最大本数",            minval=2, group=grpV)
+m_maxRecoveryRatio  = input.float(2.0, "右肩本数 / 左肩本数 上限",  minval=0.1, step=0.05, group=grpV)
+m_minSpeedRatio     = input.float(1.00,"右肩速度 / 左肩速度 下限",  minval=0.1, step=0.05, group=grpV)
+m_crossBufferAtr    = input.float(0.00,"reclaim 余白 (ATR)",        minval=0.0, step=0.01, group=grpV)
+lowBreakInvalidAtr  = input.float(0.10,"V 低割れ失効 (ATR)",        minval=0.0, step=0.01, group=grpV)
+m_maxWatchBars      = input.int(72,   "V 谷から reclaim 監視最大本数", minval=4, group=grpV)
+
+grpQ = "■ シグナル足品質 (Manual 時のみ有効)"
+m_minBodyRatio     = input.float(0.50, "実体比率 下限", minval=0.0, maxval=1.0, step=0.05, group=grpQ)
+m_minCloseLocation = input.float(0.50, "終値位置 下限", minval=0.0, maxval=1.0, step=0.05, group=grpQ)
+
+grpHtf = "■ HTF (D1) トレンド整合"
+useTrendFilter  = input.bool(true,  "D1 トレンド整合を必須化",   group=grpHtf, tooltip="OFF にすると D1 フィルタを完全無効化。")
+htfTF           = input.timeframe("D", "HTF 時間足",              group=grpHtf)
+htfEmaFast      = input.int(50,  "HTF EMA Fast",                  minval=2, group=grpHtf)
+htfEmaSlow      = input.int(200, "HTF EMA Slow",                  minval=2, group=grpHtf)
+htfEmaSlopeBars = input.int(10,  "EMA 傾き判定本数",              minval=2, group=grpHtf)
+htfRsiLen       = input.int(14,  "HTF RSI 期間",                  minval=2, group=grpHtf)
+m_htfRsiAvoid   = input.float(28.0, "HTF RSI 下限 (Manual 時のみ)", minval=1, maxval=70, step=0.5, group=grpHtf)
+useNearEma      = input.bool(true,  "V 低が D1 EMA Fast 付近のみ採用", group=grpHtf)
+m_vNearEmaAtr   = input.float(2.5,  "V 低が EMA から何 ATR 以内 (Manual 時のみ)",  minval=0.1, step=0.1, group=grpHtf)
+
+grpEx = "■ 除外フィルタ"
+useLowVolFilter = input.bool(true,  "極低ボラ除外",                 group=grpEx)
+m_lowVolMin     = input.float(0.4,  "ATR(14) / ATR(14)[120] 下限 (Manual 時のみ)",  minval=0.1, step=0.05, group=grpEx)
+useNearHighFilter = input.bool(false, "直近高値距離フィルタ", group=grpEx, tooltip="OFF 推奨。ON だと TP 到達余地のない位置を除外するがトレード数が激減する。")
+m_nearHighMinR  = input.float(1.0,  "Entry → 直近高値 までの R 下限 (Manual 時のみ)", minval=0.1, step=0.1, group=grpEx)
+nearHighLookback= input.int(60,    "直近高値 lookback (本)",         minval=10, group=grpEx)
+skipHoliday     = input.bool(true,  "12/15〜1/10 は新規停止",        group=grpEx)
+
+grpRisk = "■ リスク"
+stopBufferAtr = input.float(0.25, "SL 余白 (V 低 − ATR×)", minval=0.0, step=0.05, group=grpRisk)
+tpR           = input.float(2.0,  "TP R 倍率",              minval=0.1, step=0.1, group=grpRisk)
+maxHoldBars   = input.int(180,    "最大保有本数",            minval=1, group=grpRisk)
+
+grpDate = "■ 検証期間"
+useDateFilter = input.bool(false, "期間で売買を絞る", group=grpDate, tooltip="OFF 推奨 (全期間検証)。ON のときは下の Start/End で絞る。")
+startDate     = input.time(timestamp("2015-01-01T00:00:00"), "Start", group=grpDate)
+endDate       = input.time(timestamp("2026-12-31T23:59:59"), "End",   group=grpDate)
+
+grpView = "■ 表示"
+showSignals = input.bool(true,  "Signal/Entry ラベル", group=grpView)
+showV       = input.bool(true,  "V ライン",             group=grpView)
+showLevels  = input.bool(true,  "SL/TP ライン",         group=grpView)
+showHTF     = input.bool(true,  "D1 EMA を H4 上に表示", group=grpView)
+showDebug   = input.bool(true,  "デバッグカウンタ表示", group=grpView)
+maxKeep     = input.int(80,     "残すラベル数",         minval=10, maxval=400, group=grpView)
+
+// =====================================================================
+// プリセット適用
+// =====================================================================
+isStrict     = preset == "Strict"
+isBalanced   = preset == "Balanced"
+isLoose      = preset == "Loose"
+isVeryLoose  = preset == "Very Loose"
+
+minDropAtr        = isStrict ? 3.5  : isBalanced ? 3.0  : isLoose ? 2.5  : isVeryLoose ? 2.0  : m_minDropAtr
+maxRecoveryRatio  = isStrict ? 1.0  : isBalanced ? 1.5  : isLoose ? 2.0  : isVeryLoose ? 3.0  : m_maxRecoveryRatio
+minSpeedRatio     = isStrict ? 1.20 : isBalanced ? 1.10 : isLoose ? 1.00 : isVeryLoose ? 0.80 : m_minSpeedRatio
+crossBufferAtr    = isStrict ? 0.05 : isBalanced ? 0.03 : isLoose ? 0.00 : isVeryLoose ? 0.00 : m_crossBufferAtr
+maxWatchBars      = isStrict ? 36   : isBalanced ? 48   : isLoose ? 72   : isVeryLoose ? 120  : m_maxWatchBars
+minBodyRatio      = isStrict ? 0.60 : isBalanced ? 0.55 : isLoose ? 0.50 : isVeryLoose ? 0.40 : m_minBodyRatio
+minCloseLocation  = isStrict ? 0.60 : isBalanced ? 0.55 : isLoose ? 0.50 : isVeryLoose ? 0.40 : m_minCloseLocation
+htfRsiAvoid       = isStrict ? 35.0 : isBalanced ? 32.0 : isLoose ? 28.0 : isVeryLoose ? 20.0 : m_htfRsiAvoid
+vNearEmaAtr       = isStrict ? 1.0  : isBalanced ? 1.5  : isLoose ? 2.5  : isVeryLoose ? 4.0  : m_vNearEmaAtr
+lowVolMin         = isStrict ? 0.6  : isBalanced ? 0.5  : isLoose ? 0.4  : isVeryLoose ? 0.3  : m_lowVolMin
+nearHighMinR      = isStrict ? 1.5  : isBalanced ? 1.2  : isLoose ? 1.0  : isVeryLoose ? 0.5  : m_nearHighMinR
+
+// 一括 OFF 適用
+effUseTrend     = allOff ? false : useTrendFilter
+effUseNearEma   = allOff ? false : useNearEma
+effUseNearHigh  = allOff ? false : useNearHighFilter
+effUseLowVol    = allOff ? false : useLowVolFilter
+
+// =====================================================================
+// Helper
+// =====================================================================
+inTfMatch   = (not requireTfMatch) or (timeframe.period == analysisTf)
+inDateRange = (not useDateFilter)  or (time >= startDate and time <= endDate)
+mm = month(time)
+dd = dayofmonth(time)
+isHoliday = skipHoliday and ((mm == 12 and dd >= 15) or (mm == 1 and dd <= 10))
+
+// =====================================================================
+// ATR & HTF series
+// =====================================================================
+atrVal     = ta.atr(atrLen)
+atrLongAvg = ta.sma(atrVal, 120)
+volExpand  = effUseLowVol ? atrVal / math.max(atrLongAvg, 1e-10) : 999.0
+
+htfEmaFastV   = request.security(syminfo.tickerid, htfTF, ta.ema(close, htfEmaFast),                  lookahead=barmerge.lookahead_off)
+htfEmaFastOld = request.security(syminfo.tickerid, htfTF, ta.ema(close, htfEmaFast)[htfEmaSlopeBars], lookahead=barmerge.lookahead_off)
+htfEmaSlowV   = request.security(syminfo.tickerid, htfTF, ta.ema(close, htfEmaSlow),                  lookahead=barmerge.lookahead_off)
+htfRsi        = request.security(syminfo.tickerid, htfTF, ta.rsi(close, htfRsiLen),                   lookahead=barmerge.lookahead_off)
+htfClose      = request.security(syminfo.tickerid, htfTF, close,                                      lookahead=barmerge.lookahead_off)
+htfAtr        = request.security(syminfo.tickerid, htfTF, ta.atr(atrLen),                             lookahead=barmerge.lookahead_off)
+
+emaSlope = htfEmaFastV - htfEmaFastOld
+trendOk = (not effUseTrend) or (htfClose > htfEmaFastV and htfEmaFastV > htfEmaSlowV and emaSlope > 0 and htfRsi >= htfRsiAvoid)
+
+// =====================================================================
+// Pivots
+// =====================================================================
+ph = ta.pivothigh(high, pivotLen, pivotLen)
+pl = ta.pivotlow (low,  pivotLen, pivotLen)
+
+var float lastPHprice = na
+var int   lastPHbar   = na
+
+if not na(ph)
+    lastPHprice := ph
+    lastPHbar   := bar_index - pivotLen
+
+// =====================================================================
+// Debug counters
+// =====================================================================
+var int cntPL          = 0
+var int cntVdetect     = 0
+var int cntVinvalid    = 0
+var int cntVexpired    = 0
+var int cntVratioRej   = 0
+var int cntReclaim     = 0
+var int cntSpeedRej    = 0
+var int cntQualityRej  = 0
+var int cntTrendRej    = 0
+var int cntNearEmaRej  = 0
+var int cntNearHighRej = 0
+var int cntVolRej      = 0
+var int cntDateRej     = 0
+var int cntHolidayRej  = 0
+var int cntTfRej       = 0
+var int cntSignal      = 0
+var int cntTrade       = 0
+
+if not na(pl)
+    cntPL := cntPL + 1
+
+// =====================================================================
+// Active V state
+// =====================================================================
+var float vHigh        = na
+var int   vHighBar     = na
+var float vLow         = na
+var int   vLowBar      = na
+var int   vDropBars    = na
+var float vDrop        = na
+var int   vExpireBar   = na
+var bool  vTriggered   = false
+
+bool newDropDetected = false
+if not na(pl) and not na(lastPHprice) and not na(lastPHbar)
+    cand_lsBar   = lastPHbar
+    cand_lsPx    = lastPHprice
+    cand_plBar   = bar_index - pivotLen
+    cand_plPx    = pl
+    cand_bars    = cand_plBar - cand_lsBar
+    cand_drop    = cand_lsPx - cand_plPx
+    cand_dropAtr = cand_drop / math.max(atrVal, 1e-10)
+    if cand_lsBar < cand_plBar and cand_bars >= minDropBars and cand_bars <= maxDropBars and cand_dropAtr >= minDropAtr
+        vHigh      := cand_lsPx
+        vHighBar   := cand_lsBar
+        vLow       := cand_plPx
+        vLowBar    := cand_plBar
+        vDropBars  := cand_bars
+        vDrop      := cand_drop
+        vExpireBar := cand_plBar + maxWatchBars
+        vTriggered := false
+        newDropDetected := true
+        cntVdetect := cntVdetect + 1
+
+// =====================================================================
+// Reclaim 判定 & Signal
+// =====================================================================
+bool  signalLong   = false
+float signalEntry  = na
+float signalSL     = na
+float signalTP     = na
+bool  consumeV     = false
+
+if not na(vLow) and not vTriggered
+    if low < vLow - lowBreakInvalidAtr * atrVal
+        consumeV := true
+        cntVinvalid := cntVinvalid + 1
+    else if bar_index > vExpireBar
+        consumeV := true
+        cntVexpired := cntVexpired + 1
+    else
+        recoveryBars = bar_index - vLowBar
+        ratio        = recoveryBars / float(math.max(vDropBars, 1))
+        if ratio > maxRecoveryRatio
+            consumeV := true
+            cntVratioRej := cntVratioRej + 1
+        else
+            reclaim = close >= vHigh + crossBufferAtr * atrVal
+            if reclaim and recoveryBars > 0
+                cntReclaim := cntReclaim + 1
+                leftSpeed  = vDrop / math.max(vDropBars,  1) / math.max(atrVal, 1e-10)
+                rightDist  = close - vLow
+                rightSpeed = rightDist / math.max(recoveryBars, 1) / math.max(atrVal, 1e-10)
+                speedOk    = rightSpeed >= leftSpeed * minSpeedRatio
+                rng        = high - low
+                body       = math.abs(close - open)
+                bodyRatio  = rng > 0 ? body / rng : 0.0
+                closeLoc   = rng > 0 ? (close - low) / rng : 0.0
+                qualityOk  = bodyRatio >= minBodyRatio and closeLoc >= minCloseLocation
+                nearEmaOk  = (not effUseNearEma) or (not effUseTrend) or (math.abs(vLow - htfEmaFastV) <= vNearEmaAtr * math.max(htfAtr, 1e-10))
+                sl         = vLow - stopBufferAtr * atrVal
+                risk       = close - sl
+                nearHighOk = true
+                if effUseNearHigh and risk > 0
+                    recentHigh = ta.highest(high, nearHighLookback)
+                    nearHighOk := (recentHigh - close) >= nearHighMinR * risk
+                volOk = (not effUseLowVol) or (volExpand >= lowVolMin)
+                // count rejections individually
+                if not speedOk
+                    cntSpeedRej := cntSpeedRej + 1
+                else if not qualityOk
+                    cntQualityRej := cntQualityRej + 1
+                else if not trendOk
+                    cntTrendRej := cntTrendRej + 1
+                else if not nearEmaOk
+                    cntNearEmaRej := cntNearEmaRej + 1
+                else if not nearHighOk
+                    cntNearHighRej := cntNearHighRej + 1
+                else if not volOk
+                    cntVolRej := cntVolRej + 1
+                else if not inTfMatch
+                    cntTfRej := cntTfRej + 1
+                else if not inDateRange
+                    cntDateRej := cntDateRej + 1
+                else if isHoliday
+                    cntHolidayRej := cntHolidayRej + 1
+                else if risk <= 0
+                    cntQualityRej := cntQualityRej + 1
+                else
+                    signalLong  := true
+                    signalEntry := close
+                    signalSL    := sl
+                    signalTP    := close + risk * tpR
+                    vTriggered  := true
+                    cntSignal   := cntSignal + 1
+
+if consumeV
+    vHigh      := na
+    vHighBar   := na
+    vLow       := na
+    vLowBar    := na
+    vDropBars  := na
+    vDrop      := na
+    vExpireBar := na
+    vTriggered := false
+
+// =====================================================================
+// Trade execution
+// =====================================================================
+var float entryPrice = na
+var float slPrice    = na
+var float tpPrice    = na
+var int   entryBar   = na
+
+if signalLong and strategy.position_size == 0
+    strategy.entry("VRP Long", strategy.long)
+    entryPrice := signalEntry
+    slPrice    := signalSL
+    tpPrice    := signalTP
+    entryBar   := bar_index
+    cntTrade   := cntTrade + 1
+
+// Place exit orders while position is open
+if strategy.position_size > 0 and not na(slPrice) and not na(tpPrice)
+    strategy.exit("VRP Exit", from_entry="VRP Long", stop=slPrice, limit=tpPrice)
+    if not na(entryBar) and bar_index - entryBar >= maxHoldBars
+        strategy.close("VRP Long", comment="Time Exit")
+
+// IMPORTANT: only reset SL/TP/entryBar when the position TRANSITIONS from
+// open to closed. Previously these were reset whenever position_size == 0,
+// which also fires on the signal bar (entry not yet filled) and instantly
+// nukes the slPrice/tpPrice we just set, so strategy.exit on the next bar
+// never had valid stop/limit prices. Result: 1 trade in 13 years that
+// never closed. Tracking lastPosSize lets us reset only on real close.
+var float lastPosSize = 0.0
+if strategy.position_size == 0 and lastPosSize != 0
+    entryPrice := na
+    slPrice    := na
+    tpPrice    := na
+    entryBar   := na
+lastPosSize := strategy.position_size
+
+// =====================================================================
+// Visualization
+// =====================================================================
+var label[] sigLabels = array.new_label()
+var line[]  vLineArr  = array.new_line()
+var line[]  lvlLines  = array.new_line()
+
+if newDropDetected and showV
+    ln1 = line.new(vHighBar, vHigh, vLowBar, vLow, color=color.new(color.orange, 30), width=1, style=line.style_dashed)
+    array.push(vLineArr, ln1)
+    while array.size(vLineArr) > maxKeep
+        oldln = array.shift(vLineArr)
+        line.delete(oldln)
+
+if signalLong and showSignals
+    lbl = label.new(bar_index, low,
+         text="V Reclaim\nE=" + str.tostring(signalEntry, format.mintick) + "\nSL=" + str.tostring(signalSL, format.mintick) + "\nTP=" + str.tostring(signalTP, format.mintick),
+         style=label.style_label_up,
+         color=color.new(color.lime, 0),
+         textcolor=color.black,
+         size=size.small)
+    array.push(sigLabels, lbl)
+    while array.size(sigLabels) > maxKeep
+        oldlbl = array.shift(sigLabels)
+        label.delete(oldlbl)
+
+if signalLong and showLevels and not na(vLowBar)
+    rln = line.new(vLowBar, vLow, bar_index, close, color=color.new(color.lime, 20), width=2)
+    array.push(vLineArr, rln)
+    sln = line.new(bar_index, signalSL,    bar_index + 12, signalSL,    color=color.new(color.red,   10), width=1, style=line.style_dashed, extend=extend.right)
+    tln = line.new(bar_index, signalTP,    bar_index + 12, signalTP,    color=color.new(color.green, 10), width=1, style=line.style_dashed, extend=extend.right)
+    eln = line.new(bar_index, signalEntry, bar_index + 12, signalEntry, color=color.new(color.aqua,  10), width=1, style=line.style_dashed, extend=extend.right)
+    array.push(lvlLines, sln)
+    array.push(lvlLines, tln)
+    array.push(lvlLines, eln)
+    while array.size(lvlLines) > maxKeep
+        oldlv = array.shift(lvlLines)
+        line.delete(oldlv)
+    while array.size(vLineArr) > maxKeep
+        oldln2 = array.shift(vLineArr)
+        line.delete(oldln2)
+
+plot(showHTF ? htfEmaFastV : na, "D1 EMA Fast", color=color.new(color.fuchsia, 0),  linewidth=1)
+plot(showHTF ? htfEmaSlowV : na, "D1 EMA Slow", color=color.new(color.purple,  20), linewidth=1)
+
+bgcolor(isHoliday ? color.new(color.gray, 92) : na, title="休場期間")
+bgcolor((effUseTrend and trendOk) ? color.new(color.green, 96) : na, title="D1 整合")
+
+// =====================================================================
+// Alerts
+// =====================================================================
+alertcondition(signalLong, "V Reclaim Pullback Long",
+     "V-Reclaim Pullback Long: {{ticker}} {{interval}} E={{close}}")
+
+// =====================================================================
+// Status table (top right)
+// =====================================================================
+var table st = table.new(position.top_right, 2, 8, border_width=1)
+if barstate.islast
+    table.cell(st, 0, 0, "プリセット",     text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 0, preset + (allOff ? " (ALL OFF)" : ""))
+    table.cell(st, 0, 1, "D1 整合",        text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 1, trendOk ? "OK" : "NG", bgcolor = trendOk ? color.new(color.green, 60) : color.new(color.red, 60))
+    table.cell(st, 0, 2, "D1 EMA50 傾き",   text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 2, emaSlope > 0 ? "上向" : "下/横", bgcolor = emaSlope > 0 ? color.new(color.green, 60) : color.new(color.red, 60))
+    table.cell(st, 0, 3, "D1 RSI",          text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 3, str.tostring(htfRsi, "#.#"))
+    table.cell(st, 0, 4, "Vol拡大",         text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 4, str.tostring(volExpand, "#.##"))
+    table.cell(st, 0, 5, "監視中 V",        text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 5, na(vLow) ? "なし" : "あり")
+    table.cell(st, 0, 6, "ポジション",      text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 6, strategy.position_size > 0 ? "Long" : "なし")
+    table.cell(st, 0, 7, "Net PnL",         text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 7, str.tostring(strategy.netprofit, "#.##"))
+
+// =====================================================================
+// Debug counter table (bottom left)
+// =====================================================================
+var table dbg = table.new(position.bottom_left, 2, 18, border_width=1, bgcolor=color.new(color.black, 80))
+if showDebug and barstate.islast
+    table.cell(dbg, 0, 0,  "■ デバッグカウンタ",  text_color=color.yellow, bgcolor=color.new(color.black, 0))
+    table.cell(dbg, 1, 0,  "件数",                text_color=color.yellow, bgcolor=color.new(color.black, 0))
+    table.cell(dbg, 0, 1,  "Pivot Low 検出",      text_color=color.white)
+    table.cell(dbg, 1, 1,  str.tostring(cntPL))
+    table.cell(dbg, 0, 2,  "V 検出 (drop>=ATR×)", text_color=color.white)
+    table.cell(dbg, 1, 2,  str.tostring(cntVdetect))
+    table.cell(dbg, 0, 3,  "V 失効 (低割れ)",      text_color=color.white)
+    table.cell(dbg, 1, 3,  str.tostring(cntVinvalid))
+    table.cell(dbg, 0, 4,  "V 失効 (時間切れ)",    text_color=color.white)
+    table.cell(dbg, 1, 4,  str.tostring(cntVexpired))
+    table.cell(dbg, 0, 5,  "V 失効 (右肩長すぎ)",  text_color=color.white)
+    table.cell(dbg, 1, 5,  str.tostring(cntVratioRej))
+    table.cell(dbg, 0, 6,  "Reclaim 試行",         text_color=color.aqua)
+    table.cell(dbg, 1, 6,  str.tostring(cntReclaim))
+    table.cell(dbg, 0, 7,  "✗ 速度 NG",           text_color=color.orange)
+    table.cell(dbg, 1, 7,  str.tostring(cntSpeedRej))
+    table.cell(dbg, 0, 8,  "✗ 実体/終値位置 NG",   text_color=color.orange)
+    table.cell(dbg, 1, 8,  str.tostring(cntQualityRej))
+    table.cell(dbg, 0, 9,  "✗ D1 トレンド NG",     text_color=color.orange)
+    table.cell(dbg, 1, 9,  str.tostring(cntTrendRej))
+    table.cell(dbg, 0, 10, "✗ EMA 近接 NG",        text_color=color.orange)
+    table.cell(dbg, 1, 10, str.tostring(cntNearEmaRej))
+    table.cell(dbg, 0, 11, "✗ 直近高値距離 NG",    text_color=color.orange)
+    table.cell(dbg, 1, 11, str.tostring(cntNearHighRej))
+    table.cell(dbg, 0, 12, "✗ 低ボラ NG",          text_color=color.orange)
+    table.cell(dbg, 1, 12, str.tostring(cntVolRej))
+    table.cell(dbg, 0, 13, "✗ 時間足 不一致",      text_color=color.orange)
+    table.cell(dbg, 1, 13, str.tostring(cntTfRej))
+    table.cell(dbg, 0, 14, "✗ 期間外",             text_color=color.orange)
+    table.cell(dbg, 1, 14, str.tostring(cntDateRej))
+    table.cell(dbg, 0, 15, "✗ 休場",               text_color=color.orange)
+    table.cell(dbg, 1, 15, str.tostring(cntHolidayRej))
+    table.cell(dbg, 0, 16, "★ Signal 発火",        text_color=color.lime, bgcolor=color.new(color.green, 70))
+    table.cell(dbg, 1, 16, str.tostring(cntSignal), bgcolor=color.new(color.green, 70))
+    table.cell(dbg, 0, 17, "★ Trade 約定",         text_color=color.lime, bgcolor=color.new(color.green, 70))
+    table.cell(dbg, 1, 17, str.tostring(cntTrade), bgcolor=color.new(color.green, 70))

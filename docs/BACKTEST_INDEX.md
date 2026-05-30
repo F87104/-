@@ -390,6 +390,19 @@ Pine: [`pine/visual/h4_sharp_drop_v_recovery_visual.pine`](../pine/visual/h4_sha
 - `H4 Ignition Strict` がこの合成に近い
 - Long Liquidation、Capitulation/Relief Rally、Dormant Breakoutは次の独立検証候補
 
+### 6-4.6. Trap / False Break Reaction 2026-05-30
+
+| 検証 | パス | 結論 |
+|---|---|---|
+| 研究ノート | [`docs/research/trap_false_break_reaction_2026-05-30.md`](research/trap_false_break_reaction_2026-05-30.md) | H4 Trap単独は弱い。D1 120本級の節目否定だけが文脈候補 |
+| 検証結果 | [`backtests/elliott_fibo/results_2026_05_30/trap_false_break_reaction/report_ja.md`](../backtests/elliott_fibo/results_2026_05_30/trap_false_break_reaction/report_ja.md) | D1 close-fail 120 body がResearchで強いがOOSは保留 |
+| 検証コード | [`backtests/elliott_fibo/run_trap_false_break_reaction_study.py`](../backtests/elliott_fibo/run_trap_false_break_reaction_study.py) | wick trap / close-fail trap をH4/D1で検証 |
+
+- H4 Trap単独: 上位でもPF 1未満、直接逆張りは不採用寄り
+- D1 `CLOSEFAIL_L120_W6_BODY_RR15`: 287 trades / +42.27R / PF 1.31
+- ただしOOS_2025_2026は -1.25R / PF 0.95
+- 解釈: TrapはEntry triggerではなく、D1文脈またはH4再点火待ちのフィルタとして使う
+
 ### 6-5. 一般インジケータ否定後の相場反応 2026-05-29
 
 | 検証 | パス | 結論 |
@@ -483,5 +496,5 @@ Pine: [`pine/visual/h4_sharp_drop_v_recovery_visual.pine`](../pine/visual/h4_sha
 
 ---
 
-**最終更新**: 2026-05-24
+**最終更新**: 2026-05-30
 **コミット履歴**: `git log --oneline` で確認可能

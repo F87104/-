@@ -179,14 +179,14 @@ if strategy.position_size == 0 and strategy.position_size[1] != 0
 // Visuals
 // ---------------------------------------------------------------------
 plot(donHi_long,   title="休眠高値 (Dormant High)", color=color.new(color.orange, 50),
-     style=plot.style_circles, linewidth=1)
+     style=plot.style_circles, linewidth=1, display=display.pane)
 plot(donLo_short,  title="休眠安値 (Dormant Low)",  color=color.new(color.purple, 50),
-     style=plot.style_circles, linewidth=1)
+     style=plot.style_circles, linewidth=1, display=display.pane)
 
 plotshape(longSig,  title="Dormant Long",  style=shape.triangleup,
-     location=location.belowbar, color=color.new(color.orange, 0), size=size.small)
+     location=location.belowbar, color=color.new(color.orange, 0), size=size.small, display=display.pane)
 plotshape(shortSig, title="Dormant Short", style=shape.triangledown,
-     location=location.abovebar, color=color.new(color.purple, 0), size=size.small)
+     location=location.abovebar, color=color.new(color.purple, 0), size=size.small, display=display.pane)
 
 alertcondition(longSig,  title="Dormant Breakout Long",
      message="Dormant Breakout LONG on {{ticker}} {{interval}} @ {{close}}")

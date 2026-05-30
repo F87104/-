@@ -150,10 +150,10 @@ if strategy.position_size == 0 and strategy.position_size[1] != 0
 // ---------------------------------------------------------------------
 // Visuals
 // ---------------------------------------------------------------------
-plot(shortSig ? shelfHi : na, title="棚高値", color=color.new(color.fuchsia, 0), style=plot.style_linebr, linewidth=1)
-plot(shortSig ? shelfLo : na, title="棚安値", color=color.new(color.aqua, 0),    style=plot.style_linebr, linewidth=1)
+plot(shortSig ? shelfHi : na, title="棚高値", color=color.new(color.fuchsia, 0), style=plot.style_linebr, linewidth=1, display=display.pane)
+plot(shortSig ? shelfLo : na, title="棚安値", color=color.new(color.aqua, 0),    style=plot.style_linebr, linewidth=1, display=display.pane)
 plotshape(shortSig, title="Long Liquidation Short", style=shape.triangledown,
-     location=location.abovebar, color=color.new(color.red, 0), size=size.small)
+     location=location.abovebar, color=color.new(color.red, 0), size=size.small, display=display.pane)
 
 alertcondition(shortSig, title="Long Liquidation Short",
      message="Long Liquidation short on {{ticker}} {{interval}} @ {{close}}")

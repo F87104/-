@@ -39,14 +39,14 @@ reBreakShort = close[1] >= pbLowShort and close < pbLowShort
 shortSig = useShort and breakHappened_short and pbHeldShort and reBreakShort
 
 plot(showLevel ? donHi_long  : na, title="Dormant High",
-     color=color.new(color.orange, 50), style=plot.style_circles, linewidth=1)
+     color=color.new(color.orange, 50), style=plot.style_circles, linewidth=1, display=display.pane)
 plot(showLevel ? donLo_short : na, title="Dormant Low",
-     color=color.new(color.purple, 50), style=plot.style_circles, linewidth=1)
+     color=color.new(color.purple, 50), style=plot.style_circles, linewidth=1, display=display.pane)
 
 plotshape(longSig,  title="Dormant Long",  style=shape.triangleup,
-     location=location.belowbar, color=color.new(color.orange, 0), size=size.small)
+     location=location.belowbar, color=color.new(color.orange, 0), size=size.small, display=display.pane)
 plotshape(shortSig, title="Dormant Short", style=shape.triangledown,
-     location=location.abovebar, color=color.new(color.purple, 0), size=size.small)
+     location=location.abovebar, color=color.new(color.purple, 0), size=size.small, display=display.pane)
 
 alertcondition(longSig,  title="Dormant Breakout Long",
      message="Dormant Breakout LONG on {{ticker}} {{interval}} @ {{close}}")

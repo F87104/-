@@ -48,11 +48,11 @@ shortSig = showLL and hadRally and compressed and failedNewHigh and freshBreak
 // Visuals
 // ---------------------------------------------------------------------
 plot(showShelf ? shelfHi : na, title="棚高値", color=color.new(color.fuchsia, 0),
-     style=plot.style_linebr, linewidth=1)
+     style=plot.style_linebr, linewidth=1, display=display.pane)
 plot(showShelf ? shelfLo : na, title="棚安値", color=color.new(color.aqua, 0),
-     style=plot.style_linebr, linewidth=1)
+     style=plot.style_linebr, linewidth=1, display=display.pane)
 plotshape(shortSig, title="Long Liquidation Short", style=shape.triangledown,
-     location=location.abovebar, color=color.new(color.red, 0), size=size.small)
+     location=location.abovebar, color=color.new(color.red, 0), size=size.small, display=display.pane)
 
 alertcondition(shortSig, title="Long Liquidation Short",
      message="LL short on {{ticker}} {{interval}} @ {{close}}")

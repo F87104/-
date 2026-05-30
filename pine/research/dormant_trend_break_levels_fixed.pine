@@ -1,0 +1,106 @@
+//@version=5
+indicator("Dormant Trend Break Levels [Fixed Research]", overlay=true, max_lines_count=500, max_labels_count=500)
+
+// =====================================================================
+// 大トレンドブレイク検出 修正版
+// ---------------------------------------------------------------------
+// 元アイディア:
+//   長く触られていない過去高値/安値を節目として表示し、
+//   そこを抜けたら大きなトレンドブレイク候補と見る。
+//
+// 修正点:
+//   元コードはライン計算に現在足が含まれるため、close > highLevel が
+//   ほぼ成立しない。ここでは「現在足」と「直近除外期間」を使わず、
+//   古い窓だけで節目を固定する。
+//
+// H4で見る場合の初期値:
+//   120/30   = H1版 480/120 に近い短中期ライン
+//   360/90   = 約3か月級ライン
+//   1250/190 = H1版 5000/760 に近い長期ライン
+// =====================================================================
+
+grpA = "短中期ライン"
+lookbackA = input.int(120, "探す期間 A", minval=10, group=grpA)
+excludeA = input.int(30, "直近を無視 A", minval=1, group=grpA)
+
+grpB = "中期ライン"
+lookbackB = input.int(360, "探す期間 B", minval=20, group=grpB)
+excludeB = input.int(90, "直近を無視 B", minval=1, group=grpB)
+
+grpC = "長期ライン"
+lookbackC = input.int(1250, "探す期間 C", minval=50, group=grpC)
+excludeC = input.int(190, "直近を無視 C", minval=1, group=grpC)
+
+grpSig = "ブレイク判定"
+atrLen = input.int(14, "ATR期間", minval=1, group=grpSig)
+breakBufferAtr = input.float(0.05, "ブレイク余白(ATR)", minval=0.0, step=0.01, group=grpSig)
+showBreakLabels = input.bool(true, "ブレイクラベル", group=grpSig)
+
+grpView = "表示"
+showA = input.bool(true, "Aライン", group=grpView)
+showB = input.bool(true, "Bライン", group=grpView)
+showC = input.bool(true, "Cライン", group=grpView)
+showMidA = input.bool(false, "A中央値", group=grpView)
+showMidB = input.bool(false, "B中央値", group=grpView)
+showMidC = input.bool(false, "C中央値", group=grpView)
+
+f_width(simple int lookback, simple int excludeRecent) =>
+    math.max(lookback - excludeRecent, 1)
+
+f_high_level(simple int lookback, simple int excludeRecent) =>
+    int width = f_width(lookback, excludeRecent)
+    float level = ta.highest(high[excludeRecent + 1], width)
+    float recent = ta.highest(high[1], excludeRecent)
+    bool dormant = not na(level) and (na(recent) or recent < level)
+    [level, dormant]
+
+f_low_level(simple int lookback, simple int excludeRecent) =>
+    int width = f_width(lookback, excludeRecent)
+    float level = ta.lowest(low[excludeRecent + 1], width)
+    float recent = ta.lowest(low[1], excludeRecent)
+    bool dormant = not na(level) and (na(recent) or recent > level)
+    [level, dormant]
+
+atrValue = ta.atr(atrLen)
+
+[highA, dormantHighA] = f_high_level(lookbackA, excludeA)
+[lowA, dormantLowA] = f_low_level(lookbackA, excludeA)
+[highB, dormantHighB] = f_high_level(lookbackB, excludeB)
+[lowB, dormantLowB] = f_low_level(lookbackB, excludeB)
+[highC, dormantHighC] = f_high_level(lookbackC, excludeC)
+[lowC, dormantLowC] = f_low_level(lookbackC, excludeC)
+
+longA = dormantHighA and close > highA + atrValue * breakBufferAtr
+shortA = dormantLowA and close < lowA - atrValue * breakBufferAtr
+longB = dormantHighB and close > highB + atrValue * breakBufferAtr
+shortB = dormantLowB and close < lowB - atrValue * breakBufferAtr
+longC = dormantHighC and close > highC + atrValue * breakBufferAtr
+shortC = dormantLowC and close < lowC - atrValue * breakBufferAtr
+
+longAny = longA or longB or longC
+shortAny = shortA or shortB or shortC
+
+plot(showA and dormantHighA ? highA : na, "A 休眠高値", color=color.new(color.yellow, 0), linewidth=2, style=plot.style_linebr)
+plot(showA and dormantLowA ? lowA : na, "A 休眠安値", color=color.new(color.fuchsia, 0), linewidth=2, style=plot.style_linebr)
+plot(showB and dormantHighB ? highB : na, "B 休眠高値", color=color.new(color.aqua, 0), linewidth=2, style=plot.style_linebr)
+plot(showB and dormantLowB ? lowB : na, "B 休眠安値", color=color.new(color.orange, 0), linewidth=2, style=plot.style_linebr)
+plot(showC and dormantHighC ? highC : na, "C 休眠高値", color=color.new(color.lime, 0), linewidth=3, style=plot.style_linebr)
+plot(showC and dormantLowC ? lowC : na, "C 休眠安値", color=color.new(color.red, 0), linewidth=3, style=plot.style_linebr)
+
+plot(showMidA and dormantHighA and dormantLowA ? (highA + lowA) / 2.0 : na, "A 中央値", color=color.new(color.gray, 20), linewidth=1)
+plot(showMidB and dormantHighB and dormantLowB ? (highB + lowB) / 2.0 : na, "B 中央値", color=color.new(color.gray, 35), linewidth=1)
+plot(showMidC and dormantHighC and dormantLowC ? (highC + lowC) / 2.0 : na, "C 中央値", color=color.new(color.gray, 50), linewidth=1)
+
+plotshape(longAny, title="休眠高値ブレイク", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.tiny, text="休眠H")
+plotshape(shortAny, title="休眠安値ブレイク", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), size=size.tiny, text="休眠L")
+
+if showBreakLabels and longAny
+    string tag = longC ? "C" : longB ? "B" : "A"
+    label.new(bar_index, low, "休眠高値更新 " + tag, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+
+if showBreakLabels and shortAny
+    string tag = shortC ? "C" : shortB ? "B" : "A"
+    label.new(bar_index, high, "休眠安値更新 " + tag, style=label.style_label_down, color=color.new(color.red, 0), textcolor=color.white, size=size.tiny)
+
+alertcondition(longAny, "Dormant High Break", "休眠高値更新: {{ticker}} {{interval}}")
+alertcondition(shortAny, "Dormant Low Break", "休眠安値更新: {{ticker}} {{interval}}")

@@ -3,8 +3,8 @@
 > このリポジトリで実施した **全バックテスト** の一覧。
 > 何をやったか・どこに結果があるか・採用/不採用の判定 を一覧化。
 
-**最終更新**: 2026-05-28
-**対応戦略バージョン**: v2.0 (TrendBreakV1 HYBRID + H4 T5 MACD BB)
+**最終更新**: 2026-05-30
+**対応戦略バージョン**: v2.0 (TrendBreakV1 HYBRID + H4 T5 MACD BB) + H4 V Kickoff Catalyst 研究
 
 ---
 
@@ -42,6 +42,7 @@
 | 13 | TrendBreakV1 Pyramiding sweep | 2015-2024 | 各種 | - | - | - | - | 🔬 研究 | エントリー数1が最適確認 |
 | 14 | TrendBreakV1 騙し回避フィルタ | 2015-2024 | 各種 | - | - | - | - | 🔬 研究 | body60+early1 が候補 |
 | 15 | ショート側研究 2026-05-28 | 2015-2026 | 各種 | - | - | - | - | 🔬 検証途中 | ロング版ミラーは不採用。1ヶ月安値更新後の安値停滞下抜けが暫定候補 |
+| 16 | H4 V Kickoff Catalyst | 2015-2026 | 各種 | - | - | - | - | 🔬 研究 | Vを直接買わず、V後の棚ブレイクを検証。Practical候補は90 trades / +33.55R / PF 1.83 |
 
 **凡例**:
 - ✅ 採用 = 現在の本番運用に使用中
@@ -127,6 +128,27 @@
 追加メモ: 重複除去後は、広いPracticalより `Primary L120 core4` が最も実戦候補に近い。Pineでは `候補`, `実戦候補`, `厳選候補`, `強い観察タグ` の4段階表示が現実的。厳選候補は core4 + 下抜け深さ>=0.10ATR + 終値位置<=0.50 + fresh supportなら下抜け深さ>=0.20ATR。
 
 **判定**: 本番未採用。Primary L120 core4を中心にアラート監視し、30から50件のフォワード記録が必要。
+
+---
+
+### 2-2.6. H4 V Kickoff Catalyst 2026-05-30 (🔬 研究)
+
+| 検証 | パス | 概要 | 結論 |
+|---|---|---|---|
+| **研究メモ** | [`docs/research/h4_v_kickoff_catalyst_2026-05-30.md`](research/h4_v_kickoff_catalyst_2026-05-30.md) | Vを底買いではなく、相場拡大の触媒として再定義 | まずここを読む |
+| **応用手法仕様整理** | [`docs/research/h4_v_recovery_strategy_candidates_2026-05-30.md`](research/h4_v_recovery_strategy_candidates_2026-05-30.md) | V字回復ロジックから派生手法を複数定義し、本命仕様を整理 | Pine化するならこの仕様を基準にする |
+| **結果レポート** | [`backtests/elliott_fibo/results_2026_05_30/h4_v_kickoff_catalyst/report_ja.md`](../backtests/elliott_fibo/results_2026_05_30/h4_v_kickoff_catalyst/report_ja.md) | V後の棚ブレイク、DON55、PRECALM、自作ライン応用を比較 | 棚ブレイク + PRECALM が初動寄り |
+| **検証コード** | [`backtests/elliott_fibo/run_h4_v_kickoff_catalyst_study.py`](../backtests/elliott_fibo/run_h4_v_kickoff_catalyst_study.py) | Python検証本体 | Pine化前の正データ |
+
+主要候補:
+
+| 候補 | 条件 | 結果 | 判定 |
+|---|---|---:|---|
+| H4 V Shelf Breakout Practical | `SHELF6_BREAK_RR15`, XAUUSD/CHFJPY/SILVER除外 | 90 trades / +33.55R / PF 1.83 / OOS +6.35R | 頻度重視の候補 |
+| H4 V Initial Shelf Breakout | `SHELF6_PRECALM_BREAK_RR15`, XAUUSD/CHFJPY/SILVER除外 | 34 trades / +15.55R / PF 2.09 / OOS +4.93R | ユーザーの「初動V」に近い |
+| DON55 Expansion | `SHELF6_DON55_BREAK_RR15`, XAUUSD除外 | 38 trades / +13.67R / PF 1.80 / 48本以内3ATR到達71% | 大きく動く前兆として重要 |
+
+自作「大トレンドブレイク検出」ラインは、H4 V棚ブレイクの硬い追加フィルタとしては改善せず。現時点では裁量の節目確認、または別手法として研究する方が自然。
 
 ---
 

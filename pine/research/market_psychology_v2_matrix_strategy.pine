@@ -266,6 +266,10 @@ if strategy.position_size == 0 and strategy.position_size[1] != 0
 // ---------------------------------------------------------------------
 // Visuals (display=pane で十字線追従の値表示を抑制)
 // ---------------------------------------------------------------------
+grpVz       = "表示オプション"
+showLevels  = input.bool(true, "Entry / SL / TP の価格ライン表示", group=grpVz)
+levelExtend = input.int(24, "ライン延長 (バー数)", minval=1, group=grpVz)
+
 plotshape(sqzLong, title="Squeeze Long", style=shape.triangleup,
      location=location.belowbar, color=color.new(color.lime, 0),
      size=size.small, display=display.pane)
@@ -275,6 +279,47 @@ plotshape(capLong, title="Capitulation Long", style=shape.triangleup,
 plotshape(llShort, title="Long Liquidation Short", style=shape.triangledown,
      location=location.abovebar, color=color.new(color.red, 0),
      size=size.small, display=display.pane)
+
+// シグナル発生時に Entry / SL / TP を価格ラインで描画
+var line  entryLine = na
+var line  slLine    = na
+var line  tpLine    = na
+var label sigLabel  = na
+
+bool anySig = sqzLong or capLong or llShort
+float sigStop = sqzLong ? sqzStop : (capLong ? capStop : (llShort ? llStop : na))
+bool  sigIsLong = sqzLong or capLong
+string sigName = sqzLong ? "SQZ ロング" : (capLong ? "CAP ロング" : (llShort ? "LL ショート" : ""))
+color  sigColor = sqzLong ? color.lime : (capLong ? color.aqua : color.red)
+
+if showLevels and anySig and not na(sigStop)
+    float entryPrice = close       // 次バー始値で約定するが、視覚的には close (信号バー終値) を起点
+    float riskNow    = sigIsLong ? (entryPrice - sigStop) : (sigStop - entryPrice)
+    float tpPrice    = sigIsLong ? (entryPrice + rr * riskNow) : (entryPrice - rr * riskNow)
+
+    if not na(entryLine)
+        line.delete(entryLine)
+    if not na(slLine)
+        line.delete(slLine)
+    if not na(tpLine)
+        line.delete(tpLine)
+    if not na(sigLabel)
+        label.delete(sigLabel)
+
+    entryLine := line.new(bar_index, entryPrice, bar_index + levelExtend, entryPrice,
+         xloc=xloc.bar_index, color=color.new(sigColor, 0), width=2, style=line.style_solid)
+    slLine    := line.new(bar_index, sigStop, bar_index + levelExtend, sigStop,
+         xloc=xloc.bar_index, color=color.new(color.red, 0), width=2, style=line.style_dashed)
+    tpLine    := line.new(bar_index, tpPrice, bar_index + levelExtend, tpPrice,
+         xloc=xloc.bar_index, color=color.new(color.green, 0), width=2, style=line.style_dashed)
+
+    string txt = sigName + "\nEntry ≈ " + str.tostring(entryPrice, format.mintick) +
+         "\nSL: " + str.tostring(sigStop, format.mintick) +
+         "\nTP: " + str.tostring(tpPrice, format.mintick) +
+         "\nRisk: " + str.tostring(math.abs(riskNow), format.mintick)
+    sigLabel := label.new(bar_index, sigIsLong ? low : high, txt, xloc=xloc.bar_index,
+         style=sigIsLong ? label.style_label_up : label.style_label_down,
+         color=color.new(sigColor, 0), textcolor=color.black, size=size.small)
 
 alertcondition(sqzLong, title="Sqz v2.1 Long",
      message="SQZ v2.1 long on {{ticker}} {{interval}} @ {{close}}")

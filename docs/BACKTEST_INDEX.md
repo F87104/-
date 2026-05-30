@@ -44,6 +44,7 @@
 | 15 | ショート側研究 2026-05-28 | 2015-2026 | 各種 | - | - | - | - | 🔬 検証途中 | ロング版ミラーは不採用。1ヶ月安値更新後の安値停滞下抜けが暫定候補 |
 | 16 | H4 V Kickoff Catalyst | 2015-2026 | 各種 | - | - | - | - | 🔬 研究 | Vを直接買わず、V後の棚ブレイクを検証。Practical候補は90 trades / +33.55R / PF 1.83 |
 | 17 | D1 Trap Delayed H4 Shelf Strict | 2015-2026 | 9 | 100.0% | inf | +13.35R | 0.0R | 🔬 準本命 | D1安値Trapを直接買わず、30-180日後のH4棚ブレイクだけ買う |
+| 18 | Market Psychology Squeeze Strict | 2015-2026 | 43 | 53.5% | 2.21 | +24.72R | 3.09R | 🔬 フォワード候補 | 急落後の安値棚上抜け。GBPJPY除外でDDが大きく改善 |
 
 **凡例**:
 - ✅ 採用 = 現在の本番運用に使用中
@@ -183,6 +184,27 @@
 | Wider selected | `A30_240 + signal ADX<=30` | 10 trades / +12.33R / PF 13.00 / DD1.03R | 180日超でAUDJPYの負けが増える |
 
 **本質**: D1 Trapを直接買うのではなく、売りが否定されたあと時間を置き、H4で売り直しが失敗して棚上抜けしたところだけ買う。
+
+### 2-2.9. Market Psychology Squeeze Strict 2026-05-30 (🔬 フォワード候補)
+
+| 検証 | パス | 概要 | 結論 |
+|---|---|---|---|
+| **研究メモ** | [`docs/research/market_psychology_squeeze_strict_2026-05-30.md`](research/market_psychology_squeeze_strict_2026-05-30.md) | ユーザー提示の Market Psychology Strategy をShort Squeeze/Capitulationに分解 | Squeeze strict はフォワード候補。Capitulation直買いは保留 |
+| **結果レポート** | [`backtests/elliott_fibo/results_2026_05_30/market_psychology_strategy_tv_check/report_ja.md`](../backtests/elliott_fibo/results_2026_05_30/market_psychology_strategy_tv_check/report_ja.md) | SQZ/CAPのdefault/strict/RR違いを比較 | SQZ_STRICT_RR2 ex GBPJPY が 43 trades / +24.72R / PF 2.21 |
+| **検証コード** | [`backtests/elliott_fibo/run_market_psychology_strategy_tv_check.py`](../backtests/elliott_fibo/run_market_psychology_strategy_tv_check.py) | ユーザー提示PineをローカルOHLCでR建て検証 | TradingView照合前の正データ |
+| **Pine Strategy** | [`pine/research/market_psychology_squeeze_strict_strategy.pine`](../pine/research/market_psychology_squeeze_strict_strategy.pine) | H4専用、急落後の6本棚上抜け、GBPJPY除外初期値 | TV確認用 |
+
+主要候補:
+
+| 候補 | 条件 | 結果 | 判定 |
+|---|---|---:|---|
+| SQZ_DEFAULT_RR2 | 棚6本 / 棚幅<=2.5ATR / 急落>=3.0ATR / RR2 | 135 trades / +36.37R / PF 1.48 / DD13.15R | 広い候補スキャナー |
+| SQZ_STRICT_RR2 | 棚6本 / 棚幅<=2.0ATR / 急落>=3.5ATR / RR2 | 51 trades / +18.06R / PF 1.65 / DD4.11R | DD改善 |
+| SQZ_STRICT_RR2 ex GBPJPY | 上記からGBPJPY除外 | 43 trades / +24.72R / PF 2.21 / DD3.09R | 本線候補 |
+
+**本質**: 急落そのものを買わず、売り方が追加下落を期待したあと、安値圏で崩れず棚を作り、その棚高値を抜けたところで買い戻しの連鎖を狙う。
+
+**注意**: ユーザー提示Pineの「出来高増加」は実装上まだ条件化されていない。TradingViewでは `volume > sma(volume,20) * 1.3` のON/OFF比較を次に行う。
 
 ---
 

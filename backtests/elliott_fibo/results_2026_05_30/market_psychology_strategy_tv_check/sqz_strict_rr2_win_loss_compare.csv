@@ -1,0 +1,4 @@
+group,trades,win_rate,total_r,shelf_range_atr_mean,shelf_range_atr_median,sharp_drop_atr_mean,sharp_drop_atr_median,signal_range_atr_mean,signal_range_atr_median,body_ratio_mean,body_ratio_median,close_location_mean,close_location_median,bars_held_mean,bars_held_median,mfe_r_mean,mfe_r_median,mae_r_mean,mae_r_median,r_after_cost_mean,r_after_cost_median
+win,24,100.0,45.63,1.7027,1.6955,4.1073,3.9689,1.2399,1.1406,0.6669,0.6635,0.7727,0.7856,42.9167,29.5,2.1289,2.0919,0.4472,0.4479,1.9011,1.9829
+loss,27,0.0,-27.57,1.5261,1.5747,4.148,3.8989,1.1445,1.0913,0.687,0.72,0.8535,0.84,16.8148,10.0,0.5127,0.4511,1.2663,1.1644,-1.0211,-1.0212
+all,51,47.06,18.06,1.6092,1.6615,4.1288,3.9361,1.1894,1.1222,0.6775,0.7111,0.8155,0.8188,29.098,23.0,1.2733,1.5602,0.8809,1.0196,0.3541,-1.0059

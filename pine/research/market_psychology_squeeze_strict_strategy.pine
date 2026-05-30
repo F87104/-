@@ -1,0 +1,201 @@
+//@version=5
+strategy("Market Psychology Squeeze Strict [Research]",
+     overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
+     pyramiding=0,
+     calc_on_order_fills=true,
+     calc_on_every_tick=false,
+     process_orders_on_close=false,
+     commission_type=strategy.commission.percent,
+     commission_value=0.0,
+     slippage=2,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500)
+
+// =====================================================================
+// Market Psychology Squeeze Strict [Research]
+// ---------------------------------------------------------------------
+// Python reference:
+//   backtests/elliott_fibo/run_market_psychology_strategy_tv_check.py
+//   SQZ_STRICT_RR2, GBPJPY excluded variant
+//
+// Core idea:
+//   A sharp selloff creates trapped shorts. Do not buy the low.
+//   Buy only after price stops falling, builds a tight lower shelf, and
+//   closes above that shelf high. This targets short-covering ignition.
+//
+// Current research result, local OHLC 2015-2026:
+//   SQZ_STRICT_RR2, excluding GBPJPY:
+//   43 trades / WR 53.49% / +24.72R / PF 2.21 / max DD 3.09R
+//
+// Run on H4 first. Strategy Tester values can differ from Python because
+// TradingView data, sessions, and volume availability differ by broker.
+// =====================================================================
+
+grpMode = "基本"
+requireH4 = input.bool(true, "H4チャートのみ売買", group=grpMode)
+useDateFilter = input.bool(true, "2015〜2026のみ検証", group=grpMode)
+skipHoliday = input.bool(false, "12/15〜1/10は新規停止", group=grpMode)
+excludeGBPJPY = input.bool(true, "GBPJPYを除外", group=grpMode)
+
+grpCore = "踏み上げ棚ブレイク"
+atrLen = input.int(14, "ATR期間", minval=1, group=grpCore)
+shelfBars = input.int(6, "棚の本数", minval=2, maxval=30, group=grpCore)
+dropWindow = input.int(6, "棚直前の急落窓", minval=2, maxval=50, group=grpCore)
+maxShelfRangeAtr = input.float(2.0, "棚幅上限(ATR)", minval=0.1, step=0.1, group=grpCore)
+minDropAtr = input.float(3.5, "急落幅下限(ATR)", minval=0.1, step=0.1, group=grpCore)
+breakBufferAtr = input.float(0.0, "棚高値上抜け余白(ATR)", minval=0.0, step=0.01, group=grpCore)
+
+grpSignal = "足品質 / 出来高"
+minBodyRatio = input.float(0.0, "実体比率下限", minval=0.0, maxval=1.0, step=0.05, group=grpSignal)
+minCloseLocation = input.float(0.0, "終値位置下限", minval=0.0, maxval=1.0, step=0.05, group=grpSignal)
+useVolumeFilter = input.bool(false, "出来高増加を使う", group=grpSignal)
+volLen = input.int(20, "出来高平均期間", minval=1, group=grpSignal)
+volMult = input.float(1.3, "出来高倍率", minval=0.1, step=0.1, group=grpSignal)
+
+grpRisk = "売買"
+rr = input.float(2.0, "TP RR", minval=0.1, step=0.1, group=grpRisk)
+stopBufferAtr = input.float(0.25, "SL余白(ATR)", minval=0.0, step=0.05, group=grpRisk)
+maxHoldBars = input.int(120, "最大保有本数", minval=1, group=grpRisk)
+riskPct = input.float(1.0, "1トレードのリスク(%)", minval=0.01, step=0.1, group=grpRisk)
+
+grpView = "表示"
+showShelf = input.bool(true, "棚ライン表示", group=grpView)
+showLabels = input.bool(true, "シグナルラベル", group=grpView)
+showTable = input.bool(true, "状態テーブル", group=grpView)
+levelExtendBars = input.int(24, "SL/TPライン延長本数", minval=1, maxval=200, group=grpView)
+
+fmt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, format.mintick)
+    out
+
+fmtNum(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#.##")
+    out
+
+// ---------------------------------------------------------------------
+// Filters.
+// ---------------------------------------------------------------------
+int chartSec = timeframe.in_seconds(timeframe.period)
+bool h4Ok = not requireH4 or chartSec == 240 * 60
+bool dateOk = not useDateFilter or (year >= 2015 and year <= 2026)
+bool holidayOk = not skipHoliday or not ((month == 12 and dayofmonth >= 15) or (month == 1 and dayofmonth <= 10))
+bool symbolOk = not excludeGBPJPY or not str.contains(syminfo.ticker, "GBPJPY")
+
+// ---------------------------------------------------------------------
+// Core short-squeeze shelf structure.
+// All shelf values use completed bars only: [1] means the current signal
+// bar is never part of the shelf being broken.
+// ---------------------------------------------------------------------
+float atrValue = ta.atr(atrLen)
+float barRange = high - low
+float bodyRatio = barRange > 0 ? math.abs(close - open) / barRange : 0.0
+float closeLocation = barRange > 0 ? (close - low) / barRange : 0.5
+
+float shelfHigh = ta.highest(high, shelfBars)[1]
+float shelfLow = ta.lowest(low, shelfBars)[1]
+float priorHigh = ta.highest(high, dropWindow)[1 + shelfBars]
+float shelfRangeAtr = atrValue > 0 ? (shelfHigh - shelfLow) / atrValue : na
+float dropAtr = atrValue > 0 ? (priorHigh - shelfHigh) / atrValue : na
+float breakAtr = atrValue > 0 ? (close - shelfHigh) / atrValue : na
+
+float volAvg = ta.sma(volume, volLen)
+bool volOk = not useVolumeFilter or (not na(volAvg) and volume > volAvg * volMult)
+bool shelfOk = not na(shelfRangeAtr) and shelfRangeAtr <= maxShelfRangeAtr
+bool dropOk = not na(dropAtr) and dropAtr >= minDropAtr
+bool breakOk = close[1] <= shelfHigh and close > shelfHigh + atrValue * breakBufferAtr
+bool qualityOk = bodyRatio >= minBodyRatio and closeLocation >= minCloseLocation
+bool ready = h4Ok and dateOk and holidayOk and symbolOk and not na(atrValue) and atrValue > 0
+bool longSignal = ready and shelfOk and dropOk and breakOk and qualityOk and volOk and strategy.position_size == 0
+
+float signalStop = shelfLow - atrValue * stopBufferAtr
+
+// ---------------------------------------------------------------------
+// Orders. Entry is next bar open by Pine strategy default.
+// ---------------------------------------------------------------------
+var float activeStop = na
+var int activeSignalBar = na
+
+if longSignal
+    float stopDistAtSignal = close - signalStop
+    if stopDistAtSignal > 0
+        float qty = (strategy.equity * (riskPct / 100.0)) / stopDistAtSignal
+        activeStop := signalStop
+        activeSignalBar := bar_index
+        strategy.entry("L", strategy.long, qty=qty)
+
+if strategy.position_size > 0 and not na(activeStop)
+    float riskNow = strategy.position_avg_price - activeStop
+    if riskNow > 0
+        float activeTarget = strategy.position_avg_price + rr * riskNow
+        strategy.exit("X", from_entry="L", stop=activeStop, limit=activeTarget)
+        if strategy.opentrades > 0 and bar_index - strategy.opentrades.entry_bar_index(0) >= maxHoldBars
+            strategy.close("L", comment="timeout")
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    activeStop := na
+    activeSignalBar := na
+
+// ---------------------------------------------------------------------
+// Visuals.
+// ---------------------------------------------------------------------
+plot(showShelf ? shelfHigh : na, title="Shelf High", color=color.new(color.aqua, 0), linewidth=1, style=plot.style_linebr)
+plot(showShelf ? shelfLow : na, title="Shelf Low", color=color.new(color.fuchsia, 15), linewidth=1, style=plot.style_linebr)
+plotshape(longSignal, title="Squeeze Long", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.tiny, text="SQZ")
+
+var label lastLabel = na
+var line lastStopLine = na
+var line lastTargetLine = na
+var line lastShelfLine = na
+
+if longSignal and showLabels
+    if not na(lastLabel)
+        label.delete(lastLabel)
+    if not na(lastStopLine)
+        line.delete(lastStopLine)
+    if not na(lastTargetLine)
+        line.delete(lastTargetLine)
+    if not na(lastShelfLine)
+        line.delete(lastShelfLine)
+
+    float signalRisk = close - signalStop
+    float signalTarget = close + rr * signalRisk
+    string txt = "SQZ LONG\nShelf: " + fmtNum(shelfRangeAtr) + "ATR" +
+         "\nDrop: " + fmtNum(dropAtr) + "ATR" +
+         "\nBreak: " + fmtNum(breakAtr) + "ATR" +
+         "\nSL: " + fmt(signalStop) +
+         "\nTP(sig): " + fmt(signalTarget)
+    lastLabel := label.new(bar_index, low, txt, xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+    lastShelfLine := line.new(bar_index - shelfBars, shelfHigh, bar_index + levelExtendBars, shelfHigh, xloc=xloc.bar_index, color=color.new(color.aqua, 0), width=2)
+    lastStopLine := line.new(bar_index, signalStop, bar_index + levelExtendBars, signalStop, xloc=xloc.bar_index, color=color.new(color.red, 0), width=2, style=line.style_dashed)
+    lastTargetLine := line.new(bar_index, signalTarget, bar_index + levelExtendBars, signalTarget, xloc=xloc.bar_index, color=color.new(color.lime, 0), width=2, style=line.style_dashed)
+
+var table t = table.new(position.top_right, 2, 11, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+if showTable and barstate.islast
+    table.cell(t, 0, 0, "Method", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 0, "SQZ Strict", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 1, "Chart", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 1, h4Ok ? "H4 OK" : "H4外", text_color=h4Ok ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 2, "Symbol", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 2, symbolOk ? "OK" : "除外", text_color=symbolOk ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 3, "Shelf ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 3, fmtNum(shelfRangeAtr), text_color=shelfOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 4, "Drop ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, fmtNum(dropAtr), text_color=dropOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 5, "Break ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 5, fmtNum(breakAtr), text_color=breakOk ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 6, "Body/Close", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 6, fmtNum(bodyRatio) + " / " + fmtNum(closeLocation), text_color=qualityOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 7, "Volume", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 7, useVolumeFilter ? (volOk ? "OK" : "不足") : "OFF", text_color=useVolumeFilter ? (volOk ? color.lime : color.orange) : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 8, "Signal", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 8, longSignal ? "ON" : "OFF", text_color=longSignal ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 9, "Position", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 9, strategy.position_size > 0 ? "LONG" : "FLAT", text_color=strategy.position_size > 0 ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 10, "Rule", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 10, "S6/D6 2.0/3.5 RR2", text_color=color.aqua, text_size=size.tiny)
+
+alertcondition(longSignal, title="Market Psychology Squeeze Long", message="SQZ strict long on {{ticker}} {{interval}} @ {{close}}")

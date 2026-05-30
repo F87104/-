@@ -95,6 +95,10 @@ def detect_short_squeeze(df, drop_lb, shelf_max_atr, donchian_n):
 
 ## 7. Pine Script実装候補
 
+> **実装済み**: [`pine/market_psychology_visual.pine`](pine/market_psychology_visual.pine) に
+> 急落→安値棚（圧縮）→上抜けを検出して踏み上げ買いをチャートに自動マークする
+> 観測用インジケーターを実装（検証と同条件）。
+
 - 急落 → 棚 → 棚ブレイクの3段階を `box` と `plotshape` で可視化。
 - 棚の上下限を `ta.highest`/`ta.lowest` で動的に描画。
 - Donchian チャネル (`ta.highest(high, N)`) を重ね、踏み上げ発火点をマーク。

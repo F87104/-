@@ -127,6 +127,12 @@
 この統一構造により、各パターンは「観測 → 数値化 → 仮説 → 検証 → 実装」という
 同一のパイプラインに乗せられる。
 
+### 実装済みツール
+
+- [`pine/market_psychology_visual.pine`](pine/market_psychology_visual.pine):
+  検証済みの2構造（**踏み上げ Short Squeeze** と **投げ切り Capitulation 底買い**）を
+  TradingView チャート上に自動マークする観測用インジケーター（推奨 H4）。
+
 ---
 
 ## 4. 研究のワークフロー

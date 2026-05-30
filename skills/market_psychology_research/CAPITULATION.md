@@ -93,6 +93,10 @@ def detect_capitulation(df, atr_mult, wick_thr, vol_mult, fall_lb):
 
 ## 7. Pine Script実装候補
 
+> **実装済み**: [`pine/market_psychology_visual.pine`](pine/market_psychology_visual.pine) に
+> 検証と同条件（長期下落＋ATR急拡大＋長い下ヒゲ＋終値上半分＋日足下降）で
+> 投げ切り（Capitulation 底買い）をチャートに自動マークする観測用インジケーターを実装。
+
 - ATR比・下ヒゲ比・出来高比を同時に判定し、クライマックスバーを `plotshape` でマーク。
 - 長期下落期間を `ta.barssince` で計測。
 - 降伏候補に `bgcolor` でハイライト。

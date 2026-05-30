@@ -128,6 +128,11 @@ def detect_long_liquidation(df, rise_lb, shelf_max_atr, donchian_n):
 > - 高値棚の下抜けは「投げ点火」より **ダマシ（Bull Trap）** になりやすい（[Trap](TRAP.md) 参照）。
 > - **示唆**: 投げを獲るなら棚下抜けブレイク型ではなく、[Capitulation](CAPITULATION.md) 型の
 >   クライマックス反転や、上位足トレンド一致フィルタなど **別の点火定義** が要る。
+>
+> **追試の結果** ([Capitulation反転検証](verification/VERIFICATION_CAPITULATION_REVERSAL.md)):
+> 下げを「継続ショート」でなく [Capitulation](CAPITULATION.md) 型の **「投げ切りの底で買う反転」** に
+> 再定義したところ、棚下抜けショート(PF 0.72)が **プラス**（株価指数 PF 1.33 / XAUUSD 1.63）に反転した。
+> → **下げは売って追うのではなく、投げ切った底を買う方が獲りやすい。**
 
 - **なぜ非対称か**: 急落の底は流動性が薄く踏み上げの初速が出やすい一方、高値圏の投げは
   押し目買い・逆張りの吸収と市場のロングバイアスに阻まれる、という仮説の定量検証。

@@ -104,6 +104,12 @@ def detect_short_squeeze(df, drop_lb, shelf_max_atr, donchian_n):
 
 ## 8. 今後の研究課題
 
+> **検証済みの知見** ([検証レポート](verification/VERIFICATION_EXPECTATION_FAILURE_SQUEEZE.md)):
+> H4 実トレードで本構造は IS PF 2.55 / OOS PF 2.44（コスト込み）。以下が判明している。
+> - **「棚で停滞してから再ブレイク」(stagnation→rebreak) が最良トリガー** (IS PF 3.65)。売りの含み損が溜まってから点火するほど強い。
+> - **棚レンジが狭い（圧縮が深い）ほど強い** (PF 3.44 vs 1.84)。→ [Compression](COMPRESSION.md) との結合が主要因。
+> - ⚠️ **Donchian20 をすでに更新済みのエントリーは"遅すぎ"** (PF 1.84)。更新前（棚を抜けきる手前）の方がエッジが大きい。踏み上げは「これから起きる」段階で乗る。
+
 - **事例研究**: **H4 V Initial Shelf Breakout** はこの構造の主要事例。
   急落 → V字 → 初期棚 → 棚ブレイクは、踏み上げの教科書的フローである。
 - 棚の「質」を定義する（売りの含み損がどれだけ溜まっているかの代理指標）。

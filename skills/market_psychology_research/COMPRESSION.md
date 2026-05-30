@@ -105,6 +105,11 @@ def detect_compression_breakout(df, bb_window, squeeze_pctile, range_n):
 
 ## 8. 今後の研究課題
 
+> **検証済みの知見** ([検証レポート](verification/VERIFICATION_EXPECTATION_FAILURE_SQUEEZE.md)):
+> [Short Squeeze](SHORT_SQUEEZE.md) 構造の H4 実トレードで、**棚（蓄積レンジ）の狭さ (bb_width_atr) が
+> エッジの主要因**であることを確認。狭い側 PF 3.44 vs 広い側 PF 1.84。
+> 「圧縮 → 爆発」の思想が実データで強く支持された。
+
 - ブレイク **方向** の事前予測は可能か（圧縮自体は方向中立）。
 - だましブレイク（[Trap](TRAP.md)）と本物のブレイクの分離。
 - 圧縮の入れ子構造（上位足の圧縮の中に下位足の圧縮）。

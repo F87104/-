@@ -161,6 +161,12 @@
 
 これらの実証研究は、本研究所の「観測 → 数値化 → 検証」の具体事例として参照する。
 
+### 実施済み検証
+
+| 検証 | 対象構造 | 結果 |
+|---|---|---|
+| [Expectation Failure → Short Squeeze 検証](verification/VERIFICATION_EXPECTATION_FAILURE_SQUEEZE.md) | 期待崩壊→踏み上げ | IS PF **2.55** / OOS PF **2.44**（コスト込み）。価格だけを追う素朴版は PF 0.72。**思想を実データが裏づけ。** |
+
 ---
 
 ## 6. 全体の今後の研究課題

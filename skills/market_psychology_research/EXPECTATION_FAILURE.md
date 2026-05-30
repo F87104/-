@@ -106,6 +106,12 @@ def detect_expectation_failure(df, lookback, v_ratio_thr, vol_mult):
 
 ## 8. 今後の研究課題
 
+> **検証済みの知見** ([検証レポート](verification/VERIFICATION_EXPECTATION_FAILURE_SQUEEZE.md)):
+> まったく同じ「急落 → V字回復」という期待崩壊の地点でも、
+> **完全V字回復を待って飛び乗るだけ（構造確認なし）は PF 0.72 の負け**。
+> **棚（踏み上げ構造）を確認してから入ると PF 2.55 の勝ち**。
+> → 期待崩壊は「地点」ではなく、その後の **踏み上げ構造とセット** で初めてエッジになる。
+
 - **事例研究**: 現在進行中の **H4 V Initial Shelf Breakout** を期待崩壊の代表事例として扱う。
   急落 → 続落期待 → 続落停止 → V字 → 初期棚（shelf）形成 → 棚ブレイクという流れは、
   「続落期待の崩壊」と「踏み上げ（Short Squeeze）の起点」が連続する典型例である。

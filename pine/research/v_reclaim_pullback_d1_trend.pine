@@ -26,72 +26,79 @@ strategy(
 //   D1 上昇トレンドの押し目で、H4 急落 → 右肩急回復 → reclaim ブレイク。
 //   "大衆が売り切ったあと、機関の買い戻しが本格化する瞬間"
 //
-// 主な条件 (詳細は spec.md):
-//   - H4 confirmed pivot high -> confirmed pivot low の急落 >= 3.5 ATR
-//   - 右肩本数 <= 左肩本数 (recoveryRatio で調整可)
-//   - 右肩 ATR/本 >= 左肩 ATR/本 × 1.20
-//   - 終値が pivot high + 0.05 ATR を上抜け
-//   - シグナル足 実体比率 >= 0.60, 終値位置 >= 0.60
+// 4 段階プリセット (まず "プリセット" 入力を選ぶ):
+//   Strict       : 厳選トレード少 (年 1-3 / 通貨)  / 高勝率狙い
+//   Balanced     : 中庸           (年 4-8 / 通貨)  / バランス型
+//   Loose ★既定 : 多めに拾う     (年 10-20 / 通貨) / 標準
+//   Very Loose   : 最大限拾う     (年 20-40 / 通貨) / 試験用
+//   Manual       : 個別入力を尊重
+//
+// 主な検出条件 (Loose 既定値):
+//   - H4 confirmed pivot high -> confirmed pivot low の急落 >= 2.5 ATR
+//   - 右肩本数 <= 左肩本数 × 2.0
+//   - 右肩 ATR/本 >= 左肩 ATR/本 × 1.00
+//   - 終値が pivot high を上抜け (余白 0 ATR)
+//   - シグナル足 実体比率 >= 0.50, 終値位置 >= 0.50
 //   - D1: EMA50 上向き AND close > EMA50 AND EMA50 > EMA200
-//   - D1: RSI(14) >= 35
-//   - V 低が D1 EMA50 から ±1.0 × D1 ATR(14) 以内
-//   - 直近 60H4 高値までの距離 >= 1.5R
-//   - ATR(14) / ATR(14)[120] >= 0.6
+//   - D1: RSI(14) >= 28
+//   - V 低が D1 EMA50 から ±2.5 × D1 ATR(14) 以内
+//   - 直近高値距離フィルタ OFF
+//   - ATR(14) / ATR(14)[120] >= 0.4
 //   - 12/15〜1/10 は新規停止
 //
 // 安全 (TradingView 先読みバイアス警告対策):
 //   - calc_on_order_fills = false
 //   - process_orders_on_close = false
-//   - request.security は lookahead=barmerge.lookahead_off 必須
+//   - request.security は lookahead=barmerge.lookahead_off
 //   - Pivot は確定後 (pivotLen 本後) にのみ参照
 //   - Entry は次足始値 (TradingView デフォルト動作)
-//
-// 使い方:
-//   1. TradingView で H4 チャートを開く (推奨通貨: USDJPY, EURJPY, XAUUSD,
-//      GBPJPY, CHFJPY, EURUSD)
-//   2. このスクリプトをチャートに追加
-//   3. Strategy Tester で結果確認、Properties で期間・コスト調整
 // =====================================================================
 
 // =====================================================================
 // Inputs
 // =====================================================================
+grpPreset = "■ プリセット (まずここを選ぶ)"
+preset = input.string("Loose", "フィルタ厳しさプリセット",
+     options=["Strict", "Balanced", "Loose", "Very Loose", "Manual"],
+     group=grpPreset,
+     tooltip="トレード数の目安 (年/通貨): Strict 1-3 / Balanced 4-8 / Loose 10-20 / Very Loose 20-40 / Manual=下の個別入力を使用")
+
 grpBase = "■ 基本"
 analysisTf     = input.timeframe("240", "判定時間足",        group=grpBase, tooltip="H4 想定。H1/H8 等で実行する場合は本数系パラメータも調整。")
 requireTfMatch = input.bool(true, "判定時間足チャートでのみ売買", group=grpBase)
 atrLen         = input.int(14, "ATR 期間", minval=1, group=grpBase)
 pivotLen       = input.int(3,  "Pivot 幅 (左右本数)", minval=1, maxval=20, group=grpBase, tooltip="左右ともこの本数で確定。検出は pivotLen 本遅延。")
 
-grpV = "■ V 検出"
-minDropAtr        = input.float(3.5, "急落幅の最小 ATR 倍",      minval=0.1, step=0.1, group=grpV)
-minDropBars       = input.int(2,    "急落の最小本数",            minval=1, group=grpV)
-maxDropBars       = input.int(30,   "急落の最大本数",            minval=2, group=grpV)
-maxRecoveryRatio  = input.float(1.0, "右肩本数 / 左肩本数 上限",  minval=0.1, step=0.05, group=grpV, tooltip="1.0 で 左肩 10 本 → 右肩 10 本以内")
-minSpeedRatio     = input.float(1.20,"右肩速度 / 左肩速度 下限",  minval=0.1, step=0.05, group=grpV)
-crossBufferAtr    = input.float(0.05,"reclaim 余白 (ATR)",        minval=0.0, step=0.01, group=grpV)
-lowBreakInvalidAtr= input.float(0.10,"V 低割れ失効 (ATR)",        minval=0.0, step=0.01, group=grpV)
-maxWatchBars      = input.int(36,   "V 谷から reclaim 監視最大本数", minval=4, group=grpV)
+grpV = "■ V 検出 (Manual 時のみ有効)"
+m_minDropAtr        = input.float(2.5, "急落幅の最小 ATR 倍",      minval=0.1, step=0.1, group=grpV)
+minDropBars         = input.int(2,    "急落の最小本数",            minval=1, group=grpV)
+maxDropBars         = input.int(30,   "急落の最大本数",            minval=2, group=grpV)
+m_maxRecoveryRatio  = input.float(2.0, "右肩本数 / 左肩本数 上限",  minval=0.1, step=0.05, group=grpV, tooltip="2.0 で 左肩 10 本 → 右肩 20 本以内")
+m_minSpeedRatio     = input.float(1.00,"右肩速度 / 左肩速度 下限",  minval=0.1, step=0.05, group=grpV)
+m_crossBufferAtr    = input.float(0.00,"reclaim 余白 (ATR)",        minval=0.0, step=0.01, group=grpV)
+lowBreakInvalidAtr  = input.float(0.10,"V 低割れ失効 (ATR)",        minval=0.0, step=0.01, group=grpV)
+m_maxWatchBars      = input.int(72,   "V 谷から reclaim 監視最大本数", minval=4, group=grpV)
 
-grpQ = "■ シグナル足品質"
-minBodyRatio     = input.float(0.60, "実体比率 下限", minval=0.0, maxval=1.0, step=0.05, group=grpQ)
-minCloseLocation = input.float(0.60, "終値位置 下限", minval=0.0, maxval=1.0, step=0.05, group=grpQ)
+grpQ = "■ シグナル足品質 (Manual 時のみ有効)"
+m_minBodyRatio     = input.float(0.50, "実体比率 下限", minval=0.0, maxval=1.0, step=0.05, group=grpQ)
+m_minCloseLocation = input.float(0.50, "終値位置 下限", minval=0.0, maxval=1.0, step=0.05, group=grpQ)
 
 grpHtf = "■ HTF (D1) トレンド整合"
-useTrendFilter  = input.bool(true,  "D1 トレンド整合を必須化",   group=grpHtf)
+useTrendFilter  = input.bool(true,  "D1 トレンド整合を必須化",   group=grpHtf, tooltip="OFF にすると D1 フィルタを完全無効化。トレード数は更に増える。")
 htfTF           = input.timeframe("D", "HTF 時間足",              group=grpHtf)
 htfEmaFast      = input.int(50,  "HTF EMA Fast",                  minval=2, group=grpHtf)
 htfEmaSlow      = input.int(200, "HTF EMA Slow",                  minval=2, group=grpHtf)
 htfEmaSlopeBars = input.int(10,  "EMA 傾き判定本数",              minval=2, group=grpHtf)
 htfRsiLen       = input.int(14,  "HTF RSI 期間",                  minval=2, group=grpHtf)
-htfRsiAvoid     = input.float(35.0, "HTF RSI 下限 (これ未満は見送り)", minval=1, maxval=70, step=0.5, group=grpHtf)
+m_htfRsiAvoid   = input.float(28.0, "HTF RSI 下限 (Manual 時のみ)", minval=1, maxval=70, step=0.5, group=grpHtf)
 useNearEma      = input.bool(true,  "V 低が D1 EMA Fast 付近のみ採用", group=grpHtf)
-vNearEmaAtr     = input.float(1.0,  "V 低が EMA から何 ATR 以内",  minval=0.1, step=0.1, group=grpHtf)
+m_vNearEmaAtr   = input.float(2.5,  "V 低が EMA から何 ATR 以内 (Manual 時のみ)",  minval=0.1, step=0.1, group=grpHtf)
 
 grpEx = "■ 除外フィルタ"
 useLowVolFilter = input.bool(true,  "極低ボラ除外",                 group=grpEx)
-lowVolMin       = input.float(0.6,  "ATR(14) / ATR(14)[120] 下限",  minval=0.1, step=0.05, group=grpEx)
-useNearHighFilter = input.bool(true, "直近高値距離フィルタ",        group=grpEx)
-nearHighMinR    = input.float(1.5,  "Entry → 直近高値 までの R 下限", minval=0.1, step=0.1, group=grpEx)
+m_lowVolMin     = input.float(0.4,  "ATR(14) / ATR(14)[120] 下限 (Manual 時のみ)",  minval=0.1, step=0.05, group=grpEx)
+useNearHighFilter = input.bool(false, "直近高値距離フィルタ", group=grpEx, tooltip="OFF 推奨。ON だと TP 到達余地のない位置を除外するがトレード数が激減する。")
+m_nearHighMinR  = input.float(1.0,  "Entry → 直近高値 までの R 下限 (Manual 時のみ)", minval=0.1, step=0.1, group=grpEx)
 nearHighLookback= input.int(60,    "直近高値 lookback (本)",         minval=10, group=grpEx)
 skipHoliday     = input.bool(true,  "12/15〜1/10 は新規停止",        group=grpEx)
 
@@ -113,6 +120,26 @@ showHTF     = input.bool(true,  "D1 EMA を H4 上に表示", group=grpView)
 maxKeep     = input.int(80,     "残すラベル数",         minval=10, maxval=400, group=grpView)
 
 // =====================================================================
+// プリセット適用 — preset が Manual 以外なら個別入力を上書き
+// =====================================================================
+isStrict     = preset == "Strict"
+isBalanced   = preset == "Balanced"
+isLoose      = preset == "Loose"
+isVeryLoose  = preset == "Very Loose"
+
+minDropAtr        = isStrict ? 3.5  : isBalanced ? 3.0  : isLoose ? 2.5  : isVeryLoose ? 2.0  : m_minDropAtr
+maxRecoveryRatio  = isStrict ? 1.0  : isBalanced ? 1.5  : isLoose ? 2.0  : isVeryLoose ? 3.0  : m_maxRecoveryRatio
+minSpeedRatio     = isStrict ? 1.20 : isBalanced ? 1.10 : isLoose ? 1.00 : isVeryLoose ? 0.80 : m_minSpeedRatio
+crossBufferAtr    = isStrict ? 0.05 : isBalanced ? 0.03 : isLoose ? 0.00 : isVeryLoose ? 0.00 : m_crossBufferAtr
+maxWatchBars      = isStrict ? 36   : isBalanced ? 48   : isLoose ? 72   : isVeryLoose ? 120  : m_maxWatchBars
+minBodyRatio      = isStrict ? 0.60 : isBalanced ? 0.55 : isLoose ? 0.50 : isVeryLoose ? 0.40 : m_minBodyRatio
+minCloseLocation  = isStrict ? 0.60 : isBalanced ? 0.55 : isLoose ? 0.50 : isVeryLoose ? 0.40 : m_minCloseLocation
+htfRsiAvoid       = isStrict ? 35.0 : isBalanced ? 32.0 : isLoose ? 28.0 : isVeryLoose ? 20.0 : m_htfRsiAvoid
+vNearEmaAtr       = isStrict ? 1.0  : isBalanced ? 1.5  : isLoose ? 2.5  : isVeryLoose ? 4.0  : m_vNearEmaAtr
+lowVolMin         = isStrict ? 0.6  : isBalanced ? 0.5  : isLoose ? 0.4  : isVeryLoose ? 0.3  : m_lowVolMin
+nearHighMinR      = isStrict ? 1.5  : isBalanced ? 1.2  : isLoose ? 1.0  : isVeryLoose ? 0.5  : m_nearHighMinR
+
+// =====================================================================
 // Helper
 // =====================================================================
 inTfMatch   = (not requireTfMatch) or (timeframe.period == analysisTf)
@@ -128,12 +155,12 @@ atrVal     = ta.atr(atrLen)
 atrLongAvg = ta.sma(atrVal, 120)
 volExpand  = useLowVolFilter ? atrVal / math.max(atrLongAvg, 1e-10) : 999.0
 
-htfEmaFastV   = request.security(syminfo.tickerid, htfTF, ta.ema(close, htfEmaFast),                          lookahead=barmerge.lookahead_off)
-htfEmaFastOld = request.security(syminfo.tickerid, htfTF, ta.ema(close, htfEmaFast)[htfEmaSlopeBars],         lookahead=barmerge.lookahead_off)
-htfEmaSlowV   = request.security(syminfo.tickerid, htfTF, ta.ema(close, htfEmaSlow),                          lookahead=barmerge.lookahead_off)
-htfRsi        = request.security(syminfo.tickerid, htfTF, ta.rsi(close, htfRsiLen),                           lookahead=barmerge.lookahead_off)
-htfClose      = request.security(syminfo.tickerid, htfTF, close,                                              lookahead=barmerge.lookahead_off)
-htfAtr        = request.security(syminfo.tickerid, htfTF, ta.atr(atrLen),                                     lookahead=barmerge.lookahead_off)
+htfEmaFastV   = request.security(syminfo.tickerid, htfTF, ta.ema(close, htfEmaFast),                  lookahead=barmerge.lookahead_off)
+htfEmaFastOld = request.security(syminfo.tickerid, htfTF, ta.ema(close, htfEmaFast)[htfEmaSlopeBars], lookahead=barmerge.lookahead_off)
+htfEmaSlowV   = request.security(syminfo.tickerid, htfTF, ta.ema(close, htfEmaSlow),                  lookahead=barmerge.lookahead_off)
+htfRsi        = request.security(syminfo.tickerid, htfTF, ta.rsi(close, htfRsiLen),                   lookahead=barmerge.lookahead_off)
+htfClose      = request.security(syminfo.tickerid, htfTF, close,                                      lookahead=barmerge.lookahead_off)
+htfAtr        = request.security(syminfo.tickerid, htfTF, ta.atr(atrLen),                             lookahead=barmerge.lookahead_off)
 
 emaSlope = htfEmaFastV - htfEmaFastOld
 trendOk = (not useTrendFilter) or (htfClose > htfEmaFastV and htfEmaFastV > htfEmaSlowV and emaSlope > 0 and htfRsi >= htfRsiAvoid)
@@ -163,7 +190,6 @@ var float vDrop        = na
 var int   vExpireBar   = na
 var bool  vTriggered   = false
 
-// 新しい pivot low が出たら、直前の pivot high とのペアで急落を判定
 bool newDropDetected = false
 if not na(pl) and not na(lastPHprice) and not na(lastPHbar)
     cand_lsBar   = lastPHbar
@@ -323,19 +349,21 @@ alertcondition(signalLong, "V Reclaim Pullback Long",
 // =====================================================================
 // Status table
 // =====================================================================
-var table st = table.new(position.top_right, 2, 7, border_width=1)
+var table st = table.new(position.top_right, 2, 8, border_width=1)
 if barstate.islast
-    table.cell(st, 0, 0, "D1 整合",        text_color=color.white, bgcolor=color.black)
-    table.cell(st, 1, 0, trendOk ? "OK" : "NG", bgcolor = trendOk ? color.new(color.green, 60) : color.new(color.red, 60))
-    table.cell(st, 0, 1, "D1 EMA50 傾き",   text_color=color.white, bgcolor=color.black)
-    table.cell(st, 1, 1, emaSlope > 0 ? "上向" : "下/横", bgcolor = emaSlope > 0 ? color.new(color.green, 60) : color.new(color.red, 60))
-    table.cell(st, 0, 2, "D1 RSI",          text_color=color.white, bgcolor=color.black)
-    table.cell(st, 1, 2, str.tostring(htfRsi, "#.#"))
-    table.cell(st, 0, 3, "Vol拡大",         text_color=color.white, bgcolor=color.black)
-    table.cell(st, 1, 3, str.tostring(volExpand, "#.##"))
-    table.cell(st, 0, 4, "監視中 V",        text_color=color.white, bgcolor=color.black)
-    table.cell(st, 1, 4, na(vLow) ? "なし" : "あり")
-    table.cell(st, 0, 5, "ポジション",      text_color=color.white, bgcolor=color.black)
-    table.cell(st, 1, 5, strategy.position_size > 0 ? "Long" : "なし")
-    table.cell(st, 0, 6, "Net PnL",         text_color=color.white, bgcolor=color.black)
-    table.cell(st, 1, 6, str.tostring(strategy.netprofit, "#.##"))
+    table.cell(st, 0, 0, "プリセット",     text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 0, preset)
+    table.cell(st, 0, 1, "D1 整合",        text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 1, trendOk ? "OK" : "NG", bgcolor = trendOk ? color.new(color.green, 60) : color.new(color.red, 60))
+    table.cell(st, 0, 2, "D1 EMA50 傾き",   text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 2, emaSlope > 0 ? "上向" : "下/横", bgcolor = emaSlope > 0 ? color.new(color.green, 60) : color.new(color.red, 60))
+    table.cell(st, 0, 3, "D1 RSI",          text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 3, str.tostring(htfRsi, "#.#"))
+    table.cell(st, 0, 4, "Vol拡大",         text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 4, str.tostring(volExpand, "#.##"))
+    table.cell(st, 0, 5, "監視中 V",        text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 5, na(vLow) ? "なし" : "あり")
+    table.cell(st, 0, 6, "ポジション",      text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 6, strategy.position_size > 0 ? "Long" : "なし")
+    table.cell(st, 0, 7, "Net PnL",         text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 7, str.tostring(strategy.netprofit, "#.##"))

@@ -196,10 +196,10 @@ if strategy.position_size == 0 and strategy.position_size[1] != 0
 // ---------------------------------------------------------------------
 plotshape(sqzLong, title="踏み上げ v2", style=shape.triangleup,
      location=location.belowbar, color=color.new(color.lime, 0),
-     size=size.small, text="SQZv2")
+     size=size.small)
 plotshape(capLong, title="投げ切り v2", style=shape.triangleup,
      location=location.belowbar, color=color.new(color.aqua, 0),
-     size=size.small, text="CAPv2")
+     size=size.small)
 
 alertcondition(sqzLong, title="Squeeze v2 Long",
      message="SQZ v2 long on {{ticker}} {{interval}} @ {{close}}")

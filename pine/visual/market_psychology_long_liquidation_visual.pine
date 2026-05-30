@@ -52,7 +52,7 @@ plot(showShelf ? shelfHi : na, title="棚高値", color=color.new(color.fuchsia,
 plot(showShelf ? shelfLo : na, title="棚安値", color=color.new(color.aqua, 0),
      style=plot.style_linebr, linewidth=1)
 plotshape(shortSig, title="Long Liquidation Short", style=shape.triangledown,
-     location=location.abovebar, color=color.new(color.red, 0), size=size.small, text="LL")
+     location=location.abovebar, color=color.new(color.red, 0), size=size.small)
 
 alertcondition(shortSig, title="Long Liquidation Short",
      message="LL short on {{ticker}} {{interval}} @ {{close}}")

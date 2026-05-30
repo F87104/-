@@ -184,9 +184,9 @@ plot(donLo_short,  title="休眠安値 (Dormant Low)",  color=color.new(color.pu
      style=plot.style_circles, linewidth=1)
 
 plotshape(longSig,  title="Dormant Long",  style=shape.triangleup,
-     location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="DBL")
+     location=location.belowbar, color=color.new(color.orange, 0), size=size.small)
 plotshape(shortSig, title="Dormant Short", style=shape.triangledown,
-     location=location.abovebar, color=color.new(color.red, 0),  size=size.small, text="DBS")
+     location=location.abovebar, color=color.new(color.purple, 0), size=size.small)
 
 alertcondition(longSig,  title="Dormant Breakout Long",
      message="Dormant Breakout LONG on {{ticker}} {{interval}} @ {{close}}")

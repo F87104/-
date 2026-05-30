@@ -109,6 +109,9 @@ def detect_short_squeeze(df, drop_lb, shelf_max_atr, donchian_n):
 > - **「棚で停滞してから再ブレイク」(stagnation→rebreak) が最良トリガー** (IS PF 3.65)。売りの含み損が溜まってから点火するほど強い。
 > - **棚レンジが狭い（圧縮が深い）ほど強い** (PF 3.44 vs 1.84)。→ [Compression](COMPRESSION.md) との結合が主要因。
 > - ⚠️ **Donchian20 をすでに更新済みのエントリーは"遅すぎ"** (PF 1.84)。更新前（棚を抜けきる手前）の方がエッジが大きい。踏み上げは「これから起きる」段階で乗る。
+> - **生OHLCからの独立再現でも踏み上げの優位は確認**（[from-raw検証](verification/VERIFICATION_LONG_LIQUIDATION_SHORT.md)）:
+>   別実装の単純エンジンで FX PF 1.45 / 株価指数 PF 1.62。XAUUSD・EURJPY・NAS100 が牽引。
+>   一方、上下反転した[投げ](LONG_LIQUIDATION.md)は PF 0.72 で負け → **踏み上げ固有の優位**。
 
 - **事例研究**: **H4 V Initial Shelf Breakout** はこの構造の主要事例。
   急落 → V字 → 初期棚 → 棚ブレイクは、踏み上げの教科書的フローである。

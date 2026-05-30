@@ -6,18 +6,39 @@
 
 ---
 
-## 🏆 最新: 市場心理 v2 (Deep Research 統合版)
+## 🏆 最新: 市場心理 v2.1 (通貨×構造マトリクス自動化版)
 
-10 項目の深掘り検証 ([#1〜#10](backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md)) を統合した **現時点の最強仕様 + 拡張パターン 2 種**。
+TradingView Strategy Tester での実測 (STEP 1+2+3) を統合した **現時点の最強 Pine**。
+チャートに **1 本載せるだけで、その通貨に最適な構造 (Sqz / Cap / LL) を自動 ON/OFF**。
 
-### 🎯 主力 (Squeeze + Capitulation v2)
+### 採用マトリクス (TV 実測 8〜13 年データ)
+
+| Symbol | Sqz | Cap | LL | 採用 | 通貨合計 Net% |
+|---|:-:|:-:|:-:|---|---:|
+| XAUUSD | ✅ | ❌ | ❌ | Sqz only | +0.98% |
+| XAGUSD (SILVER) | ✅ | ❌ | ❌ | Sqz only | +7.16% |
+| EURJPY | ✅ | ✅ | ❌ | Sqz + Cap | +4.55% |
+| AUDJPY | ✅ | ✅ | ❌ | Sqz + Cap | +4.22% |
+| **USDJPY** | ❌ | ✅ | ✅ | Cap + LL | **+21.99%** 🏆 |
+| CHFJPY | ✅ | ✅ | ✅ | 全構造 | +11.04% |
+| GBPJPY | ❌ | ❌ | ❌ | 全除外 | — |
+| **6 通貨合算 (LL 含む)** | | | | | **+49.94%** |
+
+### v2.1 Pine
 
 | 種類 | ファイル | TradingView 表示名 |
 |---|---|---|
-| 🏆 strategy v2 | **[`pine/research/market_psychology_strict_v2_strategy.pine`](pine/research/market_psychology_strict_v2_strategy.pine)** | `本命v2 Market Psychology Strict v2 (Squeeze + Capitulation)` |
-| 📋 v2 仕様書 | **[`docs/research/market_psychology/v2_spec.md`](docs/research/market_psychology/v2_spec.md)** | — |
-| 📊 検証レポート | **[`backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md`](backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md)** | — |
+| 🏆 **v2.1 Matrix** (通貨自動) | **[`pine/research/market_psychology_v2_matrix_strategy.pine`](pine/research/market_psychology_v2_matrix_strategy.pine)** | `本命v2.1 Market Psychology Matrix (Sqz + Cap + LL)` |
+| 📋 仕様書 | [`docs/research/market_psychology/v2_spec.md`](docs/research/market_psychology/v2_spec.md) | — |
+| 📊 STEP 1+2+3 ログ | [`docs/research/market_psychology/forward_log_2026_05_step3.md`](docs/research/market_psychology/forward_log_2026_05_step3.md) | — |
+| 📊 Deep Research レポート | [`backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md`](backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md) | — |
 | 🐍 検証コード | [`backtests/elliott_fibo/run_market_psychology_v2_deep_research.py`](backtests/elliott_fibo/run_market_psychology_v2_deep_research.py) | — |
+
+### 個別 Pine (v2 系: 比較 / デバッグ用)
+
+| 種類 | ファイル | TradingView 表示名 |
+|---|---|---|
+| v2 Sqz + Cap (手動) | [`pine/research/market_psychology_strict_v2_strategy.pine`](pine/research/market_psychology_strict_v2_strategy.pine) | `本命v2 Market Psychology Strict v2` |
 
 ### 🆕 拡張パターン (#5 Long Liquidation + #6 Dormant Breakout)
 

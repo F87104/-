@@ -172,12 +172,13 @@ volume > sma(volume, 20) * 1.3
 - 結果フォルダ: [`backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/`](../../../backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/)
 - 詳細レポート: [`report_ja.md`](../../../backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md)
 
-### Pine (本命 v2)
-- v2 統合 strategy: [`pine/research/market_psychology_strict_v2_strategy.pine`](../../../pine/research/market_psychology_strict_v2_strategy.pine)
-- 🆕 Long Liquidation strategy: [`pine/research/market_psychology_long_liquidation_strategy.pine`](../../../pine/research/market_psychology_long_liquidation_strategy.pine)
-- 🆕 Long Liquidation visual: [`pine/visual/market_psychology_long_liquidation_visual.pine`](../../../pine/visual/market_psychology_long_liquidation_visual.pine)
-- 🆕 Dormant Breakout strategy: [`pine/research/market_psychology_dormant_breakout_strategy.pine`](../../../pine/research/market_psychology_dormant_breakout_strategy.pine)
-- 🆕 Dormant Breakout visual: [`pine/visual/market_psychology_dormant_breakout_visual.pine`](../../../pine/visual/market_psychology_dormant_breakout_visual.pine)
+### Pine (本命 v2 / v2.1)
+- 🏆 **v2.1 Matrix strategy** (Sqz + Cap + LL を通貨別に自動 ON/OFF): [`pine/research/market_psychology_v2_matrix_strategy.pine`](../../../pine/research/market_psychology_v2_matrix_strategy.pine)
+- v2 統合 strategy (Sqz + Cap のみ): [`pine/research/market_psychology_strict_v2_strategy.pine`](../../../pine/research/market_psychology_strict_v2_strategy.pine)
+- Long Liquidation strategy (短側単独): [`pine/research/market_psychology_long_liquidation_strategy.pine`](../../../pine/research/market_psychology_long_liquidation_strategy.pine)
+- Long Liquidation visual: [`pine/visual/market_psychology_long_liquidation_visual.pine`](../../../pine/visual/market_psychology_long_liquidation_visual.pine)
+- Dormant Breakout strategy: [`pine/research/market_psychology_dormant_breakout_strategy.pine`](../../../pine/research/market_psychology_dormant_breakout_strategy.pine)
+- Dormant Breakout visual: [`pine/visual/market_psychology_dormant_breakout_visual.pine`](../../../pine/visual/market_psychology_dormant_breakout_visual.pine)
 
 ### フォワード記録
 - 月次テンプレート: [`forward_log_template.md`](./forward_log_template.md)

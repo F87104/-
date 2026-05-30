@@ -2,7 +2,31 @@
 
 > H1/H4 ベースの自動売買戦略コレクション。10年バックテスト (2015-2024) + OOS (2025-2026) で検証済みの **2本柱戦略** を運用するためのコード一式。
 
-**最終更新**: 2026-05-28
+**最終更新**: 2026-05-30
+
+---
+
+## 🌟 本命: 市場心理ツール (Squeeze + Capitulation)
+
+> 検証済みの 2 つの心理構造 (踏み上げ Short Squeeze / 投げ切り Capitulation) を、
+> **Strategy Tester で数字を見る用** と **チャートで目視確認する用** にそれぞれ用意した本命ペア。
+
+| 用途 | ファイル | TradingView 表示名 | 種類 |
+|---|---|---|---|
+| 🎯 **Strategy Tester で PF / 勝率を確認** | **[`pine/research/market_psychology_strategy.pine`](pine/research/market_psychology_strategy.pine)** | `本命Market Psychology Strategy (Squeeze + Capitulation)` | `strategy()` |
+| 👀 **チャートで目視 / アラート観察** | **[`pine/visual/market_psychology_visual.pine`](pine/visual/market_psychology_visual.pine)** | `本命2Market Psychology Visual (Capitulation + Squeeze)` | `indicator()` |
+
+両ファイルとも:
+
+- 推奨時間足: **H4**
+- 検証コード: [`backtests/elliott_fibo/run_market_psychology_strategy_tv_check.py`](backtests/elliott_fibo/run_market_psychology_strategy_tv_check.py)
+- 結果レポート: [`backtests/elliott_fibo/results_2026_05_30/market_psychology_strategy_tv_check/report_ja.md`](backtests/elliott_fibo/results_2026_05_30/market_psychology_strategy_tv_check/report_ja.md)
+- 数値条件は Python 検証と同義。シグナルは確定足、エントリは次足始値。
+- **GBPJPY は除外推奨** (検証で全条件マイナス)
+- 関連研究ハブ: [`docs/research/market_psychology/`](docs/research/market_psychology/) / AI エージェント版: [`skills/market_psychology/`](skills/market_psychology/)
+
+> ⚠️ 注意: 上記 2 本柱 (TrendBreakV1 + H4 T5) とは別の **市場心理研究ライン** の本命です。
+> 現状はフォワード候補 / 観察用で、本番通常ロットでの併走運用判断はフォワード 30 件記録後。
 
 ---
 
@@ -88,13 +112,19 @@ fx-ai/
 │   ├── production/                    本番運用中 ⭐
 │   │   ├── TrendBreakV1_Final.pine        主力 (H1 ブレイクアウト)
 │   │   └── h4_t5_macd_bb_live_ready.pine  補助 (H4 T5+MACD+BB)
-│   ├── research/                      研究中 (各通貨個別戦略)
+│   ├── research/                      研究中 (戦略 strategy)
+│   │   ├── market_psychology_strategy.pine            🌟 本命 ① + ② (default)
+│   │   ├── market_psychology_squeeze_strict_strategy.pine  ② Squeeze strict のみ
+│   │   ├── d1_trap_h4_shelf_strict_strategy.pine
+│   │   ├── clean_h4_v_reclaim_strategy.pine
+│   │   ├── h4_v_initial_shelf_breakout_strategy.pine
 │   │   ├── wavebox_usdjpy_h1_rebreak_v1_2.pine
 │   │   ├── wavebox_gbpjpy_h1_long_rebreak_v0_1.pine
 │   │   ├── synapse_mtf_wave_reversal_v4.pine
 │   │   ├── chfjpy_h1_exhaustion_short_v0_2.pine
 │   │   └── silver_xagusd_h1_short_rebreak_v0_1.pine
 │   ├── visual/                        可視化ツール (Indicator)
+│   │   ├── market_psychology_visual.pine          🌟 本命 ① + ② 観測
 │   │   ├── h4_t5_macd_bb_visual.pine
 │   │   ├── h4_sharp_drop_v_recovery_visual.pine
 │   │   ├── sai_h1_visual_scanner.pine

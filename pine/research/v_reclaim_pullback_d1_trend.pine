@@ -1,0 +1,345 @@
+//@version=5
+strategy(
+     title                  = "V-Reclaim Pullback (D1 Trend Aligned) [Research]",
+     overlay                = true,
+     initial_capital        = 10000,
+     default_qty_type       = strategy.fixed,
+     default_qty_value      = 1,
+     pyramiding             = 0,
+     calc_on_order_fills    = false,
+     calc_on_every_tick     = false,
+     process_orders_on_close= false,
+     commission_type        = strategy.commission.percent,
+     commission_value       = 0.0,
+     slippage               = 2,
+     max_bars_back          = 5000,
+     max_lines_count        = 500,
+     max_labels_count       = 500,
+     max_boxes_count        = 100)
+
+// =====================================================================
+// V-Reclaim Pullback (D1 Trend Aligned)  -  Variant A
+// ---------------------------------------------------------------------
+// Spec: docs/research/v_reclaim_applied_methods_2026-05-30.md
+//
+// 狙う局面:
+//   D1 上昇トレンドの押し目で、H4 急落 → 右肩急回復 → reclaim ブレイク。
+//   "大衆が売り切ったあと、機関の買い戻しが本格化する瞬間"
+//
+// 主な条件 (詳細は spec.md):
+//   - H4 confirmed pivot high -> confirmed pivot low の急落 >= 3.5 ATR
+//   - 右肩本数 <= 左肩本数 (recoveryRatio で調整可)
+//   - 右肩 ATR/本 >= 左肩 ATR/本 × 1.20
+//   - 終値が pivot high + 0.05 ATR を上抜け
+//   - シグナル足 実体比率 >= 0.60, 終値位置 >= 0.60
+//   - D1: EMA50 上向き AND close > EMA50 AND EMA50 > EMA200
+//   - D1: RSI(14) >= 35
+//   - V 低が D1 EMA50 から ±1.0 × D1 ATR(14) 以内
+//   - 直近 60H4 高値までの距離 >= 1.5R
+//   - ATR(14) / ATR(14)[120] >= 0.6
+//   - 12/15〜1/10 は新規停止
+//
+// 安全 (TradingView 先読みバイアス警告対策):
+//   - calc_on_order_fills = false
+//   - process_orders_on_close = false
+//   - request.security は lookahead=barmerge.lookahead_off 必須
+//   - Pivot は確定後 (pivotLen 本後) にのみ参照
+//   - Entry は次足始値 (TradingView デフォルト動作)
+//
+// 使い方:
+//   1. TradingView で H4 チャートを開く (推奨通貨: USDJPY, EURJPY, XAUUSD,
+//      GBPJPY, CHFJPY, EURUSD)
+//   2. このスクリプトをチャートに追加
+//   3. Strategy Tester で結果確認、Properties で期間・コスト調整
+// =====================================================================
+
+// =====================================================================
+// Inputs
+// =====================================================================
+grpBase = "■ 基本"
+analysisTf     = input.timeframe("240", "判定時間足",        group=grpBase, tooltip="H4 想定。H1/H8 等で実行する場合は本数系パラメータも調整。")
+requireTfMatch = input.bool(true, "判定時間足チャートでのみ売買", group=grpBase)
+atrLen         = input.int(14, "ATR 期間", minval=1, group=grpBase)
+pivotLen       = input.int(3,  "Pivot 幅 (左右本数)", minval=1, maxval=20, group=grpBase, tooltip="左右ともこの本数で確定。検出は pivotLen 本遅延。")
+
+grpV = "■ V 検出"
+minDropAtr        = input.float(3.5, "急落幅の最小 ATR 倍",      minval=0.1, step=0.1, group=grpV)
+minDropBars       = input.int(2,    "急落の最小本数",            minval=1, group=grpV)
+maxDropBars       = input.int(30,   "急落の最大本数",            minval=2, group=grpV)
+maxRecoveryRatio  = input.float(1.0, "右肩本数 / 左肩本数 上限",  minval=0.1, step=0.05, group=grpV, tooltip="1.0 で 左肩 10 本 → 右肩 10 本以内")
+minSpeedRatio     = input.float(1.20,"右肩速度 / 左肩速度 下限",  minval=0.1, step=0.05, group=grpV)
+crossBufferAtr    = input.float(0.05,"reclaim 余白 (ATR)",        minval=0.0, step=0.01, group=grpV)
+lowBreakInvalidAtr= input.float(0.10,"V 低割れ失効 (ATR)",        minval=0.0, step=0.01, group=grpV)
+maxWatchBars      = input.int(36,   "V 谷から reclaim 監視最大本数", minval=4, group=grpV)
+
+grpQ = "■ シグナル足品質"
+minBodyRatio     = input.float(0.60, "実体比率 下限", minval=0.0, maxval=1.0, step=0.05, group=grpQ)
+minCloseLocation = input.float(0.60, "終値位置 下限", minval=0.0, maxval=1.0, step=0.05, group=grpQ)
+
+grpHtf = "■ HTF (D1) トレンド整合"
+useTrendFilter  = input.bool(true,  "D1 トレンド整合を必須化",   group=grpHtf)
+htfTF           = input.timeframe("D", "HTF 時間足",              group=grpHtf)
+htfEmaFast      = input.int(50,  "HTF EMA Fast",                  minval=2, group=grpHtf)
+htfEmaSlow      = input.int(200, "HTF EMA Slow",                  minval=2, group=grpHtf)
+htfEmaSlopeBars = input.int(10,  "EMA 傾き判定本数",              minval=2, group=grpHtf)
+htfRsiLen       = input.int(14,  "HTF RSI 期間",                  minval=2, group=grpHtf)
+htfRsiAvoid     = input.float(35.0, "HTF RSI 下限 (これ未満は見送り)", minval=1, maxval=70, step=0.5, group=grpHtf)
+useNearEma      = input.bool(true,  "V 低が D1 EMA Fast 付近のみ採用", group=grpHtf)
+vNearEmaAtr     = input.float(1.0,  "V 低が EMA から何 ATR 以内",  minval=0.1, step=0.1, group=grpHtf)
+
+grpEx = "■ 除外フィルタ"
+useLowVolFilter = input.bool(true,  "極低ボラ除外",                 group=grpEx)
+lowVolMin       = input.float(0.6,  "ATR(14) / ATR(14)[120] 下限",  minval=0.1, step=0.05, group=grpEx)
+useNearHighFilter = input.bool(true, "直近高値距離フィルタ",        group=grpEx)
+nearHighMinR    = input.float(1.5,  "Entry → 直近高値 までの R 下限", minval=0.1, step=0.1, group=grpEx)
+nearHighLookback= input.int(60,    "直近高値 lookback (本)",         minval=10, group=grpEx)
+skipHoliday     = input.bool(true,  "12/15〜1/10 は新規停止",        group=grpEx)
+
+grpRisk = "■ リスク"
+stopBufferAtr = input.float(0.25, "SL 余白 (V 低 − ATR×)", minval=0.0, step=0.05, group=grpRisk)
+tpR           = input.float(2.0,  "TP R 倍率",              minval=0.1, step=0.1, group=grpRisk)
+maxHoldBars   = input.int(180,    "最大保有本数",            minval=1, group=grpRisk)
+
+grpDate = "■ 検証期間"
+useDateFilter = input.bool(true, "期間で売買を絞る", group=grpDate)
+startDate     = input.time(timestamp("2015-01-01T00:00:00"), "Start", group=grpDate)
+endDate       = input.time(timestamp("2026-12-31T23:59:59"), "End",   group=grpDate)
+
+grpView = "■ 表示"
+showSignals = input.bool(true,  "Signal/Entry ラベル", group=grpView)
+showV       = input.bool(true,  "V ライン",             group=grpView)
+showLevels  = input.bool(true,  "SL/TP ライン",         group=grpView)
+showHTF     = input.bool(true,  "D1 EMA を H4 上に表示", group=grpView)
+maxKeep     = input.int(80,     "残すラベル数",         minval=10, maxval=400, group=grpView)
+
+// =====================================================================
+// Helper
+// =====================================================================
+inTfMatch   = (not requireTfMatch) or (timeframe.period == analysisTf)
+inDateRange = (not useDateFilter)  or (time >= startDate and time <= endDate)
+mm = month(time)
+dd = dayofmonth(time)
+isHoliday = skipHoliday and ((mm == 12 and dd >= 15) or (mm == 1 and dd <= 10))
+
+// =====================================================================
+// ATR & HTF series  (lookahead=off で先読み回避)
+// =====================================================================
+atrVal     = ta.atr(atrLen)
+atrLongAvg = ta.sma(atrVal, 120)
+volExpand  = useLowVolFilter ? atrVal / math.max(atrLongAvg, 1e-10) : 999.0
+
+htfEmaFastV   = request.security(syminfo.tickerid, htfTF, ta.ema(close, htfEmaFast),                          lookahead=barmerge.lookahead_off)
+htfEmaFastOld = request.security(syminfo.tickerid, htfTF, ta.ema(close, htfEmaFast)[htfEmaSlopeBars],         lookahead=barmerge.lookahead_off)
+htfEmaSlowV   = request.security(syminfo.tickerid, htfTF, ta.ema(close, htfEmaSlow),                          lookahead=barmerge.lookahead_off)
+htfRsi        = request.security(syminfo.tickerid, htfTF, ta.rsi(close, htfRsiLen),                           lookahead=barmerge.lookahead_off)
+htfClose      = request.security(syminfo.tickerid, htfTF, close,                                              lookahead=barmerge.lookahead_off)
+htfAtr        = request.security(syminfo.tickerid, htfTF, ta.atr(atrLen),                                     lookahead=barmerge.lookahead_off)
+
+emaSlope = htfEmaFastV - htfEmaFastOld
+trendOk  = (not useTrendFilter) or
+   (htfClose > htfEmaFastV
+    and htfEmaFastV > htfEmaSlowV
+    and emaSlope > 0
+    and htfRsi >= htfRsiAvoid)
+
+// =====================================================================
+// Pivots
+// =====================================================================
+ph = ta.pivothigh(high, pivotLen, pivotLen)
+pl = ta.pivotlow (low,  pivotLen, pivotLen)
+
+var float lastPHprice = na
+var int   lastPHbar   = na
+
+if not na(ph)
+    lastPHprice := ph
+    lastPHbar   := bar_index - pivotLen
+
+// =====================================================================
+// Active V state (一度に一つの V を追跡)
+// =====================================================================
+var float vHigh        = na
+var int   vHighBar     = na
+var float vLow         = na
+var int   vLowBar      = na
+var int   vDropBars    = na
+var float vDrop        = na
+var int   vExpireBar   = na
+var bool  vTriggered   = false
+
+// 新しい pivot low が出たら、直前の pivot high とのペアで急落を判定
+bool newDropDetected = false
+if not na(pl) and not na(lastPHprice) and not na(lastPHbar)
+    cand_lsBar   = lastPHbar
+    cand_lsPx    = lastPHprice
+    cand_plBar   = bar_index - pivotLen
+    cand_plPx    = pl
+    cand_bars    = cand_plBar - cand_lsBar
+    cand_drop    = cand_lsPx - cand_plPx
+    cand_dropAtr = cand_drop / math.max(atrVal, 1e-10)
+    if cand_lsBar < cand_plBar and cand_bars >= minDropBars and cand_bars <= maxDropBars and cand_dropAtr >= minDropAtr
+        vHigh      := cand_lsPx
+        vHighBar   := cand_lsBar
+        vLow       := cand_plPx
+        vLowBar    := cand_plBar
+        vDropBars  := cand_bars
+        vDrop      := cand_drop
+        vExpireBar := cand_plBar + maxWatchBars
+        vTriggered := false
+        newDropDetected := true
+
+// =====================================================================
+// Reclaim 判定 & Signal
+// =====================================================================
+bool  signalLong   = false
+float signalEntry  = na
+float signalSL     = na
+float signalTP     = na
+bool  consumeV     = false
+
+if not na(vLow) and not vTriggered
+    if low < vLow - lowBreakInvalidAtr * atrVal
+        consumeV := true
+    else if bar_index > vExpireBar
+        consumeV := true
+    else
+        recoveryBars = bar_index - vLowBar
+        ratio        = recoveryBars / float(math.max(vDropBars, 1))
+        if ratio > maxRecoveryRatio
+            consumeV := true
+        else
+            reclaim = close >= vHigh + crossBufferAtr * atrVal
+            if reclaim and barstate.isconfirmed and recoveryBars > 0
+                leftSpeed  = vDrop / math.max(vDropBars,  1) / math.max(atrVal, 1e-10)
+                rightDist  = close - vLow
+                rightSpeed = rightDist / math.max(recoveryBars, 1) / math.max(atrVal, 1e-10)
+                speedOk    = rightSpeed >= leftSpeed * minSpeedRatio
+                rng        = high - low
+                body       = math.abs(close - open)
+                bodyRatio  = rng > 0 ? body / rng : 0.0
+                closeLoc   = rng > 0 ? (close - low) / rng : 0.0
+                qualityOk  = bodyRatio >= minBodyRatio and closeLoc >= minCloseLocation
+                nearEmaOk  = (not useNearEma) or (not useTrendFilter) or (math.abs(vLow - htfEmaFastV) <= vNearEmaAtr * math.max(htfAtr, 1e-10))
+                sl         = vLow - stopBufferAtr * atrVal
+                risk       = close - sl
+                nearHighOk = true
+                if useNearHighFilter and risk > 0
+                    recentHigh = ta.highest(high, nearHighLookback)
+                    nearHighOk := (recentHigh - close) >= nearHighMinR * risk
+                volOk = (not useLowVolFilter) or (volExpand >= lowVolMin)
+                if speedOk and qualityOk and trendOk and nearEmaOk and nearHighOk and volOk and inTfMatch and inDateRange and not isHoliday and risk > 0
+                    signalLong  := true
+                    signalEntry := close
+                    signalSL    := sl
+                    signalTP    := close + risk * tpR
+                    vTriggered  := true
+
+if consumeV
+    vHigh      := na
+    vHighBar   := na
+    vLow       := na
+    vLowBar    := na
+    vDropBars  := na
+    vDrop      := na
+    vExpireBar := na
+    vTriggered := false
+
+// =====================================================================
+// Trade execution
+// =====================================================================
+var float entryPrice = na
+var float slPrice    = na
+var float tpPrice    = na
+var int   entryBar   = na
+
+if signalLong and strategy.position_size == 0
+    strategy.entry("VRP Long", strategy.long)
+    entryPrice := signalEntry
+    slPrice    := signalSL
+    tpPrice    := signalTP
+    entryBar   := bar_index
+
+if strategy.position_size > 0 and not na(slPrice) and not na(tpPrice)
+    strategy.exit("VRP Exit", from_entry="VRP Long", stop=slPrice, limit=tpPrice)
+    if not na(entryBar) and bar_index - entryBar >= maxHoldBars
+        strategy.close("VRP Long", comment="Time Exit")
+
+if strategy.position_size == 0
+    entryPrice := na
+    slPrice    := na
+    tpPrice    := na
+    entryBar   := na
+
+// =====================================================================
+// Visualization
+// =====================================================================
+var label[] sigLabels = array.new_label()
+var line[]  vLineArr  = array.new_line()
+var line[]  lvlLines  = array.new_line()
+
+if newDropDetected and showV
+    ln1 = line.new(vHighBar, vHigh, vLowBar, vLow, color=color.new(color.orange, 30), width=1, style=line.style_dashed)
+    array.push(vLineArr, ln1)
+    while array.size(vLineArr) > maxKeep
+        oldln = array.shift(vLineArr)
+        line.delete(oldln)
+
+if signalLong and showSignals
+    lbl = label.new(bar_index, low,
+         text="V Reclaim\nE=" + str.tostring(signalEntry, format.mintick) + "\nSL=" + str.tostring(signalSL, format.mintick) + "\nTP=" + str.tostring(signalTP, format.mintick),
+         style=label.style_label_up,
+         color=color.new(color.lime, 0),
+         textcolor=color.black,
+         size=size.small)
+    array.push(sigLabels, lbl)
+    while array.size(sigLabels) > maxKeep
+        oldlbl = array.shift(sigLabels)
+        label.delete(oldlbl)
+
+if signalLong and showLevels and not na(vLowBar)
+    rln = line.new(vLowBar, vLow, bar_index, close, color=color.new(color.lime, 20), width=2)
+    array.push(vLineArr, rln)
+    sln = line.new(bar_index, signalSL,    bar_index + 12, signalSL,    color=color.new(color.red,   10), width=1, style=line.style_dashed, extend=extend.right)
+    tln = line.new(bar_index, signalTP,    bar_index + 12, signalTP,    color=color.new(color.green, 10), width=1, style=line.style_dashed, extend=extend.right)
+    eln = line.new(bar_index, signalEntry, bar_index + 12, signalEntry, color=color.new(color.aqua,  10), width=1, style=line.style_dashed, extend=extend.right)
+    array.push(lvlLines, sln)
+    array.push(lvlLines, tln)
+    array.push(lvlLines, eln)
+    while array.size(lvlLines) > maxKeep
+        oldlv = array.shift(lvlLines)
+        line.delete(oldlv)
+    while array.size(vLineArr) > maxKeep
+        oldln2 = array.shift(vLineArr)
+        line.delete(oldln2)
+
+plot(showHTF ? htfEmaFastV : na, "D1 EMA Fast", color=color.new(color.fuchsia, 0),  linewidth=1)
+plot(showHTF ? htfEmaSlowV : na, "D1 EMA Slow", color=color.new(color.purple,  20), linewidth=1)
+
+bgcolor(isHoliday ? color.new(color.gray, 92) : na, title="休場期間")
+bgcolor((useTrendFilter and trendOk) ? color.new(color.green, 96) : na, title="D1 整合")
+
+// =====================================================================
+// Alerts
+// =====================================================================
+alertcondition(signalLong, "V Reclaim Pullback Long",
+     "V-Reclaim Pullback Long: {{ticker}} {{interval}} E={{close}}")
+
+// =====================================================================
+// Status table
+// =====================================================================
+var table st = table.new(position.top_right, 2, 7, border_width=1)
+if barstate.islast
+    table.cell(st, 0, 0, "D1 整合",        text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 0, trendOk ? "OK" : "NG", bgcolor = trendOk ? color.new(color.green, 60) : color.new(color.red, 60))
+    table.cell(st, 0, 1, "D1 EMA50 傾き",   text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 1, emaSlope > 0 ? "上向" : "下/横", bgcolor = emaSlope > 0 ? color.new(color.green, 60) : color.new(color.red, 60))
+    table.cell(st, 0, 2, "D1 RSI",          text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 2, str.tostring(htfRsi, "#.#"))
+    table.cell(st, 0, 3, "Vol拡大",         text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 3, str.tostring(volExpand, "#.##"))
+    table.cell(st, 0, 4, "監視中 V",        text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 4, na(vLow) ? "なし" : "あり")
+    table.cell(st, 0, 5, "ポジション",      text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 5, strategy.position_size > 0 ? "Long" : "なし")
+    table.cell(st, 0, 6, "Net PnL",         text_color=color.white, bgcolor=color.black)
+    table.cell(st, 1, 6, str.tostring(strategy.netprofit, "#.##"))

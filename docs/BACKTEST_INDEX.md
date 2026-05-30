@@ -403,6 +403,18 @@ Pine: [`pine/visual/h4_sharp_drop_v_recovery_visual.pine`](../pine/visual/h4_sha
 - ただしOOS_2025_2026は -1.25R / PF 0.95
 - 解釈: TrapはEntry triggerではなく、D1文脈またはH4再点火待ちのフィルタとして使う
 
+### 6-4.7. D1 Trap Delayed H4 Shelf 2026-05-30
+
+| 検証 | パス | 結論 |
+|---|---|---|
+| 検証結果 | [`backtests/elliott_fibo/results_2026_05_30/d1_trap_delayed_h4_shelf/report_ja.md`](../backtests/elliott_fibo/results_2026_05_30/d1_trap_delayed_h4_shelf/report_ja.md) | D1 120本安値Trap直後ではなく、30-120日後のH4棚ブレイクが面白い |
+| 検証コード | [`backtests/elliott_fibo/run_d1_trap_delayed_h4_shelf_study.py`](../backtests/elliott_fibo/run_d1_trap_delayed_h4_shelf_study.py) | H4 Initial Shelf既存トレードにD1低値Trap年齢を付与 |
+
+- Baseline selected: 34 trades / +15.55R / PF 2.09 / DD 5.11R
+- D1 low trap age 30-120d + H4 Initial Shelf: 8 trades / 勝率75.00% / +7.04R / PF 4.46 / DD 2.03R
+- 件数は少ないが、D1 Trapを即エントリーではなく「遅れて効く心理文脈」と見る発見は有望
+- 次はポストフィルタではなく統合バックテスト、Shelf4-8、RR1.2-2.0で確認
+
 ### 6-5. 一般インジケータ否定後の相場反応 2026-05-29
 
 | 検証 | パス | 結論 |

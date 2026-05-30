@@ -169,6 +169,11 @@
 
 ### 実施済み検証
 
+> 🔍 **実用性監査**: [`verification/AUDIT_REALISM.md`](verification/AUDIT_REALISM.md) ——
+> 「後付けか/リアルで使えるか」を厳しめに監査。**先読みは無し（仕組みはクリーン）**。
+> 踏み上げはコスト0.20Rでも PF 1.15 で頑健（B+：小ロット投入可）、
+> Capitulation はサンプル不足で前向き検証必須（C+）。過去PFを将来に約束するものではない。
+
 | 検証 | 対象構造 | 結果 |
 |---|---|---|
 | [Expectation Failure → Short Squeeze 検証](verification/VERIFICATION_EXPECTATION_FAILURE_SQUEEZE.md) | 期待崩壊→踏み上げ | IS PF **2.55** / OOS PF **2.44**（コスト込み）。価格だけを追う素朴版は PF 0.72。**思想を実データが裏づけ。** |

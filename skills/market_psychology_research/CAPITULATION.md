@@ -116,6 +116,11 @@ def detect_capitulation(df, atr_mult, wick_thr, vol_mult, fall_lb):
 > 逆に **「日足下降トレンド中の投げ切りを買う」(counter) が最良**（全銘柄 PF 1.15→1.31、指数 1.81、6/8銘柄で改善）。
 > → **降伏は下げ相場の現象**。上昇中の急落は「押し目」であって「降伏」ではない。
 > XAUUSD のみ例外（上昇トレンドの押し目買いが最良 PF 2.64）。GBPJPY は全モード負け＝除外。
+>
+> **前向き検証** ([forward test](verification/VERIFICATION_FORWARD_AND_SYMMETRY.md)):
+> IS(2015-2024)だけで「counter モード × IS PF≥1 の7銘柄(GBPJPY除外)」とルールを確定し、
+> OOS(2025-2026)へ固定適用 → **OOS PF 2.26 を維持**。後知恵バイアスを排しても機能した
+> （ただし OOS 11件と小サンプル、継続フォワード要）。
 
 - 「通常の投げ（[Long Liquidation](LONG_LIQUIDATION.md)）」と「最後の投げ（降伏）」の定量的な境界。
 - 天井側の対称形（買いの降伏 = buying climax）の定式化。

@@ -170,6 +170,7 @@
 | [生OHLCからの再現性検証](verification/VERIFICATION_LONG_LIQUIDATION_SHORT.md#2-検証b-生ohlcからの独立再現from-scratch) | 踏み上げ vs 投げ | 自前エンジンで踏み上げ FX PF **1.45**／指数 1.62、投げ PF 0.72。**符号反転だけで非対称が再現。** |
 | [Capitulation 型クライマックス反転](verification/VERIFICATION_CAPITULATION_REVERSAL.md) | 降伏（底買い反転） | 下げを「継続ショート」でなく「投げ切りの底で買う」に再定義 → 棚下抜けショート(PF0.72)を **株価指数 PF 1.33 / XAU 1.63 にプラス反転**。天井売りは弱い。 |
 | [Capitulation × 上位足トレンドフィルタ](verification/VERIFICATION_CAPITULATION_TREND_FILTER.md) | 降伏 × 日足トレンド | 「押し目買い(上昇一致)」は **逆効果**(1.06→0.91)。**「下降トレンド中の投げ切り(counter)」が最良**(全銘柄 1.31/指数 1.81)。降伏は下げ相場の現象。GBPJPYは除外。 |
+| [前向き検証 & トレンド対称性](verification/VERIFICATION_FORWARD_AND_SYMMETRY.md) | 前向き検証/頑健性 | **ISだけで決めたCapitulationルール(下降中×GBPJPY除外)がOOSでもPF 2.26維持**。踏み上げは**トレンド非依存で全環境PF≈1.45**＝最も頑健。 |
 
 ---
 

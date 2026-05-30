@@ -112,6 +112,9 @@ def detect_short_squeeze(df, drop_lb, shelf_max_atr, donchian_n):
 > - **生OHLCからの独立再現でも踏み上げの優位は確認**（[from-raw検証](verification/VERIFICATION_LONG_LIQUIDATION_SHORT.md)）:
 >   別実装の単純エンジンで FX PF 1.45 / 株価指数 PF 1.62。XAUUSD・EURJPY・NAS100 が牽引。
 >   一方、上下反転した[投げ](LONG_LIQUIDATION.md)は PF 0.72 で負け → **踏み上げ固有の優位**。
+> - **トレンド非依存で頑健**([前向き検証](verification/VERIFICATION_FORWARD_AND_SYMMETRY.md)): 日足が上昇/下降どちらでも
+>   踏み上げの優位はほぼ不変(none 1.47 / align 1.44 / counter 1.48)。閉じ込められた売りの買い戻しという
+>   燃料はどの相場環境にも存在するため、regime フィルタ不要。**8構造で最も汎用的・頑健なエッジ。**
 
 - **事例研究**: **H4 V Initial Shelf Breakout** はこの構造の主要事例。
   急落 → V字 → 初期棚 → 棚ブレイクは、踏み上げの教科書的フローである。

@@ -43,6 +43,7 @@
 | 14 | TrendBreakV1 騙し回避フィルタ | 2015-2024 | 各種 | - | - | - | - | 🔬 研究 | body60+early1 が候補 |
 | 15 | ショート側研究 2026-05-28 | 2015-2026 | 各種 | - | - | - | - | 🔬 検証途中 | ロング版ミラーは不採用。1ヶ月安値更新後の安値停滞下抜けが暫定候補 |
 | 16 | H4 V Kickoff Catalyst | 2015-2026 | 各種 | - | - | - | - | 🔬 研究 | Vを直接買わず、V後の棚ブレイクを検証。Practical候補は90 trades / +33.55R / PF 1.83 |
+| 17 | D1 Trap Delayed H4 Shelf Strict | 2015-2026 | 9 | 100.0% | inf | +13.35R | 0.0R | 🔬 準本命 | D1安値Trapを直接買わず、30-180日後のH4棚ブレイクだけ買う |
 
 **凡例**:
 - ✅ 採用 = 現在の本番運用に使用中
@@ -163,6 +164,25 @@
 | **検証コード** | [`backtests/elliott_fibo/run_h4_ignition_pattern_search.py`](../backtests/elliott_fibo/run_h4_ignition_pattern_search.py) | OHLCのみなので出来高はTrue Range活動量で代用 | スキャナー候補 |
 
 **注意**: ローカルデータにvolumeが無いため、出来高増加は価格活動量の代理指標。TradingViewでは `volume > sma(volume, 20) * 1.3〜1.8` を追加して検証する。
+
+### 2-2.8. D1 Trap Delayed H4 Shelf Strict 2026-05-30 (🔬 準本命)
+
+| 検証 | パス | 概要 | 結論 |
+|---|---|---|---|
+| **最終候補メモ** | [`docs/research/d1_trap_h4_shelf_strict_2026-05-30.md`](research/d1_trap_h4_shelf_strict_2026-05-30.md) | D1安値Trapを心理文脈にし、30-180日後のH4棚ブレイクを買う | 準本命。通常ロット前にPine照合とフォワード必須 |
+| **統合検証レポート** | [`backtests/elliott_fibo/results_2026_05_30/d1_trap_h4_shelf_integrated/report_ja.md`](../backtests/elliott_fibo/results_2026_05_30/d1_trap_h4_shelf_integrated/report_ja.md) | D1文脈をH4ループへ統合して再検証 | strict候補は9 trades / +13.35R / PF inf |
+| **検証コード** | [`backtests/elliott_fibo/run_d1_trap_h4_shelf_integrated_study.py`](../backtests/elliott_fibo/run_d1_trap_h4_shelf_integrated_study.py) | D1 Trap -> H4 Shelf の統合バックテスト | post-filterではなく実戦に近い統合検証 |
+| **Pine Strategy** | [`pine/research/d1_trap_h4_shelf_strict_strategy.pine`](../pine/research/d1_trap_h4_shelf_strict_strategy.pine) | D1 120本安値Trap + H4 Initial Shelf + signal ADX<=30 | TradingView照合用 |
+
+主要候補:
+
+| 候補 | 条件 | 結果 | 判定 |
+|---|---|---:|---|
+| Strict selected | `A30_180 + H4 shelf + signal ADX<=30`, USDJPY/EURJPY/GBPJPY/AUDJPY | 9 trades / +13.35R / WR100% / DD0.00R / OOS +4.46R | 最もきれい。小ロット/デモ監視へ |
+| Core selected | `A30_180 + H4 shelf`, signal ADX制限なし | 12 trades / +12.81R / PF 7.30 / DD2.03R | 比較用の本体 |
+| Wider selected | `A30_240 + signal ADX<=30` | 10 trades / +12.33R / PF 13.00 / DD1.03R | 180日超でAUDJPYの負けが増える |
+
+**本質**: D1 Trapを直接買うのではなく、売りが否定されたあと時間を置き、H4で売り直しが失敗して棚上抜けしたところだけ買う。
 
 ---
 

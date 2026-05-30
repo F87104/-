@@ -18,9 +18,10 @@
 1. TradingView でチャートを開き、**時間足を H4（4時間）** にする。
 2. 銘柄は **XAUUSD / EURJPY / USDJPY / NAS100 / SPX500** などで試す（**GBPJPY は対象外**）。
 3. 画面下「Pine エディタ」に `market_psychology_strategy.pine` を貼り付け → **チャートに追加**。
-4. 設定（歯車）で **どちらか片方の構造だけ** を有効化:
-   - まず「① 踏み上げ Short Squeeze」だけ ON（② はOFF）
-   - 次に「② Capitulation 底買い」だけ ON（① はOFF）して比較
+4. 設定（歯車）→「**検証する構造**」のドロップダウンで **1つだけ選ぶ**:
+   - 「① 踏み上げ Short Squeeze (買い)」
+   - 「② Capitulation 投げ切り底買い (買い)」 ← 既定はこちら
+   ※ ドロップダウン式なので **選んだ方だけ** がエントリーします（両方混ざりません）。
 5. 下部の **「ストラテジーテスター」** タブで結果を見る:
    - **Profit Factor（プロフィットファクター）** … 検証の PF と同じ指標
    - **Percent Profitable** … 勝率

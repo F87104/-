@@ -40,10 +40,13 @@ rng   = high - low
 rngOk = rng > 0
 inWin = (not useDate) or (year >= fromY and year <= toY)
 
-// ---- 構造の有効化 -----------------------------------------------------------
-grpEn   = "使う構造 (片方ずつ推奨)"
-useSqz  = input.bool(true,  "① 踏み上げ Short Squeeze", group=grpEn)
-useCap  = input.bool(false, "② Capitulation 底買い",     group=grpEn)
+// ---- 構造の選択 (どちらか1つだけ動く) ---------------------------------------
+grpEn     = "使う構造 (1つだけ選ぶ)"
+SQZ       = "① 踏み上げ Short Squeeze (買い)"
+CAP       = "② Capitulation 投げ切り底買い (買い)"
+structure = input.string(CAP, "検証する構造", options=[SQZ, CAP], group=grpEn)
+useSqz    = structure == SQZ
+useCap    = structure == CAP
 
 // ============================================================================
 //  ① Short Squeeze (買い)

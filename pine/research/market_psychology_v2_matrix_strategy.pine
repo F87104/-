@@ -270,7 +270,9 @@ grpVz       = "表示オプション"
 showLevels  = input.bool(true, "Entry / SL / TP の価格ライン表示", group=grpVz)
 keepHistory = input.bool(true, "過去全シグナルのラベルを残す", group=grpVz,
      tooltip="OFF にすると最新シグナルだけ表示")
-levelExtend = input.int(10, "ライン延長 (バー数)", minval=1, group=grpVz)
+levelExtend = input.int(15, "ライン延長 (バー数)", minval=1, group=grpVz)
+labelMode   = input.string("compact", "ラベルスタイル", options=["compact", "verbose", "off"], group=grpVz,
+     tooltip="compact = 価格のみ右端に小さく / verbose = 旧仕様の情報ボックス / off = ラベル無し")
 
 plotshape(sqzLong, title="Squeeze Long", style=shape.triangleup,
      location=location.belowbar, color=color.new(color.lime, 0),
@@ -282,22 +284,26 @@ plotshape(llShort, title="Long Liquidation Short", style=shape.triangledown,
      location=location.abovebar, color=color.new(color.red, 0),
      size=size.small, display=display.pane)
 
-// シグナル発生時に Entry / SL / TP を価格ラインで描画
+// シグナル発生時に Entry / SL / TP を価格ラインで描画 (TrendBreakV1 風コンパクト)
 var line  entryLine = na
 var line  slLine    = na
 var line  tpLine    = na
-var label sigLabel  = na
+var label sigLabel  = na    // verbose モード時の情報ボックス
+var label entryTag  = na    // compact モード時の Entry 価格タグ
+var label slTag     = na    // compact モード時の SL 価格タグ
+var label tpTag     = na    // compact モード時の TP 価格タグ
 
 bool anySig = sqzLong or capLong or llShort
 float sigStop = sqzLong ? sqzStop : (capLong ? capStop : (llShort ? llStop : na))
 bool  sigIsLong = sqzLong or capLong
-string sigName = sqzLong ? "SQZ ロング" : (capLong ? "CAP ロング" : (llShort ? "LL ショート" : ""))
+string sigName = sqzLong ? "SQZ" : (capLong ? "CAP" : (llShort ? "LL" : ""))
 color  sigColor = sqzLong ? color.lime : (capLong ? color.aqua : color.red)
 
 if showLevels and anySig and not na(sigStop)
     float entryPrice = close       // 次バー始値で約定するが、視覚的には close (信号バー終値) を起点
     float riskNow    = sigIsLong ? (entryPrice - sigStop) : (sigStop - entryPrice)
     float tpPrice    = sigIsLong ? (entryPrice + rr * riskNow) : (entryPrice - rr * riskNow)
+    int   xRight     = bar_index + levelExtend
 
     // keepHistory が OFF の時だけ、前回のオブジェクトを削除する
     if not keepHistory
@@ -309,21 +315,45 @@ if showLevels and anySig and not na(sigStop)
             line.delete(tpLine)
         if not na(sigLabel)
             label.delete(sigLabel)
+        if not na(entryTag)
+            label.delete(entryTag)
+        if not na(slTag)
+            label.delete(slTag)
+        if not na(tpTag)
+            label.delete(tpTag)
 
-    entryLine := line.new(bar_index, entryPrice, bar_index + levelExtend, entryPrice,
+    entryLine := line.new(bar_index, entryPrice, xRight, entryPrice,
          xloc=xloc.bar_index, color=color.new(sigColor, 0), width=2, style=line.style_solid)
-    slLine    := line.new(bar_index, sigStop, bar_index + levelExtend, sigStop,
+    slLine    := line.new(bar_index, sigStop, xRight, sigStop,
          xloc=xloc.bar_index, color=color.new(color.red, 0), width=2, style=line.style_dashed)
-    tpLine    := line.new(bar_index, tpPrice, bar_index + levelExtend, tpPrice,
+    tpLine    := line.new(bar_index, tpPrice, xRight, tpPrice,
          xloc=xloc.bar_index, color=color.new(color.green, 0), width=2, style=line.style_dashed)
 
-    string txt = sigName + "\nEntry ≈ " + str.tostring(entryPrice, format.mintick) +
-         "\nSL: " + str.tostring(sigStop, format.mintick) +
-         "\nTP: " + str.tostring(tpPrice, format.mintick) +
-         "\nRisk: " + str.tostring(math.abs(riskNow), format.mintick)
-    sigLabel := label.new(bar_index, sigIsLong ? low : high, txt, xloc=xloc.bar_index,
-         style=sigIsLong ? label.style_label_up : label.style_label_down,
-         color=color.new(sigColor, 0), textcolor=color.black, size=size.small)
+    if labelMode == "compact"
+        // 右端に価格タグを 3 個 (Entry/SL/TP)
+        entryTag := label.new(xRight, entryPrice,
+             text=sigName + " " + str.tostring(entryPrice, format.mintick),
+             xloc=xloc.bar_index, style=label.style_label_left,
+             color=color.new(sigColor, 0), textcolor=color.black, size=size.tiny)
+        slTag := label.new(xRight, sigStop,
+             text="SL " + str.tostring(sigStop, format.mintick),
+             xloc=xloc.bar_index, style=label.style_label_left,
+             color=color.new(color.red, 20), textcolor=color.white, size=size.tiny)
+        tpTag := label.new(xRight, tpPrice,
+             text="TP " + str.tostring(tpPrice, format.mintick),
+             xloc=xloc.bar_index, style=label.style_label_left,
+             color=color.new(color.green, 20), textcolor=color.white, size=size.tiny)
+    else if labelMode == "verbose"
+        // 旧仕様: 情報ボックス
+        string txt = sigName + " " + (sigIsLong ? "ロング" : "ショート") +
+             "\nEntry ≈ " + str.tostring(entryPrice, format.mintick) +
+             "\nSL: " + str.tostring(sigStop, format.mintick) +
+             "\nTP: " + str.tostring(tpPrice, format.mintick) +
+             "\nRisk: " + str.tostring(math.abs(riskNow), format.mintick)
+        sigLabel := label.new(bar_index, sigIsLong ? low : high, txt, xloc=xloc.bar_index,
+             style=sigIsLong ? label.style_label_up : label.style_label_down,
+             color=color.new(sigColor, 0), textcolor=color.black, size=size.small)
+    // labelMode == "off" の時はラベルなし (ラインのみ)
 
 // Pine v5 のオブジェクト上限 (max_labels_count=500, max_lines_count=500) を超えた場合は
 // 古いオブジェクトから自動的に削除される (FIFO)。多くの通貨で 50-130 件程度なので余裕。

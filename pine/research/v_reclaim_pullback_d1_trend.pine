@@ -136,11 +136,7 @@ htfClose      = request.security(syminfo.tickerid, htfTF, close,                
 htfAtr        = request.security(syminfo.tickerid, htfTF, ta.atr(atrLen),                                     lookahead=barmerge.lookahead_off)
 
 emaSlope = htfEmaFastV - htfEmaFastOld
-trendOk  = (not useTrendFilter) or
-   (htfClose > htfEmaFastV
-    and htfEmaFastV > htfEmaSlowV
-    and emaSlope > 0
-    and htfRsi >= htfRsiAvoid)
+trendOk = (not useTrendFilter) or (htfClose > htfEmaFastV and htfEmaFastV > htfEmaSlowV and emaSlope > 0 and htfRsi >= htfRsiAvoid)
 
 // =====================================================================
 // Pivots

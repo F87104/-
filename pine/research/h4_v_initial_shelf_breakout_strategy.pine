@@ -1,0 +1,539 @@
+//@version=5
+strategy("H4 V Initial Shelf Breakout [Research]",
+     overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
+     pyramiding=0,
+     calc_on_order_fills=true,
+     calc_on_every_tick=false,
+     process_orders_on_close=false,
+     commission_type=strategy.commission.percent,
+     commission_value=0.0,
+     slippage=2,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500)
+
+// =====================================================================
+// H4 V Initial Shelf Breakout [Research]
+// ---------------------------------------------------------------------
+// Python reference:
+//   SHELF6_PRECALM_BREAK_RR15 / selected symbols
+//   Commit context: 36d90e6 Add H4 V kickoff catalyst study
+//
+// Core idea:
+//   Do not buy the V bottom and do not buy the first reclaim.
+//   Treat the V as "failed selling context", then buy only if price builds
+//   an upper shelf and closes through that shelf high.
+//
+// Run on H4 first. The first parity target is signal time/level matching,
+// not Strategy Tester currency PnL.
+// =====================================================================
+
+grpMode = "基本"
+requireH4 = input.bool(true, "H4チャートのみ売買", group=grpMode)
+useDateFilter = input.bool(true, "2015〜2026のみ検証", group=grpMode)
+skipHoliday = input.bool(true, "12/15〜1/10は新規停止", group=grpMode)
+symbolMode = input.string("4通貨のみ", "銘柄フィルタ", options=["4通貨のみ","除外3銘柄のみ","制限なし"], group=grpMode)
+
+grpPivot = "Pivot / V条件"
+pivotWidth = input.int(3, "Pivot幅", minval=1, maxval=20, group=grpPivot)
+atrLen = input.int(14, "ATR期間", minval=1, group=grpPivot)
+minSwingAtr = input.float(2.0, "Pivot間の最小スイング(ATR)", minval=0.1, step=0.1, group=grpPivot)
+minDropAtr = input.float(2.8, "下落幅の最小ATR", minval=0.1, step=0.1, group=grpPivot)
+minDropSpeed = input.float(0.25, "左肩速度の下限(ATR/本)", minval=0.0, step=0.05, group=grpPivot)
+minSpeedRatio = input.float(1.0, "右肩速度/左肩速度の下限", minval=0.1, step=0.05, group=grpPivot)
+minRecoveryRatio = input.float(0.65, "回復率下限", minval=0.1, maxval=1.5, step=0.01, group=grpPivot)
+maxRecoveryRatio = input.float(1.25, "回復率上限", minval=0.1, maxval=2.0, step=0.01, group=grpPivot)
+minDropBars = input.int(2, "左肩の最小本数", minval=1, group=grpPivot)
+maxDropBars = input.int(30, "左肩の最大本数", minval=2, group=grpPivot)
+maxRecoveryBars = input.int(36, "右肩の最大本数", minval=1, maxval=300, group=grpPivot)
+lowBreakInvalidAtr = input.float(0.10, "V安値割れ失効(ATR)", minval=0.0, step=0.05, group=grpPivot)
+scanPairs = input.int(12, "走査する直近Vペア数", minval=1, maxval=40, group=grpPivot)
+
+grpPre = "V前PRECALM"
+usePreCalm = input.bool(true, "V前の過熱なしを必須化", group=grpPre)
+preAdxMax = input.float(26.0, "ADX14上限", minval=1.0, step=0.5, group=grpPre)
+preEma50SlopeMax = input.float(1.20, "EMA50傾き上限(ATR/20本)", minval=-10.0, step=0.1, group=grpPre)
+preStretchMax = input.float(3.0, "Close-EMA50上限(ATR)", minval=0.1, step=0.1, group=grpPre)
+preRange60Max = input.float(16.0, "60本レンジ幅上限(ATR)", minval=1.0, step=0.5, group=grpPre)
+
+grpShelf = "棚ブレイク"
+shelfBars = input.int(6, "棚の本数", minval=3, maxval=20, group=grpShelf)
+maxContextBars = input.int(36, "V候補後の最大監視本数", minval=3, maxval=120, group=grpShelf)
+maxShelfRangeAtr = input.float(1.8, "棚幅上限(ATR)", minval=0.1, step=0.05, group=grpShelf)
+shelfHoldRatio = input.float(0.50, "棚安値維持ライン(V回復率)", minval=0.0, maxval=1.0, step=0.01, group=grpShelf)
+shelfHoldBufferAtr = input.float(0.05, "棚安値維持の許容(ATR)", minval=0.0, step=0.01, group=grpShelf)
+breakBufferAtr = input.float(0.05, "棚高値上抜け余白(ATR)", minval=0.0, step=0.01, group=grpShelf)
+minBodyRatio = input.float(0.40, "ブレイク足の実体比率", minval=0.0, maxval=1.0, step=0.05, group=grpShelf)
+minCloseLocation = input.float(0.60, "ブレイク足の終値位置", minval=0.0, maxval=1.0, step=0.05, group=grpShelf)
+
+grpRisk = "売買"
+rr = input.float(1.5, "TP RR", minval=0.1, step=0.1, group=grpRisk)
+stopBufferAtr = input.float(0.25, "SL余白(ATR)", minval=0.0, step=0.05, group=grpRisk)
+maxRiskAtr = input.float(2.2, "最大リスク幅(ATR)", minval=0.1, step=0.1, group=grpRisk)
+maxHoldBars = input.int(120, "最大保有本数", minval=1, group=grpRisk)
+tpBasis = input.string("Entry基準", "TP計算", options=["Entry基準","Signal基準(36d90e6再現)"], group=grpRisk)
+
+grpView = "表示"
+showCandidates = input.bool(false, "V候補表示", group=grpView)
+showSignals = input.bool(true, "シグナル表示", group=grpView)
+showSkips = input.bool(false, "見送り表示", group=grpView)
+showLevels = input.bool(true, "棚/SL/TPライン", group=grpView)
+showTable = input.bool(true, "状態テーブル", group=grpView)
+maxLabels = input.int(80, "残すラベル数", minval=10, maxval=300, group=grpView)
+labelShiftBars = input.int(0, "ラベル右ずらし", minval=0, maxval=80, group=grpView)
+labelOffsetAtr = input.float(3.0, "ラベル上下余白(ATR)", minval=0.5, step=0.5, group=grpView)
+
+fmt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, format.mintick)
+    out
+
+fmtNum(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#.##")
+    out
+
+fmtInt(int v) =>
+    string out = na(v) ? "N/A" : str.tostring(v)
+    out
+
+skipText(int code) =>
+    string out = code == 1 ? "H4以外" :
+         code == 2 ? "期間外" :
+         code == 3 ? "年末年始" :
+         code == 4 ? "銘柄対象外" :
+         code == 5 ? "保有/発注中" :
+         code == 6 ? "PRECALM不足" :
+         code == 7 ? "棚が広い" :
+         code == 8 ? "棚安値維持不足" :
+         code == 9 ? "足品質不足" :
+         code == 10 ? "リスク幅NG" :
+         code == 11 ? "候補期限切れ" :
+         "見送り"
+    out
+
+var label[] labels = array.new_label()
+var line[] lines = array.new_line()
+
+keepLabel(label lb) =>
+    array.push(labels, lb)
+    while array.size(labels) > maxLabels
+        label.delete(array.shift(labels))
+
+keepLine(line ln) =>
+    array.push(lines, ln)
+    while array.size(lines) > maxLabels * 4
+        line.delete(array.shift(lines))
+
+// ---------------------------------------------------------------------
+// Indicators and global filters.
+// ---------------------------------------------------------------------
+float atrValue = ta.atr(atrLen)
+float ema50 = ta.ema(close, 50)
+float ema50Slope20Atr = not na(ema50[20]) and atrValue > 0 ? (ema50 - ema50[20]) / atrValue : na
+float range60Atr = atrValue > 0 ? (ta.highest(high, 60) - ta.lowest(low, 60)) / atrValue : na
+float closeEma50StretchAtr = atrValue > 0 ? (close - ema50) / atrValue : na
+[diPlus, diMinus, adx14] = ta.dmi(14, 14)
+
+float barRange = high - low
+float bodyRatio = barRange > 0 ? math.abs(close - open) / barRange : 0.0
+float closeLocation = barRange > 0 ? (close - low) / barRange : 0.5
+int chartSec = timeframe.in_seconds(timeframe.period)
+int barMs = chartSec * 1000
+
+bool h4Ok = not requireH4 or chartSec == 240 * 60
+bool dateOk = not useDateFilter or (year >= 2015 and year <= 2026)
+bool holidayOk = not skipHoliday or not ((month == 12 and dayofmonth >= 15) or (month == 1 and dayofmonth <= 10))
+string tickerText = syminfo.ticker
+bool selectedSymbol = str.contains(tickerText, "USDJPY") or str.contains(tickerText, "EURJPY") or str.contains(tickerText, "GBPJPY") or str.contains(tickerText, "AUDJPY")
+bool excludedSymbol = str.contains(tickerText, "XAU") or str.contains(tickerText, "CHFJPY") or str.contains(tickerText, "XAG") or str.contains(tickerText, "SILVER")
+bool symbolOk = symbolMode == "4通貨のみ" ? selectedSymbol : symbolMode == "除外3銘柄のみ" ? not excludedSymbol : true
+
+// ---------------------------------------------------------------------
+// Confirmed pivots. This mirrors the Python check:
+// high[pivot] >= max(window), low[pivot] <= min(window), and skip if both.
+// ---------------------------------------------------------------------
+int pivotWindow = pivotWidth * 2 + 1
+float pivotHighCandidate = high[pivotWidth]
+float pivotLowCandidate = low[pivotWidth]
+float pivotAtrCandidate = atrValue[pivotWidth]
+bool enoughPivotHistory = bar_index >= pivotWidth * 2 and not na(pivotAtrCandidate)
+bool isPivotHigh = enoughPivotHistory and not na(pivotHighCandidate) and pivotHighCandidate >= ta.highest(high, pivotWindow)
+bool isPivotLow = enoughPivotHistory and not na(pivotLowCandidate) and pivotLowCandidate <= ta.lowest(low, pivotWindow)
+
+var int[] pKinds = array.new_int()
+var float[] pPrices = array.new_float()
+var int[] pBars = array.new_int()
+var int[] pTimes = array.new_int()
+var float[] pAtrs = array.new_float()
+var float[] pAdxs = array.new_float()
+var float[] pSlopes = array.new_float()
+var float[] pStretches = array.new_float()
+var float[] pRange60s = array.new_float()
+var string[] usedPairs = array.new_string()
+
+bool acceptedPivot = false
+int newKind = 0
+float newPrice = na
+int newBar = na
+int newTime = na
+float newAtr = na
+float newAdx = na
+float newSlope = na
+float newStretch = na
+float newRange60 = na
+
+if isPivotHigh and not isPivotLow
+    newKind := 1
+    newPrice := pivotHighCandidate
+    newBar := bar_index - pivotWidth
+    newTime := time[pivotWidth]
+    newAtr := pivotAtrCandidate
+    newAdx := adx14[pivotWidth]
+    newSlope := ema50Slope20Atr[pivotWidth]
+    newStretch := closeEma50StretchAtr[pivotWidth]
+    newRange60 := range60Atr[pivotWidth]
+else if isPivotLow and not isPivotHigh
+    newKind := -1
+    newPrice := pivotLowCandidate
+    newBar := bar_index - pivotWidth
+    newTime := time[pivotWidth]
+    newAtr := pivotAtrCandidate
+    newAdx := adx14[pivotWidth]
+    newSlope := ema50Slope20Atr[pivotWidth]
+    newStretch := closeEma50StretchAtr[pivotWidth]
+    newRange60 := range60Atr[pivotWidth]
+
+if newKind != 0 and not na(newAtr) and newAtr > 0
+    int n = array.size(pKinds)
+    if n == 0
+        array.push(pKinds, newKind)
+        array.push(pPrices, newPrice)
+        array.push(pBars, newBar)
+        array.push(pTimes, newTime)
+        array.push(pAtrs, newAtr)
+        array.push(pAdxs, newAdx)
+        array.push(pSlopes, newSlope)
+        array.push(pStretches, newStretch)
+        array.push(pRange60s, newRange60)
+        acceptedPivot := true
+    else
+        int lastKind = array.get(pKinds, n - 1)
+        float lastPrice = array.get(pPrices, n - 1)
+        if newKind == lastKind
+            bool moreExtreme = (newKind == 1 and newPrice > lastPrice) or (newKind == -1 and newPrice < lastPrice)
+            if moreExtreme
+                array.set(pPrices, n - 1, newPrice)
+                array.set(pBars, n - 1, newBar)
+                array.set(pTimes, n - 1, newTime)
+                array.set(pAtrs, n - 1, newAtr)
+                array.set(pAdxs, n - 1, newAdx)
+                array.set(pSlopes, n - 1, newSlope)
+                array.set(pStretches, n - 1, newStretch)
+                array.set(pRange60s, n - 1, newRange60)
+                acceptedPivot := true
+        else
+            float swing = math.abs(newPrice - lastPrice)
+            float lastAtr = array.get(pAtrs, n - 1)
+            float threshold = math.max(newAtr, lastAtr) * minSwingAtr
+            if swing >= threshold
+                array.push(pKinds, newKind)
+                array.push(pPrices, newPrice)
+                array.push(pBars, newBar)
+                array.push(pTimes, newTime)
+                array.push(pAtrs, newAtr)
+                array.push(pAdxs, newAdx)
+                array.push(pSlopes, newSlope)
+                array.push(pStretches, newStretch)
+                array.push(pRange60s, newRange60)
+                acceptedPivot := true
+
+while array.size(pKinds) > 90
+    array.shift(pKinds)
+    array.shift(pPrices)
+    array.shift(pBars)
+    array.shift(pTimes)
+    array.shift(pAtrs)
+    array.shift(pAdxs)
+    array.shift(pSlopes)
+    array.shift(pStretches)
+    array.shift(pRange60s)
+
+while array.size(usedPairs) > 300
+    array.shift(usedPairs)
+
+// ---------------------------------------------------------------------
+// V context state. One context is tracked until it signals or expires.
+// ---------------------------------------------------------------------
+var bool contextActive = false
+var string ctxPairKey = ""
+var int ctxBar = na
+var int ctxTime = na
+var float ctxStartPrice = na
+var float ctxLowPrice = na
+var int ctxStartBar = na
+var int ctxLowBar = na
+var int ctxStartTime = na
+var int ctxLowTime = na
+var float ctxDrop = na
+var float ctxDropAtr = na
+var int ctxDropBars = na
+var int ctxRecoveryBars = na
+var float ctxRecoveryRatio = na
+var float ctxDropSpeed = na
+var float ctxRecoverySpeed = na
+var float ctxSpeedRatio = na
+var float ctxPreAdx = na
+var float ctxPreSlope = na
+var float ctxPreStretch = na
+var float ctxPreRange60 = na
+
+var bool pendingLong = false
+var int pendingSignalBar = na
+var float pendingStop = na
+var float pendingSignalTarget = na
+var int entryBar = na
+var int lastExitBar = na
+var float activeStop = na
+var float activeTarget = na
+
+bool exitedThisBar = strategy.position_size == 0 and nz(strategy.position_size[1]) != 0
+if exitedThisBar
+    lastExitBar := bar_index
+    entryBar := na
+    activeStop := na
+    activeTarget := na
+
+bool flatNow = strategy.position_size == 0 and not pendingLong and (na(lastExitBar) or bar_index > lastExitBar)
+bool baseOk = h4Ok and dateOk and holidayOk and symbolOk and flatNow
+
+bool newContext = false
+bool rawSignal = false
+bool breakoutAttempt = false
+int skipCode = 0
+
+float signalStop = na
+float signalTargetSignalBasis = na
+float signalShelfHigh = na
+float signalShelfLow = na
+float signalShelfRangeAtr = na
+float signalHoldLine = na
+float signalBreakoutAtr = na
+float signalRiskAtr = na
+
+// Find first valid V context if none is active.
+if not contextActive and baseOk and array.size(pKinds) >= 2 and not na(atrValue) and atrValue > 0
+    int nP = array.size(pKinds)
+    int maxScan = math.min(scanPairs, nP - 1)
+    for scan = 0 to 39
+        if scan < maxScan and not contextActive
+            int j = nP - 2 - scan
+            int k0 = array.get(pKinds, j)
+            int k1 = array.get(pKinds, j + 1)
+            if k0 == 1 and k1 == -1
+                float startPrice = array.get(pPrices, j)
+                float lowPrice = array.get(pPrices, j + 1)
+                int startBar = array.get(pBars, j)
+                int lowBar = array.get(pBars, j + 1)
+                int startTime = array.get(pTimes, j)
+                int lowTime = array.get(pTimes, j + 1)
+                string pairKey = str.tostring(startBar) + "-" + str.tostring(lowBar)
+                if not array.includes(usedPairs, pairKey)
+                    float drop = startPrice - lowPrice
+                    int dropBars = math.max(lowBar - startBar, 1)
+                    int recoveryBars = math.max(bar_index - lowBar, 1)
+                    float recovery = close - lowPrice
+                    float recoveryRatio = drop > 0 ? recovery / drop : na
+                    float dropAtr = drop / atrValue
+                    float dropSpeed = drop / dropBars / atrValue
+                    float recoverySpeed = recovery / recoveryBars / atrValue
+                    float speedRatio = dropSpeed > 0 ? recoverySpeed / dropSpeed : na
+                    float postLow = low
+                    for m = 1 to 300
+                        if m < recoveryBars and m <= maxRecoveryBars and not na(low[m])
+                            postLow := math.min(postLow, low[m])
+                    bool dropOk = drop > 0 and dropAtr >= minDropAtr and dropSpeed >= minDropSpeed
+                    bool barsOk = dropBars >= minDropBars and dropBars <= maxDropBars and recoveryBars <= maxRecoveryBars
+                    bool speedOk = not na(speedRatio) and speedRatio >= minSpeedRatio
+                    bool recoveryOk = not na(recoveryRatio) and recoveryRatio >= minRecoveryRatio and recoveryRatio <= maxRecoveryRatio
+                    bool lowHeld = postLow >= lowPrice - atrValue * lowBreakInvalidAtr
+                    if dropOk and barsOk and speedOk and recoveryOk and lowHeld
+                        contextActive := true
+                        newContext := true
+                        ctxPairKey := pairKey
+                        ctxBar := bar_index
+                        ctxTime := time
+                        ctxStartPrice := startPrice
+                        ctxLowPrice := lowPrice
+                        ctxStartBar := startBar
+                        ctxLowBar := lowBar
+                        ctxStartTime := startTime
+                        ctxLowTime := lowTime
+                        ctxDrop := drop
+                        ctxDropAtr := dropAtr
+                        ctxDropBars := dropBars
+                        ctxRecoveryBars := recoveryBars
+                        ctxRecoveryRatio := recoveryRatio
+                        ctxDropSpeed := dropSpeed
+                        ctxRecoverySpeed := recoverySpeed
+                        ctxSpeedRatio := speedRatio
+                        ctxPreAdx := array.get(pAdxs, j)
+                        ctxPreSlope := array.get(pSlopes, j)
+                        ctxPreStretch := array.get(pStretches, j)
+                        ctxPreRange60 := array.get(pRange60s, j)
+
+// Shelf breakout check. Shelf excludes the signal bar: high[1]/low[1].
+if contextActive and not na(atrValue) and atrValue > 0
+    int contextAge = bar_index - ctxBar
+    bool expired = contextAge > maxContextBars
+    bool enoughShelf = contextAge >= shelfBars and bar_index - shelfBars >= ctxBar
+    float shelfHigh = ta.highest(high[1], shelfBars)
+    float shelfLow = ta.lowest(low[1], shelfBars)
+    float shelfRangeAtr = (shelfHigh - shelfLow) / atrValue
+    float holdLine = ctxLowPrice + ctxDrop * shelfHoldRatio
+    bool shelfTight = shelfRangeAtr <= maxShelfRangeAtr
+    bool shelfHolds = shelfLow >= holdLine - atrValue * shelfHoldBufferAtr
+    bool brokeShelf = close > shelfHigh + atrValue * breakBufferAtr
+    bool qualityOk = bodyRatio >= minBodyRatio and closeLocation >= minCloseLocation
+    bool preCalmOk = not usePreCalm or (
+         not na(ctxPreAdx) and not na(ctxPreSlope) and not na(ctxPreStretch) and not na(ctxPreRange60) and
+         ctxPreAdx <= preAdxMax and ctxPreSlope <= preEma50SlopeMax and ctxPreStretch <= preStretchMax and ctxPreRange60 <= preRange60Max)
+    float stopPrice = shelfLow - atrValue * stopBufferAtr
+    float riskDist = close - stopPrice
+    float riskAtr = riskDist / atrValue
+    breakoutAttempt := enoughShelf and brokeShelf
+    skipCode := expired ? 11 :
+         not h4Ok ? 1 :
+         not dateOk ? 2 :
+         not holidayOk ? 3 :
+         not symbolOk ? 4 :
+         not flatNow ? 5 :
+         not preCalmOk ? 6 :
+         not shelfTight ? 7 :
+         not shelfHolds ? 8 :
+         not qualityOk ? 9 :
+         riskDist <= 0 or riskAtr > maxRiskAtr ? 10 :
+         0
+    if expired
+        contextActive := false
+    else if breakoutAttempt
+        signalStop := stopPrice
+        signalTargetSignalBasis := close + riskDist * rr
+        signalShelfHigh := shelfHigh
+        signalShelfLow := shelfLow
+        signalShelfRangeAtr := shelfRangeAtr
+        signalHoldLine := holdLine
+        signalBreakoutAtr := (close - shelfHigh) / atrValue
+        signalRiskAtr := riskAtr
+        rawSignal := skipCode == 0
+        if rawSignal
+            contextActive := false
+            array.push(usedPairs, ctxPairKey)
+
+// ---------------------------------------------------------------------
+// Orders. Entry fills at next bar open with process_orders_on_close=false.
+// TP defaults to Entry-based. Signal-basis target is kept for 36d90e6 parity.
+// ---------------------------------------------------------------------
+if rawSignal and not pendingLong and strategy.position_size == 0
+    pendingLong := true
+    pendingSignalBar := bar_index
+    pendingStop := signalStop
+    pendingSignalTarget := signalTargetSignalBasis
+    strategy.entry("Long", strategy.long)
+
+if pendingLong and strategy.position_size > 0
+    pendingLong := false
+    entryBar := bar_index
+    activeStop := pendingStop
+    activeTarget := tpBasis == "Entry基準" ? strategy.position_avg_price + (strategy.position_avg_price - activeStop) * rr : pendingSignalTarget
+
+if pendingLong and bar_index > pendingSignalBar + 2 and strategy.position_size == 0
+    pendingLong := false
+    pendingStop := na
+    pendingSignalTarget := na
+
+if strategy.position_size > 0 and not na(activeStop) and not na(activeTarget)
+    strategy.exit("L-Exit", from_entry="Long", stop=activeStop, limit=activeTarget)
+    if not na(entryBar) and bar_index - entryBar >= maxHoldBars
+        strategy.close("Long", comment="Time")
+
+// ---------------------------------------------------------------------
+// Visuals fixed by bar time.
+// ---------------------------------------------------------------------
+plotshape(showCandidates and newContext, title="V Context", style=shape.circle, location=location.belowbar, color=color.new(color.aqua, 0), size=size.tiny, text="V候補")
+plotshape(showSignals and rawSignal, title="Initial Shelf Long", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="棚B")
+plotshape(showSkips and breakoutAttempt and not rawSignal, title="Initial Shelf Skip", style=shape.xcross, location=location.abovebar, color=color.new(color.gray, 0), size=size.tiny, text="見送り")
+
+plot(showLevels and contextActive ? ta.highest(high[1], shelfBars) : na, title="Watching Shelf High", color=color.new(color.yellow, 0), linewidth=1, style=plot.style_linebr)
+plot(showLevels and contextActive ? ta.lowest(low[1], shelfBars) : na, title="Watching Shelf Low", color=color.new(color.orange, 10), linewidth=1, style=plot.style_linebr)
+plot(showLevels and strategy.position_size > 0 ? activeStop : na, title="Active SL", color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
+plot(showLevels and strategy.position_size > 0 ? activeTarget : na, title="Active TP", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
+
+float labelAtr = ta.atr(14)
+int labelTime = time + barMs * labelShiftBars
+int lineEndTime = time + barMs * 36
+
+if showCandidates and newContext
+    string cTxt = "V候補\nFib: " + fmtNum(ctxRecoveryRatio) + "\nDrop: " + fmtNum(ctxDropAtr) + "ATR\nSpeed: " + fmtNum(ctxSpeedRatio) + "x"
+    keepLabel(label.new(labelTime, low - labelAtr * labelOffsetAtr, cTxt, xloc=xloc.bar_time, style=label.style_label_up, color=color.new(color.aqua, 0), textcolor=color.black, size=size.tiny))
+    if showLevels
+        keepLine(line.new(ctxStartTime, ctxStartPrice, ctxLowTime, ctxLowPrice, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2))
+        keepLine(line.new(ctxLowTime, ctxLowPrice, time, close, xloc=xloc.bar_time, color=color.new(color.aqua, 0), width=2))
+
+if showSkips and breakoutAttempt and not rawSignal
+    string sTxt = "見送り\n" + skipText(skipCode)
+    keepLabel(label.new(labelTime, high + labelAtr * labelOffsetAtr, sTxt, xloc=xloc.bar_time, style=label.style_label_down, color=color.new(color.gray, 10), textcolor=color.white, size=size.tiny))
+
+if showSignals and rawSignal
+    string eTxt = "Initial Shelf LONG\nE: next open\nSL: " + fmt(signalStop) + "\nTP(sig): " + fmt(signalTargetSignalBasis) + "\nRisk: " + fmtNum(signalRiskAtr) + "ATR\nShelf: " + fmtNum(signalShelfRangeAtr) + "ATR"
+    keepLabel(label.new(labelTime, low - labelAtr * labelOffsetAtr, eTxt, xloc=xloc.bar_time, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
+    if showLevels
+        keepLine(line.new(ctxStartTime, ctxStartPrice, ctxLowTime, ctxLowPrice, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2))
+        keepLine(line.new(ctxLowTime, ctxLowPrice, time, close, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2))
+        keepLine(line.new(time[shelfBars], signalShelfHigh, time, signalShelfHigh, xloc=xloc.bar_time, color=color.new(color.yellow, 0), width=2))
+        keepLine(line.new(time[shelfBars], signalShelfLow, time, signalShelfLow, xloc=xloc.bar_time, color=color.new(color.orange, 0), width=1))
+        keepLine(line.new(time, signalStop, lineEndTime, signalStop, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2, style=line.style_dashed))
+        keepLine(line.new(time, signalTargetSignalBasis, lineEndTime, signalTargetSignalBasis, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2, style=line.style_dashed))
+
+var table t = table.new(position.top_right, 2, 18, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+if showTable and barstate.islast
+    table.cell(t, 0, 0, "Method", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 0, "Initial Shelf", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 1, "Chart", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 1, h4Ok ? "H4 OK" : "H4以外", text_color=h4Ok ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 2, "Symbol", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 2, symbolOk ? syminfo.ticker : "対象外", text_color=symbolOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 3, "State", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 3, strategy.position_size > 0 ? "LONG" : pendingLong ? "PENDING" : contextActive ? "棚待ち" : "FLAT", text_color=strategy.position_size > 0 ? color.lime : pendingLong ? color.yellow : contextActive ? color.aqua : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 4, "Pivots", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, str.tostring(array.size(pKinds)), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 5, "Ctx age", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 5, contextActive ? str.tostring(bar_index - ctxBar) : "N/A", text_color=contextActive ? color.aqua : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 6, "Drop ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 6, fmtNum(ctxDropAtr), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 7, "Fib/Speed", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 7, fmtNum(ctxRecoveryRatio) + " / " + fmtNum(ctxSpeedRatio), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 8, "Bars L/R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 8, fmtInt(ctxDropBars) + " / " + fmtInt(ctxRecoveryBars), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 9, "Pre ADX", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 9, fmtNum(ctxPreAdx), text_color=not na(ctxPreAdx) and ctxPreAdx <= preAdxMax ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 10, "Pre slope", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 10, fmtNum(ctxPreSlope), text_color=not na(ctxPreSlope) and ctxPreSlope <= preEma50SlopeMax ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 11, "Pre range60", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 11, fmtNum(ctxPreRange60), text_color=not na(ctxPreRange60) and ctxPreRange60 <= preRange60Max ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 12, "Shelf rng", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 12, fmtNum(signalShelfRangeAtr), text_color=not na(signalShelfRangeAtr) and signalShelfRangeAtr <= maxShelfRangeAtr ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 13, "Break ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 13, fmtNum(signalBreakoutAtr), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 14, "Body/Close", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 14, fmtNum(bodyRatio) + " / " + fmtNum(closeLocation), text_color=bodyRatio >= minBodyRatio and closeLocation >= minCloseLocation ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 15, "Risk ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 15, fmtNum(signalRiskAtr), text_color=not na(signalRiskAtr) and signalRiskAtr <= maxRiskAtr ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 16, "Last skip", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 16, skipCode == 0 ? "OK/待機" : skipText(skipCode), text_color=skipCode == 0 ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 17, "Target", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 17, tpBasis, text_color=color.aqua, text_size=size.tiny)
+
+alertcondition(newContext, title="H4 V Initial Shelf Context", message="H4 V initial shelf context on {{ticker}} {{interval}}")
+alertcondition(rawSignal, title="H4 V Initial Shelf Breakout Long", message="H4 V initial shelf breakout long on {{ticker}} {{interval}}")

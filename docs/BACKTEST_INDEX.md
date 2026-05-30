@@ -142,6 +142,7 @@
 | **Initial Shelf最終仕様** | [`backtests/elliott_fibo/results_2026_05_30/h4_v_initial_shelf_deep_dive/final_spec_ja.md`](../backtests/elliott_fibo/results_2026_05_30/h4_v_initial_shelf_deep_dive/final_spec_ja.md) | Pine strategy化用の本線仕様と監視バリアント | Entry基準TPで実装 |
 | **検証コード** | [`backtests/elliott_fibo/run_h4_v_kickoff_catalyst_study.py`](../backtests/elliott_fibo/run_h4_v_kickoff_catalyst_study.py) | Python検証本体 | Pine化前の正データ |
 | **深掘り検証コード** | [`backtests/elliott_fibo/run_h4_v_initial_shelf_deep_dive.py`](../backtests/elliott_fibo/run_h4_v_initial_shelf_deep_dive.py) | Initial Shelf専用の監査・感度分析コード | 36d90e6再現一致 |
+| **Pine Strategy** | [`pine/research/h4_v_initial_shelf_breakout_strategy.pine`](../pine/research/h4_v_initial_shelf_breakout_strategy.pine) | H4専用、confirmed pivot、棚6本、Entry基準TP | TradingView照合用 |
 
 主要候補:
 

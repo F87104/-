@@ -51,6 +51,7 @@
 
 ## Pine実装注意
 
+- 実装ファイル: `pine/research/h4_v_initial_shelf_breakout_strategy.pine`
 - pivotはconfirmedのみ。`ta.pivothigh/low(left, right)` の検出足は `bar_index - right`、利用可能になるのは現在足。
 - 棚はシグナル足を含めず `high[1]` から過去6本で計算。
 - strategy entryはシグナル足で注文、約定は次足始値想定。

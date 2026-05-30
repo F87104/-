@@ -299,7 +299,8 @@ bool  sigIsLong = sqzLong or capLong
 string sigName = sqzLong ? "SQZ" : (capLong ? "CAP" : (llShort ? "LL" : ""))
 color  sigColor = sqzLong ? color.lime : (capLong ? color.aqua : color.red)
 
-if showLevels and anySig and not na(sigStop)
+// ラベル / ラインは **バー確定後** にのみ描画する (ライブ中の点滅を防ぐ)
+if showLevels and anySig and not na(sigStop) and barstate.isconfirmed
     float entryPrice = close       // 次バー始値で約定するが、視覚的には close (信号バー終値) を起点
     float riskNow    = sigIsLong ? (entryPrice - sigStop) : (sigStop - entryPrice)
     float tpPrice    = sigIsLong ? (entryPrice + rr * riskNow) : (entryPrice - rr * riskNow)

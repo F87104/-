@@ -1,0 +1,10 @@
+check,value
+source_trades,34.0
+reproduced_trades,34.0
+matched_entry_times,34.0
+source_only,0.0
+reproduced_only,0.0
+max_abs_diff_entry,0.0
+max_abs_diff_stop,1.4210854715202004e-14
+max_abs_diff_target,1.4210854715202004e-14
+max_abs_diff_r_after_cost,2.220446049250313e-16

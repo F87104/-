@@ -138,7 +138,10 @@
 | **研究メモ** | [`docs/research/h4_v_kickoff_catalyst_2026-05-30.md`](research/h4_v_kickoff_catalyst_2026-05-30.md) | Vを底買いではなく、相場拡大の触媒として再定義 | まずここを読む |
 | **応用手法仕様整理** | [`docs/research/h4_v_recovery_strategy_candidates_2026-05-30.md`](research/h4_v_recovery_strategy_candidates_2026-05-30.md) | V字回復ロジックから派生手法を複数定義し、本命仕様を整理 | Pine化するならこの仕様を基準にする |
 | **結果レポート** | [`backtests/elliott_fibo/results_2026_05_30/h4_v_kickoff_catalyst/report_ja.md`](../backtests/elliott_fibo/results_2026_05_30/h4_v_kickoff_catalyst/report_ja.md) | V後の棚ブレイク、DON55、PRECALM、自作ライン応用を比較 | 棚ブレイク + PRECALM が初動寄り |
+| **Initial Shelf深掘り** | [`backtests/elliott_fibo/results_2026_05_30/h4_v_initial_shelf_deep_dive/deep_dive_report_ja.md`](../backtests/elliott_fibo/results_2026_05_30/h4_v_initial_shelf_deep_dive/deep_dive_report_ja.md) | 再現監査、勝ち負け比較、感度分析、OOS/ロバスト性確認 | 採用候補だが通常ロットは保留 |
+| **Initial Shelf最終仕様** | [`backtests/elliott_fibo/results_2026_05_30/h4_v_initial_shelf_deep_dive/final_spec_ja.md`](../backtests/elliott_fibo/results_2026_05_30/h4_v_initial_shelf_deep_dive/final_spec_ja.md) | Pine strategy化用の本線仕様と監視バリアント | Entry基準TPで実装 |
 | **検証コード** | [`backtests/elliott_fibo/run_h4_v_kickoff_catalyst_study.py`](../backtests/elliott_fibo/run_h4_v_kickoff_catalyst_study.py) | Python検証本体 | Pine化前の正データ |
+| **深掘り検証コード** | [`backtests/elliott_fibo/run_h4_v_initial_shelf_deep_dive.py`](../backtests/elliott_fibo/run_h4_v_initial_shelf_deep_dive.py) | Initial Shelf専用の監査・感度分析コード | 36d90e6再現一致 |
 
 主要候補:
 

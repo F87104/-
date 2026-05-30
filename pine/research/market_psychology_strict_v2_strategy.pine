@@ -179,10 +179,8 @@ if strategy.position_size > 0 and not na(activeStop)
         // Early-exit rule (#2)
         if useEarlyExit and not na(entryBar)
             int barsHeld = bar_index - entryBar
-            float mfeR   = (ta.highest(high, barsHeld + 1)
-                            - strategy.position_avg_price) / risk0
+            float mfeR = (ta.highest(high, barsHeld + 1) - strategy.position_avg_price) / risk0
             if barsHeld >= earlyBars and mfeR < earlyMfeR
-                float earlyStop = strategy.position_avg_price - earlyLossR * risk0
                 strategy.close("L", comment="early_exit_mfe")
 
         // Time stop (max hold)

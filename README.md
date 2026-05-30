@@ -2,7 +2,45 @@
 
 > H1/H4 ベースの自動売買戦略コレクション。10年バックテスト (2015-2024) + OOS (2025-2026) で検証済みの **2本柱戦略** を運用するためのコード一式。
 
-**最終更新**: 2026-05-28
+**最終更新**: 2026-05-30
+
+---
+
+## 🏆 最新: 市場心理 v2 (Deep Research 統合版)
+
+10 項目の深掘り検証 ([#1〜#10](backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md)) を統合した **現時点の最強仕様**。
+
+| 種類 | ファイル | TradingView 表示名 |
+|---|---|---|
+| 🏆 strategy v2 | **[`pine/research/market_psychology_strict_v2_strategy.pine`](pine/research/market_psychology_strict_v2_strategy.pine)** | `本命v2 Market Psychology Strict v2 (Squeeze + Capitulation)` |
+| 📋 v2 仕様書 | **[`docs/research/market_psychology/v2_spec.md`](docs/research/market_psychology/v2_spec.md)** | — |
+| 📊 検証レポート | **[`backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md`](backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md)** | — |
+| 🐍 検証コード | [`backtests/elliott_fibo/run_market_psychology_v2_deep_research.py`](backtests/elliott_fibo/run_market_psychology_v2_deep_research.py) | — |
+
+### v1 比較
+
+| 指標 | v1 SQZ_STRICT ex GBPJPY | **v2 SYNTHESIS** | 改善 |
+|---|---:|---:|---:|
+| PF | 2.21 | **2.88** | **+30%** |
+| DD | 3.09R | **2.06R** | **-33%** |
+| Trades (10年) | 43 | 15-20 | -65% (件数減は Capitulation v2 で補填) |
+
+| Capitulation 指標 | v1 CAP_DEFAULT ex GBPJPY | **v2 CAP (sig_range≥3.0)** | 改善 |
+|---|---:|---:|---:|
+| PF | 1.06 | **2.06** | **PF 2 倍** |
+| DD | 26.46R | **4.51R** | **-83%** |
+
+### v2 で何を変えたか (要約)
+
+- **棚** ≤ 2.2 ATR (v1: 2.0) / **急落** ≥ 4.0 ATR (v1: 3.5) ← 研究 #3
+- **Capitulation の `signal_range_atr` ≥ 3.0** を必須化 ← 研究 #10 (最重要)
+- **早期撤退**: MFE < 0.5R after 12 bars → -0.35R 撤退 ← 研究 #2
+- **時間フィルタ** 4 / 8 / 16 / 20 UTC のみ (任意) ← 研究 #8
+- **Volume フィルタ** vol > sma(20) × 1.3 (任意 / TV 限定) ← 研究 #1
+- **通貨除外**: Sqz=GBPJPY、Cap=**GBPJPY + SILVER** ← 研究 #9
+
+> ⚠️ 注意: 上記 2 本柱 (TrendBreakV1 + H4 T5) **とは別の研究ライン** の本命です。
+> v2 でも本番通常ロット採用判断は **フォワード 30 件記録後**。
 
 ---
 

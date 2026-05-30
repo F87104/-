@@ -1,0 +1,210 @@
+//@version=5
+// =============================================================================
+// Market Psychology Strict v2 — Best-of-research consolidated strategy
+//
+// 統合された本命仕様。10 項目の deep research (#1 〜 #10) の結果を反映。
+// 詳細レポート:
+//   backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md
+//
+// 既存版との関係:
+//   pine/research/market_psychology_strategy.pine          (v1 default, ① + ②)
+//   pine/research/market_psychology_squeeze_strict_strategy.pine (v1 strict, ① のみ)
+//   pine/research/market_psychology_strict_v2_strategy.pine ← 本ファイル (v2)
+//
+// v1 からの主な変更:
+//   #3 棚幅上限 2.0 → 2.2 ATR / 急落幅下限 3.5 → 4.0 ATR (PF +16%)
+//   #4 body / close_location フィルタは廃止 (寄与なし確認)
+//   #10 Capitulation: signal_range_atr >= 3.0 を必須化 (PF 1.06 → 2.06)
+//   #9 通貨除外: Sqz=GBPJPY のみ、Cap=GBPJPY+SILVER
+//   #2 早期撤退: MFE が N 本以内に X*R 未満なら早期撤退
+//   #8 時間フィルタ: 4/8/16/20 UTC のみ (オプション)
+//   #1 Volume: TV 実 volume での足切り (オプション)
+//   #7 他戦略との重複ゼロ確認済み → 重複制御は不要
+//
+// 推奨時間足: H4
+// =============================================================================
+strategy("本命v2 Market Psychology Strict v2 (Squeeze + Capitulation)",
+     overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
+     pyramiding=0,
+     calc_on_order_fills=true,
+     calc_on_every_tick=false,
+     process_orders_on_close=false,
+     commission_type=strategy.commission.percent,
+     commission_value=0.0,
+     slippage=2,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500)
+
+plot(na, title="Compiler Anchor", display=display.none)
+
+// ---------------------------------------------------------------------
+// Common
+// ---------------------------------------------------------------------
+grpG       = "共通"
+requireH4  = input.bool(true, "H4チャートのみ売買", group=grpG)
+useDate    = input.bool(true, "2015〜2026のみ", group=grpG)
+atrLen     = input.int(14, "ATR期間", minval=1, group=grpG)
+rr         = input.float(2.0, "TP RR", minval=0.1, step=0.1, group=grpG)
+stopBufATR = input.float(0.25, "SL余白(ATR)", minval=0.0, step=0.05, group=grpG)
+maxHold    = input.int(120, "最大保有(本)", minval=10, group=grpG)
+riskPct    = input.float(1.0, "1トレードのリスク(%)", minval=0.01, step=0.1, group=grpG)
+
+// ---------------------------------------------------------------------
+// Method selection
+// ---------------------------------------------------------------------
+grpEn   = "使う構造"
+useSqz  = input.bool(true,  "① 踏み上げ Short Squeeze (本命主力)", group=grpEn)
+useCap  = input.bool(false, "② Capitulation 底買い (副軸)", group=grpEn)
+
+// ---------------------------------------------------------------------
+// Squeeze v2 params (research finding #3)
+// ---------------------------------------------------------------------
+grpS      = "① 踏み上げ v2 (research #3)"
+shelfBars = input.int(6, "棚の本数", minval=2, maxval=30, group=grpS)
+dropWin   = input.int(6, "棚直前の急変窓", minval=2, maxval=50, group=grpS)
+shelfAtr  = input.float(2.2, "棚幅上限(ATR) [v1=2.0]", minval=0.5, step=0.1, group=grpS)
+dropAtr   = input.float(4.0, "急落幅下限(ATR) [v1=3.5]", minval=1.0, step=0.1, group=grpS)
+sqzExGBP  = input.bool(true, "GBPJPYを除外 (Sqz)", group=grpS)
+
+// ---------------------------------------------------------------------
+// Capitulation v2 params (research #10)
+// ---------------------------------------------------------------------
+grpC      = "② Capitulation v2 (research #10)"
+declBars  = input.int(24, "長期下落の窓", minval=4, group=grpC)
+dropAtrC  = input.float(4.0, "下落幅 >= ?×ATR", minval=1.0, step=0.1, group=grpC)
+sigRngC   = input.float(3.0, "クライマックス足 値幅 >= ?×ATR [v1=1.8]", minval=0.5, step=0.1, group=grpC)
+wickThr   = input.float(0.5, "下ヒゲ/全体 >=", minval=0.0, maxval=1.0, step=0.05, group=grpC)
+closeLocC = input.float(0.5, "終値位置 >=", minval=0.0, maxval=1.0, step=0.05, group=grpC)
+useDownD1 = input.bool(true, "日足下降中のみ", group=grpC)
+capExGBP  = input.bool(true, "GBPJPYを除外 (Cap)", group=grpC)
+capExSILVER = input.bool(true, "SILVERを除外 (Cap, research #9)", group=grpC)
+
+// ---------------------------------------------------------------------
+// v2 optional filters
+// ---------------------------------------------------------------------
+grpV2     = "v2 追加フィルタ (任意)"
+useEarlyExit = input.bool(true,  "早期撤退: MFE < X*R after N bars (#2)", group=grpV2)
+earlyMfeR    = input.float(0.5,  "早期撤退 MFE 閾値 (R)", minval=0.1, step=0.05, group=grpV2)
+earlyBars    = input.int(12,     "早期撤退 経過バー数",    minval=2, group=grpV2)
+earlyLossR   = input.float(0.35, "早期撤退 損 (R)",       minval=0.05, step=0.05, group=grpV2)
+
+useHourFilter = input.bool(false, "時間フィルタ: 4/8/16/20 UTC のみ (#8)", group=grpV2)
+useVolFilter  = input.bool(false, "Volume: vol > sma(20)*X (#1)", group=grpV2)
+volLen        = input.int(20, "Volume平均期間", minval=2, group=grpV2)
+volMult       = input.float(1.3, "Volume 倍率", minval=0.5, step=0.1, group=grpV2)
+
+// ---------------------------------------------------------------------
+// Common indicators
+// ---------------------------------------------------------------------
+atr     = ta.atr(atrLen)
+rng     = high - low
+rngOk   = rng > 0
+
+int chartSec = timeframe.in_seconds(timeframe.period)
+bool h4Ok    = not requireH4 or chartSec == 240 * 60
+bool dateOk  = not useDate or (year >= 2015 and year <= 2026)
+bool hourOk  = not useHourFilter or hour == 4 or hour == 8 or hour == 16 or hour == 20
+
+bool symOkSqz = not sqzExGBP or not str.contains(syminfo.ticker, "GBPJPY")
+bool symOkCap = (not capExGBP or not str.contains(syminfo.ticker, "GBPJPY"))
+            and (not capExSILVER or not str.contains(syminfo.ticker, "SILVER"))
+            and (not capExSILVER or not str.contains(syminfo.ticker, "XAGUSD"))
+
+float volAvg = ta.sma(volume, volLen)
+bool  volOk  = not useVolFilter or (not na(volAvg) and volume > volAvg * volMult)
+
+// ---------------------------------------------------------------------
+// ① Squeeze (v2)
+// ---------------------------------------------------------------------
+float shelfHi = ta.highest(high, shelfBars)[1]
+float shelfLo = ta.lowest(low, shelfBars)[1]
+float priorHiS = ta.highest(high, dropWin)[1 + shelfBars]
+
+bool sqzCompr = (shelfHi - shelfLo) <= shelfAtr * atr
+bool sqzSharp = (priorHiS - shelfHi) >= dropAtr * atr
+bool sqzFresh = close[1] <= shelfHi and close > shelfHi
+
+bool sqzReady = h4Ok and dateOk and hourOk and symOkSqz and volOk
+        and not na(atr) and atr > 0
+bool sqzLong  = useSqz and sqzReady and sqzCompr and sqzSharp and sqzFresh
+            and strategy.position_size == 0
+float sqzStop = shelfLo - stopBufATR * atr
+
+// ---------------------------------------------------------------------
+// ② Capitulation (v2 with sig_range >= 3.0)
+// ---------------------------------------------------------------------
+bool capNewLow   = low <= ta.lowest(low, declBars)
+bool capProlong  = (ta.highest(high, declBars) - low) >= dropAtrC * atr
+bool capBig      = rng >= sigRngC * atr
+bool capWick     = rngOk and ((math.min(open, close) - low) / rng) >= wickThr
+bool capCloseLoc = rngOk and ((close - low) / rng) >= closeLocC
+
+float d1ema = request.security(syminfo.tickerid, "D", ta.ema(close, 50),
+     lookahead=barmerge.lookahead_off)
+bool capDown    = not useDownD1 or close < d1ema
+
+bool capReady = h4Ok and dateOk and hourOk and symOkCap and volOk
+        and not na(atr) and atr > 0
+bool capLong  = useCap and capReady and capNewLow and capProlong and capBig
+        and capWick and capCloseLoc and capDown
+        and strategy.position_size == 0
+float capStop = low - stopBufATR * atr
+
+// ---------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------
+var float activeStop = na
+var int   entryBar   = na
+
+bool   longSig = sqzLong or capLong
+float  theStop = sqzLong ? sqzStop : capStop
+
+if longSig
+    float dist = close - theStop
+    if dist > 0
+        float qty = (strategy.equity * (riskPct / 100.0)) / dist
+        activeStop := theStop
+        entryBar   := bar_index
+        strategy.entry("L", strategy.long, qty=qty)
+
+if strategy.position_size > 0 and not na(activeStop)
+    float risk0 = strategy.position_avg_price - activeStop
+    if risk0 > 0
+        float target = strategy.position_avg_price + rr * risk0
+        strategy.exit("X", from_entry="L", stop=activeStop, limit=target)
+
+        // Early-exit rule (#2)
+        if useEarlyExit and not na(entryBar)
+            int barsHeld = bar_index - entryBar
+            float mfeR   = (ta.highest(high, barsHeld + 1)
+                            - strategy.position_avg_price) / risk0
+            if barsHeld >= earlyBars and mfeR < earlyMfeR
+                float earlyStop = strategy.position_avg_price - earlyLossR * risk0
+                strategy.close("L", comment="early_exit_mfe")
+
+        // Time stop (max hold)
+        if strategy.opentrades > 0 and bar_index - strategy.opentrades.entry_bar_index(0) >= maxHold
+            strategy.close("L", comment="timeout")
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    activeStop := na
+    entryBar   := na
+
+// ---------------------------------------------------------------------
+// Visuals
+// ---------------------------------------------------------------------
+plotshape(sqzLong, title="踏み上げ v2", style=shape.triangleup,
+     location=location.belowbar, color=color.new(color.lime, 0),
+     size=size.small, text="SQZv2")
+plotshape(capLong, title="投げ切り v2", style=shape.triangleup,
+     location=location.belowbar, color=color.new(color.aqua, 0),
+     size=size.small, text="CAPv2")
+
+alertcondition(sqzLong, title="Squeeze v2 Long",
+     message="SQZ v2 long on {{ticker}} {{interval}} @ {{close}}")
+alertcondition(capLong, title="Capitulation v2 Long",
+     message="CAP v2 long on {{ticker}} {{interval}} @ {{close}}")

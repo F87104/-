@@ -2,7 +2,86 @@
 
 > H1/H4 ベースの自動売買戦略コレクション。10年バックテスト (2015-2024) + OOS (2025-2026) で検証済みの **2本柱戦略** を運用するためのコード一式。
 
-**最終更新**: 2026-05-28
+**最終更新**: 2026-05-30
+
+---
+
+## 🏆 最新: 市場心理 v2.1 (通貨×構造マトリクス自動化版)
+
+TradingView Strategy Tester での実測 (STEP 1+2+3) を統合した **現時点の最強 Pine**。
+チャートに **1 本載せるだけで、その通貨に最適な構造 (Sqz / Cap / LL) を自動 ON/OFF**。
+
+### 採用マトリクス (TV 実測 8〜13 年データ)
+
+| Symbol | Sqz | Cap | LL | 採用 | 通貨合計 Net% |
+|---|:-:|:-:|:-:|---|---:|
+| XAUUSD | ✅ | ❌ | ❌ | Sqz only | +0.98% |
+| XAGUSD (SILVER) | ✅ | ❌ | ❌ | Sqz only | +7.16% |
+| EURJPY | ✅ | ✅ | ❌ | Sqz + Cap | +4.55% |
+| AUDJPY | ✅ | ✅ | ❌ | Sqz + Cap | +4.22% |
+| **USDJPY** | ❌ | ✅ | ✅ | Cap + LL | **+21.99%** 🏆 |
+| CHFJPY | ✅ | ✅ | ✅ | 全構造 | +11.04% |
+| GBPJPY | ❌ | ❌ | ❌ | 全除外 | — |
+| **6 通貨合算 (LL 含む)** | | | | | **+49.94%** |
+
+### v2.1 Pine
+
+| 種類 | ファイル | TradingView 表示名 |
+|---|---|---|
+| 🏆 **v2.1 Matrix** (通貨自動) | **[`pine/research/market_psychology_v2_matrix_strategy.pine`](pine/research/market_psychology_v2_matrix_strategy.pine)** | `本命v2.1 Market Psychology Matrix (Sqz + Cap + LL)` |
+| 📋 仕様書 | [`docs/research/market_psychology/v2_spec.md`](docs/research/market_psychology/v2_spec.md) | — |
+| 📊 STEP 1+2+3 ログ | [`docs/research/market_psychology/forward_log_2026_05_step3.md`](docs/research/market_psychology/forward_log_2026_05_step3.md) | — |
+| 📊 Deep Research レポート | [`backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md`](backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md) | — |
+| 🐍 検証コード | [`backtests/elliott_fibo/run_market_psychology_v2_deep_research.py`](backtests/elliott_fibo/run_market_psychology_v2_deep_research.py) | — |
+
+### 個別 Pine (v2 系: 比較 / デバッグ用)
+
+| 種類 | ファイル | TradingView 表示名 |
+|---|---|---|
+| v2 Sqz + Cap (手動) | [`pine/research/market_psychology_strict_v2_strategy.pine`](pine/research/market_psychology_strict_v2_strategy.pine) | `本命v2 Market Psychology Strict v2` |
+
+### 🆕 拡張パターン (#5 Long Liquidation + #6 Dormant Breakout)
+
+両方とも v2 と同じ R 固定 / Pine v5 / 推奨 H4 (Dormant は D1 も可)。
+Python 検証は未実施 (ローカル OHLC 不在のため) → TradingView Strategy Tester + フォワードで初期確認。
+
+| 種類 | ファイル | TradingView 表示名 |
+|---|---|---|
+| Short 専用 strategy | [`pine/research/market_psychology_long_liquidation_strategy.pine`](pine/research/market_psychology_long_liquidation_strategy.pine) | `本命v2 Market Psychology Long Liquidation [Short]` |
+| Short 観測 visual | [`pine/visual/market_psychology_long_liquidation_visual.pine`](pine/visual/market_psychology_long_liquidation_visual.pine) | `本命v2 Market Psychology Long Liquidation Visual (Short)` |
+| 両方向 strategy | [`pine/research/market_psychology_dormant_breakout_strategy.pine`](pine/research/market_psychology_dormant_breakout_strategy.pine) | `本命v2 Market Psychology Dormant Breakout [両方向]` |
+| 両方向 観測 visual | [`pine/visual/market_psychology_dormant_breakout_visual.pine`](pine/visual/market_psychology_dormant_breakout_visual.pine) | `本命v2 Market Psychology Dormant Breakout Visual` |
+
+### 📝 フォワード記録
+
+| 種類 | ファイル |
+|---|---|
+| 記録テンプレート (月次) | **[`docs/research/market_psychology/forward_log_template.md`](docs/research/market_psychology/forward_log_template.md)** |
+
+### v1 比較
+
+| 指標 | v1 SQZ_STRICT ex GBPJPY | **v2 SYNTHESIS** | 改善 |
+|---|---:|---:|---:|
+| PF | 2.21 | **2.88** | **+30%** |
+| DD | 3.09R | **2.06R** | **-33%** |
+| Trades (10年) | 43 | 15-20 | -65% (件数減は Capitulation v2 で補填) |
+
+| Capitulation 指標 | v1 CAP_DEFAULT ex GBPJPY | **v2 CAP (sig_range≥3.0)** | 改善 |
+|---|---:|---:|---:|
+| PF | 1.06 | **2.06** | **PF 2 倍** |
+| DD | 26.46R | **4.51R** | **-83%** |
+
+### v2 で何を変えたか (要約)
+
+- **棚** ≤ 2.2 ATR (v1: 2.0) / **急落** ≥ 4.0 ATR (v1: 3.5) ← 研究 #3
+- **Capitulation の `signal_range_atr` ≥ 3.0** を必須化 ← 研究 #10 (最重要)
+- **早期撤退**: MFE < 0.5R after 12 bars → -0.35R 撤退 ← 研究 #2
+- **時間フィルタ** 4 / 8 / 16 / 20 UTC のみ (任意) ← 研究 #8
+- **Volume フィルタ** vol > sma(20) × 1.3 (任意 / TV 限定) ← 研究 #1
+- **通貨除外**: Sqz=GBPJPY、Cap=**GBPJPY + SILVER** ← 研究 #9
+
+> ⚠️ 注意: 上記 2 本柱 (TrendBreakV1 + H4 T5) **とは別の研究ライン** の本命です。
+> v2 でも本番通常ロット採用判断は **フォワード 30 件記録後**。
 
 ---
 

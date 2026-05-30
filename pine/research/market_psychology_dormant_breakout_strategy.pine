@@ -118,9 +118,8 @@ bool pbHeldLong = pbLowestLong >= donHi_long
 float pbHighLong = ta.highest(high, pbWin)[1]
 bool reBreakLong = close[1] <= pbHighLong and close > pbHighLong
 
-bool ready = tfOk and dateOk and symOk and volOk and not na(atr) and atr > 0
-bool longSig = useLong and ready and breakHappened_long and pbHeldLong and reBreakLong
-            and strategy.position_size == 0
+bool ready   = tfOk and dateOk and symOk and volOk and not na(atr) and atr > 0
+bool longSig = useLong and ready and breakHappened_long and pbHeldLong and reBreakLong and strategy.position_size == 0
 float longStop = pbLowestLong - stopBufATR * atr
 
 // ---------------------------------------------------------------------
@@ -134,8 +133,7 @@ bool pbHeldShort = pbHighestShort <= donLo_short
 float pbLowShort = ta.lowest(low, pbWin)[1]
 bool reBreakShort = close[1] >= pbLowShort and close < pbLowShort
 
-bool shortSig = useShort and ready and breakHappened_short and pbHeldShort and reBreakShort
-             and strategy.position_size == 0
+bool shortSig = useShort and ready and breakHappened_short and pbHeldShort and reBreakShort and strategy.position_size == 0
 float shortStop = pbHighestShort + stopBufATR * atr
 
 // ---------------------------------------------------------------------

@@ -116,10 +116,9 @@ bool  failedNewHigh = shelfHi < swingHi - 0.05 * atr  // shelf top did not excee
 // Fresh break: prior close inside shelf, current close below shelf low
 bool freshBreak = close[1] >= shelfLo and close < shelfLo - breakBufATR * atr
 
-bool ready = h4Ok and dateOk and hourOk and symOk and volOk
-        and not na(atr) and atr > 0
-bool shortSig = ready and hadRally and compressed and failedNewHigh and freshBreak
-             and strategy.position_size == 0
+bool atrOk    = not na(atr) and atr > 0
+bool ready    = h4Ok and dateOk and hourOk and symOk and volOk and atrOk
+bool shortSig = ready and hadRally and compressed and failedNewHigh and freshBreak and strategy.position_size == 0
 float sigStop = shelfHi + stopBufATR * atr
 
 // ---------------------------------------------------------------------

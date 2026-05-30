@@ -109,10 +109,11 @@ bool h4Ok    = not requireH4 or chartSec == 240 * 60
 bool dateOk  = not useDate or (year >= 2015 and year <= 2026)
 bool hourOk  = not useHourFilter or hour == 4 or hour == 8 or hour == 16 or hour == 20
 
-bool symOkSqz = not sqzExGBP or not str.contains(syminfo.ticker, "GBPJPY")
-bool symOkCap = (not capExGBP or not str.contains(syminfo.ticker, "GBPJPY"))
-            and (not capExSILVER or not str.contains(syminfo.ticker, "SILVER"))
-            and (not capExSILVER or not str.contains(syminfo.ticker, "XAGUSD"))
+bool symOkSqz       = not sqzExGBP    or not str.contains(syminfo.ticker, "GBPJPY")
+bool symOkCapGBP    = not capExGBP    or not str.contains(syminfo.ticker, "GBPJPY")
+bool symOkCapSILVER = not capExSILVER or not str.contains(syminfo.ticker, "SILVER")
+bool symOkCapXAG    = not capExSILVER or not str.contains(syminfo.ticker, "XAGUSD")
+bool symOkCap       = symOkCapGBP and symOkCapSILVER and symOkCapXAG
 
 float volAvg = ta.sma(volume, volLen)
 bool  volOk  = not useVolFilter or (not na(volAvg) and volume > volAvg * volMult)
@@ -128,10 +129,9 @@ bool sqzCompr = (shelfHi - shelfLo) <= shelfAtr * atr
 bool sqzSharp = (priorHiS - shelfHi) >= dropAtr * atr
 bool sqzFresh = close[1] <= shelfHi and close > shelfHi
 
-bool sqzReady = h4Ok and dateOk and hourOk and symOkSqz and volOk
-        and not na(atr) and atr > 0
-bool sqzLong  = useSqz and sqzReady and sqzCompr and sqzSharp and sqzFresh
-            and strategy.position_size == 0
+bool sqzAtrOk = not na(atr) and atr > 0
+bool sqzReady = h4Ok and dateOk and hourOk and symOkSqz and volOk and sqzAtrOk
+bool sqzLong  = useSqz and sqzReady and sqzCompr and sqzSharp and sqzFresh and strategy.position_size == 0
 float sqzStop = shelfLo - stopBufATR * atr
 
 // ---------------------------------------------------------------------
@@ -147,11 +147,10 @@ float d1ema = request.security(syminfo.tickerid, "D", ta.ema(close, 50),
      lookahead=barmerge.lookahead_off)
 bool capDown    = not useDownD1 or close < d1ema
 
-bool capReady = h4Ok and dateOk and hourOk and symOkCap and volOk
-        and not na(atr) and atr > 0
-bool capLong  = useCap and capReady and capNewLow and capProlong and capBig
-        and capWick and capCloseLoc and capDown
-        and strategy.position_size == 0
+bool capAtrOk     = not na(atr) and atr > 0
+bool capReady     = h4Ok and dateOk and hourOk and symOkCap and volOk and capAtrOk
+bool capStructOk  = capNewLow and capProlong and capBig and capWick and capCloseLoc and capDown
+bool capLong      = useCap and capReady and capStructOk and strategy.position_size == 0
 float capStop = low - stopBufATR * atr
 
 // ---------------------------------------------------------------------

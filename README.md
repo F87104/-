@@ -12,6 +12,7 @@
 |---|---|
 | 👉 **[STRATEGY_GUIDE.md](STRATEGY_GUIDE.md)** | **メインの説明書 (これを読めばOK)** |
 | 👉 **[docs/BACKTEST_INDEX.md](docs/BACKTEST_INDEX.md)** | **全検証カタログ (試したもの全部の一覧)** |
+| 🧠 **[docs/research/market_psychology/](docs/research/market_psychology/)** | **市場心理構造 研究ハブ (10パターン + 候補手法 + 文脈フィルタ)** |
 | 📊 [docs/spreadsheet/](docs/spreadsheet/) | **Google スプレッドシート用 CSV/TSV** (9シート) |
 | [docs/two_method_practical_research_2026-05-24.md](docs/two_method_practical_research_2026-05-24.md) | 2本柱研究ノート (公式版) |
 | [docs/h4_t5_macd_bb_practical_audit_2026-05-24.md](docs/h4_t5_macd_bb_practical_audit_2026-05-24.md) | H4 T5 補助手法の実用監査 |
@@ -36,6 +37,7 @@
 | 研究 | 状態 | メモ |
 |---|---|---|
 | [ショート側研究 2026-05-28](docs/research/short_side_research_2026-05-28_in_progress.md) | 🔬 検証途中 | ロング版ミラーは不採用。H4 1ヶ月安値更新後の安値停滞ブレイクショートが暫定候補 |
+| [市場心理構造 研究ハブ](docs/research/market_psychology/) | 🧠 整理済み | 10パターン辞書 + Squeeze Strict (🟡 フォワード候補) + D1 Trap Delayed H4 Shelf (🟠 準本命) + 文脈フィルタ群 |
 
 ### 推奨運用構成
 
@@ -113,6 +115,15 @@ fx-ai/
 │   ├── h4_t5_macd_bb_practical_audit_2026-05-24.md  実用監査
 │   ├── h4_t5_macd_bb_live_ready_notes.md            運用ノート
 │   ├── research/                      研究中 (各戦略のメモ)
+│   │   ├── market_psychology/             市場心理構造 研究ハブ ⭐
+│   │   │   ├── README.md                     入り口 (10パターン + ステータス)
+│   │   │   ├── framework.md                  共通の数値化軸と4段階フロー
+│   │   │   └── status.md                     判定 / 昇格条件 / アンチパターン
+│   │   ├── market_psychology_*.md (3ファイル) 個別ノート (squeeze系)
+│   │   ├── trap_false_break_reaction_*.md    Trap単独検証
+│   │   ├── d1_trap_h4_shelf_strict_*.md      D1 Trap + H4 棚ブレイク (準本命)
+│   │   ├── indicator_denial_reaction_*.md    インジケータ否定の反応
+│   │   ├── d1_bear_trap_h4_v_reclaim_*.md    D1 売り否定 + H4 V (Clean H4 V Reclaim)
 │   │   ├── wavebox_*.md (7ファイル)
 │   │   ├── synapse_method_definition_v0_1.md
 │   │   ├── chfjpy_*.md (4ファイル)

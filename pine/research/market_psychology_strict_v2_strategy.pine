@@ -143,7 +143,8 @@ bool capBig      = rng >= sigRngC * atr
 bool capWick     = rngOk and ((math.min(open, close) - low) / rng) >= wickThr
 bool capCloseLoc = rngOk and ((close - low) / rng) >= closeLocC
 
-float d1ema = request.security(syminfo.tickerid, "D", ta.ema(close, 50),
+// 前日確定の EMA だけを使う ([1] で 1 本前を明示 + lookahead_off の二重防壁)
+float d1ema = request.security(syminfo.tickerid, "D", ta.ema(close, 50)[1],
      lookahead=barmerge.lookahead_off)
 bool capDown    = not useDownD1 or close < d1ema
 

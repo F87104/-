@@ -439,3 +439,81 @@ if barstate.islast
          text_color=useStrictD1 ? color.yellow : color.gray, text_size=size.tiny)
     table.cell(tbl, 0, 7, "Version", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 1, 7, "v2.2", text_color=color.yellow, text_size=size.tiny)
+
+// ---------------------------------------------------------------------
+// 🆕 年別サマリーテーブル (Strategy Tester の数字を年別に分解)
+// ---------------------------------------------------------------------
+grpY = "🆕 年別サマリー"
+useYearTable = input.bool(true, "年別サマリーを表示", group=grpY)
+yearBase     = input.int(2013, "開始年", minval=2000, maxval=2030, group=grpY)
+yearSpan     = input.int(14,   "表示年数", minval=1, maxval=20, group=grpY,
+     tooltip="開始年から何年分を表示するか (2013 + 14 = 2026 まで)")
+
+if useYearTable and barstate.islast
+    var int[]   yT = array.new_int(20, 0)
+    var int[]   yW = array.new_int(20, 0)
+    var float[] yP = array.new_float(20, 0.0)
+
+    // 配列を毎回リセット (最後のバーで集計)
+    for i = 0 to 19
+        array.set(yT, i, 0)
+        array.set(yW, i, 0)
+        array.set(yP, i, 0.0)
+
+    int n = strategy.closedtrades
+    if n > 0
+        for i = 0 to n - 1
+            int et = strategy.closedtrades.entry_time(i)
+            int yr = year(et)
+            int idx = yr - yearBase
+            if idx >= 0 and idx < 20
+                array.set(yT, idx, array.get(yT, idx) + 1)
+                float pf = strategy.closedtrades.profit(i)
+                array.set(yP, idx, array.get(yP, idx) + pf)
+                if pf > 0
+                    array.set(yW, idx, array.get(yW, idx) + 1)
+
+    var table yTbl = table.new(position.bottom_right, 4, 22,
+         bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+
+    table.cell(yTbl, 0, 0, "Year",   text_color=color.white, text_size=size.tiny, bgcolor=color.new(color.blue, 50))
+    table.cell(yTbl, 1, 0, "Trades", text_color=color.white, text_size=size.tiny, bgcolor=color.new(color.blue, 50))
+    table.cell(yTbl, 2, 0, "WR%",    text_color=color.white, text_size=size.tiny, bgcolor=color.new(color.blue, 50))
+    table.cell(yTbl, 3, 0, "Net%",   text_color=color.white, text_size=size.tiny, bgcolor=color.new(color.blue, 50))
+
+    int totalT = 0
+    int totalW = 0
+    float totalP = 0.0
+    int row = 1
+
+    for i = 0 to yearSpan - 1
+        int t = array.get(yT, i)
+        if t > 0 and row < 20
+            int w = array.get(yW, i)
+            float pSum = array.get(yP, i)
+            float netPct = 100.0 * pSum / strategy.initial_capital
+            float wrPct = 100.0 * w / t
+            color rowColor = netPct >= 0 ? color.new(color.green, 70) : color.new(color.red, 70)
+            table.cell(yTbl, 0, row, str.tostring(yearBase + i),
+                 text_color=color.yellow, text_size=size.tiny, bgcolor=rowColor)
+            table.cell(yTbl, 1, row, str.tostring(t),
+                 text_color=color.white, text_size=size.tiny, bgcolor=rowColor)
+            table.cell(yTbl, 2, row, str.tostring(wrPct, "#.#"),
+                 text_color=color.white, text_size=size.tiny, bgcolor=rowColor)
+            table.cell(yTbl, 3, row, str.tostring(netPct, "+0.00;-0.00"),
+                 text_color=netPct >= 0 ? color.lime : color.red, text_size=size.tiny, bgcolor=rowColor)
+            totalT := totalT + t
+            totalW := totalW + w
+            totalP := totalP + pSum
+            row := row + 1
+
+    // 合計行
+    if totalT > 0 and row < 21
+        float totalNetPct = 100.0 * totalP / strategy.initial_capital
+        float totalWrPct = 100.0 * totalW / totalT
+        color sumColor = totalNetPct >= 0 ? color.new(color.green, 40) : color.new(color.red, 40)
+        table.cell(yTbl, 0, row, "合計", text_color=color.white, text_size=size.tiny, bgcolor=sumColor)
+        table.cell(yTbl, 1, row, str.tostring(totalT), text_color=color.white, text_size=size.tiny, bgcolor=sumColor)
+        table.cell(yTbl, 2, row, str.tostring(totalWrPct, "#.#"), text_color=color.white, text_size=size.tiny, bgcolor=sumColor)
+        table.cell(yTbl, 3, row, str.tostring(totalNetPct, "+0.00;-0.00"),
+             text_color=totalNetPct >= 0 ? color.lime : color.red, text_size=size.tiny, bgcolor=sumColor)

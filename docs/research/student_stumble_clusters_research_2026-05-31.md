@@ -57,22 +57,52 @@
 
 ## Pine 可視化（TradingView）
 
-| 通貨 | ファイル | エントリー | 全敗ゾーン |
-|---|---|---:|---:|
-| GBPJPY | [student_stumble_zones_gbpjpy_v0_3.pine](../../pine/research/student_stumble_zones_gbpjpy_v0_3.pine) | 60 | 9 |
-| USDJPY | [student_stumble_zones_usdjpy_v0_3.pine](../../pine/research/student_stumble_zones_usdjpy_v0_3.pine) | 16 | 3 |
-| XAUUSD | [student_stumble_zones_xauusd_v0_3.pine](../../pine/research/student_stumble_zones_xauusd_v0_3.pine) | 42 | 3 |
+| 通貨 | 最新 | エントリー | 全敗ゾーン | 待つ場所 |
+|---|---|---:|---:|---:|
+| GBPJPY | [v0.4](../../pine/research/student_stumble_zones_gbpjpy_v0_4.pine) | 60 | 9 | 9 |
+| USDJPY | [v0.4](../../pine/research/student_stumble_zones_usdjpy_v0_4.pine) | 16 | 3 | 3 |
+| XAUUSD | [v0.4](../../pine/research/student_stumble_zones_xauusd_v0_4.pine) | 42 | 3 | 3 |
 
-各スクリプトは **1H チャート** で使う。緑/赤三角=個別エントリー、赤ゾーン帯=全敗クラスタ。
+各スクリプトは **1H チャート** で使う。
+
+| 表示 | 意味 |
+|---|---|
+| 緑/赤三角 | 受講生の実エントリー（勝/負） |
+| **赤帯** | 全敗クラスタ（複数人が同じ場所で全員負け） |
+| **青帯** | 本来待つべき場所（v0.4 追加） |
+
+v0.3（赤のみ）: `student_stumble_zones_*_v0_3.pine` も残している。
+
+## 「待つ場所」マーキング v0.1
+
+全敗15クラスタそれぞれに、同じ通貨の勝ちトレード・構造ルールから **本来待つべき場所** を付けた。
+
+データ: [student_stumble_wait_zones_v0_1.csv](student_stumble_wait_zones_v0_1.csv)
+
+| ルール | 件数 | 意味 | 例 |
+|---|---:|---|---|
+| pullback | 10 | 飛び乗りより1段押し/戻りを待つ | GBPJPY 199追い → **196押し** |
+| bounce | 4 | 底/天井で逆張りせず戻りを待つ | GBPJPY 188売り → **190戻り売り** |
+| confirmation | 1 | 再加速・定着を確認してから | GBPJPY 192追随 → **193確認後** |
+
+### 代表例（赤=失敗 vs 青=待つ）
+
+| 通貨 | 赤（全敗） | 青（待つ） | 教訓 |
+|---|---|---|---|
+| GBPJPY | 199円台5人買い | 196.0-196.8 押し買い | 節目手前の追い禁止 |
+| GBPJPY | 188円台4人売り | 190.0-191.2 戻り売り | 落ちるナイフ禁止 |
+| USDJPY | 140円台3人売り | 141-142 戻り売り | 割れ即売り禁止 |
+| XAUUSD | 2719/2777/2948 買い | 各20-50ドル押し | 天井追い禁止 |
 
 ## 関連ファイル
 
 - エントリーデータ: [student_entries_extracted.csv](student_entries_extracted.csv)
 - クラスタ集計: [student_stumble_clusters_v0_2.csv](student_stumble_clusters_v0_2.csv)
+- 待つ場所: [student_stumble_wait_zones_v0_1.csv](student_stumble_wait_zones_v0_1.csv)
 - 前段研究: [student_entry_cluster_research_2026-05-31.md](student_entry_cluster_research_2026-05-31.md)
 
 ## 次にやること
 
-1. 全敗ゾーンごとに「本来待つべき場所」を手動マーキングする
+1. TradingView で v0.4 を目視確認し、青帯の位置を微調整する
 2. v2.x マトリクス戦略へ「節目飛び乗り抑制」フィルタを試験実装する
-3. EURJPY など残り通貨ペアの可視化を追加する
+3. EURJPY は9件・クラスタ0のため、データ追加後に再分析

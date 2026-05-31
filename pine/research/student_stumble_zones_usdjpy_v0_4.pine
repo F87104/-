@@ -1,0 +1,82 @@
+//@version=5
+indicator("Student Stumble Zones - USDJPY v0.4 [Research]", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=100)
+
+// =====================================================================
+// Student Stumble Zones - USDJPY v0.4 [Research]
+// ---------------------------------------------------------------------
+// v0.3 + 「本来待つべき場所」(青ゾーン) を追加。
+//
+// データ:
+//   docs/research/student_entries_extracted.csv (16件)
+//   docs/research/student_stumble_clusters_v0_2.csv (全敗3ゾーン)
+//   docs/research/student_stumble_wait_zones_v0_1.csv (待ち3ゾーン)
+//   ※USDJPY 1H チャートで使用。
+//
+// 表示:
+//   (A) エントリー … 緑=勝/赤=負 (買=▲/売=▼)
+//   (B) 赤帯 … 全敗クラスタ (複数人が同じ場所で全員負け)
+//   (C) 青帯 … 本来待つべき場所 (失敗の直前/代替入口)
+//
+// 全敗: 140円3人売 / 142/146買
+// 待ち: 141-142戻り売り / 141.5押し / 145.5押し
+// =====================================================================
+
+showEntries = input.bool(true,  "エントリー表示(緑=勝/赤=負)")
+showStumble = input.bool(true,  "全敗クラスタ(赤帯)を表示")
+showWait    = input.bool(true,  "待つ場所(青帯)を表示")
+onlyLoss    = input.bool(false, "負けエントリーのみ")
+
+// --- (A) 16エントリー ---
+TS = array.from(timestamp("GMT+9",2024,9,16,15,41), timestamp("GMT+9",2024,9,16,18,0), timestamp("GMT+9",2024,9,16,21,58), timestamp("GMT+9",2024,9,18,8,0), timestamp("GMT+9",2024,9,19,5,12), timestamp("GMT+9",2024,9,23,17,25), timestamp("GMT+9",2024,9,27,8,31), timestamp("GMT+9",2024,10,1,10,12), timestamp("GMT+9",2024,10,2,16,56), timestamp("GMT+9",2024,10,3,8,15), timestamp("GMT+9",2024,10,3,20,16), timestamp("GMT+9",2024,10,7,16,38), timestamp("GMT+9",2024,10,22,23,21), timestamp("GMT+9",2024,11,6,19,23), timestamp("GMT+9",2024,12,16,11,36), timestamp("GMT+9",2024,12,20,0,30))
+PX = array.from(139.97, 140.20, 140.23, 142.08, 142.39, 143.46, 145.15, 144.03, 144.09, 146.70, 146.99, 148.20, 150.93, 154.02, 153.92, 157.45)
+SD = array.from(-1, -1, -1, 1, 1, -1, 1, 1, -1, 1, 1, -1, 1, 1, 1, 1)
+RS = array.from(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0)
+
+// --- (B) 全敗クラスタ ---
+ZLo = array.from(139.97, 142.08, 146.70)
+ZHi = array.from(140.23, 142.39, 146.99)
+ZT1 = array.from(timestamp("GMT+9",2024,9,16,0,0), timestamp("GMT+9",2024,9,18,0,0), timestamp("GMT+9",2024,10,3,0,0))
+ZT2 = array.from(timestamp("GMT+9",2024,9,16,23,59), timestamp("GMT+9",2024,9,19,23,59), timestamp("GMT+9",2024,10,3,23,59))
+ZN  = array.from(3, 2, 2)
+ZB  = array.from(-1, 1, 1)
+
+// --- (C) 待つ場所 ---
+WLo = array.from(141.00, 141.40, 145.20)
+WHi = array.from(142.00, 141.85, 145.80)
+WT1 = array.from(timestamp("GMT+9",2024,9,17,0,0), timestamp("GMT+9",2024,9,18,0,0), timestamp("GMT+9",2024,10,2,0,0))
+WT2 = array.from(timestamp("GMT+9",2024,9,20,23,59), timestamp("GMT+9",2024,9,19,23,59), timestamp("GMT+9",2024,10,4,23,59))
+WS  = array.from(-1, 1, 1)
+
+if barstate.islast
+    if showEntries
+        for i = 0 to array.size(TS) - 1
+            res  = array.get(RS, i)
+            if onlyLoss and res == 1
+                continue
+            side = array.get(SD, i)
+            px   = array.get(PX, i)
+            ts   = array.get(TS, i)
+            col  = res == 1 ? color.new(color.lime, 0) : color.new(color.red, 0)
+            sty  = side == 1 ? label.style_triangleup : label.style_triangledown
+            label.new(x=ts, y=px, xloc=xloc.bar_time, style=sty, color=col, size=size.tiny, text="")
+    if showStumble
+        for k = 0 to array.size(ZLo) - 1
+            lo = array.get(ZLo, k)
+            hi = array.get(ZHi, k)
+            t1 = array.get(ZT1, k)
+            t2 = array.get(ZT2, k)
+            n  = array.get(ZN, k)
+            b  = array.get(ZB, k)
+            box.new(left=t1, top=hi, right=t2, bottom=lo, xloc=xloc.bar_time, bgcolor=color.new(color.red, 80), border_color=color.new(color.red, 40), border_width=1)
+            dir = b == 1 ? "買い" : "売り"
+            label.new(x=t2, y=hi, xloc=xloc.bar_time, style=label.style_label_left, color=color.new(color.red, 0), textcolor=color.white, size=size.small, text=str.tostring(n) + "人全敗 " + dir)
+    if showWait
+        for j = 0 to array.size(WLo) - 1
+            lo = array.get(WLo, j)
+            hi = array.get(WHi, j)
+            t1 = array.get(WT1, j)
+            t2 = array.get(WT2, j)
+            b  = array.get(WS, j)
+            box.new(left=t1, top=hi, right=t2, bottom=lo, xloc=xloc.bar_time, bgcolor=color.new(color.blue, 85), border_color=color.new(color.blue, 30), border_width=1)
+            dir = b == 1 ? "買" : "売"
+            label.new(x=t1, y=lo, xloc=xloc.bar_time, style=label.style_label_right, color=color.new(color.blue, 0), textcolor=color.white, size=size.tiny, text="待つ " + dir)

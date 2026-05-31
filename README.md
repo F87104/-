@@ -16,18 +16,25 @@
 |:---:|---|---|
 | **1** | **結論を読む**（何がつまずきか） | 👉 **[student_stumble_clusters_research_2026-05-31.md](docs/research/student_stumble_clusters_research_2026-05-31.md)** |
 | **2** | **生データを見る**（137件・29クラスタ） | [student_entries_extracted.csv](docs/research/student_entries_extracted.csv) ／ [student_stumble_clusters_v0_2.csv](docs/research/student_stumble_clusters_v0_2.csv) |
-| **3** | **TradingView で重ねる**（1H チャートに貼る） | 下の Pine 表を参照 |
+| **3** | **TradingView で重ねる**（1H チャートに貼る） | 下の Pine **v0.4** 表を参照 |
 
-### TradingView 用 Pine（`pine/research/` フォルダ）
+### TradingView 用 Pine（`pine/research/` フォルダ）— **最新 v0.4**
 
 | 通貨 | チャート | Pine ファイル | 中身 |
 |---|---|---|---|
-| **GBPJPY** | 1H | [student_stumble_zones_gbpjpy_v0_3.pine](pine/research/student_stumble_zones_gbpjpy_v0_3.pine) | 60エントリー + 全敗ゾーン9個 |
-| **USDJPY** | 1H | [student_stumble_zones_usdjpy_v0_3.pine](pine/research/student_stumble_zones_usdjpy_v0_3.pine) | 16エントリー + 全敗ゾーン3個 |
-| **XAUUSD** | 1H | [student_stumble_zones_xauusd_v0_3.pine](pine/research/student_stumble_zones_xauusd_v0_3.pine) | 42エントリー + 全敗ゾーン3個 |
+| **GBPJPY** | 1H | [student_stumble_zones_gbpjpy_v0_4.pine](pine/research/student_stumble_zones_gbpjpy_v0_4.pine) | 60件 + 赤9 + **青9（待つ場所）** |
+| **USDJPY** | 1H | [student_stumble_zones_usdjpy_v0_4.pine](pine/research/student_stumble_zones_usdjpy_v0_4.pine) | 16件 + 赤3 + **青3** |
+| **XAUUSD** | 1H | [student_stumble_zones_xauusd_v0_4.pine](pine/research/student_stumble_zones_xauusd_v0_4.pine) | 42件 + 赤3 + **青3** |
 
-**使い方:** GitHub で `.pine` を開く → 中身をコピー → TradingView Pine Editor に貼る → 同じ通貨の **1H** チャートで Add to chart。  
-表示: 緑三角=勝ち / 赤三角=負け / **赤い帯=複数人が全員負けたゾーン**。
+**使い方:** GitHub で `.pine` を開く → 中身をコピー → TradingView Pine Editor に貼る → 同じ通貨の **1H** チャートで Add to chart。
+
+| 表示 | 意味 |
+|---|---|
+| 緑/赤三角 | 受講生の実エントリー（勝/負） |
+| **赤い帯** | 複数人が全員負けたゾーン（つまずき） |
+| **青い帯** | 本来待つべき場所（v0.4 追加） |
+
+待つ場所データ: [student_stumble_wait_zones_v0_1.csv](docs/research/student_stumble_wait_zones_v0_1.csv)
 
 ### 最重要つまずき（全員が負けた15クラスタの代表）
 
@@ -47,12 +54,13 @@ docs/research/          ← 研究ノート・CSV（ここ）
   student_stumble_clusters_research_2026-05-31.md   … まとめ（最初に読む）
   student_entries_extracted.csv                     … 137件の実エントリー
   student_stumble_clusters_v0_2.csv                 … 29クラスタ集計
+  student_stumble_wait_zones_v0_1.csv             … 待つ場所15件
   RESEARCH_INDEX.md                                 … 全研究の台帳
 
 pine/research/          ← TradingView 用 Pine（ここ）
-  student_stumble_zones_gbpjpy_v0_3.pine
-  student_stumble_zones_usdjpy_v0_3.pine
-  student_stumble_zones_xauusd_v0_3.pine
+  student_stumble_zones_gbpjpy_v0_4.pine   ⭐ 最新（赤+青）
+  student_stumble_zones_usdjpy_v0_4.pine
+  student_stumble_zones_xauusd_v0_4.pine
 ```
 
 ---

@@ -45,6 +45,7 @@ grpView = "表示"
 showSignals = input.bool(true, "STOP/WAIT/CHECKを表示", group=grpView)
 showLevels = input.bool(true, "節目とレンジを表示", group=grpView)
 showEma = input.bool(true, "EMAを表示", group=grpView)
+showLegend = input.bool(true, "S/W/C説明を表示", group=grpView)
 paintZones = input.bool(false, "背景を薄く塗る", group=grpView)
 useBarClose = input.bool(true, "確定足だけ表示", group=grpView)
 cooldownBars = input.int(48, "同じ表示の間隔", minval=0, maxval=200, group=grpView)
@@ -209,6 +210,27 @@ plotshape(showSignals and checkShort, title="CHECK 下方向", style=shape.trian
 bgcolor(paintZones and stopAny ? color.new(color.red, 92) : na, title="STOP背景")
 bgcolor(paintZones and waitAny ? color.new(color.yellow, 92) : na, title="WAIT背景")
 bgcolor(paintZones and checkAny ? color.new(color.green, 92) : na, title="CHECK背景")
+
+var table swcLegend = table.new(position.top_right, 2, 4, border_width=1)
+if barstate.islast
+    if showLegend
+        table.cell(swcLegend, 0, 0, "表示", text_color=color.white, bgcolor=color.new(color.black, 0), text_size=size.small)
+        table.cell(swcLegend, 1, 0, "意味", text_color=color.white, bgcolor=color.new(color.black, 0), text_size=size.small)
+        table.cell(swcLegend, 0, 1, "S", text_color=color.white, bgcolor=color.new(color.red, 0), text_size=size.small)
+        table.cell(swcLegend, 1, 1, "STOP 入らない", text_color=color.white, bgcolor=color.new(color.red, 75), text_size=size.small)
+        table.cell(swcLegend, 0, 2, "W", text_color=color.black, bgcolor=color.new(color.yellow, 0), text_size=size.small)
+        table.cell(swcLegend, 1, 2, "WAIT 待つ", text_color=color.white, bgcolor=color.new(color.yellow, 80), text_size=size.small)
+        table.cell(swcLegend, 0, 3, "C", text_color=color.black, bgcolor=color.new(color.lime, 0), text_size=size.small)
+        table.cell(swcLegend, 1, 3, "CHECK 確認", text_color=color.white, bgcolor=color.new(color.green, 75), text_size=size.small)
+    else
+        table.cell(swcLegend, 0, 0, "", bgcolor=color.new(color.black, 100))
+        table.cell(swcLegend, 1, 0, "", bgcolor=color.new(color.black, 100))
+        table.cell(swcLegend, 0, 1, "", bgcolor=color.new(color.black, 100))
+        table.cell(swcLegend, 1, 1, "", bgcolor=color.new(color.black, 100))
+        table.cell(swcLegend, 0, 2, "", bgcolor=color.new(color.black, 100))
+        table.cell(swcLegend, 1, 2, "", bgcolor=color.new(color.black, 100))
+        table.cell(swcLegend, 0, 3, "", bgcolor=color.new(color.black, 100))
+        table.cell(swcLegend, 1, 3, "", bgcolor=color.new(color.black, 100))
 
 alertcondition(stopAny, "STOP: すぐ入らない", "Crowd Psychology Simple STOP: {{ticker}} {{interval}}")
 alertcondition(waitAny, "WAIT: 待つだけ", "Crowd Psychology Simple WAIT: {{ticker}} {{interval}}")

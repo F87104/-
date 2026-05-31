@@ -1,0 +1,851 @@
+﻿row_id,cohort,currency,result,primary_failure,failure_pattern_count,psych_label_count,entry_themes,has_chart_coords
+existing_1ki_plus_prior|T-226EA9DE|1|1,1ki,不明,損失/撤退,根拠不足,5,3,range_trade / trend_follow / news_event / no_stop,Y
+existing_1ki_plus_prior|T-226EA9DE|1|2,1ki,USDJPY,損失/撤退,根拠不足,6,4,breakout_chase / round_number / range_trade / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-226EA9DE|1|5,1ki,不明,損失/撤退,根拠不足,4,1,v_shape,Y
+existing_1ki_plus_prior|T-226EA9DE|1|7,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-226EA9DE|1|9,1ki,不明,不明,根拠不足,4,2,trend_follow,Y
+existing_1ki_plus_prior|T-226EA9DE|1|10,1ki,USDJPY,損失/撤退,根拠不足,6,3,range_trade / trend_follow,Y
+existing_1ki_plus_prior|T-5601242C|1|1,1ki,不明,不明,根拠不足,6,2,range_trade / candle_only,Y
+existing_1ki_plus_prior|T-5601242C|1|3,1ki,不明,不明,根拠不足,4,1,breakout_chase / pullback / v_shape,Y
+existing_1ki_plus_prior|T-5601242C|1|4,1ki,不明,損失/撤退,根拠不足,5,2,breakout_chase / v_shape / trend_follow,Y
+existing_1ki_plus_prior|T-5601242C|1|6,1ki,不明,損失/撤退,根拠不足,4,5,breakout_chase / range_trade / trend_follow / candle_only / no_stop,Y
+existing_1ki_plus_prior|T-5601242C|1|7,1ki,不明,損失/撤退,根拠不足,6,2,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-76069C8F|1|1,1ki,不明,損失/撤退,根拠不足,5,4,breakout_chase,N
+existing_1ki_plus_prior|T-76069C8F|1|2,1ki,不明,不明,根拠不足,2,1,,N
+existing_1ki_plus_prior|T-76069C8F|1|3,1ki,不明,不明,根拠不足,3,1,v_shape,N
+existing_1ki_plus_prior|T-76069C8F|1|7,1ki,不明,利益/利確,根拠不足,4,3,breakout_chase / range_trade / candle_only,N
+existing_1ki_plus_prior|T-76069C8F|1|8,1ki,不明,損失/撤退,根拠不足,4,3,v_shape,N
+existing_1ki_plus_prior|T-F3BA19B9|1|1,1ki,GBPJPY,損失/撤退,根拠不足,8,6,breakout_chase / no_stop,N
+existing_1ki_plus_prior|T-37A4026E|1|1,1ki,GBPJPY,損失/撤退,根拠不足,5,5,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-37A4026E|1|3,1ki,不明,損失/撤退,根拠不足,4,1,,Y
+existing_1ki_plus_prior|T-37A4026E|1|6,1ki,不明,利益/利確,根拠不足,4,2,v_shape,Y
+existing_1ki_plus_prior|T-37A4026E|1|8,1ki,不明,損失/撤退,根拠不足,7,4,breakout_chase,Y
+existing_1ki_plus_prior|T-11FF8C4B|1|2,1ki,EURUSD,損失/撤退,根拠不足,5,1,breakout_chase / range_trade / pullback / trend_follow,N
+existing_1ki_plus_prior|T-11FF8C4B|1|3,1ki,不明,不明,根拠不足,4,2,breakout_chase / range_trade / trend_follow,N
+existing_1ki_plus_prior|T-11FF8C4B|1|4,1ki,不明,損失/撤退,根拠不足,4,4,breakout_chase / range_trade / pullback / candle_only,N
+existing_1ki_plus_prior|T-11FF8C4B|1|6,1ki,不明,不明,根拠不足,4,4,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-11FF8C4B|1|7,1ki,不明,利益/利確,根拠不足,5,5,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-B3701E7C|1|1,1ki,XAUUSD,損失/撤退,根拠不足,6,5,,N
+existing_1ki_plus_prior|T-CB5714CD|1|1,1ki,不明,損失/撤退,根拠不足,5,6,round_number / pullback / news_event / no_stop,Y
+existing_1ki_plus_prior|T-CB5714CD|1|2,1ki,不明,損失/撤退,根拠不足,4,3,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-CB5714CD|1|3,1ki,不明,損失/撤退,根拠不足,3,3,breakout_chase / round_number / no_stop,Y
+existing_1ki_plus_prior|T-CB5714CD|1|6,1ki,不明,損失/撤退,根拠不足,5,1,no_stop,Y
+existing_1ki_plus_prior|T-CB5714CD|1|10,1ki,XAUUSD,損失/撤退,根拠不足,7,5,candle_only / no_stop,Y
+existing_1ki_plus_prior|T-8E667F92|1|1,1ki,GBPJPY,不明,根拠不足,3,3,no_stop,N
+existing_1ki_plus_prior|T-8E667F92|1|2,1ki,不明,不明,根拠不足,3,4,trend_follow / news_event,N
+existing_1ki_plus_prior|T-8E667F92|1|3,1ki,不明,利益/利確,根拠不足,3,5,,N
+existing_1ki_plus_prior|T-73218711|1|1,1ki,不明,損失/撤退,根拠不足,6,3,,Y
+existing_1ki_plus_prior|T-73218711|1|2,1ki,不明,不明,根拠不足,6,2,news_event / candle_only,Y
+existing_1ki_plus_prior|T-73218711|1|4,1ki,不明,不明,根拠不足,4,3,breakout_chase / round_number / v_shape,Y
+existing_1ki_plus_prior|T-73218711|1|7,1ki,不明,損失/撤退,根拠不足,4,1,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-73218711|1|8,1ki,不明,損失/撤退,根拠不足,5,1,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-73218711|1|9,1ki,不明,損失/撤退,根拠不足,5,3,,Y
+existing_1ki_plus_prior|T-4BC6BEB3|1|1,1ki,GBPJPY,損失/撤退,根拠不足,6,4,breakout_chase / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-1B1D5584|1|1,1ki,不明,損失/撤退,根拠不足,6,4,trend_follow,N
+existing_1ki_plus_prior|T-AD3EFAB9|1|1,1ki,不明,不明,根拠不足,3,3,breakout_chase / range_trade / v_shape,N
+existing_1ki_plus_prior|T-AD3EFAB9|1|2,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / pullback,N
+existing_1ki_plus_prior|T-AD3EFAB9|1|4,1ki,不明,不明,根拠不足,4,3,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-AD3EFAB9|1|5,1ki,不明,損失/撤退,根拠不足,5,2,breakout_chase / range_trade / v_shape / no_stop,N
+existing_1ki_plus_prior|T-AD3EFAB9|1|6,1ki,不明,利益/利確,根拠不足,6,5,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-0AFD7973|1|1,1ki,不明,損失/撤退,根拠不足,5,5,breakout_chase,N
+existing_1ki_plus_prior|T-0AFD7973|1|2,1ki,不明,不明,根拠不足,4,3,breakout_chase,N
+existing_1ki_plus_prior|T-0AFD7973|1|2,1ki,不明,不明,根拠不足,3,2,,N
+existing_1ki_plus_prior|T-0AFD7973|1|4,1ki,不明,不明,根拠不足,5,2,range_trade / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-0AFD7973|1|8,1ki,不明,利益/利確,根拠不足,6,4,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-64854690|1|1,1ki,不明,損失/撤退,根拠不足,6,7,breakout_chase / range_trade / no_stop,Y
+existing_1ki_plus_prior|T-64854690|1|2,1ki,不明,不明,根拠不足,4,2,breakout_chase / range_trade,Y
+existing_1ki_plus_prior|T-64854690|1|3,1ki,不明,不明,根拠不足,2,2,breakout_chase,Y
+existing_1ki_plus_prior|T-64854690|1|4,1ki,XAUUSD,損失/撤退,根拠不足,5,3,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-64854690|1|6,1ki,不明,損失/撤退,根拠不足,4,1,v_shape / no_stop,Y
+existing_1ki_plus_prior|T-64854690|1|8,1ki,不明,利益/利確,根拠不足,6,5,breakout_chase / range_trade,Y
+existing_1ki_plus_prior|T-C0593442|1|1,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / pullback / trend_follow / candle_only / no_stop,Y
+existing_1ki_plus_prior|T-C0593442|1|2,1ki,XAUUSD,利益/利確,根拠不足,4,4,breakout_chase / pullback / trend_follow / candle_only,Y
+existing_1ki_plus_prior|T-C0593442|1|3,1ki,不明,利益/利確,根拠不足,4,3,breakout_chase / pullback / trend_follow,Y
+existing_1ki_plus_prior|T-C0593442|1|6,1ki,XAUUSD,損失/撤退,根拠不足,4,3,round_number / no_stop,Y
+existing_1ki_plus_prior|T-C0593442|1|8,1ki,不明,損失/撤退,根拠不足,7,8,breakout_chase / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-0DA89E2F|1|1,1ki,不明,損失/撤退,根拠不足,5,3,no_stop,Y
+existing_1ki_plus_prior|T-0DA89E2F|1|2,1ki,不明,利益/利確,根拠不足,6,3,trend_follow,Y
+existing_1ki_plus_prior|T-0DA89E2F|1|2,1ki,XAUUSD,損失/撤退,根拠不足,5,5,,Y
+existing_1ki_plus_prior|T-0DA89E2F|1|4,1ki,GBPJPY,損失/撤退,根拠不足,5,2,range_trade / trend_follow,Y
+existing_1ki_plus_prior|T-B06CFFB4|1|1,1ki,不明,損失/撤退,根拠不足,5,3,breakout_chase / range_trade / no_stop,N
+existing_1ki_plus_prior|T-B06CFFB4|1|2,1ki,不明,損失/撤退,根拠不足,6,4,breakout_chase / no_stop,N
+existing_1ki_plus_prior|T-B06CFFB4|1|3,1ki,不明,損失/撤退,根拠不足,5,2,breakout_chase / no_stop,N
+existing_1ki_plus_prior|T-B06CFFB4|1|4,1ki,不明,不明,根拠不足,4,4,breakout_chase / pullback,N
+existing_1ki_plus_prior|T-B06CFFB4|1|5,1ki,不明,不明,根拠不足,7,5,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-B06CFFB4|1|2,1ki,不明,利益/利確,レンジ相場での無理な取引,2,3,,N
+existing_1ki_plus_prior|T-3357937B|1|1,1ki,不明,損失/撤退,根拠不足,5,2,pullback / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-3357937B|1|2,1ki,不明,不明,根拠不足,5,2,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-3357937B|1|3,1ki,不明,損失/撤退,根拠不足,7,3,breakout_chase / range_trade / v_shape / news_event / no_stop,N
+existing_1ki_plus_prior|T-3357937B|1|4,1ki,GBPUSD,利益/利確,根拠不足,6,6,range_trade / v_shape,N
+existing_1ki_plus_prior|T-67B9437A|1|1,1ki,不明,不明,根拠不足,3,2,breakout_chase / range_trade / v_shape,N
+existing_1ki_plus_prior|T-67B9437A|1|2,1ki,不明,利益/利確,根拠不足,4,5,pullback / news_event,N
+existing_1ki_plus_prior|T-06614E39|1|1,1ki,不明,利益/利確,根拠不足,4,4,breakout_chase / range_trade / v_shape / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-06614E39|1|2,1ki,USDJPY,損失/撤退,根拠不足,5,3,breakout_chase / round_number / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-06614E39|1|4,1ki,不明,損失/撤退,根拠不足,4,2,v_shape / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-06614E39|1|5,1ki,不明,利益/利確,根拠不足,6,4,range_trade / v_shape / trend_follow,Y
+existing_1ki_plus_prior|T-9A08D5D2|1|1,1ki,不明,利益/利確,根拠不足,3,3,range_trade,N
+existing_1ki_plus_prior|T-9A08D5D2|1|2,1ki,不明,損失/撤退,根拠不足,7,3,,N
+existing_1ki_plus_prior|T-5401AB3A|1|1,1ki,不明,不明,根拠不足,3,2,breakout_chase,N
+existing_1ki_plus_prior|T-5401AB3A|1|2,1ki,不明,不明,根拠不足,4,3,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-5401AB3A|1|3,1ki,XAUUSD,不明,根拠不足,5,2,breakout_chase / range_trade / news_event / candle_only,N
+existing_1ki_plus_prior|T-5401AB3A|1|4,1ki,XAUUSD,不明,根拠不足,6,2,breakout_chase / range_trade / v_shape,N
+existing_1ki_plus_prior|T-5401AB3A|1|10,1ki,XAUUSD,損失/撤退,根拠不足,5,2,breakout_chase / range_trade / no_stop,N
+existing_1ki_plus_prior|T-5401AB3A|1|2,1ki,XAUUSD,利益/利確,抵抗線・節目の見落とし,3,2,,N
+existing_1ki_plus_prior|T-4540CDA3|1|1,1ki,不明,不明,根拠不足,5,4,breakout_chase / trend_follow / candle_only,N
+existing_1ki_plus_prior|T-4540CDA3|1|2,1ki,不明,損失/撤退,根拠不足,5,2,no_stop,N
+existing_1ki_plus_prior|T-4540CDA3|1|4,1ki,不明,損失/撤退,根拠不足,5,4,trend_follow,N
+existing_1ki_plus_prior|T-561E0123|1|1,1ki,不明,損失/撤退,根拠不足,4,3,v_shape,N
+existing_1ki_plus_prior|T-561E0123|1|2,1ki,XAUUSD,損失/撤退,根拠不足,4,1,breakout_chase / pullback / v_shape,N
+existing_1ki_plus_prior|T-561E0123|1|3,1ki,XAUUSD,利益/利確,根拠不足,5,2,,N
+existing_1ki_plus_prior|T-C3FDDE26|1|1,1ki,XAUUSD,不明,根拠不足,6,3,breakout_chase / trend_follow / news_event / no_stop,Y
+existing_1ki_plus_prior|T-C3FDDE26|1|2,1ki,不明,不明,根拠不足,3,4,breakout_chase / v_shape / trend_follow,Y
+existing_1ki_plus_prior|T-C3FDDE26|1|5,1ki,GBPJPY,損失/撤退,根拠不足,4,2,breakout_chase / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-C3FDDE26|1|6,1ki,不明,損失/撤退,根拠不足,5,3,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-C3FDDE26|1|7,1ki,不明,損失/撤退,根拠不足,4,4,breakout_chase / candle_only / no_stop,Y
+existing_1ki_plus_prior|T-C3FDDE26|1|8,1ki,不明,損失/撤退,根拠不足,6,4,breakout_chase / range_trade,Y
+existing_1ki_plus_prior|T-52F898E3|1|1,1ki,不明,不明,根拠不足,4,2,breakout_chase / range_trade / trend_follow / news_event,Y
+existing_1ki_plus_prior|T-52F898E3|1|2,1ki,不明,損失/撤退,根拠不足,4,2,v_shape / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-52F898E3|1|3,1ki,不明,損失/撤退,根拠不足,5,2,breakout_chase / range_trade / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-52F898E3|1|4,1ki,不明,損失/撤退,根拠不足,5,3,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-52F898E3|1|6,1ki,EURJPY,利益/利確,根拠不足,5,4,breakout_chase,Y
+existing_1ki_plus_prior|T-210A273F|1|1,1ki,不明,利益/利確,根拠不足,4,3,breakout_chase / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-210A273F|1|2,1ki,不明,損失/撤退,根拠不足,5,2,no_stop,N
+existing_1ki_plus_prior|T-210A273F|1|3,1ki,不明,損失/撤退,根拠不足,5,5,v_shape,N
+existing_1ki_plus_prior|T-23C38107|1|1,1ki,USDJPY,損失/撤退,根拠不足,2,2,trend_follow,Y
+existing_1ki_plus_prior|T-23C38107|1|2,1ki,不明,損失/撤退,根拠不足,3,2,candle_only / no_stop,Y
+existing_1ki_plus_prior|T-23C38107|1|3,1ki,不明,利益/利確,根拠不足,3,2,trend_follow,Y
+existing_1ki_plus_prior|T-23C38107|1|4,1ki,不明,損失/撤退,根拠不足,4,2,,Y
+existing_1ki_plus_prior|T-23C38107|1|5,1ki,不明,不明,根拠不足,5,4,news_event,Y
+existing_1ki_plus_prior|T-23C38107|1|8,1ki,EURJPY,利益/利確,根拠不足,5,2,,Y
+existing_1ki_plus_prior|T-23C38107|1|8,1ki,USDJPY,利益/利確,利確・保有判断のブレ,1,2,,Y
+existing_1ki_plus_prior|T-B53DB4FB|1|1,1ki,不明,不明,根拠不足,5,3,breakout_chase,N
+existing_1ki_plus_prior|T-B53DB4FB|1|2,1ki,不明,不明,根拠不足,3,2,breakout_chase,N
+existing_1ki_plus_prior|T-B53DB4FB|1|3,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / v_shape,N
+existing_1ki_plus_prior|T-B53DB4FB|1|4,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / range_trade / news_event,N
+existing_1ki_plus_prior|T-B53DB4FB|1|5,1ki,不明,不明,根拠不足,2,2,breakout_chase / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-B53DB4FB|1|8,1ki,不明,不明,根拠不足,6,2,,N
+existing_1ki_plus_prior|T-B53DB4FB|1|9,1ki,XAUUSD,利益/利確,根拠不足,6,3,candle_only,N
+existing_1ki_plus_prior|T-56884632|1|1,1ki,不明,損失/撤退,根拠不足,7,5,breakout_chase / range_trade / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-8A717929|1|1,1ki,USDJPY,利益/利確,根拠不足,4,4,news_event,N
+existing_1ki_plus_prior|T-8A717929|1|2,1ki,XAUUSD,不明,根拠不足,4,2,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-8A717929|1|3,1ki,XAUUSD,損失/撤退,根拠不足,7,4,breakout_chase / range_trade / no_stop,N
+existing_1ki_plus_prior|T-D2B86522|1|1,1ki,USDJPY,不明,根拠不足,5,6,breakout_chase / news_event,Y
+existing_1ki_plus_prior|T-D2B86522|1|2,1ki,XAUUSD,損失/撤退,根拠不足,4,3,v_shape / news_event / no_stop,Y
+existing_1ki_plus_prior|T-D2B86522|1|2,1ki,GBPJPY,損失/撤退,根拠不足,3,1,trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-D2B86522|1|4,1ki,USDJPY,損失/撤退,根拠不足,5,4,,Y
+existing_1ki_plus_prior|T-D2B86522|1|2,1ki,GBPJPY,損失/撤退,損切り判断の遅れ,1,1,,Y
+existing_1ki_plus_prior|T-96D787BA|1|1,1ki,不明,損失/撤退,根拠不足,5,4,breakout_chase / v_shape / no_stop,Y
+existing_1ki_plus_prior|T-96D787BA|1|1,1ki,不明,損失/撤退,根拠不足,4,2,,Y
+existing_1ki_plus_prior|T-96D787BA|1|1,1ki,不明,損失/撤退,根拠不足,4,2,news_event / no_stop,Y
+existing_1ki_plus_prior|T-96D787BA|1|4,1ki,不明,利益/利確,根拠不足,6,5,breakout_chase / v_shape,Y
+existing_1ki_plus_prior|T-262D039D|1|1,1ki,不明,損失/撤退,根拠不足,4,1,pullback / v_shape,Y
+existing_1ki_plus_prior|T-262D039D|1|2,1ki,不明,不明,根拠不足,4,1,breakout_chase / v_shape,Y
+existing_1ki_plus_prior|T-262D039D|1|3,1ki,不明,利益/利確,根拠不足,4,2,v_shape,Y
+existing_1ki_plus_prior|T-262D039D|1|4,1ki,不明,損失/撤退,根拠不足,3,3,v_shape / trend_follow,Y
+existing_1ki_plus_prior|T-262D039D|1|6,1ki,不明,損失/撤退,根拠不足,7,2,breakout_chase / v_shape,Y
+existing_1ki_plus_prior|T-262D039D|1|1,1ki,不明,利益/利確,ファンダ・ニュース対応,1,2,,Y
+existing_1ki_plus_prior|T-BB1229AC|1|1,1ki,XAUUSD,損失/撤退,根拠不足,4,4,range_trade / v_shape,Y
+existing_1ki_plus_prior|T-BB1229AC|1|2,1ki,不明,不明,根拠不足,5,2,breakout_chase / range_trade,Y
+existing_1ki_plus_prior|T-BB1229AC|1|3,1ki,XAUUSD,損失/撤退,根拠不足,4,3,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-BB1229AC|1|4,1ki,不明,損失/撤退,根拠不足,5,3,range_trade / no_stop,Y
+existing_1ki_plus_prior|T-BB1229AC|1|6,1ki,XAUUSD,損失/撤退,根拠不足,4,4,,Y
+existing_1ki_plus_prior|T-132B2CA7|1|1,1ki,不明,損失/撤退,根拠不足,6,3,news_event / no_stop,N
+existing_1ki_plus_prior|T-132B2CA7|1|2,1ki,不明,損失/撤退,根拠不足,4,5,breakout_chase / range_trade / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-132B2CA7|1|3,1ki,不明,利益/利確,根拠不足,3,2,range_trade,N
+existing_1ki_plus_prior|T-132B2CA7|1|5,1ki,不明,利益/利確,根拠不足,8,3,,N
+existing_1ki_plus_prior|T-9B165DFA|1|1,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-9B165DFA|1|2,1ki,不明,不明,根拠不足,3,3,v_shape,N
+existing_1ki_plus_prior|T-9B165DFA|1|3,1ki,不明,不明,根拠不足,3,2,trend_follow,N
+existing_1ki_plus_prior|T-9B165DFA|1|4,1ki,不明,不明,根拠不足,3,3,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-9B165DFA|1|5,1ki,不明,不明,根拠不足,5,6,trend_follow,N
+existing_1ki_plus_prior|T-9B165DFA|1|7,1ki,不明,利益/利確,根拠不足,8,4,breakout_chase / range_trade / trend_follow,N
+existing_1ki_plus_prior|T-F3E844E3|1|1,1ki,不明,損失/撤退,根拠不足,5,4,breakout_chase / v_shape,Y
+existing_1ki_plus_prior|T-F3E844E3|1|2,1ki,不明,不明,根拠不足,2,2,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-F3E844E3|1|3,1ki,不明,損失/撤退,根拠不足,5,4,breakout_chase / pullback / trend_follow,Y
+existing_1ki_plus_prior|T-F3E844E3|1|4,1ki,不明,不明,根拠不足,5,1,breakout_chase / v_shape / trend_follow,Y
+existing_1ki_plus_prior|T-F3E844E3|1|5,1ki,不明,損失/撤退,根拠不足,6,2,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-901BE1B1|1|1,1ki,不明,損失/撤退,根拠不足,6,5,breakout_chase / range_trade / v_shape / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-901BE1B1|1|2,1ki,不明,不明,根拠不足,1,2,breakout_chase / pullback / v_shape,Y
+existing_1ki_plus_prior|T-901BE1B1|1|1,1ki,不明,損失/撤退,根拠不足,5,3,no_stop,Y
+existing_1ki_plus_prior|T-901BE1B1|1|1,1ki,不明,損失/撤退,レンジ相場での無理な取引,3,2,,Y
+existing_1ki_plus_prior|T-901BE1B1|1|1,1ki,不明,利益/利確,未抽出,1,1,,Y
+existing_1ki_plus_prior|T-04FE2BE2|1|1,1ki,不明,損失/撤退,根拠不足,6,3,candle_only,N
+existing_1ki_plus_prior|T-04FE2BE2|1|2,1ki,不明,損失/撤退,根拠不足,5,4,candle_only,N
+existing_1ki_plus_prior|T-B9B6BE52|1|1,1ki,GBPJPY,損失/撤退,根拠不足,7,7,news_event,N
+existing_1ki_plus_prior|T-6B43A829|1|1,1ki,不明,利益/利確,根拠不足,5,2,range_trade / trend_follow,N
+existing_1ki_plus_prior|T-6B43A829|1|2,1ki,不明,利益/利確,根拠不足,4,2,breakout_chase / range_trade / trend_follow,N
+existing_1ki_plus_prior|T-6B43A829|1|3,1ki,不明,利益/利確,根拠不足,3,2,range_trade / candle_only,N
+existing_1ki_plus_prior|T-6B43A829|1|1,1ki,不明,利益/利確,根拠不足,4,2,,N
+existing_1ki_plus_prior|T-6B43A829|1|6,1ki,不明,損失/撤退,根拠不足,7,3,,N
+existing_1ki_plus_prior|T-65028391|1|1,1ki,不明,利益/利確,根拠不足,5,2,breakout_chase / range_trade / v_shape,Y
+existing_1ki_plus_prior|T-65028391|1|2,1ki,不明,損失/撤退,根拠不足,6,3,v_shape,Y
+existing_1ki_plus_prior|T-65028391|1|1,1ki,不明,利益/利確,利確・保有判断のブレ,1,1,,Y
+existing_1ki_plus_prior|T-65028391|1|2,1ki,不明,損失/撤退,レンジ相場での無理な取引,2,2,,Y
+existing_1ki_plus_prior|T-0EE69571|1|1,1ki,USDJPY,損失/撤退,根拠不足,4,2,breakout_chase / round_number,Y
+existing_1ki_plus_prior|T-0EE69571|1|2,1ki,不明,損失/撤退,根拠不足,6,5,breakout_chase / news_event / no_stop,Y
+existing_1ki_plus_prior|T-0EE69571|1|3,1ki,USDJPY,利益/利確,根拠不足,3,3,breakout_chase / news_event,Y
+existing_1ki_plus_prior|T-0EE69571|1|4,1ki,不明,損失/撤退,根拠不足,5,3,breakout_chase,Y
+existing_1ki_plus_prior|T-0EE69571|1|5,1ki,USDJPY,損失/撤退,根拠不足,7,4,trend_follow / news_event / no_stop,Y
+existing_1ki_plus_prior|T-229592CF|1|1,1ki,不明,不明,根拠不足,4,1,v_shape / trend_follow,N
+existing_1ki_plus_prior|T-229592CF|1|2,1ki,不明,損失/撤退,根拠不足,4,4,range_trade / no_stop,N
+existing_1ki_plus_prior|T-229592CF|1|3,1ki,不明,損失/撤退,根拠不足,4,4,no_stop,N
+existing_1ki_plus_prior|T-229592CF|1|2,1ki,不明,利益/利確,根拠不足,3,2,,N
+existing_1ki_plus_prior|T-75DE4F66|1|1,1ki,不明,損失/撤退,根拠不足,5,2,range_trade / v_shape / candle_only,Y
+existing_1ki_plus_prior|T-75DE4F66|1|2,1ki,XAUUSD,不明,根拠不足,5,4,breakout_chase / range_trade,Y
+existing_1ki_plus_prior|T-75DE4F66|1|3,1ki,不明,損失/撤退,根拠不足,6,6,no_stop,Y
+existing_1ki_plus_prior|T-DC302A38|1|1,1ki,XAUUSD,損失/撤退,根拠不足,9,8,trend_follow / no_stop,N
+existing_1ki_plus_prior|T-CFE02D21|1|1,1ki,不明,不明,根拠不足,4,5,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-CFE02D21|1|2,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / range_trade / no_stop,N
+existing_1ki_plus_prior|T-CFE02D21|1|3,1ki,不明,損失/撤退,根拠不足,3,2,breakout_chase / range_trade / no_stop,N
+existing_1ki_plus_prior|T-CFE02D21|1|4,1ki,EURJPY,利益/利確,根拠不足,3,2,,N
+existing_1ki_plus_prior|T-CFE02D21|1|6,1ki,不明,利益/利確,根拠不足,5,3,range_trade,N
+existing_1ki_plus_prior|T-AA29F28F|1|1,1ki,USDJPY,利益/利確,根拠不足,4,3,trend_follow,N
+existing_1ki_plus_prior|T-AA29F28F|1|2,1ki,不明,損失/撤退,根拠不足,5,2,,N
+existing_1ki_plus_prior|T-AA29F28F|1|3,1ki,不明,利益/利確,根拠不足,2,3,news_event,N
+existing_1ki_plus_prior|T-AA29F28F|1|4,1ki,不明,利益/利確,根拠不足,5,2,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-AA29F28F|1|4,1ki,不明,不明,根拠不足,3,1,range_trade,N
+existing_1ki_plus_prior|T-AA29F28F|1|6,1ki,不明,不明,根拠不足,4,2,range_trade,N
+existing_1ki_plus_prior|T-AA29F28F|1|7,1ki,不明,不明,根拠不足,2,2,range_trade,N
+existing_1ki_plus_prior|T-AA29F28F|1|6,1ki,不明,利益/利確,根拠不足,3,2,,N
+existing_1ki_plus_prior|T-AA29F28F|1|8,1ki,USDJPY,利益/利確,根拠不足,8,5,breakout_chase,N
+existing_1ki_plus_prior|T-E7A21408|1|1,1ki,不明,損失/撤退,根拠不足,5,1,breakout_chase / pullback / trend_follow / news_event / candle_only / no_stop,N
+existing_1ki_plus_prior|T-E7A21408|1|2,1ki,USDJPY,損失/撤退,根拠不足,6,3,breakout_chase / range_trade / candle_only / no_stop,N
+existing_1ki_plus_prior|T-E7A21408|1|3,1ki,不明,利益/利確,根拠不足,4,2,breakout_chase / pullback / trend_follow,N
+existing_1ki_plus_prior|T-E7A21408|1|2,1ki,USDJPY,利益/利確,根拠不足,2,2,,N
+existing_1ki_plus_prior|T-92E9CA37|1|1,1ki,不明,不明,根拠不足,2,2,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-92E9CA37|1|2,1ki,不明,不明,根拠不足,3,2,breakout_chase,N
+existing_1ki_plus_prior|T-92E9CA37|1|3,1ki,XAUUSD,損失/撤退,根拠不足,6,5,,N
+existing_1ki_plus_prior|T-9AE790E2|1|1,1ki,不明,不明,根拠不足,5,2,breakout_chase / range_trade / news_event,N
+existing_1ki_plus_prior|T-9AE790E2|1|2,1ki,不明,損失/撤退,根拠不足,5,2,round_number / range_trade / trend_follow,N
+existing_1ki_plus_prior|T-9AE790E2|1|3,1ki,不明,利益/利確,根拠不足,5,2,breakout_chase / range_trade / v_shape,N
+existing_1ki_plus_prior|T-9AE790E2|1|4,1ki,不明,不明,根拠不足,4,1,range_trade,N
+existing_1ki_plus_prior|T-9AE790E2|1|5,1ki,不明,不明,根拠不足,3,1,breakout_chase / v_shape,N
+existing_1ki_plus_prior|T-9AE790E2|1|6,1ki,不明,利益/利確,根拠不足,5,2,breakout_chase / v_shape,N
+existing_1ki_plus_prior|T-9AE790E2|1|1,1ki,不明,損失/撤退,レンジ相場での無理な取引,3,1,,N
+existing_1ki_plus_prior|T-9AE790E2|1|6,1ki,不明,利益/利確,根拠不足,1,2,,N
+existing_1ki_plus_prior|T-BB023310|1|1,1ki,不明,不明,根拠不足,5,2,range_trade / pullback / trend_follow / candle_only,N
+existing_1ki_plus_prior|T-BB023310|1|2,1ki,不明,不明,根拠不足,5,2,range_trade / candle_only,N
+existing_1ki_plus_prior|T-BB023310|1|4,1ki,不明,不明,根拠不足,3,2,trend_follow,N
+existing_1ki_plus_prior|T-BB023310|1|5,1ki,不明,利益/利確,根拠不足,7,5,news_event,N
+existing_1ki_plus_prior|T-DCD053A1|1|1,1ki,不明,損失/撤退,根拠不足,5,3,breakout_chase / pullback / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-DCD053A1|1|4,1ki,不明,損失/撤退,根拠不足,4,3,breakout_chase / pullback / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-DCD053A1|1|6,1ki,不明,不明,根拠不足,6,3,breakout_chase / range_trade / pullback,N
+existing_1ki_plus_prior|T-DCD053A1|1|7,1ki,不明,不明,根拠不足,3,3,v_shape / news_event,N
+existing_1ki_plus_prior|T-DCD053A1|1|8,1ki,不明,利益/利確,根拠不足,5,5,round_number / trend_follow,N
+existing_1ki_plus_prior|T-0A9AE00E|1|1,1ki,GBPJPY,損失/撤退,根拠不足,7,4,breakout_chase / range_trade / no_stop,N
+existing_1ki_plus_prior|T-226EA9DE|2|1,1ki,XAUUSD,利益/利確,根拠不足,5,5,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-226EA9DE|2|2,1ki,XAUUSD,利益/利確,根拠不足,5,2,pullback / trend_follow,Y
+existing_1ki_plus_prior|T-226EA9DE|2|2,1ki,XAUUSD,損失/撤退,根拠不足,1,1,,Y
+existing_1ki_plus_prior|T-226EA9DE|2|6,1ki,XAUUSD,利益/利確,根拠不足,5,3,trend_follow,Y
+existing_1ki_plus_prior|T-226EA9DE|2|5,1ki,USDJPY,損失/撤退,根拠不足,7,4,no_stop,N
+existing_1ki_plus_prior|T-226EA9DE|2|9,1ki,不明,損失/撤退,根拠不足,6,4,range_trade / v_shape,Y
+existing_1ki_plus_prior|T-5601242C|2|1,1ki,USDJPY,損失/撤退,根拠不足,6,2,breakout_chase / candle_only / no_stop,Y
+existing_1ki_plus_prior|T-5601242C|2|3,1ki,XAUUSD,損失/撤退,根拠不足,5,1,breakout_chase / range_trade / v_shape / candle_only / no_stop,Y
+existing_1ki_plus_prior|T-5601242C|2|4,1ki,不明,不明,根拠不足,5,2,breakout_chase / range_trade / v_shape,Y
+existing_1ki_plus_prior|T-5601242C|2|5,1ki,不明,損失/撤退,根拠不足,5,1,breakout_chase / range_trade / v_shape / candle_only,Y
+existing_1ki_plus_prior|T-5601242C|2|6,1ki,不明,損失/撤退,根拠不足,4,3,breakout_chase / range_trade / v_shape / no_stop,Y
+existing_1ki_plus_prior|T-5601242C|2|7,1ki,不明,損失/撤退,根拠不足,4,2,round_number / no_stop,Y
+existing_1ki_plus_prior|T-5601242C|2|8,1ki,不明,損失/撤退,根拠不足,4,1,no_stop,Y
+existing_1ki_plus_prior|T-5601242C|2|10,1ki,GBPJPY,利益/利確,根拠不足,6,4,breakout_chase / v_shape,Y
+existing_1ki_plus_prior|T-76069C8F|2|1,1ki,不明,不明,根拠不足,4,3,breakout_chase / range_trade / pullback,N
+existing_1ki_plus_prior|T-76069C8F|2|2,1ki,不明,損失/撤退,根拠不足,4,3,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-76069C8F|2|4,1ki,XAUUSD,損失/撤退,根拠不足,5,4,breakout_chase,N
+existing_1ki_plus_prior|T-76069C8F|2|5,1ki,不明,損失/撤退,根拠不足,5,4,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-F3BA19B9|2|1,1ki,不明,不明,根拠不足,4,2,no_stop,N
+existing_1ki_plus_prior|T-F3BA19B9|2|2,1ki,XAUUSD,損失/撤退,根拠不足,6,5,no_stop,N
+existing_1ki_plus_prior|T-37A4026E|2|1,1ki,不明,損失/撤退,根拠不足,6,5,breakout_chase / range_trade / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-37A4026E|2|2,1ki,不明,利益/利確,根拠不足,3,3,v_shape / trend_follow,Y
+existing_1ki_plus_prior|T-37A4026E|2|3,1ki,不明,利益/利確,根拠不足,5,2,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-37A4026E|2|4,1ki,不明,損失/撤退,根拠不足,4,2,no_stop,Y
+existing_1ki_plus_prior|T-37A4026E|2|5,1ki,不明,損失/撤退,根拠不足,6,3,breakout_chase,Y
+existing_1ki_plus_prior|T-37A4026E|2|6,1ki,不明,損失/撤退,根拠不足,3,3,breakout_chase,Y
+existing_1ki_plus_prior|T-37A4026E|2|7,1ki,不明,損失/撤退,根拠不足,2,1,v_shape / trend_follow,Y
+existing_1ki_plus_prior|T-37A4026E|2|8,1ki,不明,損失/撤退,根拠不足,6,5,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-11FF8C4B|2|1,1ki,不明,不明,根拠不足,4,2,breakout_chase,N
+existing_1ki_plus_prior|T-11FF8C4B|2|3,1ki,不明,利益/利確,根拠不足,6,2,breakout_chase / range_trade / trend_follow,N
+existing_1ki_plus_prior|T-11FF8C4B|2|4,1ki,不明,利益/利確,根拠不足,5,2,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-11FF8C4B|2|5,1ki,不明,損失/撤退,根拠不足,6,3,breakout_chase / pullback / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-B3701E7C|2|1,1ki,USDJPY,損失/撤退,根拠不足,7,4,breakout_chase / v_shape,N
+existing_1ki_plus_prior|T-CB5714CD|2|1,1ki,GBPJPY,損失/撤退,根拠不足,7,3,trend_follow / no_stop,N
+existing_1ki_plus_prior|T-CB5714CD|2|2,1ki,不明,利益/利確,根拠不足,3,2,breakout_chase / pullback / trend_follow,N
+existing_1ki_plus_prior|T-CB5714CD|2|1,1ki,不明,損失/撤退,根拠不足,5,2,breakout_chase / range_trade / pullback / trend_follow,N
+existing_1ki_plus_prior|T-CB5714CD|2|3,1ki,不明,損失/撤退,根拠不足,7,2,breakout_chase / pullback / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-8E667F92|2|1,1ki,不明,損失/撤退,根拠不足,6,3,breakout_chase / range_trade / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-8E667F92|2|2,1ki,XAUUSD,利益/利確,根拠不足,6,4,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-73218711|2|1,1ki,不明,不明,根拠不足,4,2,breakout_chase / range_trade,Y
+existing_1ki_plus_prior|T-73218711|2|2,1ki,不明,損失/撤退,根拠不足,6,2,breakout_chase / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-73218711|2|3,1ki,不明,損失/撤退,根拠不足,5,2,breakout_chase / range_trade / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-73218711|2|4,1ki,不明,損失/撤退,根拠不足,4,1,trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-73218711|2|5,1ki,不明,損失/撤退,根拠不足,4,2,v_shape / trend_follow,Y
+existing_1ki_plus_prior|T-73218711|2|9,1ki,不明,不明,根拠不足,2,1,v_shape,Y
+existing_1ki_plus_prior|T-73218711|2|10,1ki,USDJPY,利益/利確,根拠不足,5,2,trend_follow,Y
+existing_1ki_plus_prior|T-4BC6BEB3|2|1,1ki,不明,利益/利確,根拠不足,7,4,pullback / trend_follow,N
+existing_1ki_plus_prior|T-4BC6BEB3|2|2,1ki,不明,利益/利確,根拠不足,5,4,pullback / trend_follow,N
+existing_1ki_plus_prior|T-AD3EFAB9|2|1,1ki,不明,不明,根拠不足,4,4,pullback / trend_follow,N
+existing_1ki_plus_prior|T-AD3EFAB9|2|2,1ki,不明,損失/撤退,根拠不足,5,1,breakout_chase,N
+existing_1ki_plus_prior|T-AD3EFAB9|2|3,1ki,不明,不明,根拠不足,4,3,trend_follow,N
+existing_1ki_plus_prior|T-AD3EFAB9|2|4,1ki,不明,不明,根拠不足,4,3,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-AD3EFAB9|2|3,1ki,不明,損失/撤退,根拠不足,4,2,,N
+existing_1ki_plus_prior|T-AD3EFAB9|2|7,1ki,不明,利益/利確,根拠不足,7,4,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-0AFD7973|2|1,1ki,不明,不明,根拠不足,5,2,breakout_chase,N
+existing_1ki_plus_prior|T-0AFD7973|2|2,1ki,不明,不明,根拠不足,3,2,breakout_chase / pullback,N
+existing_1ki_plus_prior|T-0AFD7973|2|3,1ki,不明,不明,根拠不足,3,2,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-0AFD7973|2|4,1ki,不明,利益/利確,根拠不足,3,2,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-0AFD7973|2|5,1ki,不明,利益/利確,根拠不足,2,2,breakout_chase,N
+existing_1ki_plus_prior|T-0AFD7973|2|6,1ki,不明,損失/撤退,根拠不足,5,2,breakout_chase,N
+existing_1ki_plus_prior|T-0AFD7973|2|7,1ki,不明,利益/利確,根拠不足,4,4,breakout_chase / pullback,N
+existing_1ki_plus_prior|T-64854690|2|1,1ki,不明,不明,根拠不足,5,2,,N
+existing_1ki_plus_prior|T-64854690|2|2,1ki,不明,利益/利確,根拠不足,5,2,,N
+existing_1ki_plus_prior|T-64854690|2|3,1ki,不明,利益/利確,根拠不足,6,4,,N
+existing_1ki_plus_prior|T-64854690|2|1,1ki,不明,利益/利確,根拠不足,3,2,,N
+existing_1ki_plus_prior|T-C0593442|2|1,1ki,不明,損失/撤退,根拠不足,6,3,breakout_chase / trend_follow / candle_only / no_stop,N
+existing_1ki_plus_prior|T-C0593442|2|2,1ki,XAUUSD,利益/利確,根拠不足,7,3,breakout_chase / round_number / pullback / trend_follow / candle_only,N
+existing_1ki_plus_prior|T-C0593442|2|4,1ki,不明,不明,根拠不足,3,2,breakout_chase / range_trade / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-C0593442|2|6,1ki,不明,不明,根拠不足,6,2,breakout_chase / range_trade / v_shape / trend_follow / candle_only,N
+existing_1ki_plus_prior|T-C0593442|2|2,1ki,不明,利益/利確,根拠不足,2,2,,N
+existing_1ki_plus_prior|T-B06CFFB4|2|1,1ki,不明,損失/撤退,根拠不足,3,2,breakout_chase,Y
+existing_1ki_plus_prior|T-B06CFFB4|2|2,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-B06CFFB4|2|3,1ki,不明,不明,根拠不足,5,4,breakout_chase,Y
+existing_1ki_plus_prior|T-B06CFFB4|2|4,1ki,不明,不明,根拠不足,4,3,breakout_chase,Y
+existing_1ki_plus_prior|T-B06CFFB4|2|5,1ki,不明,不明,根拠不足,2,1,,Y
+existing_1ki_plus_prior|T-B06CFFB4|2|6,1ki,不明,損失/撤退,根拠不足,6,4,breakout_chase,Y
+existing_1ki_plus_prior|T-67B9437A|2|1,1ki,XAUUSD,不明,根拠不足,2,6,breakout_chase / round_number / v_shape,N
+existing_1ki_plus_prior|T-67B9437A|2|2,1ki,不明,不明,根拠不足,2,1,trend_follow,N
+existing_1ki_plus_prior|T-67B9437A|2|1,1ki,不明,不明,利確・保有判断のブレ,1,1,,N
+existing_1ki_plus_prior|T-67B9437A|2|3,1ki,不明,不明,根拠不足,6,3,v_shape,N
+existing_1ki_plus_prior|T-67B9437A|2|4,1ki,不明,利益/利確,根拠不足,5,3,v_shape,N
+existing_1ki_plus_prior|T-67B9437A|2|2,1ki,不明,利益/利確,未抽出,1,1,,N
+existing_1ki_plus_prior|T-06614E39|2|1,1ki,不明,不明,根拠不足,5,2,pullback / trend_follow,N
+existing_1ki_plus_prior|T-06614E39|2|2,1ki,不明,不明,根拠不足,3,3,candle_only,N
+existing_1ki_plus_prior|T-06614E39|2|3,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-06614E39|2|4,1ki,不明,損失/撤退,根拠不足,5,3,v_shape / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-9A08D5D2|2|1,1ki,USDJPY,損失/撤退,根拠不足,6,3,trend_follow,N
+existing_1ki_plus_prior|T-5401AB3A|2|3,1ki,不明,不明,根拠不足,5,3,breakout_chase,Y
+existing_1ki_plus_prior|T-5401AB3A|2|4,1ki,不明,利益/利確,根拠不足,5,3,breakout_chase / range_trade / trend_follow,Y
+existing_1ki_plus_prior|T-5401AB3A|2|5,1ki,不明,不明,根拠不足,3,2,breakout_chase,Y
+existing_1ki_plus_prior|T-5401AB3A|2|6,1ki,不明,損失/撤退,根拠不足,5,3,breakout_chase / v_shape,Y
+existing_1ki_plus_prior|T-5401AB3A|2|4,1ki,不明,不明,根拠不足,3,2,range_trade,Y
+existing_1ki_plus_prior|T-5401AB3A|2|9,1ki,不明,損失/撤退,根拠不足,4,1,v_shape / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-5401AB3A|2|10,1ki,不明,損失/撤退,根拠不足,6,5,no_stop,Y
+existing_1ki_plus_prior|T-561E0123|2|1,1ki,GBPJPY,損失/撤退,根拠不足,6,5,pullback,N
+existing_1ki_plus_prior|T-C3FDDE26|2|1,1ki,不明,利益/利確,根拠不足,3,2,,Y
+existing_1ki_plus_prior|T-C3FDDE26|2|3,1ki,不明,損失/撤退,根拠不足,5,3,breakout_chase,Y
+existing_1ki_plus_prior|T-C3FDDE26|2|4,1ki,不明,損失/撤退,根拠不足,6,3,no_stop,Y
+existing_1ki_plus_prior|T-C3FDDE26|2|5,1ki,不明,損失/撤退,根拠不足,3,1,no_stop,Y
+existing_1ki_plus_prior|T-C3FDDE26|2|6,1ki,不明,利益/利確,根拠不足,6,7,,Y
+existing_1ki_plus_prior|T-52F898E3|2|1,1ki,不明,利益/利確,根拠不足,4,1,,N
+existing_1ki_plus_prior|T-52F898E3|2|2,1ki,不明,不明,根拠不足,4,1,v_shape,N
+existing_1ki_plus_prior|T-52F898E3|2|5,1ki,不明,不明,根拠不足,5,3,breakout_chase / range_trade / trend_follow,N
+existing_1ki_plus_prior|T-52F898E3|2|7,1ki,不明,利益/利確,根拠不足,6,4,breakout_chase,N
+existing_1ki_plus_prior|T-210A273F|2|1,1ki,不明,不明,根拠不足,4,4,,N
+existing_1ki_plus_prior|T-210A273F|2|2,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase,N
+existing_1ki_plus_prior|T-210A273F|2|3,1ki,EURJPY,不明,根拠不足,4,1,,N
+existing_1ki_plus_prior|T-210A273F|2|4,1ki,不明,利益/利確,根拠不足,6,4,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-23C38107|2|1,1ki,不明,利益/利確,根拠不足,4,2,breakout_chase / range_trade / pullback,N
+existing_1ki_plus_prior|T-23C38107|2|2,1ki,不明,利益/利確,根拠不足,3,2,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-23C38107|2|3,1ki,不明,損失/撤退,根拠不足,6,4,breakout_chase / range_trade / news_event / no_stop,N
+existing_1ki_plus_prior|T-23C38107|2|4,1ki,GBPJPY,利益/利確,根拠不足,7,6,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-B53DB4FB|2|1,1ki,不明,不明,根拠不足,3,2,candle_only,Y
+existing_1ki_plus_prior|T-B53DB4FB|2|2,1ki,不明,損失/撤退,根拠不足,4,4,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-B53DB4FB|2|5,1ki,不明,損失/撤退,根拠不足,3,4,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-B53DB4FB|2|6,1ki,不明,損失/撤退,根拠不足,4,3,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-B53DB4FB|2|7,1ki,不明,損失/撤退,根拠不足,4,1,trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-B53DB4FB|2|8,1ki,不明,利益/利確,根拠不足,4,5,breakout_chase / range_trade / v_shape,Y
+existing_1ki_plus_prior|T-56884632|2|1,1ki,不明,損失/撤退,根拠不足,6,5,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-56884632|2|2,1ki,不明,損失/撤退,根拠不足,5,2,breakout_chase / range_trade / candle_only / no_stop,Y
+existing_1ki_plus_prior|T-56884632|2|1,1ki,不明,不明,抵抗線・節目の見落とし,5,2,,Y
+existing_1ki_plus_prior|T-56884632|2|3,1ki,XAUUSD,損失/撤退,根拠不足,7,2,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-8A717929|2|1,1ki,不明,利益/利確,根拠不足,4,6,breakout_chase / v_shape / candle_only,N
+existing_1ki_plus_prior|T-8A717929|2|2,1ki,不明,損失/撤退,根拠不足,7,2,range_trade,N
+existing_1ki_plus_prior|T-8A717929|2|1,1ki,不明,利益/利確,エントリーが早い,3,2,,N
+existing_1ki_plus_prior|T-8A717929|2|3,1ki,不明,利益/利確,根拠不足,4,3,,N
+existing_1ki_plus_prior|T-D2B86522|2|1,1ki,XAUUSD,不明,根拠不足,3,3,v_shape / news_event,N
+existing_1ki_plus_prior|T-D2B86522|2|2,1ki,XAUUSD,利益/利確,根拠不足,4,3,breakout_chase,N
+existing_1ki_plus_prior|T-96D787BA|2|1,1ki,XAUUSD,利益/利確,根拠不足,4,2,breakout_chase / round_number / range_trade / no_stop,N
+existing_1ki_plus_prior|T-96D787BA|2|2,1ki,不明,損失/撤退,根拠不足,5,2,breakout_chase / range_trade / candle_only / no_stop,N
+existing_1ki_plus_prior|T-96D787BA|2|3,1ki,不明,損失/撤退,根拠不足,6,5,breakout_chase / v_shape / no_stop,N
+existing_1ki_plus_prior|T-262D039D|2|1,1ki,不明,利益/利確,根拠不足,5,2,range_trade / v_shape,N
+existing_1ki_plus_prior|T-262D039D|2|2,1ki,不明,不明,根拠不足,4,2,range_trade,N
+existing_1ki_plus_prior|T-262D039D|2|1,1ki,XAUUSD,利益/利確,利確・保有判断のブレ,1,3,,N
+existing_1ki_plus_prior|T-262D039D|2|3,1ki,不明,利益/利確,根拠不足,4,1,range_trade,N
+existing_1ki_plus_prior|T-262D039D|2|4,1ki,不明,不明,根拠不足,4,1,v_shape,N
+existing_1ki_plus_prior|T-262D039D|2|5,1ki,不明,利益/利確,根拠不足,3,2,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-262D039D|2|6,1ki,不明,不明,根拠不足,3,3,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-262D039D|2|7,1ki,GBPJPY,利益/利確,根拠不足,5,4,,N
+existing_1ki_plus_prior|T-BB1229AC|2|1,1ki,不明,利益/利確,根拠不足,2,2,breakout_chase / range_trade / trend_follow / candle_only,N
+existing_1ki_plus_prior|T-BB1229AC|2|2,1ki,不明,損失/撤退,根拠不足,5,2,breakout_chase / range_trade / candle_only,N
+existing_1ki_plus_prior|T-BB1229AC|2|3,1ki,不明,損失/撤退,根拠不足,4,5,,N
+existing_1ki_plus_prior|T-132B2CA7|2|1,1ki,GBPJPY,損失/撤退,根拠不足,7,6,breakout_chase / range_trade / no_stop,N
+existing_1ki_plus_prior|T-132B2CA7|2|2,1ki,XAUUSD,利益/利確,根拠不足,4,3,breakout_chase / range_trade / trend_follow,N
+existing_1ki_plus_prior|T-9B165DFA|2|1,1ki,不明,不明,根拠不足,4,2,trend_follow,N
+existing_1ki_plus_prior|T-9B165DFA|2|2,1ki,不明,損失/撤退,根拠不足,5,4,breakout_chase / pullback / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-9B165DFA|2|3,1ki,不明,損失/撤退,根拠不足,4,1,trend_follow / no_stop,N
+existing_1ki_plus_prior|T-9B165DFA|2|4,1ki,不明,利益/利確,根拠不足,6,2,breakout_chase / pullback / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-F3E844E3|2|1,1ki,不明,利益/利確,根拠不足,6,3,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-F3E844E3|2|2,1ki,XAUUSD,利益/利確,根拠不足,4,3,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-901BE1B1|2|1,1ki,USDJPY,損失/撤退,根拠不足,6,4,breakout_chase / range_trade / pullback / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-901BE1B1|2|2,1ki,XAUUSD,利益/利確,根拠不足,6,4,breakout_chase / v_shape,N
+existing_1ki_plus_prior|T-901BE1B1|2|3,1ki,GBPJPY,利益/利確,根拠不足,5,5,trend_follow,N
+existing_1ki_plus_prior|T-901BE1B1|2|4,1ki,XAUUSD,利益/利確,根拠不足,3,3,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-901BE1B1|2|5,1ki,XAUUSD,利益/利確,根拠不足,4,4,,N
+existing_1ki_plus_prior|T-04FE2BE2|2|1,1ki,不明,損失/撤退,根拠不足,3,2,candle_only,N
+existing_1ki_plus_prior|T-04FE2BE2|2|2,1ki,XAUUSD,損失/撤退,根拠不足,6,3,candle_only,N
+existing_1ki_plus_prior|T-04FE2BE2|2|2,1ki,不明,利益/利確,抵抗線・節目の見落とし,2,3,,N
+existing_1ki_plus_prior|T-65028391|2|1,1ki,不明,不明,根拠不足,6,2,breakout_chase / range_trade / v_shape / trend_follow / candle_only,N
+existing_1ki_plus_prior|T-65028391|2|2,1ki,不明,不明,根拠不足,5,2,breakout_chase / range_trade / pullback / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-65028391|2|3,1ki,不明,損失/撤退,根拠不足,4,3,breakout_chase / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-65028391|2|4,1ki,XAUUSD,損失/撤退,根拠不足,6,4,,N
+existing_1ki_plus_prior|T-0EE69571|2|1,1ki,不明,不明,根拠不足,3,2,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-0EE69571|2|2,1ki,USDJPY,損失/撤退,根拠不足,4,3,breakout_chase / v_shape / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-0EE69571|2|3,1ki,不明,損失/撤退,根拠不足,3,1,breakout_chase / round_number / v_shape / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-0EE69571|2|4,1ki,USDJPY,損失/撤退,根拠不足,5,3,breakout_chase / v_shape / no_stop,Y
+existing_1ki_plus_prior|T-0EE69571|2|5,1ki,USDJPY,利益/利確,根拠不足,4,5,v_shape,Y
+existing_1ki_plus_prior|T-229592CF|2|1,1ki,XAUUSD,損失/撤退,根拠不足,6,3,breakout_chase / range_trade / no_stop,N
+existing_1ki_plus_prior|T-75DE4F66|2|1,1ki,不明,利益/利確,根拠不足,4,2,breakout_chase,N
+existing_1ki_plus_prior|T-75DE4F66|2|2,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase,N
+existing_1ki_plus_prior|T-75DE4F66|2|3,1ki,不明,損失/撤退,根拠不足,7,3,breakout_chase / v_shape / no_stop,N
+existing_1ki_plus_prior|T-75DE4F66|2|1,1ki,不明,不明,根拠不足,4,2,breakout_chase,N
+existing_1ki_plus_prior|T-75DE4F66|2|5,1ki,不明,不明,根拠不足,4,2,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-75DE4F66|2|7,1ki,不明,損失/撤退,根拠不足,6,3,v_shape,N
+existing_1ki_plus_prior|T-DC302A38|2|1,1ki,不明,損失/撤退,根拠不足,4,4,trend_follow / no_stop,N
+existing_1ki_plus_prior|T-DC302A38|2|2,1ki,XAUUSD,不明,根拠不足,6,2,breakout_chase / range_trade / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-DC302A38|2|3,1ki,XAUUSD,利益/利確,根拠不足,5,5,trend_follow,N
+existing_1ki_plus_prior|T-CFE02D21|2|1,1ki,不明,損失/撤退,根拠不足,5,2,breakout_chase / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-CFE02D21|2|2,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / range_trade,Y
+existing_1ki_plus_prior|T-CFE02D21|2|3,1ki,EURUSD,不明,根拠不足,2,2,breakout_chase / trend_follow / news_event,Y
+existing_1ki_plus_prior|T-CFE02D21|2|4,1ki,不明,不明,根拠不足,2,2,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-CFE02D21|2|6,1ki,GBPJPY,損失/撤退,根拠不足,5,2,breakout_chase / pullback / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-AA29F28F|2|1,1ki,不明,不明,根拠不足,3,2,,N
+existing_1ki_plus_prior|T-AA29F28F|2|3,1ki,XAUUSD,損失/撤退,根拠不足,6,6,pullback,N
+existing_1ki_plus_prior|T-AA29F28F|2|4,1ki,不明,不明,根拠不足,3,1,pullback,N
+existing_1ki_plus_prior|T-AA29F28F|2|7,1ki,XAUUSD,利益/利確,根拠不足,3,5,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-E7A21408|2|1,1ki,不明,利益/利確,根拠不足,4,3,breakout_chase / trend_follow / candle_only,N
+existing_1ki_plus_prior|T-E7A21408|2|2,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / no_stop,N
+existing_1ki_plus_prior|T-E7A21408|2|3,1ki,不明,損失/撤退,根拠不足,6,4,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-92E9CA37|2|1,1ki,不明,不明,根拠不足,4,2,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-92E9CA37|2|2,1ki,USDJPY,利益/利確,根拠不足,6,3,trend_follow,N
+existing_1ki_plus_prior|T-92E9CA37|2|1,1ki,不明,利益/利確,根拠不足,4,4,,N
+existing_1ki_plus_prior|T-9AE790E2|2|1,1ki,XAUUSD,利益/利確,根拠不足,4,3,breakout_chase,N
+existing_1ki_plus_prior|T-9AE790E2|2|2,1ki,USDJPY,不明,根拠不足,3,3,breakout_chase,N
+existing_1ki_plus_prior|T-9AE790E2|2|3,1ki,不明,不明,根拠不足,2,2,breakout_chase,N
+existing_1ki_plus_prior|T-9AE790E2|2|5,1ki,不明,利益/利確,根拠不足,7,7,round_number,N
+existing_1ki_plus_prior|T-0A9AE00E|2|2,1ki,不明,損失/撤退,根拠不足,4,3,breakout_chase / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-0A9AE00E|2|3,1ki,不明,利益/利確,根拠不足,4,1,range_trade / v_shape,N
+existing_1ki_plus_prior|T-0A9AE00E|2|3,1ki,不明,損失/撤退,根拠不足,5,3,no_stop,N
+existing_1ki_plus_prior|T-226EA9DE|3|2,1ki,不明,利益/利確,根拠不足,5,1,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-226EA9DE|3|3,1ki,GBPJPY,損失/撤退,根拠不足,7,3,breakout_chase / v_shape / trend_follow / news_event / no_stop,N
+existing_1ki_plus_prior|T-76069C8F|3|1,1ki,EURJPY,利益/利確,根拠不足,5,2,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-76069C8F|3|2,1ki,不明,損失/撤退,根拠不足,4,1,breakout_chase / v_shape / no_stop,N
+existing_1ki_plus_prior|T-76069C8F|3|3,1ki,不明,利益/利確,根拠不足,5,4,breakout_chase / range_trade / pullback,N
+existing_1ki_plus_prior|T-37A4026E|3|1,1ki,不明,損失/撤退,根拠不足,2,1,,N
+existing_1ki_plus_prior|T-37A4026E|3|2,1ki,EURUSD,不明,根拠不足,5,2,trend_follow,N
+existing_1ki_plus_prior|T-37A4026E|3|4,1ki,不明,利益/利確,根拠不足,2,1,breakout_chase / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-37A4026E|3|4,1ki,不明,利益/利確,エントリーが早い,3,3,,N
+existing_1ki_plus_prior|T-CB5714CD|3|1,1ki,不明,損失/撤退,根拠不足,4,2,no_stop,N
+existing_1ki_plus_prior|T-73218711|3|1,1ki,不明,利益/利確,根拠不足,3,1,trend_follow,Y
+existing_1ki_plus_prior|T-73218711|3|2,1ki,不明,損失/撤退,根拠不足,4,1,trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-73218711|3|4,1ki,不明,損失/撤退,根拠不足,5,1,trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-73218711|3|5,1ki,不明,損失/撤退,根拠不足,5,3,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-4BC6BEB3|3|1,1ki,不明,損失/撤退,根拠不足,2,2,trend_follow / no_stop,N
+existing_1ki_plus_prior|T-4BC6BEB3|3|3,1ki,不明,利益/利確,根拠不足,6,5,pullback / trend_follow,N
+existing_1ki_plus_prior|T-0AFD7973|3|1,1ki,不明,利益/利確,根拠不足,4,1,breakout_chase / range_trade / pullback,Y
+existing_1ki_plus_prior|T-0AFD7973|3|2,1ki,不明,不明,根拠不足,3,1,breakout_chase,Y
+existing_1ki_plus_prior|T-0AFD7973|3|3,1ki,XAUUSD,利益/利確,根拠不足,5,2,breakout_chase / news_event,Y
+existing_1ki_plus_prior|T-0AFD7973|3|4,1ki,USDJPY,利益/利確,根拠不足,3,2,breakout_chase / range_trade,Y
+existing_1ki_plus_prior|T-0AFD7973|3|5,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / pullback / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-0AFD7973|3|1,1ki,不明,損失/撤退,レンジ相場での無理な取引,1,1,,Y
+existing_1ki_plus_prior|T-C0593442|3|1,1ki,不明,利益/利確,根拠不足,4,2,breakout_chase / range_trade / trend_follow / candle_only,N
+existing_1ki_plus_prior|T-C0593442|3|2,1ki,不明,損失/撤退,根拠不足,6,4,breakout_chase / range_trade / trend_follow / candle_only / no_stop,N
+existing_1ki_plus_prior|T-B06CFFB4|3|1,1ki,不明,利益/利確,根拠不足,5,3,breakout_chase / pullback / v_shape,N
+existing_1ki_plus_prior|T-3357937B|3|1,1ki,不明,不明,根拠不足,2,3,news_event,N
+existing_1ki_plus_prior|T-3357937B|3|2,1ki,不明,利益/利確,根拠不足,3,3,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-3357937B|3|3,1ki,不明,損失/撤退,根拠不足,4,2,pullback / no_stop,N
+existing_1ki_plus_prior|T-3357937B|3|4,1ki,不明,不明,根拠不足,3,2,breakout_chase,N
+existing_1ki_plus_prior|T-3357937B|3|5,1ki,不明,利益/利確,根拠不足,4,1,,N
+existing_1ki_plus_prior|T-3357937B|3|6,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / range_trade / pullback / no_stop,N
+existing_1ki_plus_prior|T-3357937B|3|7,1ki,XAUUSD,不明,根拠不足,3,2,breakout_chase / news_event,N
+existing_1ki_plus_prior|T-3357937B|3|8,1ki,不明,損失/撤退,根拠不足,6,3,breakout_chase / range_trade / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-5401AB3A|3|1,1ki,不明,利益/利確,根拠不足,3,1,v_shape,N
+existing_1ki_plus_prior|T-5401AB3A|3|2,1ki,不明,損失/撤退,根拠不足,4,2,trend_follow / no_stop,N
+existing_1ki_plus_prior|T-561E0123|3|1,1ki,不明,利益/利確,根拠不足,3,2,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-561E0123|3|2,1ki,不明,利益/利確,根拠不足,3,1,v_shape / trend_follow,N
+existing_1ki_plus_prior|T-561E0123|3|3,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / candle_only / no_stop,N
+existing_1ki_plus_prior|T-561E0123|3|1,1ki,XAUUSD,利益/利確,エントリーが早い,4,2,,N
+existing_1ki_plus_prior|T-C3FDDE26|3|1,1ki,不明,損失/撤退,根拠不足,3,2,no_stop,Y
+existing_1ki_plus_prior|T-C3FDDE26|3|2,1ki,不明,不明,根拠不足,3,1,v_shape,Y
+existing_1ki_plus_prior|T-C3FDDE26|3|3,1ki,不明,利益/利確,根拠不足,3,1,breakout_chase / v_shape,Y
+existing_1ki_plus_prior|T-C3FDDE26|3|5,1ki,不明,損失/撤退,根拠不足,4,4,v_shape / no_stop,Y
+existing_1ki_plus_prior|T-52F898E3|3|1,1ki,不明,利益/利確,根拠不足,4,3,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-52F898E3|3|2,1ki,不明,利益/利確,根拠不足,6,3,breakout_chase / range_trade / trend_follow / news_event,N
+existing_1ki_plus_prior|T-210A273F|3|1,1ki,不明,利益/利確,根拠不足,3,2,pullback / trend_follow,N
+existing_1ki_plus_prior|T-210A273F|3|2,1ki,不明,利益/利確,根拠不足,2,1,v_shape / trend_follow,N
+existing_1ki_plus_prior|T-210A273F|3|3,1ki,不明,利益/利確,根拠不足,5,2,breakout_chase / pullback / trend_follow,N
+existing_1ki_plus_prior|T-23C38107|3|1,1ki,不明,利益/利確,根拠不足,2,1,,N
+existing_1ki_plus_prior|T-23C38107|3|2,1ki,不明,利益/利確,根拠不足,2,2,,N
+existing_1ki_plus_prior|T-23C38107|3|3,1ki,不明,利益/利確,根拠不足,3,4,,N
+existing_1ki_plus_prior|T-56884632|3|1,1ki,不明,利益/利確,根拠不足,4,3,candle_only,N
+existing_1ki_plus_prior|T-D2B86522|3|1,1ki,不明,利益/利確,根拠不足,2,2,v_shape,N
+existing_1ki_plus_prior|T-D2B86522|3|2,1ki,不明,利益/利確,根拠不足,3,1,news_event,N
+existing_1ki_plus_prior|T-D2B86522|3|3,1ki,GBPJPY,利益/利確,根拠不足,5,3,breakout_chase / range_trade / v_shape / news_event,N
+existing_1ki_plus_prior|T-262D039D|3|1,1ki,不明,利益/利確,根拠不足,3,1,range_trade / v_shape,N
+existing_1ki_plus_prior|T-262D039D|3|2,1ki,不明,利益/利確,根拠不足,3,1,breakout_chase / v_shape,N
+existing_1ki_plus_prior|T-262D039D|3|3,1ki,XAUUSD,損失/撤退,根拠不足,4,1,no_stop,N
+existing_1ki_plus_prior|T-262D039D|3|4,1ki,不明,不明,根拠不足,3,1,breakout_chase / v_shape,N
+existing_1ki_plus_prior|T-262D039D|3|5,1ki,不明,不明,根拠不足,3,1,breakout_chase / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-262D039D|3|6,1ki,不明,不明,根拠不足,4,2,breakout_chase / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-262D039D|3|7,1ki,不明,不明,根拠不足,2,1,trend_follow,N
+existing_1ki_plus_prior|T-262D039D|3|8,1ki,不明,利益/利確,根拠不足,4,3,round_number,N
+existing_1ki_plus_prior|T-BB1229AC|3|1,1ki,不明,利益/利確,根拠不足,4,4,breakout_chase / range_trade / pullback,N
+existing_1ki_plus_prior|T-132B2CA7|3|1,1ki,不明,損失/撤退,根拠不足,5,3,breakout_chase / range_trade / news_event / no_stop,N
+existing_1ki_plus_prior|T-132B2CA7|3|2,1ki,不明,損失/撤退,根拠不足,3,2,breakout_chase / no_stop,N
+existing_1ki_plus_prior|T-132B2CA7|3|3,1ki,不明,利益/利確,根拠不足,2,2,breakout_chase,N
+existing_1ki_plus_prior|T-132B2CA7|3|4,1ki,不明,利益/利確,根拠不足,5,4,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-9B165DFA|3|1,1ki,不明,利益/利確,根拠不足,4,1,pullback / trend_follow,N
+existing_1ki_plus_prior|T-9B165DFA|3|2,1ki,不明,不明,根拠不足,3,1,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-9B165DFA|3|3,1ki,不明,利益/利確,根拠不足,3,2,breakout_chase / range_trade / v_shape,N
+existing_1ki_plus_prior|T-9B165DFA|3|4,1ki,GBPJPY,利益/利確,根拠不足,4,3,v_shape / trend_follow,N
+existing_1ki_plus_prior|T-901BE1B1|3|1,1ki,不明,利益/利確,根拠不足,7,2,trend_follow,N
+existing_1ki_plus_prior|T-901BE1B1|3|2,1ki,不明,不明,根拠不足,3,1,trend_follow,N
+existing_1ki_plus_prior|T-901BE1B1|3|3,1ki,XAUUSD,利益/利確,根拠不足,7,2,trend_follow,N
+existing_1ki_plus_prior|T-901BE1B1|3|3,1ki,不明,損失/撤退,根拠不足,5,3,,N
+existing_1ki_plus_prior|T-04FE2BE2|3|1,1ki,不明,損失/撤退,根拠不足,3,2,news_event,Y
+existing_1ki_plus_prior|T-04FE2BE2|3|2,1ki,不明,損失/撤退,根拠不足,4,2,,Y
+existing_1ki_plus_prior|T-B9B6BE52|3|1,1ki,不明,損失/撤退,根拠不足,3,3,breakout_chase / v_shape / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-B9B6BE52|3|2,1ki,不明,損失/撤退,根拠不足,5,4,breakout_chase / no_stop,N
+existing_1ki_plus_prior|T-6B43A829|3|1,1ki,不明,利益/利確,根拠不足,5,2,breakout_chase / range_trade / trend_follow,N
+existing_1ki_plus_prior|T-6B43A829|3|2,1ki,不明,損失/撤退,根拠不足,5,4,range_trade / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-6B43A829|3|3,1ki,不明,利益/利確,根拠不足,7,4,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-65028391|3|1,1ki,不明,利益/利確,根拠不足,3,1,breakout_chase / range_trade / v_shape,N
+existing_1ki_plus_prior|T-65028391|3|2,1ki,不明,利益/利確,根拠不足,4,1,breakout_chase / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-65028391|3|3,1ki,不明,利益/利確,根拠不足,3,2,trend_follow,N
+existing_1ki_plus_prior|T-65028391|3|4,1ki,不明,利益/利確,根拠不足,5,3,breakout_chase / trend_follow / candle_only,N
+existing_1ki_plus_prior|T-0EE69571|3|1,1ki,不明,損失/撤退,根拠不足,3,2,breakout_chase / round_number / trend_follow,N
+existing_1ki_plus_prior|T-0EE69571|3|2,1ki,USDJPY,利益/利確,根拠不足,4,2,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-0EE69571|3|3,1ki,不明,利益/利確,根拠不足,4,2,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-0EE69571|3|4,1ki,不明,損失/撤退,根拠不足,6,4,breakout_chase / v_shape / no_stop,N
+existing_1ki_plus_prior|T-229592CF|3|1,1ki,不明,利益/利確,根拠不足,4,2,,N
+existing_1ki_plus_prior|T-229592CF|3|2,1ki,不明,不明,根拠不足,3,1,breakout_chase,N
+existing_1ki_plus_prior|T-229592CF|3|3,1ki,不明,利益/利確,根拠不足,4,2,v_shape,N
+existing_1ki_plus_prior|T-DC302A38|3|1,1ki,不明,利益/利確,根拠不足,4,1,trend_follow,N
+existing_1ki_plus_prior|T-DC302A38|3|3,1ki,不明,利益/利確,根拠不足,5,1,,N
+existing_1ki_plus_prior|T-DC302A38|3|1,1ki,不明,利益/利確,抵抗線・節目の見落とし,3,1,,N
+existing_1ki_plus_prior|T-AA29F28F|3|1,1ki,不明,利益/利確,根拠不足,4,1,breakout_chase / pullback / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-AA29F28F|3|2,1ki,不明,損失/撤退,根拠不足,3,2,pullback / trend_follow,N
+existing_1ki_plus_prior|T-E7A21408|3|1,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / pullback / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-92E9CA37|3|1,1ki,不明,利益/利確,根拠不足,5,2,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-92E9CA37|3|2,1ki,不明,不明,根拠不足,3,2,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-92E9CA37|3|1,1ki,不明,利益/利確,レンジ相場での無理な取引,4,1,,N
+existing_1ki_plus_prior|T-9AE790E2|3|1,1ki,不明,利益/利確,根拠不足,3,2,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-9AE790E2|3|2,1ki,不明,不明,根拠不足,4,1,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-9AE790E2|3|3,1ki,不明,損失/撤退,根拠不足,7,3,breakout_chase / range_trade / trend_follow,N
+existing_1ki_plus_prior|T-BB023310|3|1,1ki,不明,利益/利確,根拠不足,5,2,range_trade / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-BB023310|3|2,1ki,USDJPY,利益/利確,根拠不足,3,2,trend_follow,N
+existing_1ki_plus_prior|T-BB023310|3|3,1ki,不明,利益/利確,根拠不足,7,3,range_trade / trend_follow / news_event,N
+existing_1ki_plus_prior|T-BB023310|3|4,1ki,不明,利益/利確,根拠不足,3,3,trend_follow,N
+existing_1ki_plus_prior|T-226EA9DE|4|1,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-226EA9DE|4|2,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-226EA9DE|4|3,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / range_trade / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-226EA9DE|4|4,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / range_trade / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-226EA9DE|4|5,1ki,不明,不明,根拠不足,4,3,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-226EA9DE|4|6,1ki,不明,不明,根拠不足,4,2,trend_follow,Y
+existing_1ki_plus_prior|T-226EA9DE|4|7,1ki,不明,不明,根拠不足,4,2,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-226EA9DE|4|8,1ki,XAUUSD,利益/利確,根拠不足,8,5,v_shape / trend_follow,Y
+existing_1ki_plus_prior|T-5601242C|4|1,1ki,不明,損失/撤退,根拠不足,4,2,round_number / v_shape / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-5601242C|4|2,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-5601242C|4|3,1ki,不明,損失/撤退,根拠不足,5,2,breakout_chase / range_trade / candle_only / no_stop,Y
+existing_1ki_plus_prior|T-5601242C|4|4,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / candle_only / no_stop,Y
+existing_1ki_plus_prior|T-5601242C|4|5,1ki,XAUUSD,損失/撤退,根拠不足,7,3,breakout_chase / range_trade / no_stop,Y
+existing_1ki_plus_prior|T-76069C8F|4|1,1ki,不明,損失/撤退,根拠不足,5,3,breakout_chase / range_trade / no_stop,Y
+existing_1ki_plus_prior|T-76069C8F|4|2,1ki,不明,利益/利確,根拠不足,5,2,breakout_chase / range_trade / v_shape / trend_follow,Y
+existing_1ki_plus_prior|T-76069C8F|4|3,1ki,不明,損失/撤退,根拠不足,4,4,breakout_chase / range_trade,Y
+existing_1ki_plus_prior|T-76069C8F|4|4,1ki,XAUUSD,損失/撤退,根拠不足,6,4,breakout_chase / range_trade,Y
+existing_1ki_plus_prior|T-F3BA19B9|4|1,1ki,不明,利益/利確,根拠不足,3,2,no_stop,N
+existing_1ki_plus_prior|T-F3BA19B9|4|2,1ki,不明,不明,根拠不足,3,3,breakout_chase,N
+existing_1ki_plus_prior|T-F3BA19B9|4|3,1ki,不明,損失/撤退,根拠不足,3,2,no_stop,N
+existing_1ki_plus_prior|T-F3BA19B9|4|4,1ki,不明,利益/利確,根拠不足,6,4,breakout_chase,N
+existing_1ki_plus_prior|T-37A4026E|4|1,1ki,不明,利益/利確,根拠不足,5,3,breakout_chase / range_trade / trend_follow,Y
+existing_1ki_plus_prior|T-37A4026E|4|2,1ki,不明,損失/撤退,根拠不足,6,3,breakout_chase / round_number / range_trade / v_shape / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-37A4026E|4|3,1ki,不明,損失/撤退,根拠不足,5,4,breakout_chase / range_trade / trend_follow,Y
+existing_1ki_plus_prior|T-37A4026E|4|4,1ki,不明,不明,根拠不足,6,2,breakout_chase / range_trade / trend_follow,Y
+existing_1ki_plus_prior|T-37A4026E|4|5,1ki,不明,損失/撤退,根拠不足,5,2,breakout_chase / range_trade,Y
+existing_1ki_plus_prior|T-37A4026E|4|6,1ki,不明,損失/撤退,根拠不足,3,2,breakout_chase / v_shape / trend_follow,Y
+existing_1ki_plus_prior|T-37A4026E|4|7,1ki,不明,利益/利確,根拠不足,4,4,breakout_chase / range_trade / trend_follow,Y
+existing_1ki_plus_prior|T-37A4026E|4|8,1ki,不明,不明,根拠不足,4,2,breakout_chase / range_trade,Y
+existing_1ki_plus_prior|T-37A4026E|4|1,1ki,XAUUSD,損失/撤退,エントリーが早い,5,4,,Y
+existing_1ki_plus_prior|T-CB5714CD|4|1,1ki,不明,損失/撤退,根拠不足,5,4,breakout_chase / pullback / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-8E667F92|4|1,1ki,不明,利益/利確,根拠不足,4,2,breakout_chase / range_trade / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-8E667F92|4|2,1ki,不明,損失/撤退,根拠不足,6,3,breakout_chase / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-73218711|4|1,1ki,不明,利益/利確,根拠不足,5,3,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-73218711|4|2,1ki,不明,利益/利確,根拠不足,4,2,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-73218711|4|3,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / v_shape / no_stop,Y
+existing_1ki_plus_prior|T-73218711|4|4,1ki,不明,不明,根拠不足,4,2,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-73218711|4|5,1ki,不明,不明,根拠不足,4,3,breakout_chase,Y
+existing_1ki_plus_prior|T-73218711|4|6,1ki,不明,損失/撤退,根拠不足,5,3,breakout_chase / trend_follow / no_stop,Y
+existing_1ki_plus_prior|T-73218711|4|7,1ki,不明,利益/利確,根拠不足,3,2,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-73218711|4|8,1ki,不明,損失/撤退,根拠不足,5,2,breakout_chase / v_shape / no_stop,Y
+existing_1ki_plus_prior|T-73218711|4|9,1ki,不明,不明,根拠不足,4,3,breakout_chase / v_shape,Y
+existing_1ki_plus_prior|T-73218711|4|10,1ki,XAUUSD,利益/利確,根拠不足,7,3,breakout_chase / range_trade,Y
+existing_1ki_plus_prior|T-AD3EFAB9|4|1,1ki,不明,利益/利確,根拠不足,4,2,,N
+existing_1ki_plus_prior|T-AD3EFAB9|4|2,1ki,不明,利益/利確,根拠不足,3,3,,N
+existing_1ki_plus_prior|T-AD3EFAB9|4|3,1ki,XAUUSD,利益/利確,根拠不足,6,3,,N
+existing_1ki_plus_prior|T-0AFD7973|4|1,1ki,不明,利益/利確,根拠不足,5,2,breakout_chase,N
+existing_1ki_plus_prior|T-0AFD7973|4|2,1ki,不明,利益/利確,根拠不足,3,2,v_shape / trend_follow,N
+existing_1ki_plus_prior|T-0AFD7973|4|3,1ki,不明,不明,根拠不足,3,2,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-0AFD7973|4|4,1ki,不明,不明,根拠不足,4,2,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-0AFD7973|4|1,1ki,XAUUSD,利益/利確,抵抗線・節目の見落とし,4,2,,N
+existing_1ki_plus_prior|T-C0593442|4|1,1ki,不明,利益/利確,根拠不足,4,3,breakout_chase / range_trade / v_shape / trend_follow / candle_only,N
+existing_1ki_plus_prior|T-C0593442|4|2,1ki,不明,損失/撤退,根拠不足,6,3,breakout_chase / range_trade / no_stop,N
+existing_1ki_plus_prior|T-B06CFFB4|4|1,1ki,不明,利益/利確,根拠不足,5,3,breakout_chase / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-B06CFFB4|4|2,1ki,不明,不明,根拠不足,5,4,breakout_chase,N
+existing_1ki_plus_prior|T-B06CFFB4|4|3,1ki,不明,利益/利確,根拠不足,6,4,breakout_chase,N
+existing_1ki_plus_prior|T-B06CFFB4|4|4,1ki,不明,不明,根拠不足,4,2,breakout_chase / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-B06CFFB4|4|5,1ki,不明,損失/撤退,根拠不足,4,4,breakout_chase / v_shape / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-B06CFFB4|4|6,1ki,不明,利益/利確,根拠不足,7,3,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-67B9437A|4|1,1ki,不明,利益/利確,根拠不足,6,3,,N
+existing_1ki_plus_prior|T-06614E39|4|1,1ki,不明,利益/利確,根拠不足,3,3,breakout_chase,N
+existing_1ki_plus_prior|T-06614E39|4|2,1ki,不明,不明,根拠不足,4,3,breakout_chase / round_number / range_trade / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-06614E39|4|3,1ki,XAUUSD,利益/利確,根拠不足,6,3,breakout_chase / v_shape,N
+existing_1ki_plus_prior|T-9A08D5D2|4|1,1ki,不明,利益/利確,根拠不足,4,2,breakout_chase,N
+existing_1ki_plus_prior|T-9A08D5D2|4|2,1ki,XAUUSD,利益/利確,根拠不足,5,3,breakout_chase,N
+existing_1ki_plus_prior|T-5401AB3A|4|1,1ki,不明,利益/利確,根拠不足,4,3,v_shape / trend_follow / news_event,N
+existing_1ki_plus_prior|T-5401AB3A|4|2,1ki,不明,不明,根拠不足,5,3,breakout_chase / range_trade / trend_follow,N
+existing_1ki_plus_prior|T-5401AB3A|4|3,1ki,不明,不明,根拠不足,6,3,trend_follow,N
+existing_1ki_plus_prior|T-5401AB3A|4|4,1ki,不明,不明,根拠不足,4,4,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-5401AB3A|4|5,1ki,XAUUSD,利益/利確,根拠不足,4,2,pullback / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-5401AB3A|4|6,1ki,XAUUSD,利益/利確,根拠不足,6,5,trend_follow,N
+existing_1ki_plus_prior|T-561E0123|4|1,1ki,不明,利益/利確,根拠不足,6,5,pullback / v_shape,N
+existing_1ki_plus_prior|T-C3FDDE26|4|1,1ki,不明,損失/撤退,根拠不足,5,6,breakout_chase / v_shape / no_stop,N
+existing_1ki_plus_prior|T-C3FDDE26|4|2,1ki,EURUSD,利益/利確,根拠不足,7,4,pullback / v_shape,N
+existing_1ki_plus_prior|T-52F898E3|4|1,1ki,不明,利益/利確,根拠不足,3,3,breakout_chase / trend_follow / candle_only,N
+existing_1ki_plus_prior|T-52F898E3|4|2,1ki,不明,利益/利確,根拠不足,3,3,,N
+existing_1ki_plus_prior|T-52F898E3|4|3,1ki,不明,不明,根拠不足,3,2,pullback,N
+existing_1ki_plus_prior|T-52F898E3|4|4,1ki,不明,不明,根拠不足,3,2,,N
+existing_1ki_plus_prior|T-52F898E3|4|5,1ki,不明,不明,根拠不足,3,2,,N
+existing_1ki_plus_prior|T-52F898E3|4|6,1ki,不明,不明,根拠不足,3,3,,N
+existing_1ki_plus_prior|T-52F898E3|4|7,1ki,不明,利益/利確,根拠不足,7,4,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-210A273F|4|1,1ki,不明,利益/利確,根拠不足,4,2,v_shape,N
+existing_1ki_plus_prior|T-210A273F|4|2,1ki,不明,利益/利確,根拠不足,4,2,breakout_chase / pullback,N
+existing_1ki_plus_prior|T-210A273F|4|3,1ki,XAUUSD,損失/撤退,根拠不足,6,4,breakout_chase / pullback / trend_follow,N
+existing_1ki_plus_prior|T-B53DB4FB|4|1,1ki,不明,損失/撤退,根拠不足,6,3,no_stop,Y
+existing_1ki_plus_prior|T-B53DB4FB|4|2,1ki,不明,損失/撤退,根拠不足,5,3,no_stop,Y
+existing_1ki_plus_prior|T-B53DB4FB|4|3,1ki,不明,損失/撤退,根拠不足,4,4,no_stop,Y
+existing_1ki_plus_prior|T-B53DB4FB|4|4,1ki,不明,損失/撤退,根拠不足,4,3,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-B53DB4FB|4|5,1ki,不明,不明,根拠不足,4,3,,Y
+existing_1ki_plus_prior|T-B53DB4FB|4|6,1ki,不明,損失/撤退,根拠不足,8,4,breakout_chase / range_trade / no_stop,Y
+existing_1ki_plus_prior|T-56884632|4|1,1ki,不明,利益/利確,根拠不足,6,3,candle_only,Y
+existing_1ki_plus_prior|T-56884632|4|2,1ki,XAUUSD,損失/撤退,根拠不足,5,2,range_trade / trend_follow / candle_only,Y
+existing_1ki_plus_prior|T-56884632|4|3,1ki,不明,不明,根拠不足,3,3,breakout_chase / pullback,Y
+existing_1ki_plus_prior|T-56884632|4|4,1ki,不明,損失/撤退,根拠不足,4,3,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-56884632|4|5,1ki,不明,不明,根拠不足,3,3,breakout_chase,Y
+existing_1ki_plus_prior|T-56884632|4|6,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / no_stop,Y
+existing_1ki_plus_prior|T-56884632|4|7,1ki,不明,利益/利確,根拠不足,6,4,breakout_chase / range_trade,Y
+existing_1ki_plus_prior|T-8A717929|4|1,1ki,XAUUSD,損失/撤退,根拠不足,4,4,breakout_chase,N
+existing_1ki_plus_prior|T-8A717929|4|2,1ki,不明,利益/利確,根拠不足,5,4,,N
+existing_1ki_plus_prior|T-D2B86522|4|1,1ki,不明,利益/利確,根拠不足,3,2,,N
+existing_1ki_plus_prior|T-D2B86522|4|2,1ki,不明,不明,根拠不足,3,2,,N
+existing_1ki_plus_prior|T-D2B86522|4|3,1ki,不明,不明,根拠不足,3,3,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-D2B86522|4|4,1ki,不明,不明,根拠不足,3,2,,N
+existing_1ki_plus_prior|T-D2B86522|4|5,1ki,XAUUSD,利益/利確,根拠不足,4,3,v_shape,N
+existing_1ki_plus_prior|T-96D787BA|4|1,1ki,不明,損失/撤退,根拠不足,6,3,breakout_chase / range_trade / v_shape / no_stop,Y
+existing_1ki_plus_prior|T-96D787BA|4|2,1ki,不明,損失/撤退,根拠不足,6,2,breakout_chase / range_trade / no_stop,Y
+existing_1ki_plus_prior|T-96D787BA|4|3,1ki,不明,損失/撤退,根拠不足,5,5,breakout_chase / trend_follow / candle_only / no_stop,Y
+existing_1ki_plus_prior|T-262D039D|4|1,1ki,不明,利益/利確,根拠不足,2,2,v_shape / trend_follow,N
+existing_1ki_plus_prior|T-262D039D|4|2,1ki,不明,損失/撤退,根拠不足,2,2,breakout_chase,N
+existing_1ki_plus_prior|T-262D039D|4|3,1ki,不明,不明,根拠不足,4,2,range_trade / trend_follow,N
+existing_1ki_plus_prior|T-262D039D|4|4,1ki,不明,不明,根拠不足,4,2,trend_follow,N
+existing_1ki_plus_prior|T-262D039D|4|5,1ki,XAUUSD,利益/利確,根拠不足,6,4,range_trade / trend_follow,N
+existing_1ki_plus_prior|T-BB1229AC|4|1,1ki,GBPJPY,損失/撤退,根拠不足,6,3,breakout_chase / v_shape / no_stop,N
+existing_1ki_plus_prior|T-132B2CA7|4|1,1ki,XAUUSD,損失/撤退,根拠不足,6,4,range_trade / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-9B165DFA|4|1,1ki,不明,利益/利確,根拠不足,4,2,breakout_chase,N
+existing_1ki_plus_prior|T-9B165DFA|4|2,1ki,不明,不明,根拠不足,3,2,trend_follow,N
+existing_1ki_plus_prior|T-9B165DFA|4|3,1ki,不明,利益/利確,根拠不足,3,2,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-9B165DFA|4|4,1ki,USDJPY,利益/利確,根拠不足,6,4,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-F3E844E3|4|1,1ki,GBPUSD,利益/利確,根拠不足,6,3,breakout_chase / range_trade / v_shape,N
+existing_1ki_plus_prior|T-901BE1B1|4|1,1ki,不明,利益/利確,根拠不足,6,3,breakout_chase / range_trade,N
+existing_1ki_plus_prior|T-901BE1B1|4|2,1ki,不明,不明,根拠不足,4,2,trend_follow,N
+existing_1ki_plus_prior|T-901BE1B1|4|3,1ki,不明,利益/利確,根拠不足,5,4,breakout_chase,N
+existing_1ki_plus_prior|T-901BE1B1|4|4,1ki,不明,損失/撤退,根拠不足,6,3,v_shape / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-B9B6BE52|4|1,1ki,不明,不明,根拠不足,3,3,breakout_chase,N
+existing_1ki_plus_prior|T-B9B6BE52|4|2,1ki,不明,利益/利確,根拠不足,5,3,trend_follow,N
+existing_1ki_plus_prior|T-6B43A829|4|1,1ki,不明,損失/撤退,根拠不足,7,4,breakout_chase / v_shape / trend_follow / candle_only / no_stop,N
+existing_1ki_plus_prior|T-65028391|4|1,1ki,不明,利益/利確,根拠不足,5,2,range_trade / trend_follow,N
+existing_1ki_plus_prior|T-65028391|4|2,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / v_shape / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-65028391|4|3,1ki,不明,不明,根拠不足,4,2,range_trade / trend_follow / candle_only,N
+existing_1ki_plus_prior|T-65028391|4|4,1ki,不明,不明,根拠不足,4,2,breakout_chase / range_trade / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-65028391|4|1,1ki,不明,不明,利確・保有判断のブレ,1,1,,N
+existing_1ki_plus_prior|T-65028391|4|5,1ki,XAUUSD,利益/利確,根拠不足,5,3,v_shape / trend_follow,N
+existing_1ki_plus_prior|T-0EE69571|4|1,1ki,不明,損失/撤退,根拠不足,5,3,breakout_chase / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-0EE69571|4|2,1ki,不明,利益/利確,根拠不足,4,4,breakout_chase / range_trade / trend_follow,N
+existing_1ki_plus_prior|T-0EE69571|4|3,1ki,不明,損失/撤退,根拠不足,6,4,breakout_chase / v_shape / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-0EE69571|4|4,1ki,不明,不明,根拠不足,6,5,breakout_chase / round_number / range_trade,N
+existing_1ki_plus_prior|T-0EE69571|4|5,1ki,XAUUSD,利益/利確,根拠不足,5,5,pullback,N
+existing_1ki_plus_prior|T-229592CF|4|1,1ki,不明,損失/撤退,根拠不足,2,2,v_shape / no_stop,Y
+existing_1ki_plus_prior|T-229592CF|4|2,1ki,不明,利益/利確,根拠不足,3,2,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-229592CF|4|3,1ki,不明,不明,根拠不足,3,2,breakout_chase / trend_follow,Y
+existing_1ki_plus_prior|T-229592CF|4|4,1ki,XAUUSD,損失/撤退,根拠不足,4,4,breakout_chase / pullback / no_stop,Y
+existing_1ki_plus_prior|T-DC302A38|4|1,1ki,XAUUSD,損失/撤退,根拠不足,4,4,trend_follow / no_stop,N
+existing_1ki_plus_prior|T-DC302A38|4|1,1ki,不明,損失/撤退,根拠不足,4,3,,N
+existing_1ki_plus_prior|T-DC302A38|4|3,1ki,不明,利益/利確,根拠不足,4,2,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-DC302A38|4|3,1ki,XAUUSD,利益/利確,根拠不足,4,3,,N
+existing_1ki_plus_prior|T-CFE02D21|4|1,1ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / trend_follow / candle_only / no_stop,N
+existing_1ki_plus_prior|T-CFE02D21|4|2,1ki,XAUUSD,利益/利確,根拠不足,5,3,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-E7A21408|4|1,1ki,不明,利益/利確,根拠不足,3,2,breakout_chase,N
+existing_1ki_plus_prior|T-E7A21408|4|2,1ki,不明,損失/撤退,根拠不足,4,3,no_stop,N
+existing_1ki_plus_prior|T-E7A21408|4|3,1ki,不明,不明,根拠不足,3,2,breakout_chase,N
+existing_1ki_plus_prior|T-E7A21408|4|4,1ki,XAUUSD,損失/撤退,根拠不足,6,3,breakout_chase / no_stop,N
+existing_1ki_plus_prior|T-92E9CA37|4|1,1ki,XAUUSD,損失/撤退,根拠不足,5,6,breakout_chase,N
+existing_1ki_plus_prior|T-92E9CA37|4|2,1ki,XAUUSD,利益/利確,根拠不足,5,5,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-92E9CA37|4|1,1ki,XAUUSD,利益/利確,レンジ相場での無理な取引,3,3,,N
+existing_1ki_plus_prior|T-9AE790E2|4|1,1ki,不明,利益/利確,根拠不足,3,3,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-9AE790E2|4|2,1ki,不明,利益/利確,根拠不足,3,3,breakout_chase / trend_follow,N
+existing_1ki_plus_prior|T-9AE790E2|4|3,1ki,不明,利益/利確,根拠不足,5,3,breakout_chase / v_shape / trend_follow,N
+existing_1ki_plus_prior|T-BB023310|4|1,1ki,不明,利益/利確,根拠不足,3,3,range_trade / news_event,N
+existing_1ki_plus_prior|T-BB023310|4|2,1ki,不明,不明,根拠不足,4,4,range_trade / v_shape,N
+existing_1ki_plus_prior|T-BB023310|4|3,1ki,不明,不明,根拠不足,4,3,v_shape,N
+existing_1ki_plus_prior|T-BB023310|4|5,1ki,不明,損失/撤退,根拠不足,7,3,range_trade / trend_follow / no_stop,N
+existing_1ki_plus_prior|T-0A9AE00E|4|1,1ki,不明,利益/利確,根拠不足,6,3,breakout_chase / range_trade / v_shape,N
+2ki|T2-EDD92B6A|1|1,2ki,不明,損失/撤退,根拠不足,7,3,breakout_chase / range_trade / pullback / trend_follow / candle_only / no_stop,Y
+2ki|T2-EDD92B6A|1|2,2ki,XAUUSD,利益/利確,根拠不足,3,3,breakout_chase / range_trade / trend_follow / candle_only / no_stop,Y
+2ki|T2-EDD92B6A|1|3,2ki,不明,不明,根拠不足,7,3,breakout_chase / range_trade / pullback,Y
+2ki|T2-EDD92B6A|1|4,2ki,USDJPY,不明,根拠不足,4,3,breakout_chase / range_trade / pullback,Y
+2ki|T2-EDD92B6A|1|5,2ki,不明,利益/利確,根拠不足,5,5,breakout_chase / range_trade / candle_only,Y
+2ki|T2-5F209204|1|1,2ki,XAUUSD,利益/利確,根拠不足,4,4,,Y
+2ki|T2-5F209204|1|2,2ki,XAUUSD,損失/撤退,根拠不足,4,5,pullback / no_stop,Y
+2ki|T2-5F209204|1|3,2ki,不明,損失/撤退,根拠不足,4,6,trend_follow / news_event / no_stop,Y
+2ki|T2-1660DEEB|1|1,2ki,不明,利益/利確,根拠不足,6,4,breakout_chase / v_shape / trend_follow,Y
+2ki|T2-1660DEEB|1|2,2ki,USDJPY,損失/撤退,根拠不足,4,4,breakout_chase / range_trade / no_stop,Y
+2ki|T2-755CBD03|1|1,2ki,不明,損失/撤退,根拠不足,4,3,pullback / trend_follow / no_stop,Y
+2ki|T2-755CBD03|1|2,2ki,不明,損失/撤退,根拠不足,6,5,pullback / trend_follow / no_stop,Y
+2ki|T2-DFB6A5A7|1|1,2ki,XAUUSD,損失/撤退,根拠不足,6,3,breakout_chase / round_number / trend_follow,Y
+2ki|T2-C0CB349B|1|1,2ki,不明,損失/撤退,根拠不足,7,5,breakout_chase / range_trade / trend_follow / candle_only / no_stop,Y
+2ki|T2-C0CB349B|1|2,2ki,不明,損失/撤退,根拠不足,6,3,trend_follow,Y
+2ki|T2-C0CB349B|1|3,2ki,不明,不明,根拠不足,4,1,candle_only,Y
+2ki|T2-C0CB349B|1|4,2ki,XAUUSD,損失/撤退,根拠不足,7,3,candle_only,Y
+2ki|T2-6EEFFE54|1|1,2ki,不明,利益/利確,根拠不足,3,2,breakout_chase / v_shape / trend_follow,Y
+2ki|T2-6EEFFE54|1|2,2ki,不明,損失/撤退,根拠不足,4,1,breakout_chase / v_shape / trend_follow / no_stop,Y
+2ki|T2-6EEFFE54|1|3,2ki,XAUUSD,損失/撤退,根拠不足,7,3,breakout_chase / range_trade / v_shape / trend_follow / no_stop,Y
+2ki|T2-6EEFFE54|1|4,2ki,XAUUSD,利益/利確,根拠不足,4,3,breakout_chase,Y
+2ki|T2-6EEFFE54|1|5,2ki,XAUUSD,損失/撤退,根拠不足,5,2,breakout_chase / range_trade / no_stop,Y
+2ki|T2-CE1E952D|1|1,2ki,不明,利益/利確,根拠不足,4,2,breakout_chase / pullback / trend_follow,Y
+2ki|T2-CE1E952D|1|2,2ki,不明,利益/利確,根拠不足,5,4,breakout_chase / range_trade / pullback / trend_follow,Y
+2ki|T2-CE1E952D|1|3,2ki,不明,利益/利確,根拠不足,2,1,breakout_chase,Y
+2ki|T2-CE1E952D|1|4,2ki,XAUUSD,利益/利確,根拠不足,5,4,breakout_chase / range_trade / pullback / trend_follow,Y
+2ki|T2-E2614AE4|1|1,2ki,不明,利益/利確,根拠不足,3,2,trend_follow,Y
+2ki|T2-E2614AE4|1|2,2ki,不明,利益/利確,根拠不足,3,4,breakout_chase / pullback,Y
+2ki|T2-E2614AE4|1|3,2ki,XAUUSD,損失/撤退,根拠不足,5,3,breakout_chase / trend_follow / candle_only,Y
+2ki|T2-FAC8ACCF|1|1,2ki,不明,利益/利確,根拠不足,4,2,breakout_chase / range_trade,Y
+2ki|T2-FAC8ACCF|1|2,2ki,不明,利益/利確,根拠不足,6,5,breakout_chase / range_trade / pullback / trend_follow,Y
+2ki|T2-6549EF5A|1|1,2ki,GBPJPY,損失/撤退,根拠不足,5,4,breakout_chase / trend_follow / candle_only,Y
+2ki|T2-75E103BA|1|1,2ki,不明,損失/撤退,根拠不足,5,4,pullback / trend_follow / no_stop,Y
+2ki|T2-75E103BA|1|2,2ki,不明,損失/撤退,根拠不足,4,4,breakout_chase / no_stop,Y
+2ki|T2-75E103BA|1|3,2ki,EURJPY,不明,根拠不足,5,3,trend_follow,Y
+2ki|T2-75E103BA|1|4,2ki,不明,損失/撤退,根拠不足,6,3,v_shape / no_stop,Y
+2ki|T2-5EC08DFA|1|1,2ki,不明,損失/撤退,根拠不足,6,2,no_stop,Y
+2ki|T2-5EC08DFA|1|2,2ki,EURJPY,利益/利確,根拠不足,4,3,pullback / trend_follow,Y
+2ki|T2-5EC08DFA|1|3,2ki,不明,不明,根拠不足,3,2,,Y
+2ki|T2-5EC08DFA|1|4,2ki,不明,損失/撤退,根拠不足,5,2,no_stop,Y
+2ki|T2-5EC08DFA|1|5,2ki,不明,利益/利確,根拠不足,5,3,,Y
+2ki|T2-CA739E67|1|1,2ki,不明,不明,根拠不足,3,4,breakout_chase / range_trade / v_shape,Y
+2ki|T2-CA739E67|1|2,2ki,不明,利益/利確,根拠不足,4,2,breakout_chase,Y
+2ki|T2-CA739E67|1|3,2ki,XAUUSD,損失/撤退,根拠不足,5,3,breakout_chase / range_trade / no_stop,Y
+2ki|T2-CA739E67|1|4,2ki,不明,損失/撤退,根拠不足,6,3,breakout_chase / range_trade / no_stop,Y
+2ki|T2-08CED15B|1|1,2ki,XAUUSD,利益/利確,根拠不足,5,3,trend_follow,Y
+2ki|T2-08CED15B|1|2,2ki,XAUUSD,利益/利確,根拠不足,4,6,candle_only,Y
+2ki|T2-C936E528|1|1,2ki,GBPJPY,損失/撤退,根拠不足,5,5,breakout_chase / trend_follow / no_stop,Y
+2ki|T2-0A200F57|1|1,2ki,不明,利益/利確,根拠不足,5,3,pullback / trend_follow / candle_only,Y
+2ki|T2-0A200F57|1|2,2ki,XAUUSD,利益/利確,根拠不足,6,5,breakout_chase / trend_follow / candle_only,Y
+2ki|T2-C65B7093|1|1,2ki,不明,損失/撤退,根拠不足,6,3,breakout_chase / range_trade / pullback / trend_follow / no_stop,Y
+2ki|T2-C2CC33AE|1|1,2ki,不明,損失/撤退,根拠不足,4,3,breakout_chase / trend_follow,Y
+2ki|T2-C2CC33AE|1|2,2ki,XAUUSD,利益/利確,根拠不足,5,5,trend_follow,Y
+2ki|T2-EDD92B6A|2|1,2ki,XAUUSD,損失/撤退,根拠不足,7,5,breakout_chase / range_trade / no_stop,Y
+2ki|T2-EDD92B6A|2|2,2ki,EURJPY,損失/撤退,根拠不足,4,4,trend_follow / candle_only / no_stop,Y
+2ki|T2-EDD92B6A|2|3,2ki,EURJPY,不明,根拠不足,3,3,breakout_chase / trend_follow / candle_only,Y
+2ki|T2-EDD92B6A|2|4,2ki,EURJPY,損失/撤退,根拠不足,7,2,breakout_chase / range_trade / trend_follow / candle_only,Y
+2ki|T2-1660DEEB|2|1,2ki,不明,損失/撤退,根拠不足,4,5,breakout_chase / trend_follow / candle_only / no_stop,Y
+2ki|T2-1660DEEB|2|2,2ki,EURUSD,損失/撤退,根拠不足,7,4,breakout_chase / range_trade / no_stop,Y
+2ki|T2-755CBD03|2|1,2ki,EURJPY,損失/撤退,根拠不足,6,3,trend_follow / no_stop,Y
+2ki|T2-755CBD03|2|2,2ki,不明,損失/撤退,根拠不足,6,5,pullback / trend_follow / candle_only,Y
+2ki|T2-DFB6A5A7|2|1,2ki,不明,利益/利確,根拠不足,4,2,breakout_chase / candle_only,Y
+2ki|T2-DFB6A5A7|2|2,2ki,不明,不明,根拠不足,3,1,,Y
+2ki|T2-DFB6A5A7|2|3,2ki,EURJPY,損失/撤退,根拠不足,5,4,breakout_chase / no_stop,Y
+2ki|T2-C0CB349B|2|1,2ki,不明,利益/利確,根拠不足,4,4,breakout_chase / trend_follow,Y
+2ki|T2-C0CB349B|2|2,2ki,不明,不明,根拠不足,4,2,,Y
+2ki|T2-C0CB349B|2|3,2ki,不明,利益/利確,根拠不足,5,2,breakout_chase / trend_follow,Y
+2ki|T2-C0CB349B|2|4,2ki,不明,不明,根拠不足,5,2,breakout_chase / trend_follow / candle_only,Y
+2ki|T2-C0CB349B|2|5,2ki,GBPJPY,利益/利確,根拠不足,6,3,range_trade / trend_follow,Y
+2ki|T2-6EEFFE54|2|1,2ki,不明,損失/撤退,根拠不足,6,3,breakout_chase / range_trade / no_stop,Y
+2ki|T2-6EEFFE54|2|2,2ki,不明,利益/利確,根拠不足,6,3,breakout_chase / range_trade / v_shape / trend_follow,Y
+2ki|T2-6EEFFE54|2|3,2ki,XAUUSD,損失/撤退,根拠不足,5,2,breakout_chase / range_trade / pullback / trend_follow / no_stop,Y
+2ki|T2-6EEFFE54|2|4,2ki,不明,利益/利確,根拠不足,6,2,breakout_chase / range_trade / trend_follow,Y
+2ki|T2-6EEFFE54|2|5,2ki,EURJPY,利益/利確,根拠不足,5,3,breakout_chase / range_trade / trend_follow,Y
+2ki|T2-CE1E952D|2|1,2ki,不明,不明,根拠不足,6,3,range_trade / pullback / trend_follow / no_stop,Y
+2ki|T2-CE1E952D|2|2,2ki,不明,損失/撤退,根拠不足,6,2,breakout_chase / pullback / no_stop,Y
+2ki|T2-CE1E952D|2|3,2ki,XAUUSD,利益/利確,根拠不足,6,4,breakout_chase / range_trade / trend_follow / news_event,Y
+2ki|T2-FAC8ACCF|2|1,2ki,EURJPY,損失/撤退,根拠不足,7,6,breakout_chase / range_trade / pullback / no_stop,Y
+2ki|T2-75E103BA|2|1,2ki,USDJPY,不明,根拠不足,3,5,breakout_chase / trend_follow,Y
+2ki|T2-75E103BA|2|2,2ki,EURJPY,損失/撤退,根拠不足,5,4,breakout_chase / trend_follow / no_stop,Y
+2ki|T2-75E103BA|2|3,2ki,EURJPY,利益/利確,根拠不足,5,3,pullback / trend_follow,Y
+2ki|T2-75E103BA|2|4,2ki,AUDJPY,利益/利確,根拠不足,4,4,pullback / v_shape / trend_follow,Y
+2ki|T2-5EC08DFA|2|1,2ki,XAUUSD,損失/撤退,根拠不足,5,3,no_stop,Y
+2ki|T2-5EC08DFA|2|2,2ki,不明,不明,根拠不足,5,2,breakout_chase / pullback,Y
+2ki|T2-5EC08DFA|2|3,2ki,不明,不明,根拠不足,2,1,breakout_chase,Y
+2ki|T2-5EC08DFA|2|5,2ki,不明,利益/利確,根拠不足,4,4,trend_follow,Y
+2ki|T2-C936E528|2|1,2ki,EURUSD,利益/利確,根拠不足,7,4,breakout_chase / range_trade / trend_follow,Y
+2ki|T2-C936E528|2|2,2ki,不明,損失/撤退,根拠不足,5,2,breakout_chase / trend_follow / no_stop,Y
+2ki|T2-C936E528|2|3,2ki,EURUSD,損失/撤退,根拠不足,7,3,breakout_chase / range_trade / no_stop,Y
+2ki|T2-C65B7093|2|1,2ki,EURJPY,利益/利確,根拠不足,7,3,breakout_chase / range_trade / trend_follow,Y
+2ki|T2-EDD92B6A|3|1,2ki,不明,利益/利確,根拠不足,5,4,breakout_chase / range_trade / trend_follow / candle_only,Y
+2ki|T2-EDD92B6A|3|2,2ki,不明,損失/撤退,根拠不足,6,2,breakout_chase / round_number / range_trade / v_shape / trend_follow / no_stop,Y
+2ki|T2-EDD92B6A|3|3,2ki,不明,損失/撤退,根拠不足,4,2,candle_only / no_stop,Y
+2ki|T2-EDD92B6A|3|4,2ki,不明,損失/撤退,根拠不足,4,2,breakout_chase / range_trade / trend_follow / candle_only / no_stop,Y
+2ki|T2-EDD92B6A|3|5,2ki,不明,損失/撤退,根拠不足,6,3,range_trade / trend_follow / candle_only,Y
+2ki|T2-1660DEEB|3|1,2ki,不明,損失/撤退,根拠不足,4,3,breakout_chase / v_shape / trend_follow / no_stop,Y
+2ki|T2-1660DEEB|3|2,2ki,XAUUSD,損失/撤退,根拠不足,5,2,breakout_chase / trend_follow / no_stop,Y
+2ki|T2-1660DEEB|3|3,2ki,不明,損失/撤退,根拠不足,5,3,breakout_chase / range_trade / pullback / trend_follow / no_stop,Y
+2ki|T2-1660DEEB|3|4,2ki,不明,損失/撤退,根拠不足,4,2,v_shape / trend_follow / no_stop,Y
+2ki|T2-1660DEEB|3|5,2ki,不明,損失/撤退,根拠不足,4,4,v_shape / trend_follow / no_stop,Y
+2ki|T2-755CBD03|3|1,2ki,不明,不明,根拠不足,4,2,round_number / pullback / trend_follow,Y
+2ki|T2-755CBD03|3|2,2ki,不明,利益/利確,根拠不足,4,4,breakout_chase / round_number / pullback / trend_follow / candle_only,Y
+2ki|T2-DFB6A5A7|3|1,2ki,XAUUSD,損失/撤退,根拠不足,6,4,range_trade / no_stop,Y
+2ki|T2-6EEFFE54|3|1,2ki,不明,利益/利確,根拠不足,3,3,breakout_chase / trend_follow,Y
+2ki|T2-6EEFFE54|3|2,2ki,XAUUSD,損失/撤退,根拠不足,4,3,breakout_chase / trend_follow / no_stop,Y
+2ki|T2-6EEFFE54|3|3,2ki,不明,損失/撤退,根拠不足,5,4,breakout_chase / pullback / v_shape / trend_follow / no_stop,Y
+2ki|T2-6EEFFE54|3|4,2ki,不明,損失/撤退,根拠不足,5,2,breakout_chase / v_shape / trend_follow / no_stop,Y
+2ki|T2-6EEFFE54|3|5,2ki,不明,損失/撤退,根拠不足,6,5,breakout_chase / v_shape / trend_follow / news_event / no_stop,Y
+2ki|T2-CE1E952D|3|1,2ki,XAUUSD,利益/利確,根拠不足,7,5,breakout_chase / trend_follow,Y
+2ki|T2-FAC8ACCF|3|1,2ki,不明,損失/撤退,根拠不足,6,3,breakout_chase / trend_follow / candle_only,Y
+2ki|T2-FAC8ACCF|3|2,2ki,不明,利益/利確,根拠不足,4,2,range_trade / trend_follow,Y
+2ki|T2-FAC8ACCF|3|3,2ki,不明,損失/撤退,根拠不足,5,5,breakout_chase / trend_follow,Y
+2ki|T2-6549EF5A|3|1,2ki,XAUUSD,損失/撤退,根拠不足,5,3,breakout_chase / v_shape / trend_follow / news_event / no_stop,Y
+2ki|T2-6549EF5A|3|2,2ki,不明,不明,根拠不足,6,2,breakout_chase / v_shape,Y
+2ki|T2-6549EF5A|3|3,2ki,不明,損失/撤退,根拠不足,6,4,breakout_chase / trend_follow / no_stop,Y
+2ki|T2-6549EF5A|3|4,2ki,XAUUSD,不明,根拠不足,4,3,breakout_chase / trend_follow / candle_only,Y
+2ki|T2-6549EF5A|3|5,2ki,不明,利益/利確,根拠不足,4,4,breakout_chase,Y
+2ki|T2-5EC08DFA|3|1,2ki,不明,不明,根拠不足,4,2,breakout_chase / trend_follow / no_stop,Y
+2ki|T2-5EC08DFA|3|2,2ki,不明,利益/利確,根拠不足,5,2,breakout_chase / range_trade,Y
+2ki|T2-5EC08DFA|3|3,2ki,不明,利益/利確,根拠不足,5,3,,Y
+2ki|T2-5EC08DFA|3|4,2ki,不明,利益/利確,根拠不足,4,1,no_stop,Y
+2ki|T2-5EC08DFA|3|5,2ki,不明,損失/撤退,根拠不足,4,4,pullback / trend_follow / no_stop,Y
+2ki|T2-75E103BA|3|1,2ki,XAUUSD,利益/利確,根拠不足,4,1,pullback,Y
+2ki|T2-75E103BA|3|2,2ki,不明,不明,根拠不足,4,3,breakout_chase / pullback,Y
+2ki|T2-75E103BA|3|3,2ki,GBPJPY,損失/撤退,根拠不足,4,2,trend_follow / no_stop,Y
+2ki|T2-75E103BA|3|4,2ki,不明,損失/撤退,根拠不足,7,3,trend_follow / no_stop,Y
+2ki|T2-CA739E67|3|1,2ki,不明,不明,根拠不足,3,2,,Y
+2ki|T2-CA739E67|3|2,2ki,XAUUSD,不明,根拠不足,4,3,breakout_chase / round_number / range_trade / v_shape,Y
+2ki|T2-CA739E67|3|3,2ki,不明,不明,根拠不足,5,3,breakout_chase,Y
+2ki|T2-CA739E67|3|4,2ki,不明,損失/撤退,根拠不足,3,2,breakout_chase / no_stop,Y
+2ki|T2-CA739E67|3|5,2ki,不明,損失/撤退,根拠不足,6,3,no_stop,Y
+2ki|T2-C65B7093|3|1,2ki,不明,利益/利確,根拠不足,4,5,breakout_chase / trend_follow,Y
+2ki|T2-EDD92B6A|4|1,2ki,XAUUSD,損失/撤退,根拠不足,4,4,breakout_chase / range_trade / trend_follow / candle_only,Y
+2ki|T2-EDD92B6A|4|2,2ki,XAUUSD,損失/撤退,根拠不足,5,4,trend_follow / no_stop,Y
+2ki|T2-EDD92B6A|4|3,2ki,不明,損失/撤退,根拠不足,5,5,breakout_chase / trend_follow / candle_only,Y
+2ki|T2-1660DEEB|4|1,2ki,不明,損失/撤退,根拠不足,7,3,breakout_chase / range_trade / trend_follow / no_stop,Y
+2ki|T2-1660DEEB|4|2,2ki,GBPUSD,損失/撤退,根拠不足,5,6,breakout_chase / range_trade / trend_follow,Y
+2ki|T2-1660DEEB|4|3,2ki,不明,損失/撤退,根拠不足,6,6,breakout_chase / range_trade / v_shape,Y
+2ki|T2-1660DEEB|4|4,2ki,不明,損失/撤退,根拠不足,4,4,range_trade / trend_follow / no_stop,Y
+2ki|T2-1660DEEB|4|5,2ki,GBPUSD,損失/撤退,根拠不足,7,3,breakout_chase / range_trade / v_shape / trend_follow / no_stop,Y
+2ki|T2-FAC8ACCF|4|1,2ki,不明,損失/撤退,根拠不足,6,6,breakout_chase / range_trade / trend_follow / candle_only,Y
+2ki|T2-6549EF5A|4|1,2ki,GBPJPY,損失/撤退,根拠不足,7,4,breakout_chase / range_trade / candle_only,Y
+2ki|T2-75E103BA|4|1,2ki,不明,損失/撤退,根拠不足,4,3,,Y
+2ki|T2-75E103BA|4|2,2ki,AUDJPY,損失/撤退,根拠不足,5,3,v_shape,Y
+2ki|T2-C65B7093|4|1,2ki,XAUUSD,損失/撤退,根拠不足,7,5,breakout_chase,Y

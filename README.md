@@ -13,7 +13,7 @@
 
 | 優先 | 研究テーマ | 状態 | 何を知りたいか | 途中経過 | 次にやること |
 |---:|---|---|---|---|---|
-| 1 | 受講生つまずきクラスタ研究 | 進行中 | 複数人が同じ日時×価格で失敗した場所を特定し、教材化と v2.x フィルタに使う | 137件の実エントリー抽出、29クラスタ（全敗15）、GBPJPY/USDJPY/XAUUSD Pine v0.3 可視化 | 全敗ゾーンの「待つ場所」マーキングと v2.x フィルタ試験 |
+| 1 | 受講生つまずきクラスタ研究 | 進行中 | 複数人が同じ日時×価格で失敗した場所を特定し、教材化と v2.x フィルタに使う | 137件の実エントリー抽出、29クラスタ（全敗15）、GBPJPY/USDJPY/XAUUSD Pine v0.3 可視化、通貨別心理仮説を整理 | 全敗ゾーンの「待つ場所」マーキングと通貨別 `S/W/C` 20例記録 |
 | 2 | Market Psychology Squeeze | 記録済み | スクイーズ、投げ売り、踏み上げのパターンを戦略化する | 通貨・時間軸・フィルタ条件を複数検証済み | 有効条件と除外条件をトップページから辿れるようにする |
 | 3 | Wavebox / Rebreak | 記録済み | 再ブレイクや波形パターンがどの条件で機能するかを調べる | 複数の検証・監査メモあり | 実運用で使う条件と保留条件を1枚にまとめる |
 
@@ -28,6 +28,8 @@
 受講生エントリー集中パターン研究: [docs/research/student_entry_cluster_research_2026-05-31.md](docs/research/student_entry_cluster_research_2026-05-31.md)
 
 受講生つまずきクラスタ研究: [docs/research/student_stumble_clusters_research_2026-05-31.md](docs/research/student_stumble_clusters_research_2026-05-31.md)
+
+通貨別の心理傾向: [docs/research/currency_pair_personality_hypothesis_2026-05-31.md](docs/research/currency_pair_personality_hypothesis_2026-05-31.md)
 
 ---
 

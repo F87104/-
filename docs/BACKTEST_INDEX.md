@@ -19,6 +19,8 @@
 7. [インデックス系 (NAS100 / SPX500)](#7-インデックス系)
 8. [アンチパターン (やったけどダメだった)](#8-アンチパターン)
 
+> 🧠 市場心理に関する研究 (§6-4.5 〜 §6-6) は [`research/market_psychology/`](research/market_psychology/) に専用ハブを置いた。先にハブの[`README.md`](research/market_psychology/README.md) を読むと、研究間の繋がりが追いやすい。
+
 ---
 
 ## 1. 採用判定マトリクス
@@ -427,11 +429,15 @@ Pine: [`pine/visual/h4_sharp_drop_v_recovery_visual.pine`](../pine/visual/h4_sha
 
 | 検証 | パス | 結論 |
 |---|---|---|
+| 🧠 **市場心理研究ハブ** | [`docs/research/market_psychology/`](research/market_psychology/) | **10パターン + 個別研究 + 文脈フィルタを一括索引** (まずここ) |
+| 共通枠組み | [`docs/research/market_psychology/framework.md`](research/market_psychology/framework.md) | 共通の数値化軸、4段階フロー、Pine化ルール |
+| ステータス & 判定 | [`docs/research/market_psychology/status.md`](research/market_psychology/status.md) | 全研究の判定、本番昇格チェックリスト、アンチパターン |
 | 心理パターン辞書 | [`docs/research/market_psychology_pattern_library_2026-05-30.md`](research/market_psychology_pattern_library_2026-05-30.md) | Capitulation, Short Squeeze, Long Liquidation, Trap, Expectation Failure, Compression, FOMO, Relief Rally, Pain Trade, Dormant Breakoutを検証可能な条件に変換 |
 
 - 現時点で最も相性がよい合成は **Short Squeeze + Expectation Failure + Volatility Expansion**
 - `H4 Ignition Strict` がこの合成に近い
 - Long Liquidation、Capitulation/Relief Rally、Dormant Breakoutは次の独立検証候補
+- 詳細な読む順番・本番昇格条件・次の検証ロードマップはハブ側を参照
 
 ### 6-4.6. Trap / False Break Reaction 2026-05-30
 

@@ -13,7 +13,7 @@
 
 | 優先 | 研究テーマ | 状態 | 何を知りたいか | 途中経過 | 次にやること |
 |---:|---|---|---|---|---|
-| 1 | トレード心理研究 | 進行中 | 複数の受講生が同じチャート形状で入る場所を見つけ、成功/失敗の分岐を探す | Simple v0.3でS/W/Cが整理され、人が反応しやすい場所と待った後の候補が見やすくなった。 | S/W/Cを20例だけ目視記録し、Cに上位足方向と損切り位置を追加するか判断する |
+| 1 | 受講生つまずきクラスタ研究 | 進行中 | 複数人が同じ日時×価格で失敗した場所を特定し、教材化と v2.x フィルタに使う | 137件の実エントリー抽出、29クラスタ（全敗15）、GBPJPY/USDJPY/XAUUSD Pine v0.3 可視化 | 全敗ゾーンの「待つ場所」マーキングと v2.x フィルタ試験 |
 | 2 | Market Psychology Squeeze | 記録済み | スクイーズ、投げ売り、踏み上げのパターンを戦略化する | 通貨・時間軸・フィルタ条件を複数検証済み | 有効条件と除外条件をトップページから辿れるようにする |
 | 3 | Wavebox / Rebreak | 記録済み | 再ブレイクや波形パターンがどの条件で機能するかを調べる | 複数の検証・監査メモあり | 実運用で使う条件と保留条件を1枚にまとめる |
 
@@ -26,6 +26,8 @@
 群衆心理シンプル版: [pine/visual/crowd_psychology_simple_visual.pine](pine/visual/crowd_psychology_simple_visual.pine)
 
 受講生エントリー集中パターン研究: [docs/research/student_entry_cluster_research_2026-05-31.md](docs/research/student_entry_cluster_research_2026-05-31.md)
+
+受講生つまずきクラスタ研究: [docs/research/student_stumble_clusters_research_2026-05-31.md](docs/research/student_stumble_clusters_research_2026-05-31.md)
 
 ---
 

@@ -1,0 +1,161 @@
+//@version=5
+strategy("Failure Inverse Strategy v0.2 [Research]",
+     overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
+     pyramiding=0,
+     calc_on_order_fills=true,
+     calc_on_every_tick=false,
+     process_orders_on_close=true,
+     commission_type=strategy.commission.percent,
+     commission_value=0.0,
+     slippage=2,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500)
+
+plot(na, title="Compiler Anchor", display=display.none)
+
+// =====================================================================
+// Failure Inverse Strategy v0.2 [Research]
+// ---------------------------------------------------------------------
+// v0.1 の結論: GBPJPY 1H で「飛び乗りフェード」が PF1.075/WR48.6% と
+//   微益。方向は仮説どおり(負け組の逆が効く)だが件数947と多すぎ薄い。
+//
+// v0.2 の狙い: フェードの「質」を上げて件数を絞り、エッジを濃縮する。
+//   (1) 上位足一致 : 上昇中の大底飛び乗りを買い / 下降中の天井飛び乗りを売り
+//                    = 失敗の逆 × 大きな流れに順張り
+//   (2) 反転確認   : 飛び乗りバーで即入らず、次の反転足を待ってから入る
+//   (3) 質フィルタ : 強い伸びきり + 主要節目への突っ込みのみ採用
+//   各フィルタは ON/OFF 可能(寄与の切り分け用)。
+//
+// 可視化版: pine/research/failure_breakout_chase_visualizer_v0_2.pine
+// 分析根拠: outputs/failure_breakout_chase_analysis_v0_1.md
+// =====================================================================
+
+// ----------------------------- Inputs --------------------------------
+grpCore   = "コア設定"
+emaLen    = input.int(20,  "平均参照EMA",            minval=2, group=grpCore)
+atrLen    = input.int(14,  "ATR期間",                minval=2, group=grpCore)
+swingLook = input.int(20,  "スイング参照期間(節目)", minval=3, group=grpCore)
+majorLook = input.int(60,  "主要節目の参照期間",     minval=5, group=grpCore)
+
+grpFail   = "飛び乗り(失敗)検出"
+extMult   = input.float(1.8, "伸びきり(基本) |close-EMA|/ATR >", minval=0.1, step=0.1, group=grpFail)
+extStrong = input.float(2.5, "伸びきり(強) しきい値",            minval=0.1, step=0.1, group=grpFail)
+runLen    = input.int(4,     "連続足しきい値",                    minval=1,   group=grpFail)
+nearLvl   = input.float(0.8, "節目到達しきい値 ×ATR以内",          minval=0.0, step=0.1, group=grpFail)
+chaseBody = input.float(0.6, "追いかけ足の実体 ×ATR以上",          minval=0.0, step=0.1, group=grpFail)
+
+grpFilt   = "質フィルタ(ON/OFF)"
+useRegime = input.bool(true, "(1)上位足トレンドと一致のみ", group=grpFilt)
+useConfirm= input.bool(true, "(2)反転確認足を待つ",         group=grpFilt)
+useQuality= input.bool(true, "(3)強い伸びきり+主要節目のみ", group=grpFilt)
+armBars   = input.int(10,    "確認を待つ最大バー数",        minval=1, group=grpFilt)
+
+grpRisk   = "リスク設定"
+slAtr     = input.float(1.5, "損切り幅 ×ATR",    minval=0.1, step=0.1, group=grpRisk)
+rr        = input.float(2.0, "リワード倍率(RR)", minval=0.1, step=0.1, group=grpRisk)
+
+grpHtf    = "上位足トレンド"
+htfTf     = input.timeframe("240", "上位足", group=grpHtf)
+htfEmaLen = input.int(50, "上位足EMA", minval=2, group=grpHtf)
+
+grpDate   = "期間フィルタ"
+useDates  = input.bool(false, "期間を限定する", group=grpDate)
+startDate = input.time(timestamp("2017-01-01 00:00"), "開始", group=grpDate)
+endDate   = input.time(timestamp("2026-01-01 00:00"), "終了", group=grpDate)
+
+// ----------------------------- Core calc -----------------------------
+ema   = ta.ema(close, emaLen)
+atr   = ta.atr(atrLen)
+ext   = atr > 0 ? (close - ema) / atr : 0.0
+
+recHigh   = ta.highest(high, swingLook)[1]
+recLow    = ta.lowest(low,  swingLook)[1]
+majorHigh = ta.highest(high, majorLook)[1]
+majorLow  = ta.lowest(low,  majorLook)[1]
+
+var int upRun = 0
+upRun := close > close[1] ? upRun + 1 : 0
+var int dnRun = 0
+dnRun := close < close[1] ? dnRun + 1 : 0
+
+body    = math.abs(close - open)
+bigBull = close > open and body > chaseBody * atr
+bigBear = close < open and body > chaseBody * atr
+
+htfEma = request.security(syminfo.tickerid, htfTf, ta.ema(close, htfEmaLen), lookahead=barmerge.lookahead_off)
+htfUp  = close > htfEma
+htfDn  = close < htfEma
+
+// --------------------- 飛び乗り(赤) 検出 ----------------------------
+// 基本: 直近スイングへの突っ込み
+chaseLongBase  = ext >  extMult and (close > recHigh or high >= recHigh - nearLvl * atr) and (bigBull or upRun >= runLen)
+chaseShortBase = ext < -extMult and (close < recLow  or low  <= recLow  + nearLvl * atr) and (bigBear or dnRun >= runLen)
+// 強: 強い伸びきり + 主要節目への突っ込み
+chaseLongStrict  = ext >  extStrong and (high >= majorHigh - nearLvl * atr) and bigBull
+chaseShortStrict = ext < -extStrong and (low  <= majorLow  + nearLvl * atr) and bigBear
+
+chaseLongUse  = useQuality ? chaseLongStrict  : chaseLongBase
+chaseShortUse = useQuality ? chaseShortStrict : chaseShortBase
+clEvt = chaseLongUse  and not chaseLongUse[1]
+csEvt = chaseShortUse and not chaseShortUse[1]
+
+// --------------------- フェード待機ウィンドウ -----------------------
+// 上チャート飛び乗り(買われすぎ) -> 売りフェードを狙う
+var int armFadeShort = 0
+armFadeShort := clEvt ? armBars : (armFadeShort > 0 ? armFadeShort - 1 : 0)
+// 下チャート飛び乗り(売られすぎ) -> 買いフェードを狙う
+var int armFadeLong = 0
+armFadeLong := csEvt ? armBars : (armFadeLong > 0 ? armFadeLong - 1 : 0)
+
+// 反転確認足
+confDown = close < low[1]
+confUp   = close > high[1]
+
+// 上位足一致(失敗の逆 × 大きな流れ順張り)
+regimeOkShort = not useRegime or htfDn   // 下降中の天井飛び乗りを売る
+regimeOkLong  = not useRegime or htfUp   // 上昇中の大底飛び乗りを買う
+
+fadeShortCond = armFadeShort > 0 and (not useConfirm or confDown) and regimeOkShort
+fadeLongCond  = armFadeLong  > 0 and (not useConfirm or confUp)   and regimeOkLong
+fadeShort = fadeShortCond and not fadeShortCond[1]
+fadeLong  = fadeLongCond  and not fadeLongCond[1]
+if fadeShort
+    armFadeShort := 0
+if fadeLong
+    armFadeLong := 0
+
+inWindow = not useDates or (time >= startDate and time <= endDate)
+
+// ----------------------------- Orders --------------------------------
+var float longStop = na
+var float longTP   = na
+var float shortStop= na
+var float shortTP  = na
+
+if fadeLong and inWindow and strategy.position_size == 0
+    strategy.entry("L", strategy.long)
+    longStop := close - slAtr * atr
+    longTP   := close + slAtr * atr * rr
+
+if fadeShort and inWindow and strategy.position_size == 0
+    strategy.entry("S", strategy.short)
+    shortStop := close + slAtr * atr
+    shortTP   := close - slAtr * atr * rr
+
+if strategy.position_size > 0
+    strategy.exit("xL", from_entry="L", stop=longStop, limit=longTP)
+if strategy.position_size < 0
+    strategy.exit("xS", from_entry="S", stop=shortStop, limit=shortTP)
+
+// ----------------------------- Plot ----------------------------------
+plot(ema, "EMA", color=color.new(color.gray, 0))
+plotshape(clEvt,     title="飛び乗り(買われすぎ)", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0),  size=size.tiny, text="飛乗")
+plotshape(csEvt,     title="飛び乗り(売られすぎ)", style=shape.triangleup,   location=location.belowbar, color=color.new(color.red, 0),  size=size.tiny, text="飛乗")
+plotshape(fadeLong,  title="フェード買い",         style=shape.triangleup,   location=location.belowbar, color=color.new(color.aqua, 0), size=size.small, text="買✓")
+plotshape(fadeShort, title="フェード売り",         style=shape.triangledown, location=location.abovebar, color=color.new(color.aqua, 0), size=size.small, text="売✓")
+plot(majorHigh, "主要高値", color=color.new(color.orange, 60), style=plot.style_linebr)
+plot(majorLow,  "主要安値", color=color.new(color.orange, 60), style=plot.style_linebr)

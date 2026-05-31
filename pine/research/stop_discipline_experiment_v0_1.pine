@@ -1,0 +1,130 @@
+//@version=5
+strategy("Stop Discipline Experiment v0.1 [Research]",
+     overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
+     pyramiding=0,
+     calc_on_order_fills=true,
+     calc_on_every_tick=false,
+     process_orders_on_close=true,
+     commission_type=strategy.commission.percent,
+     commission_value=0.0,
+     slippage=2,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500)
+
+plot(na, title="Compiler Anchor", display=display.none)
+
+// =====================================================================
+// Stop Discipline Experiment v0.1 [Research]
+// ---------------------------------------------------------------------
+// 目的: 心理研究の統計(損失主因=損切り遅れ オッズ比7.16 /
+//   勝敗最大差=適切な損切り・撤退 オッズ比122)を機械的に再現する。
+//
+// 仮説: 負け組の本当の失敗は「入口」ではなく「出口」のディスポジション効果。
+//   = 利益は早く確定(チキン利食い) / 損失は先延ばし(塩漬け)。
+//
+// 方法: エントリーは固定(中立なトレンド押し目)にし、出口だけを切替える:
+//   (A) 規律なし(負け組) : 利確 近い(tpUndisc) / 損切り 遠い(slUndisc) = 高勝率だが大負け
+//   (B) 規律あり        : 利確 遠い(tpDisc)   / 損切り 近い(slDisc)   = 低勝率だがPF高
+//   さらに(B)には建値移動・時間切れ(任意)を追加。
+//   同じエントリーで PF がどれだけ変わるかを比較する。
+// =====================================================================
+
+// ----------------------------- Inputs --------------------------------
+grpEntry  = "エントリー(固定・中立)"
+emaLen    = input.int(20, "押し目参照EMA", minval=2, group=grpEntry)
+atrLen    = input.int(14, "ATR期間",       minval=2, group=grpEntry)
+useHtf    = input.bool(true, "上位足トレンド方向にのみ入る", group=grpEntry)
+htfTf     = input.timeframe("D", "上位足", group=grpEntry)
+htfEmaLen = input.int(50, "上位足EMA", minval=2, group=grpEntry)
+
+grpMode   = "出口モード(これが検証対象)"
+mode      = input.string("規律あり(損早・利伸)", "出口の規律",
+             options=["規律あり(損早・利伸)", "規律なし(負け組:利早・損塩漬け)"], group=grpMode)
+
+grpDisc   = "規律あり 設定"
+slDisc    = input.float(1.0, "損切り ×ATR(早い)", minval=0.1, step=0.1, group=grpDisc)
+tpDisc    = input.float(3.0, "利確 ×ATR(伸ばす)", minval=0.1, step=0.1, group=grpDisc)
+useBE     = input.bool(true, "+1Rで建値に移動", group=grpDisc)
+useTime   = input.bool(true, "時間切れ決済を使う", group=grpDisc)
+maxHold   = input.int(30, "最大保有バー", minval=1, group=grpDisc)
+
+grpUndisc = "規律なし(負け組) 設定"
+slUndisc  = input.float(4.0, "損切り ×ATR(遠い/塩漬け)", minval=0.1, step=0.1, group=grpUndisc)
+tpUndisc  = input.float(1.0, "利確 ×ATR(チキン利食い)",  minval=0.1, step=0.1, group=grpUndisc)
+
+grpDate   = "期間フィルタ"
+useDates  = input.bool(false, "期間を限定する", group=grpDate)
+startDate = input.time(timestamp("2017-01-01 00:00"), "開始", group=grpDate)
+endDate   = input.time(timestamp("2026-01-01 00:00"), "終了", group=grpDate)
+
+// ----------------------------- Calc ----------------------------------
+ema = ta.ema(close, emaLen)
+atr = ta.atr(atrLen)
+
+htfEma = request.security(syminfo.tickerid, htfTf, ta.ema(close, htfEmaLen), lookahead=barmerge.lookahead_off)
+htfUp  = not useHtf or close > htfEma
+htfDn  = not useHtf or close < htfEma
+
+// 中立な固定エントリー: 上位足方向への EMA 押し目クロス
+longEntry  = htfUp and ta.crossover(close, ema)
+shortEntry = htfDn and ta.crossunder(close, ema)
+
+inWindow = not useDates or (time >= startDate and time <= endDate)
+disciplined = mode == "規律あり(損早・利伸)"
+
+// ----------------------------- Orders --------------------------------
+var float entryPx   = na
+var float longStop  = na
+var float longTP    = na
+var float shortStop = na
+var float shortTP   = na
+var bool  beLong    = false
+var bool  beShort   = false
+var int   barsIn    = 0
+
+barsIn := strategy.position_size != 0 ? barsIn + 1 : 0
+
+slL = disciplined ? slDisc : slUndisc
+tpL = disciplined ? tpDisc : tpUndisc
+
+if longEntry and inWindow and strategy.position_size == 0
+    strategy.entry("L", strategy.long)
+    entryPx  := close
+    longStop := close - slL * atr
+    longTP   := close + tpL * atr
+    beLong   := false
+
+if shortEntry and inWindow and strategy.position_size == 0
+    strategy.entry("S", strategy.short)
+    entryPx   := close
+    shortStop := close + slL * atr
+    shortTP   := close - tpL * atr
+    beShort   := false
+
+// 建値移動(規律ありのみ): +1R 到達で損切りを建値へ
+oneR = slL * atr
+if disciplined and useBE and strategy.position_size > 0 and not beLong and high >= entryPx + oneR
+    longStop := entryPx
+    beLong   := true
+if disciplined and useBE and strategy.position_size < 0 and not beShort and low <= entryPx - oneR
+    shortStop := entryPx
+    beShort   := true
+
+if strategy.position_size > 0
+    strategy.exit("xL", from_entry="L", stop=longStop, limit=longTP)
+    if disciplined and useTime and barsIn >= maxHold
+        strategy.close("L", comment="time")
+
+if strategy.position_size < 0
+    strategy.exit("xS", from_entry="S", stop=shortStop, limit=shortTP)
+    if disciplined and useTime and barsIn >= maxHold
+        strategy.close("S", comment="time")
+
+// ----------------------------- Plot ----------------------------------
+plot(ema, "EMA", color=color.new(color.gray, 0))
+plotshape(longEntry,  title="買い", style=shape.triangleup,   location=location.belowbar, color=color.new(color.teal, 0), size=size.tiny)
+plotshape(shortEntry, title="売り", style=shape.triangledown, location=location.abovebar, color=color.new(color.maroon, 0), size=size.tiny)

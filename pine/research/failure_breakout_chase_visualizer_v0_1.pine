@@ -1,0 +1,120 @@
+//@version=5
+indicator("Failure Breakout Chase Visualizer v0.1 [Research]", overlay=true, max_labels_count=500, max_lines_count=500)
+
+// =====================================================================
+// Failure Breakout Chase Visualizer v0.1 [Research]
+// ---------------------------------------------------------------------
+// 研究仮説:
+//   失敗チャート(「節目抜け飛び乗り」186枚)の実画像分析から抽出した
+//   「負け組が入る位置」を機械的に検出し、その逆=「本来待つべき位置」を
+//   可視化する。失敗の逆が成功側のエッジになる、という仮説の検証用。
+//
+// 抽出した失敗シグネチャ(outputs/failure_breakout_chase_analysis_v0_1.md):
+//   1. 伸びきり    : 価格が短期EMAから ATR×k 以上乖離
+//   2. 節目初触    : 直近スイング高値/安値に初めて到達
+//   3. 追いかけ足  : 節目へ突っ込む大陽線/大陰線
+//   4. 再確認なし  : 抜け後の押し戻り/再停滞を待っていない
+//   5. 上位足逆行  : 上位足トレンドと逆方向(任意フィルタ)
+//
+//   赤 ▽/△ = 飛び乗り危険ゾーン(負け組が入る所)
+//   青 △/▽ = 本来待つべき押し目/戻りの候補(失敗の逆)
+//   黄 線   = 直近スイングの節目(抵抗/支持)
+//
+// 時間足別の推奨プリセット(検証起点・1時間足FXを基準に設定):
+//   1H  : extMult 1.8 / runLen 4 / swingLook 20 / nearLvl 0.8 (デフォルト)
+//   4H  : extMult 1.6 / runLen 3 / swingLook 24 / nearLvl 0.7
+//   15m : extMult 2.2 / runLen 5 / swingLook 30 / nearLvl 0.8
+//   感度を上げたい(赤を増やす): extMult を下げる / chaseBody を下げる
+//   感度を下げたい(赤を絞る)  : extMult を上げる / runLen を上げる
+// =====================================================================
+
+// ----------------------------- Inputs --------------------------------
+grpCore   = "コア設定"
+emaLen    = input.int(20,  "平均参照EMA(伸びきり判定)", minval=2,  group=grpCore)
+atrLen    = input.int(14,  "ATR期間",                    minval=2,  group=grpCore)
+swingLook = input.int(20,  "スイング参照期間(節目)",     minval=3,  group=grpCore)
+
+grpFail   = "飛び乗り(失敗)検出"
+extMult   = input.float(1.8, "伸びきりしきい値 |close-EMA|/ATR >", minval=0.1, step=0.1, group=grpFail)
+runLen    = input.int(4,     "連続足しきい値(追いかけ)",          minval=1,   group=grpFail)
+nearLvl   = input.float(0.8, "節目到達しきい値 ×ATR以内",          minval=0.0, step=0.1, group=grpFail)
+chaseBody = input.float(0.6, "追いかけ足の実体 ×ATR以上",          minval=0.0, step=0.1, group=grpFail)
+
+grpWin    = "押し目/戻り(成功側)検出"
+pullEma   = input.float(0.5, "EMA回帰しきい値 ×ATR以内",  minval=0.0, step=0.1, group=grpWin)
+roomMult  = input.float(2.0, "次の節目までの余裕 ×ATR以上", minval=0.0, step=0.1, group=grpWin)
+
+grpHtf    = "上位足トレンド"
+useHtf    = input.bool(true,  "上位足トレンドフィルタを使う", group=grpHtf)
+htfTf     = input.timeframe("240", "上位足", group=grpHtf)
+htfEmaLen = input.int(50, "上位足EMA", minval=2, group=grpHtf)
+
+grpDraw   = "表示"
+showLevel = input.bool(true, "節目ライン表示", group=grpDraw)
+
+// ----------------------------- Core calc -----------------------------
+ema   = ta.ema(close, emaLen)
+atr   = ta.atr(atrLen)
+ext   = atr > 0 ? (close - ema) / atr : 0.0          // +:平均より上 / -:平均より下
+
+// 直近スイング(当該足を除く)= 節目
+recHigh = ta.highest(high, swingLook)[1]
+recLow  = ta.lowest(low,  swingLook)[1]
+
+// 連続足(追いかけの勢い)
+var int upRun = 0
+upRun := close > close[1] ? upRun + 1 : 0
+var int dnRun = 0
+dnRun := close < close[1] ? dnRun + 1 : 0
+
+// 追いかけ足(大きな実体)
+body      = math.abs(close - open)
+bigBull   = close > open and body > chaseBody * atr
+bigBear   = close < open and body > chaseBody * atr
+
+// 上位足トレンド
+htfEma    = request.security(syminfo.tickerid, htfTf, ta.ema(close, htfEmaLen), lookahead=barmerge.lookahead_off)
+htfUp     = not useHtf or close > htfEma
+htfDn     = not useHtf or close < htfEma
+
+// 節目をブレイク/到達(飛び乗りの瞬間): 直近スイング高値/安値を抜く climactic 足
+breakUp   = close > recHigh or high  >= recHigh - nearLvl * atr
+breakDn   = close < recLow  or low   <= recLow  + nearLvl * atr
+
+// ------------------------- 飛び乗り危険(失敗) -------------------------
+// 買い飛び乗り: 伸びきって上、抵抗(直近高値)をブレイク、追いかけ大陽線 or 連続上昇
+dangerLong  = ext >  extMult and breakUp and (bigBull or upRun >= runLen)
+// 売り飛び乗り: 伸びきって下、支持(直近安値)をブレイク、追いかけ大陰線 or 連続下落
+dangerShort = ext < -extMult and breakDn and (bigBear or dnRun >= runLen)
+
+// ------------------------- 押し目/戻り(成功側) ------------------------
+// 押し目買い候補: 上位足上昇、EMA近くまで回帰、上(抵抗)まで値幅余裕あり
+roomUp     = (recHigh - close) > roomMult * atr
+nearEmaUp  = math.abs(close - ema) < pullEma * atr and close >= ema
+waitLong   = htfUp and nearEmaUp and roomUp
+// 戻り売り候補: 上位足下降、EMA近くまで戻り、下(支持)まで値幅余裕あり
+roomDn     = (close - recLow) > roomMult * atr
+nearEmaDn  = math.abs(close - ema) < pullEma * atr and close <= ema
+waitShort  = htfDn and nearEmaDn and roomDn
+
+// ----------------------------- Plot ----------------------------------
+plot(ema, "EMA", color=color.new(color.gray, 0), linewidth=1)
+
+plotshape(dangerLong,  title="買い飛び乗り危険", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0),  size=size.small, text="飛乗")
+plotshape(dangerShort, title="売り飛び乗り危険", style=shape.triangleup,   location=location.belowbar, color=color.new(color.red, 0),  size=size.small, text="飛乗")
+
+plotshape(waitLong,  title="押し目買い候補", style=shape.triangleup,   location=location.belowbar, color=color.new(color.aqua, 0), size=size.small, text="押目")
+plotshape(waitShort, title="戻り売り候補",   style=shape.triangledown, location=location.abovebar, color=color.new(color.aqua, 0), size=size.small, text="戻り")
+
+// 節目ライン(直近スイング高値/安値)
+plot(showLevel ? recHigh : na, "直近スイング高値(抵抗)", color=color.new(color.yellow, 40), style=plot.style_linebr, linewidth=1)
+plot(showLevel ? recLow  : na, "直近スイング安値(支持)", color=color.new(color.yellow, 40), style=plot.style_linebr, linewidth=1)
+
+// 背景: 危険ゾーンを薄く強調
+bgcolor(dangerLong or dangerShort ? color.new(color.red, 88) : na, title="危険ゾーン背景")
+
+// ----------------------------- Alerts --------------------------------
+alertcondition(dangerLong,  "買い飛び乗り危険", "高値・抵抗への伸びきった飛び乗り(負け組パターン)")
+alertcondition(dangerShort, "売り飛び乗り危険", "安値・支持への伸びきった飛び乗り(負け組パターン)")
+alertcondition(waitLong,    "押し目買い候補",   "EMA回帰の押し目・上に値幅余裕(失敗の逆)")
+alertcondition(waitShort,   "戻り売り候補",     "EMA回帰の戻り・下に値幅余裕(失敗の逆)")

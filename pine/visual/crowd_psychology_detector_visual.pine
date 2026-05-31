@@ -1,8 +1,8 @@
 //@version=5
-indicator("Crowd Psychology Detector Visual v0.1", overlay=true, max_labels_count=500, max_lines_count=500, max_bars_back=3000)
+indicator("Crowd Psychology Detector Visual v0.2", overlay=true, max_labels_count=500, max_lines_count=500, max_bars_back=3000)
 
 // =====================================================================
-// 群衆心理検出器 v0.1
+// 群衆心理検出器 v0.2
 // =====================================================================
 // 目的:
 //   トレード心理研究から見えた「人が反応しやすい場所」と
@@ -45,19 +45,21 @@ rangeMidLo = input.float(0.30, "レンジ中央 下限", minval=0.0, maxval=1.0,
 rangeMidHi = input.float(0.70, "レンジ中央 上限", minval=0.0, maxval=1.0, step=0.05, group=grpCrowd)
 impulseBodyAtr = input.float(0.90, "急変実体ATR", minval=0.1, step=0.1, group=grpCrowd)
 
-showWick = input.bool(true, "WICK 足1本判断を表示", group=grpCrowd)
-wickRatioMin = input.float(0.55, "ヒゲ比率", minval=0.1, maxval=0.95, step=0.01, group=grpCrowd)
-wickBodyMin = input.float(1.8, "ヒゲ/実体倍率", minval=0.1, step=0.1, group=grpCrowd)
-wickLocalLookback = input.int(12, "局所高安値確認バー数", minval=3, group=grpCrowd)
+showWick = input.bool(false, "WICK 足1本判断を表示", group=grpCrowd)
+wickRatioMin = input.float(0.65, "ヒゲ比率", minval=0.1, maxval=0.95, step=0.01, group=grpCrowd)
+wickBodyMin = input.float(2.5, "ヒゲ/実体倍率", minval=0.1, step=0.1, group=grpCrowd)
+wickAtrMin = input.float(0.80, "ヒゲ長さATR", minval=0.0, step=0.05, group=grpCrowd)
+wickLocalLookback = input.int(20, "局所高安値確認バー数", minval=3, group=grpCrowd)
 nearLevelAtr = input.float(0.75, "節目付近判定(ATR)", minval=0.1, step=0.05, group=grpCrowd)
 
 grpCalm = "緑: 待てた候補"
 showWaitedBreak = input.bool(true, "WAIT 抜け後再確認を表示", group=grpCalm)
 showRangeOutside = input.bool(true, "OUT レンジ外定着を表示", group=grpCalm)
 outsideBarsNeed = input.int(3, "レンジ外定着バー数", minval=1, maxval=20, group=grpCalm)
-showPullback = input.bool(true, "PB 押し戻り継続を表示", group=grpCalm)
+showPullback = input.bool(false, "PB 押し戻り継続を表示", group=grpCalm)
 pullbackTolAtr = input.float(0.55, "EMA押し戻り許容幅(ATR)", minval=0.05, step=0.05, group=grpCalm)
 trendSlopeBars = input.int(8, "方向EMA傾き確認バー数", minval=1, group=grpCalm)
+pullbackConfirmBody = input.float(0.35, "PB確認足の最小実体比率", minval=0.0, maxval=1.0, step=0.05, group=grpCalm)
 
 grpHtf = "上位足"
 useHtf = input.bool(false, "上位足方向を使う", group=grpHtf)
@@ -74,12 +76,12 @@ showLevels = input.bool(true, "節目・レンジ線を表示", group=grpView)
 showEma = input.bool(true, "EMAを表示", group=grpView)
 showShapes = input.bool(true, "マーカーを表示", group=grpView)
 labelMode = input.string("なし", "説明ラベル", options=["なし", "最小", "詳細"], group=grpView)
-showTable = input.bool(true, "状態テーブルを表示", group=grpView)
+showTable = input.bool(false, "状態テーブルを表示", group=grpView)
 paintBackground = input.bool(false, "背景を薄く塗る", group=grpView)
-showInvalidation = input.bool(true, "否定ライン候補を表示", group=grpView)
+showInvalidation = input.bool(false, "否定ライン候補を表示", group=grpView)
 invalidationBars = input.int(12, "否定ライン表示バー数", minval=1, maxval=100, group=grpView)
 useBarClose = input.bool(true, "確定足だけ表示", group=grpView)
-signalCooldownBars = input.int(12, "同じ種類の表示間隔", minval=0, maxval=200, group=grpView)
+signalCooldownBars = input.int(24, "同じ種類の表示間隔", minval=0, maxval=200, group=grpView)
 
 // ---------------------------------------------------------------------
 // 共通計算
@@ -211,8 +213,8 @@ nearSupport = low <= keyLow + atr * nearLevelAtr
 upperAtLocalHigh = high >= ta.highest(high[1], wickLocalLookback) - atr * nearLevelAtr
 lowerAtLocalLow = low <= ta.lowest(low[1], wickLocalLookback) + atr * nearLevelAtr
 
-upperWickStrong = showWick and upperWickRatio >= wickRatioMin and upperWick / bodyBase >= wickBodyMin
-lowerWickStrong = showWick and lowerWickRatio >= wickRatioMin and lowerWick / bodyBase >= wickBodyMin
+upperWickStrong = showWick and upperWickRatio >= wickRatioMin and upperWick / bodyBase >= wickBodyMin and upperWick >= atr * wickAtrMin
+lowerWickStrong = showWick and lowerWickRatio >= wickRatioMin and lowerWick / bodyBase >= wickBodyMin and lowerWick >= atr * wickAtrMin
 
 wickShortRiskRaw = barOk and upperWickStrong and upperAtLocalHigh and not nearResistance
 wickLongRiskRaw = barOk and lowerWickStrong and lowerAtLocalLow and not nearSupport
@@ -252,8 +254,8 @@ if pullLongActive and bar_index - pullLongIndex > maxWaitBars
 if pullShortActive and bar_index - pullShortIndex > maxWaitBars
     pullShortActive := false
 
-pullbackLongRaw = showPullback and barOk and pullLongActive and bar_index > pullLongIndex and close > high[1] and close > fastEma and close > open
-pullbackShortRaw = showPullback and barOk and pullShortActive and bar_index > pullShortIndex and close < low[1] and close < fastEma and close < open
+pullbackLongRaw = showPullback and barOk and not rangeLike and pullLongActive and bar_index > pullLongIndex and close > high[1] and close > fastEma and close > open and bodyRatio >= pullbackConfirmBody
+pullbackShortRaw = showPullback and barOk and not rangeLike and pullShortActive and bar_index > pullShortIndex and close < low[1] and close < fastEma and close < open and bodyRatio >= pullbackConfirmBody
 
 if pullbackLongRaw
     pullLongActive := false

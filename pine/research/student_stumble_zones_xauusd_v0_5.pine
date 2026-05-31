@@ -1,17 +1,19 @@
 //@version=5
-indicator("Student Stumble Zones - XAUUSD v0.5 [Research]", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=100)
+indicator("Student Stumble Zones - XAUUSD v0.5.1 [Research]", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=100)
 
 // =====================================================================
-// Student Stumble Zones - XAUUSD v0.5 [Research]
+// Student Stumble Zones - XAUUSD v0.5.1 [Research]
 // ---------------------------------------------------------------------
 // 380件データ: entries 122 / 全敗クラスタ 4 / 待ち 4
-// 1期+2期統合 student_entries_extracted.csv
+// ★ XAUUSD の 1H チャート専用（他通貨に貼ると価格がずれます）
 // 赤=全敗クラスタ / 青=待つ場所 / 緑赤=各エントリー
 // =====================================================================
 
+pairOk = (syminfo.basecurrency == "XAU" and syminfo.currency == "USD") or str.contains(syminfo.ticker, "GOLD")
 showEntries = input.bool(true,  "エントリー表示(緑=勝/赤=負)")
 showStumble = input.bool(true,  "全敗クラスタ(赤帯)を表示")
 showWait    = input.bool(true,  "待つ場所(青帯)を表示")
+showZoneLbl = input.bool(true,  "ゾーン内ラベル(人数/待つ)を表示")
 onlyLoss    = input.bool(false, "負けエントリーのみ")
 
 // --- (A) 122エントリー ---
@@ -36,35 +38,44 @@ WT2 = array.from(timestamp("GMT+9",2025,2,21,23,59), timestamp("GMT+9",2025,1,27
 WS  = array.from(1, 1, 1, 1)
 
 if barstate.islast
-    if showEntries
-        for i = 0 to array.size(TS) - 1
-            res  = array.get(RS, i)
-            if onlyLoss and res == 1
-                continue
-            side = array.get(SD, i)
-            px   = array.get(PX, i)
-            ts   = array.get(TS, i)
-            col  = res == 1 ? color.new(color.lime, 0) : color.new(color.red, 0)
-            sty  = side == 1 ? label.style_triangleup : label.style_triangledown
-            label.new(x=ts, y=px, xloc=xloc.bar_time, style=sty, color=col, size=size.tiny, text="")
-    if showStumble
-        for k = 0 to array.size(ZLo) - 1
-            lo = array.get(ZLo, k)
-            hi = array.get(ZHi, k)
-            t1 = array.get(ZT1, k)
-            t2 = array.get(ZT2, k)
-            n  = array.get(ZN, k)
-            b  = array.get(ZB, k)
-            box.new(left=t1, top=hi, right=t2, bottom=lo, xloc=xloc.bar_time, bgcolor=color.new(color.red, 80), border_color=color.new(color.red, 40), border_width=1)
-            dir = b == 1 ? "買い" : "売り"
-            label.new(x=t2, y=hi, xloc=xloc.bar_time, style=label.style_label_left, color=color.new(color.red, 0), textcolor=color.white, size=size.small, text=str.tostring(n) + "人全敗 " + dir)
-    if showWait
-        for j = 0 to array.size(WLo) - 1
-            lo = array.get(WLo, j)
-            hi = array.get(WHi, j)
-            t1 = array.get(WT1, j)
-            t2 = array.get(WT2, j)
-            b  = array.get(WS, j)
-            box.new(left=t1, top=hi, right=t2, bottom=lo, xloc=xloc.bar_time, bgcolor=color.new(color.blue, 85), border_color=color.new(color.blue, 30), border_width=1)
-            dir = b == 1 ? "買" : "売"
-            label.new(x=t1, y=lo, xloc=xloc.bar_time, style=label.style_label_right, color=color.new(color.blue, 0), textcolor=color.white, size=size.tiny, text="待つ " + dir)
+    if not pairOk
+        label.new(bar_index, high, "⚠ XAUUSD 専用です\n現在: " + syminfo.ticker + "  →  XAUUSD 1H に貼り直してください", xloc=xloc.bar_index, yloc=yloc.price, style=label.style_label_lower_left, color=color.new(color.orange, 0), textcolor=color.white, size=size.normal)
+    else
+        if showEntries
+            for i = 0 to array.size(TS) - 1
+                res  = array.get(RS, i)
+                if onlyLoss and res == 1
+                    continue
+                side = array.get(SD, i)
+                px   = array.get(PX, i)
+                ts   = array.get(TS, i)
+                col  = res == 1 ? color.new(color.lime, 0) : color.new(color.red, 0)
+                sty  = side == 1 ? label.style_triangleup : label.style_triangledown
+                label.new(x=ts, y=px, xloc=xloc.bar_time, yloc=yloc.price, style=sty, color=col, size=size.tiny, text="")
+        if showStumble
+            for k = 0 to array.size(ZLo) - 1
+                lo = array.get(ZLo, k)
+                hi = array.get(ZHi, k)
+                t1 = array.get(ZT1, k)
+                t2 = array.get(ZT2, k)
+                n  = array.get(ZN, k)
+                b  = array.get(ZB, k)
+                mid = (lo + hi) / 2.0
+                tMid = t1 + int((t2 - t1) / 2)
+                box.new(left=t1, top=hi, right=t2, bottom=lo, xloc=xloc.bar_time, bgcolor=color.new(color.red, 80), border_color=color.new(color.red, 40), border_width=1)
+                if showZoneLbl
+                    dir = b == 1 ? "買い" : "売り"
+                    label.new(x=tMid, y=mid, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_center, color=color.new(color.red, 0), textcolor=color.white, size=size.small, text=str.tostring(n) + "人全敗 " + dir)
+        if showWait
+            for j = 0 to array.size(WLo) - 1
+                lo = array.get(WLo, j)
+                hi = array.get(WHi, j)
+                t1 = array.get(WT1, j)
+                t2 = array.get(WT2, j)
+                b  = array.get(WS, j)
+                mid = (lo + hi) / 2.0
+                tMid = t1 + int((t2 - t1) / 2)
+                box.new(left=t1, top=hi, right=t2, bottom=lo, xloc=xloc.bar_time, bgcolor=color.new(color.blue, 85), border_color=color.new(color.blue, 30), border_width=1)
+                if showZoneLbl
+                    dir = b == 1 ? "買" : "売"
+                    label.new(x=tMid, y=mid, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_center, color=color.new(color.blue, 0), textcolor=color.white, size=size.tiny, text="待つ " + dir)

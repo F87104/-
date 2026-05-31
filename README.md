@@ -27,7 +27,9 @@
 | **XAUUSD** | 1H | [student_stumble_zones_xauusd_v0_5.pine](pine/research/student_stumble_zones_xauusd_v0_5.pine) | 122件 + 赤4 + **青4** |
 | **EURJPY** | 1H | [student_stumble_zones_eurjpy_v0_5.pine](pine/research/student_stumble_zones_eurjpy_v0_5.pine) | 38件（全敗ゾーンなし・参考表示） |
 
-**使い方:** GitHub で `.pine` を開く → 中身をコピー → TradingView Pine Editor に貼る → 同じ通貨の **1H** チャートで Add to chart。
+**使い方:** GitHub で `.pine` を開く → 中身をコピー → TradingView Pine Editor に貼る → **同じ通貨の 1H** チャートで Add to chart。
+
+**重要:** `GBPJPY` 用スクリプトを `USDJPY` チャートに貼ると、ラベルが210円台など**別通貨の価格**に表示されローソク足から大きく離れます。ファイル名の通貨とチャートを必ず一致させてください（v0.5.1 で不一致時は警告表示）。
 
 | 表示 | 意味 |
 |---|---|

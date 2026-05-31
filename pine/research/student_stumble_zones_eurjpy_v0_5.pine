@@ -1,17 +1,19 @@
 //@version=5
-indicator("Student Stumble Zones - EURJPY v0.5 [Research]", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=100)
+indicator("Student Stumble Zones - EURJPY v0.5.1 [Research]", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=100)
 
 // =====================================================================
-// Student Stumble Zones - EURJPY v0.5 [Research]
+// Student Stumble Zones - EURJPY v0.5.1 [Research]
 // ---------------------------------------------------------------------
 // 380件データ: entries 38 / 全敗クラスタ 0 / 待ち 0
-// 1期+2期統合 student_entries_extracted.csv
+// ★ EURJPY の 1H チャート専用（他通貨に貼ると価格がずれます）
 // 赤=全敗クラスタ / 青=待つ場所 / 緑赤=各エントリー
 // =====================================================================
 
+pairOk = syminfo.basecurrency == "EUR" and syminfo.currency == "JPY"
 showEntries = input.bool(true,  "エントリー表示(緑=勝/赤=負)")
 showStumble = input.bool(true,  "全敗クラスタ(赤帯)を表示")
 showWait    = input.bool(true,  "待つ場所(青帯)を表示")
+showZoneLbl = input.bool(true,  "ゾーン内ラベル(人数/待つ)を表示")
 onlyLoss    = input.bool(false, "負けエントリーのみ")
 
 // --- (A) 38エントリー ---
@@ -25,14 +27,17 @@ RS = array.from(1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1
 // --- (C) 待つ場所なし ---
 
 if barstate.islast
-    if showEntries
-        for i = 0 to array.size(TS) - 1
-            res  = array.get(RS, i)
-            if onlyLoss and res == 1
-                continue
-            side = array.get(SD, i)
-            px   = array.get(PX, i)
-            ts   = array.get(TS, i)
-            col  = res == 1 ? color.new(color.lime, 0) : color.new(color.red, 0)
-            sty  = side == 1 ? label.style_triangleup : label.style_triangledown
-            label.new(x=ts, y=px, xloc=xloc.bar_time, style=sty, color=col, size=size.tiny, text="")
+    if not pairOk
+        label.new(bar_index, high, "⚠ EURJPY 専用です\n現在: " + syminfo.ticker + "  →  EURJPY 1H に貼り直してください", xloc=xloc.bar_index, yloc=yloc.price, style=label.style_label_lower_left, color=color.new(color.orange, 0), textcolor=color.white, size=size.normal)
+    else
+        if showEntries
+            for i = 0 to array.size(TS) - 1
+                res  = array.get(RS, i)
+                if onlyLoss and res == 1
+                    continue
+                side = array.get(SD, i)
+                px   = array.get(PX, i)
+                ts   = array.get(TS, i)
+                col  = res == 1 ? color.new(color.lime, 0) : color.new(color.red, 0)
+                sty  = side == 1 ? label.style_triangleup : label.style_triangledown
+                label.new(x=ts, y=px, xloc=xloc.bar_time, yloc=yloc.price, style=sty, color=col, size=size.tiny, text="")

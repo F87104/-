@@ -1,0 +1,70 @@
+//@version=5
+indicator("Student Stumble Zones - XAUUSD v0.5 [Research]", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=100)
+
+// =====================================================================
+// Student Stumble Zones - XAUUSD v0.5 [Research]
+// ---------------------------------------------------------------------
+// 380件データ: entries 122 / 全敗クラスタ 4 / 待ち 4
+// 1期+2期統合 student_entries_extracted.csv
+// 赤=全敗クラスタ / 青=待つ場所 / 緑赤=各エントリー
+// =====================================================================
+
+showEntries = input.bool(true,  "エントリー表示(緑=勝/赤=負)")
+showStumble = input.bool(true,  "全敗クラスタ(赤帯)を表示")
+showWait    = input.bool(true,  "待つ場所(青帯)を表示")
+onlyLoss    = input.bool(false, "負けエントリーのみ")
+
+// --- (A) 122エントリー ---
+TS = array.from(timestamp("GMT+9",2024,9,20,0,55), timestamp("GMT+9",2024,9,20,4,0), timestamp("GMT+9",2024,9,20,8,30), timestamp("GMT+9",2024,9,20,12,10), timestamp("GMT+9",2024,9,20,15,57), timestamp("GMT+9",2024,10,2,1,34), timestamp("GMT+9",2024,10,9,22,0), timestamp("GMT+9",2024,10,11,5,0), timestamp("GMT+9",2024,10,11,22,28), timestamp("GMT+9",2024,10,16,15,14), timestamp("GMT+9",2024,10,17,15,40), timestamp("GMT+9",2024,10,17,19,25), timestamp("GMT+9",2024,10,17,22,0), timestamp("GMT+9",2024,10,18,10,30), timestamp("GMT+9",2024,10,24,14,0), timestamp("GMT+9",2024,10,28,16,10), timestamp("GMT+9",2024,10,29,15,0), timestamp("GMT+9",2024,10,31,12,40), timestamp("GMT+9",2024,11,6,21,32), timestamp("GMT+9",2024,11,11,22,30), timestamp("GMT+9",2024,11,13,6,0), timestamp("GMT+9",2024,11,14,1,34), timestamp("GMT+9",2024,11,14,2,0), timestamp("GMT+9",2024,11,19,8,29), timestamp("GMT+9",2024,11,19,8,56), timestamp("GMT+9",2024,11,20,8,5), timestamp("GMT+9",2024,11,22,10,0), timestamp("GMT+9",2024,11,23,6,0), timestamp("GMT+9",2024,11,25,8,0), timestamp("GMT+9",2024,12,10,19,40), timestamp("GMT+9",2024,12,11,15,22), timestamp("GMT+9",2024,12,12,7,0), timestamp("GMT+9",2024,12,12,9,6), timestamp("GMT+9",2024,12,23,16,18), timestamp("GMT+9",2025,1,2,19,36), timestamp("GMT+9",2025,1,9,19,41), timestamp("GMT+9",2025,1,9,20,10), timestamp("GMT+9",2025,1,9,20,28), timestamp("GMT+9",2025,1,10,23,58), timestamp("GMT+9",2025,1,16,6,20), timestamp("GMT+9",2025,1,16,11,21), timestamp("GMT+9",2025,1,16,13,22), timestamp("GMT+9",2025,1,16,18,13), timestamp("GMT+9",2025,1,21,11,0), timestamp("GMT+9",2025,1,21,21,34), timestamp("GMT+9",2025,1,21,22,3), timestamp("GMT+9",2025,1,21,22,49), timestamp("GMT+9",2025,1,21,23,15), timestamp("GMT+9",2025,1,22,9,0), timestamp("GMT+9",2025,1,24,18,5), timestamp("GMT+9",2025,1,24,18,23), timestamp("GMT+9",2025,1,24,20,34), timestamp("GMT+9",2025,1,31,8,27), timestamp("GMT+9",2025,1,31,9,5), timestamp("GMT+9",2025,1,31,9,22), timestamp("GMT+9",2025,1,31,12,15), timestamp("GMT+9",2025,1,31,13,5), timestamp("GMT+9",2025,1,31,16,0), timestamp("GMT+9",2025,2,3,23,11), timestamp("GMT+9",2025,2,3,23,17), timestamp("GMT+9",2025,2,3,23,30), timestamp("GMT+9",2025,2,5,10,25), timestamp("GMT+9",2025,2,10,15,59), timestamp("GMT+9",2025,2,10,16,0), timestamp("GMT+9",2025,2,11,9,0), timestamp("GMT+9",2025,2,14,6,7), timestamp("GMT+9",2025,2,19,16,7), timestamp("GMT+9",2025,2,19,17,30), timestamp("GMT+9",2025,2,20,15,24), timestamp("GMT+9",2025,2,20,15,31), timestamp("GMT+9",2025,2,20,16,15), timestamp("GMT+9",2025,2,20,18,15), timestamp("GMT+9",2025,2,24,22,0), timestamp("GMT+9",2025,2,24,23,5), timestamp("GMT+9",2025,9,17,8,6), timestamp("GMT+9",2025,9,17,18,49), timestamp("GMT+9",2025,9,20,2,53), timestamp("GMT+9",2025,9,29,13,0), timestamp("GMT+9",2025,9,29,13,37), timestamp("GMT+9",2025,9,30,18,25), timestamp("GMT+9",2025,10,1,15,0), timestamp("GMT+9",2025,10,1,16,45), timestamp("GMT+9",2025,10,6,7,6), timestamp("GMT+9",2025,10,6,8,15), timestamp("GMT+9",2025,10,11,3,15), timestamp("GMT+9",2025,10,13,14,0), timestamp("GMT+9",2025,10,13,14,0), timestamp("GMT+9",2025,10,13,16,4), timestamp("GMT+9",2025,10,16,10,0), timestamp("GMT+9",2025,10,16,22,37), timestamp("GMT+9",2025,10,17,15,15), timestamp("GMT+9",2025,11,10,21,26), timestamp("GMT+9",2025,11,12,11,8), timestamp("GMT+9",2025,11,13,13,30), timestamp("GMT+9",2025,11,13,14,0), timestamp("GMT+9",2025,11,21,16,3), timestamp("GMT+9",2025,11,26,18,34), timestamp("GMT+9",2025,12,1,8,0), timestamp("GMT+9",2025,12,1,22,40), timestamp("GMT+9",2025,12,12,16,9), timestamp("GMT+9",2025,12,12,17,34), timestamp("GMT+9",2025,12,22,11,0), timestamp("GMT+9",2025,12,22,23,2), timestamp("GMT+9",2025,12,23,22,25), timestamp("GMT+9",2025,12,24,9,37), timestamp("GMT+9",2025,12,31,14,53), timestamp("GMT+9",2026,1,6,6,51), timestamp("GMT+9",2026,1,6,13,4), timestamp("GMT+9",2026,1,12,8,0), timestamp("GMT+9",2026,1,12,17,3), timestamp("GMT+9",2026,1,12,17,5), timestamp("GMT+9",2026,1,12,21,59), timestamp("GMT+9",2026,1,12,22,18), timestamp("GMT+9",2026,1,13,23,0), timestamp("GMT+9",2026,1,19,18,0), timestamp("GMT+9",2026,1,20,13,15), timestamp("GMT+9",2026,1,20,13,23), timestamp("GMT+9",2026,1,20,13,39), timestamp("GMT+9",2026,1,20,16,41), timestamp("GMT+9",2026,1,26,9,33), timestamp("GMT+9",2026,1,26,18,51), timestamp("GMT+9",2026,2,27,22,0))
+PX = array.from(2588.00, 2587.24, 2588.04, 2592.29, 2595.33, 2676.30, 2609.88, 2629.72, 2647.10, 2673.17, 2685.00, 2686.71, 2689.92, 2698.89, 2727.40, 2755.69, 2755.18, 2786.36, 2695.70, 2635.20, 2599.52, 2588.00, 2582.71, 2612.14, 2613.00, 2610.90, 2677.23, 2715.41, 2713.68, 2674.50, 2695.74, 2719.42, 2719.85, 2631.40, 2644.47, 2667.70, 2669.05, 2670.99, 2683.21, 2695.60, 2705.10, 2697.79, 2700.33, 2716.49, 2726.56, 2729.50, 2727.42, 2473.00, 2744.05, 2775.00, 2777.24, 2779.50, 2795.20, 2799.00, 2798.34, 2798.00, 2795.30, 2798.42, 2812.89, 2814.92, 2817.00, 2845.11, 2890.30, 2889.50, 2918.15, 2929.02, 2934.20, 2939.13, 2946.48, 2948.00, 2948.63, 2954.00, 2955.85, 2955.40, 3693.65, 3669.44, 3677.58, 3802.10, 3803.66, 3798.46, 3860.87, 3878.30, 3887.17, 3895.00, 3996.51, 4058.81, 4069.40, 4081.91, 4218.60, 4252.53, 4359.71, 4095.64, 4151.00, 4211.01, 4210.00, 4029.00, 4141.50, 4241.58, 4262.06, 4287.04, 4296.66, 4384.47, 4422.00, 4489.68, 4513.42, 4282.82, 4448.61, 4465.00, 4514.79, 4589.54, 4587.09, 4590.46, 4610.22, 4635.00, 4670.00, 4691.99, 4683.10, 4689.18, 4720.24, 5045.70, 5080.43, 5222.43)
+SD = array.from(1, 1, 1, 1, 1, 1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, 1, 1, 1, 1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+RS = array.from(1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0)
+
+// --- (B) 全敗クラスタ 4 ---
+ZLo = array.from(2934.20, 2775.00, 2955.40, 4210.00)
+ZHi = array.from(2954.00, 2779.50, 2955.85, 4211.01)
+ZT1 = array.from(timestamp("GMT+9",2025,2,19,0,0), timestamp("GMT+9",2025,1,24,0,0), timestamp("GMT+9",2025,2,24,0,0), timestamp("GMT+9",2025,11,13,0,0))
+ZT2 = array.from(timestamp("GMT+9",2025,2,20,23,59), timestamp("GMT+9",2025,1,24,23,59), timestamp("GMT+9",2025,2,24,23,59), timestamp("GMT+9",2025,11,13,23,59))
+ZN  = array.from(6, 3, 2, 2)
+ZB  = array.from(1, 1, 1, 1)
+
+// --- (C) 待つ場所 4 ---
+WLo = array.from(2900.00, 2745.00, 2929.95, 4087.64)
+WHi = array.from(2925.00, 2765.00, 2955.31, 4159.00)
+WT1 = array.from(timestamp("GMT+9",2025,2,18,0,0), timestamp("GMT+9",2025,1,23,0,0), timestamp("GMT+9",2025,2,22,22,0), timestamp("GMT+9",2025,11,11,13,30))
+WT2 = array.from(timestamp("GMT+9",2025,2,21,23,59), timestamp("GMT+9",2025,1,27,23,59), timestamp("GMT+9",2025,2,25,23,5), timestamp("GMT+9",2025,11,14,14,0))
+WS  = array.from(1, 1, 1, 1)
+
+if barstate.islast
+    if showEntries
+        for i = 0 to array.size(TS) - 1
+            res  = array.get(RS, i)
+            if onlyLoss and res == 1
+                continue
+            side = array.get(SD, i)
+            px   = array.get(PX, i)
+            ts   = array.get(TS, i)
+            col  = res == 1 ? color.new(color.lime, 0) : color.new(color.red, 0)
+            sty  = side == 1 ? label.style_triangleup : label.style_triangledown
+            label.new(x=ts, y=px, xloc=xloc.bar_time, style=sty, color=col, size=size.tiny, text="")
+    if showStumble
+        for k = 0 to array.size(ZLo) - 1
+            lo = array.get(ZLo, k)
+            hi = array.get(ZHi, k)
+            t1 = array.get(ZT1, k)
+            t2 = array.get(ZT2, k)
+            n  = array.get(ZN, k)
+            b  = array.get(ZB, k)
+            box.new(left=t1, top=hi, right=t2, bottom=lo, xloc=xloc.bar_time, bgcolor=color.new(color.red, 80), border_color=color.new(color.red, 40), border_width=1)
+            dir = b == 1 ? "買い" : "売り"
+            label.new(x=t2, y=hi, xloc=xloc.bar_time, style=label.style_label_left, color=color.new(color.red, 0), textcolor=color.white, size=size.small, text=str.tostring(n) + "人全敗 " + dir)
+    if showWait
+        for j = 0 to array.size(WLo) - 1
+            lo = array.get(WLo, j)
+            hi = array.get(WHi, j)
+            t1 = array.get(WT1, j)
+            t2 = array.get(WT2, j)
+            b  = array.get(WS, j)
+            box.new(left=t1, top=hi, right=t2, bottom=lo, xloc=xloc.bar_time, bgcolor=color.new(color.blue, 85), border_color=color.new(color.blue, 30), border_width=1)
+            dir = b == 1 ? "買" : "売"
+            label.new(x=t1, y=lo, xloc=xloc.bar_time, style=label.style_label_right, color=color.new(color.blue, 0), textcolor=color.white, size=size.tiny, text="待つ " + dir)

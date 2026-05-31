@@ -15,16 +15,17 @@
 | 順番 | やること | ファイル |
 |:---:|---|---|
 | **1** | **結論を読む**（何がつまずきか） | 👉 **[student_stumble_clusters_research_2026-05-31.md](docs/research/student_stumble_clusters_research_2026-05-31.md)** |
-| **2** | **生データを見る**（137件・29クラスタ） | [student_entries_extracted.csv](docs/research/student_entries_extracted.csv) ／ [student_stumble_clusters_v0_2.csv](docs/research/student_stumble_clusters_v0_2.csv) |
-| **3** | **TradingView で重ねる**（1H チャートに貼る） | 下の Pine **v0.4** 表を参照 |
+| **2** | **生データを見る**（380件・66クラスタ） | [student_entries_extracted.csv](docs/research/student_entries_extracted.csv) ／ [student_stumble_clusters_v0_3.csv](docs/research/student_stumble_clusters_v0_3.csv) |
+| **3** | **TradingView で重ねる**（1H チャートに貼る） | 下の Pine **v0.5** 表を参照 |
 
-### TradingView 用 Pine（`pine/research/` フォルダ）— **最新 v0.4**
+### TradingView 用 Pine（`pine/research/` フォルダ）— **最新 v0.5**
 
 | 通貨 | チャート | Pine ファイル | 中身 |
 |---|---|---|---|
-| **GBPJPY** | 1H | [student_stumble_zones_gbpjpy_v0_4.pine](pine/research/student_stumble_zones_gbpjpy_v0_4.pine) | 60件 + 赤9 + **青9（待つ場所）** |
-| **USDJPY** | 1H | [student_stumble_zones_usdjpy_v0_4.pine](pine/research/student_stumble_zones_usdjpy_v0_4.pine) | 16件 + 赤3 + **青3** |
-| **XAUUSD** | 1H | [student_stumble_zones_xauusd_v0_4.pine](pine/research/student_stumble_zones_xauusd_v0_4.pine) | 42件 + 赤3 + **青3** |
+| **GBPJPY** | 1H | [student_stumble_zones_gbpjpy_v0_5.pine](pine/research/student_stumble_zones_gbpjpy_v0_5.pine) | 145件 + 赤8 + **青8（待つ場所）** |
+| **USDJPY** | 1H | [student_stumble_zones_usdjpy_v0_5.pine](pine/research/student_stumble_zones_usdjpy_v0_5.pine) | 29件 + 赤4 + **青4** |
+| **XAUUSD** | 1H | [student_stumble_zones_xauusd_v0_5.pine](pine/research/student_stumble_zones_xauusd_v0_5.pine) | 122件 + 赤4 + **青4** |
+| **EURJPY** | 1H | [student_stumble_zones_eurjpy_v0_5.pine](pine/research/student_stumble_zones_eurjpy_v0_5.pine) | 38件（全敗ゾーンなし・参考表示） |
 
 **使い方:** GitHub で `.pine` を開く → 中身をコピー → TradingView Pine Editor に貼る → 同じ通貨の **1H** チャートで Add to chart。
 
@@ -32,37 +33,38 @@
 |---|---|
 | 緑/赤三角 | 受講生の実エントリー（勝/負） |
 | **赤い帯** | 複数人が全員負けたゾーン（つまずき） |
-| **青い帯** | 本来待つべき場所（v0.4 追加） |
+| **青い帯** | 本来待つべき場所（v0.5） |
 
-待つ場所データ: [student_stumble_wait_zones_v0_1.csv](docs/research/student_stumble_wait_zones_v0_1.csv)
+待つ場所データ: [student_stumble_wait_zones_v0_2.csv](docs/research/student_stumble_wait_zones_v0_2.csv)（v0.1 手動9件 + 勝ち参照/幾何推定9件）
 
 **v2.x 試験フィルタ:** [stumble_chase_suppression_experiment_v0_1.pine](pine/research/stumble_chase_suppression_experiment_v0_1.pine) — フィルタOFF/ON で A/B 比較
 
-### 最重要つまずき（全員が負けた15クラスタの代表）
+### 最重要つまずき（全員が負けた18クラスタの代表）
 
 | 通貨 | 人数 | 売買 | 価格帯 | 構造 |
 |---|---:|---|---|---|
-| GBPJPY | **5人** | 買い | 199円台 | 高値追い |
+| XAUUSD | **6人** | 買い | **2934–2954** | 史上高値追い（1期） |
+| GBPJPY | **5人** | 買い | 195円台 | 節目高値追い |
 | GBPJPY | **4人** | 売り | 188円台 | 安値売り（落ちるナイフ） |
-| USDJPY | 3人 | 売り | 140円台 | 割れ狙い→反発 |
-| XAUUSD | 2人 | 買い | **2719** | 天井買い |
-| XAUUSD | 2人 | 買い | **2777** | 天井買い |
-| XAUUSD | 2人 | 買い | **2948** | 天井買い |
+| USDJPY | **4人** | 売り | 140円台 | 割れ狙い→反発 |
+| GBPJPY | 3人 | 買い | **205–206** | 高値追い（2期のみ） |
+| XAUUSD | 3人 | 買い | **2775–2780** | 天井買い |
 
 ### フォルダの場所（GitHub 上）
 
 ```
 docs/research/          ← 研究ノート・CSV（ここ）
   student_stumble_clusters_research_2026-05-31.md   … まとめ（最初に読む）
-  student_entries_extracted.csv                     … 137件の実エントリー
-  student_stumble_clusters_v0_2.csv                 … 29クラスタ集計
-  student_stumble_wait_zones_v0_1.csv             … 待つ場所15件
+  student_entries_extracted.csv                     … 380件の実エントリー（1期235+2期145）
+  student_stumble_clusters_v0_3.csv                 … 66クラスタ集計（全敗18）
+  student_stumble_wait_zones_v0_2.csv               … 待つ場所18件
   RESEARCH_INDEX.md                                 … 全研究の台帳
 
 pine/research/          ← TradingView 用 Pine（ここ）
-  student_stumble_zones_gbpjpy_v0_4.pine   ⭐ 最新（赤+青）
-  student_stumble_zones_usdjpy_v0_4.pine
-  student_stumble_zones_xauusd_v0_4.pine
+  student_stumble_zones_gbpjpy_v0_5.pine   ⭐ 最新（赤+青）
+  student_stumble_zones_usdjpy_v0_5.pine
+  student_stumble_zones_xauusd_v0_5.pine
+  student_stumble_zones_eurjpy_v0_5.pine
 ```
 
 ---
@@ -73,11 +75,12 @@ pine/research/          ← TradingView 用 Pine（ここ）
 
 | 優先 | 研究テーマ | 状態 | 入口 |
 |---:|---|---|---|
-| 1 | **受講生つまずきクラスタ** | 進行中 | 👉 上の **[3ステップ表](#-いま見るべき場所--受講生つまずきクラスタ研究)** |
-| 2 | 受講生エントリー集中パターン | 進行中 | [student_entry_cluster_research_2026-05-31.md](docs/research/student_entry_cluster_research_2026-05-31.md) |
-| 3 | トレード心理 / 群衆心理 | 進行中 | [RESEARCH_INDEX.md](docs/research/RESEARCH_INDEX.md) ／ [crowd_psychology_simple_visual.pine](pine/visual/crowd_psychology_simple_visual.pine) |
-| 4 | Market Psychology Squeeze | 記録済み | [market_psychology_squeeze_strict_2026-05-30.md](docs/research/market_psychology_squeeze_strict_2026-05-30.md) |
-| 5 | Wavebox / Rebreak | 記録済み | [wavebox_operational_preconditions_v1.md](docs/research/wavebox_operational_preconditions_v1.md) |
+| 1 | **受講生つまずきクラスタ** | **データ確定（380件・Pine v0.5）** | 👉 上の **[3ステップ表](#-いま見るべき場所--受講生つまずきクラスタ研究)** ／ 次は v2.x へ F1 移植 |
+| 2 | **2期生トレード心理データ取り込み** | **ローカル統合済み（850行）** | [second_cohort_trade_psychology_import_2026-05-31.md](docs/research/second_cohort_trade_psychology_import_2026-05-31.md) |
+| 3 | 受講生エントリー集中パターン | 進行中 | [student_entry_cluster_research_2026-05-31.md](docs/research/student_entry_cluster_research_2026-05-31.md) |
+| 4 | トレード心理 / 群衆心理 | 進行中 | [RESEARCH_INDEX.md](docs/research/RESEARCH_INDEX.md) ／ [crowd_psychology_simple_visual.pine](pine/visual/crowd_psychology_simple_visual.pine) |
+| 5 | Market Psychology Squeeze | 記録済み | [market_psychology_squeeze_strict_2026-05-30.md](docs/research/market_psychology_squeeze_strict_2026-05-30.md) |
+| 6 | Wavebox / Rebreak | 記録済み | [wavebox_operational_preconditions_v1.md](docs/research/wavebox_operational_preconditions_v1.md) |
 
 ---
 

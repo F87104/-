@@ -1,0 +1,38 @@
+//@version=5
+indicator("Student Stumble Zones - EURJPY v0.5 [Research]", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=100)
+
+// =====================================================================
+// Student Stumble Zones - EURJPY v0.5 [Research]
+// ---------------------------------------------------------------------
+// 380件データ: entries 38 / 全敗クラスタ 0 / 待ち 0
+// 1期+2期統合 student_entries_extracted.csv
+// 赤=全敗クラスタ / 青=待つ場所 / 緑赤=各エントリー
+// =====================================================================
+
+showEntries = input.bool(true,  "エントリー表示(緑=勝/赤=負)")
+showStumble = input.bool(true,  "全敗クラスタ(赤帯)を表示")
+showWait    = input.bool(true,  "待つ場所(青帯)を表示")
+onlyLoss    = input.bool(false, "負けエントリーのみ")
+
+// --- (A) 38エントリー ---
+TS = array.from(timestamp("GMT+9",2024,9,16,9,50), timestamp("GMT+9",2024,9,16,21,54), timestamp("GMT+9",2024,9,17,9,4), timestamp("GMT+9",2024,9,17,15,28), timestamp("GMT+9",2024,9,19,5,0), timestamp("GMT+9",2024,9,19,20,42), timestamp("GMT+9",2024,9,20,15,55), timestamp("GMT+9",2024,9,21,5,0), timestamp("GMT+9",2024,9,25,16,3), timestamp("GMT+9",2024,9,26,10,35), timestamp("GMT+9",2024,9,27,10,29), timestamp("GMT+9",2024,10,9,16,38), timestamp("GMT+9",2024,11,15,2,25), timestamp("GMT+9",2024,11,19,15,56), timestamp("GMT+9",2024,11,21,17,32), timestamp("GMT+9",2024,12,10,17,7), timestamp("GMT+9",2025,9,10,18,26), timestamp("GMT+9",2025,9,30,21,20), timestamp("GMT+9",2025,10,2,16,0), timestamp("GMT+9",2025,10,3,10,0), timestamp("GMT+9",2025,10,7,12,8), timestamp("GMT+9",2025,10,8,0,27), timestamp("GMT+9",2025,10,23,15,41), timestamp("GMT+9",2025,10,27,22,0), timestamp("GMT+9",2025,11,11,16,0), timestamp("GMT+9",2025,11,12,6,42), timestamp("GMT+9",2025,11,12,14,3), timestamp("GMT+9",2025,11,12,22,50), timestamp("GMT+9",2025,11,18,9,3), timestamp("GMT+9",2025,11,18,11,58), timestamp("GMT+9",2025,11,26,23,59), timestamp("GMT+9",2025,12,10,0,0), timestamp("GMT+9",2025,12,18,14,33), timestamp("GMT+9",2026,1,20,13,52), timestamp("GMT+9",2026,1,21,15,24), timestamp("GMT+9",2026,1,22,14,0), timestamp("GMT+9",2026,1,22,15,0), timestamp("GMT+9",2026,1,22,21,50))
+PX = array.from(115.756, 156.060, 156.640, 156.420, 158.193, 159.606, 159.058, 160.665, 160.780, 161.503, 162.510, 162.850, 163.032, 162.322, 162.791, 160.030, 172.666, 173.658, 172.950, 172.950, 176.070, 176.420, 176.880, 178.200, 178.408, 178.570, 179.096, 179.300, 179.964, 179.913, 181.340, 182.099, 182.920, 184.320, 185.380, 185.507, 185.640, 185.785)
+SD = array.from(-1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, 1, 1, -1, 1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+RS = array.from(1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0)
+
+// --- (B) 全敗クラスタなし ---
+
+// --- (C) 待つ場所なし ---
+
+if barstate.islast
+    if showEntries
+        for i = 0 to array.size(TS) - 1
+            res  = array.get(RS, i)
+            if onlyLoss and res == 1
+                continue
+            side = array.get(SD, i)
+            px   = array.get(PX, i)
+            ts   = array.get(TS, i)
+            col  = res == 1 ? color.new(color.lime, 0) : color.new(color.red, 0)
+            sty  = side == 1 ? label.style_triangleup : label.style_triangledown
+            label.new(x=ts, y=px, xloc=xloc.bar_time, style=sty, color=col, size=size.tiny, text="")

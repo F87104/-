@@ -1,8 +1,8 @@
 //@version=5
-indicator("Crowd Psychology Simple v0.1", overlay=true, max_labels_count=200, max_lines_count=100, max_bars_back=2000)
+indicator("Crowd Psychology Simple v0.2", overlay=true, max_labels_count=200, max_lines_count=100, max_bars_back=2000)
 
 // =====================================================================
-// 群衆心理シンプル版 v0.1
+// 群衆心理シンプル版 v0.2
 // =====================================================================
 // 目的:
 //   リアルタイムで迷わないように、表示を3つだけにする。
@@ -23,6 +23,7 @@ breakBufferAtr = input.float(0.08, "節目抜け余白(ATR)", minval=0.0, step=0
 minBreakBody = input.float(0.45, "抜け足の最小実体比率", minval=0.0, maxval=1.0, step=0.05, group=grpCore)
 
 grpStop = "STOP"
+stopFreshBreak = input.bool(true, "節目抜け直後をSTOP", group=grpStop)
 extensionLookback = input.int(20, "伸び切り判定バー数", minval=5, group=grpStop)
 extensionAtr = input.float(2.0, "伸び切りATR", minval=0.5, step=0.1, group=grpStop)
 runLen = input.int(4, "連続足しきい値", minval=1, group=grpStop)
@@ -36,6 +37,7 @@ grpWait = "WAIT/CHECK"
 maxWaitBars = input.int(28, "確認待ち最大バー数", minval=3, group=grpWait)
 retestTolAtr = input.float(0.35, "押し戻り許容幅(ATR)", minval=0.05, step=0.05, group=grpWait)
 outsideBarsNeed = input.int(3, "レンジ外定着バー数", minval=1, maxval=20, group=grpWait)
+checkNeedsEma = input.bool(false, "CHECKにEMA方向一致を使う", group=grpWait)
 
 grpView = "表示"
 showSignals = input.bool(true, "STOP/WAIT/CHECKを表示", group=grpView)
@@ -66,7 +68,7 @@ upRun := close > close[1] ? upRun + 1 : 0
 var int downRun = 0
 downRun := close < close[1] ? downRun + 1 : 0
 
-// STOP: 抜け直後の飛び乗り、またはレンジ中央の急変
+// STOP: 節目抜け直後の飛び乗り、またはレンジ中央の急変
 breakoutLongCross = ta.crossover(close, keyHigh + breakBuf)
 breakoutShortCross = ta.crossunder(close, keyLow - breakBuf)
 strongBreakLong = close > open and bodyRatio >= minBreakBody
@@ -75,6 +77,8 @@ strongBreakShort = close < open and bodyRatio >= minBreakBody
 extendedUp = close - ta.lowest(low, extensionLookback) >= atr * extensionAtr
 extendedDown = ta.highest(high, extensionLookback) - close >= atr * extensionAtr
 
+freshBreakLongRaw = barOk and stopFreshBreak and breakoutLongCross and strongBreakLong
+freshBreakShortRaw = barOk and stopFreshBreak and breakoutShortCross and strongBreakShort
 fomoLongRaw = barOk and breakoutLongCross and strongBreakLong and (extendedUp or upRun >= runLen)
 fomoShortRaw = barOk and breakoutShortCross and strongBreakShort and (extendedDown or downRun >= runLen)
 
@@ -88,8 +92,8 @@ rangeMid = rangeLike and rangePos >= rangeMidLo and rangePos <= rangeMidHi
 panicBuyRaw = barOk and rangeMid and close > open and body >= atr * impulseBodyAtr
 panicSellRaw = barOk and rangeMid and close < open and body >= atr * impulseBodyAtr
 
-stopLongRaw = fomoLongRaw or panicBuyRaw
-stopShortRaw = fomoShortRaw or panicSellRaw
+stopLongRaw = freshBreakLongRaw or fomoLongRaw or panicBuyRaw
+stopShortRaw = freshBreakShortRaw or fomoShortRaw or panicSellRaw
 
 // WAIT/CHECK: 抜けたあとに一度待ってから確認する
 var bool breakLongActive = false
@@ -131,8 +135,10 @@ if waitLongRaw
 if waitShortRaw
     breakShortRetested := true
 
-checkBreakLongRaw = barOk and breakLongActive and breakLongRetested and not waitLongRaw and close > high[1] and close > breakLongLevel
-checkBreakShortRaw = barOk and breakShortActive and breakShortRetested and not waitShortRaw and close < low[1] and close < breakShortLevel
+emaLongOk = not checkNeedsEma or close > ema
+emaShortOk = not checkNeedsEma or close < ema
+checkBreakLongRaw = barOk and breakLongActive and breakLongRetested and not waitLongRaw and close > high[1] and close > breakLongLevel and emaLongOk
+checkBreakShortRaw = barOk and breakShortActive and breakShortRetested and not waitShortRaw and close < low[1] and close < breakShortLevel and emaShortOk
 
 if checkBreakLongRaw
     breakLongActive := false
@@ -148,8 +154,8 @@ outsideLongCount := rangeLike and close > rangeHigh + breakBuf ? outsideLongCoun
 var int outsideShortCount = 0
 outsideShortCount := rangeLike and close < rangeLow - breakBuf ? outsideShortCount + 1 : 0
 
-checkOutsideLongRaw = barOk and outsideLongCount >= outsideBarsNeed and nz(outsideLongCount[1]) < outsideBarsNeed
-checkOutsideShortRaw = barOk and outsideShortCount >= outsideBarsNeed and nz(outsideShortCount[1]) < outsideBarsNeed
+checkOutsideLongRaw = barOk and outsideLongCount >= outsideBarsNeed and nz(outsideLongCount[1]) < outsideBarsNeed and emaLongOk
+checkOutsideShortRaw = barOk and outsideShortCount >= outsideBarsNeed and nz(outsideShortCount[1]) < outsideBarsNeed and emaShortOk
 
 checkLongRaw = checkBreakLongRaw or checkOutsideLongRaw
 checkShortRaw = checkBreakShortRaw or checkOutsideShortRaw

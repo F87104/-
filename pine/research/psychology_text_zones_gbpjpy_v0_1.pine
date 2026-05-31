@@ -1,93 +1,110 @@
 //@version=5
-indicator("Psychology Text Zones - GBPJPY v0.1 [Research]", overlay=true, max_labels_count=500, max_boxes_count=100, max_lines_count=50)
+indicator("Psychology Text Zones - GBPJPY v0.1.1 [Research]", overlay=true, max_labels_count=500, max_boxes_count=100, max_lines_count=50)
 
 // =====================================================================
-// Psychology Text Zones - GBPJPY v0.1 [Research]
+// Psychology Text Zones - GBPJPY v0.1.1 [Research]
 // ---------------------------------------------------------------------
-// 850件心理テキストのうち v0.5(380件・実行価格)と非重複の意識価格のみ
-// ソース行 45 → 集計ゾーン 14
-// 紫=テキスト意識価格（約定ではない） / 日時なし
-// v0.5 student_stumble_zones と併用可（役割が異なる）
+// 850件心理テキスト（v0.5実行380件と非重複）の意識価格帯
+// ソース行 45 → 表示ゾーン 6（近接マージ後・上位のみ）
+// 紫破線=意識節目（約定ではない） / 1H推奨 / v0.5と併用時は件数フィルタを上げる
 // =====================================================================
 
 pairOk = syminfo.basecurrency == "GBP" and syminfo.currency == "JPY"
-showZones   = input.bool(true,  "意識価格帯(紫)を表示")
-showLabels  = input.bool(true,  "ゾーンラベルを表示")
-minCount    = input.int(1,      "最小件数", minval=1, maxval=20)
+showZones   = input.bool(true,  "意識価格線(紫破線)を表示")
+showLabels  = input.bool(false, "右端ラベルを表示")
+showTable   = input.bool(true,  "一覧テーブル(右上)を表示")
+maxZones    = input.int(6, "最大表示ゾーン数", minval=1, maxval=20)
+minCount    = input.int(3,      "最小件数", minval=1, maxval=20)
 onlyDanger  = input.bool(false, "負け率50%超のみ")
 
-// Z0: 196 n=7 loss=2 根拠不足
-// Z1: 193 n=5 loss=2 根拠不足
-// Z2: 192 n=4 loss=2 根拠不足
-// Z3: 194 n=4 loss=1 根拠不足
-// Z4: 197 n=4 loss=0 根拠不足
-// Z5: 200 n=4 loss=2 根拠不足
-// Z6: 190 n=3 loss=0 根拠不足
-// Z7: 191 n=3 loss=1 根拠不足
-// Z8: 195 n=3 loss=1 根拠不足
-// Z9: 183 n=2 loss=0 損切り判断の遅れ
-// Z10: 188 n=2 loss=1 エントリーが早い
-// Z11: 189 n=2 loss=1 根拠不足
-// Z12: 185 n=1 loss=1 エントリーが早い
-// Z13: 198 n=1 loss=0 根拠不足
+var table psychTbl = table.new(position.top_right, 3, 8, bgcolor=color.new(color.black, 15), border_width=1)
+
+// Z0: 195 n=14 loss=4 根拠不足
+// Z1: 192 n=12 loss=5 根拠不足
+// Z2: 189 n=7 loss=2 根拠不足
+// Z3: 198 n=5 loss=0 根拠不足
+// Z4: 200 n=4 loss=2 根拠不足
+// Z5: 184 n=3 loss=1 エントリーが早い
 
 if barstate.islast
     if not pairOk
-        label.new(bar_index, high, "⚠ GBPJPY 専用\n心理テキスト v0.1", xloc=xloc.bar_index, yloc=yloc.price, style=label.style_label_lower_left, color=color.new(color.orange, 0), textcolor=color.white, size=size.normal)
-    else if showZones
-        if minCount <= 7 and (not onlyDanger or 2 * 1.0 / 7 > 0.5)
-            box.new(chart.left_visible_bar_time, 196.45, chart.right_visible_bar_time, 195.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
+        label.new(bar_index, high, "⚠ GBPJPY 専用\n心理テキスト v0.1.1", xloc=xloc.bar_index, yloc=yloc.price, style=label.style_label_lower_left, color=color.new(color.orange, 0), textcolor=color.white, size=size.normal)
+    else
+        shown = 0
+        if showTable
+            table.cell(psychTbl, 0, 0, "心理T", text_color=color.white, text_size=size.small)
+            table.cell(psychTbl, 1, 0, "価格", text_color=color.white, text_size=size.small)
+            table.cell(psychTbl, 2, 0, "件", text_color=color.white, text_size=size.small)
+        row = 1
+        // Z0: 195 n=14 merged=[194, 195, 196]
+        if shown < maxZones and 14 >= minCount and (not onlyDanger or 4 * 1.0 / 14 > 0.5)
+            shown += 1
+            if showZones
+                line.new(chart.left_visible_bar_time, 195.0, chart.right_visible_bar_time, 195.0, xloc=xloc.bar_time, color=color.new(color.gray, 45), width=1, style=line.style_dashed)
             if showLabels
-                label.new(chart.right_visible_bar_time, 196.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T7 196 根拠不足")
-        if minCount <= 5 and (not onlyDanger or 2 * 1.0 / 5 > 0.5)
-            box.new(chart.left_visible_bar_time, 193.45, chart.right_visible_bar_time, 192.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
+                label.new(chart.right_visible_bar_time, 195.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T14 195")
+            if showTable and row <= 7
+                table.cell(psychTbl, 0, row, "根拠不足", text_color=color.silver, text_size=size.tiny)
+                table.cell(psychTbl, 1, row, "195", text_color=color.white, text_size=size.tiny)
+                table.cell(psychTbl, 2, row, "14", text_color=color.white, text_size=size.tiny)
+                row += 1
+        // Z1: 192 n=12 merged=[191, 192, 193]
+        if shown < maxZones and 12 >= minCount and (not onlyDanger or 5 * 1.0 / 12 > 0.5)
+            shown += 1
+            if showZones
+                line.new(chart.left_visible_bar_time, 192.0, chart.right_visible_bar_time, 192.0, xloc=xloc.bar_time, color=color.new(color.gray, 45), width=1, style=line.style_dashed)
             if showLabels
-                label.new(chart.right_visible_bar_time, 193.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T5 193 根拠不足")
-        if minCount <= 4 and (not onlyDanger or 2 * 1.0 / 4 > 0.5)
-            box.new(chart.left_visible_bar_time, 192.45, chart.right_visible_bar_time, 191.55, xloc=xloc.bar_time, bgcolor=color.new(color.fuchsia, 85), border_color=color.new(color.purple, 35), border_width=1)
+                label.new(chart.right_visible_bar_time, 192.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T12 192")
+            if showTable and row <= 7
+                table.cell(psychTbl, 0, row, "根拠不足", text_color=color.silver, text_size=size.tiny)
+                table.cell(psychTbl, 1, row, "192", text_color=color.white, text_size=size.tiny)
+                table.cell(psychTbl, 2, row, "12", text_color=color.white, text_size=size.tiny)
+                row += 1
+        // Z2: 189 n=7 merged=[188, 189, 190]
+        if shown < maxZones and 7 >= minCount and (not onlyDanger or 2 * 1.0 / 7 > 0.5)
+            shown += 1
+            if showZones
+                line.new(chart.left_visible_bar_time, 189.0, chart.right_visible_bar_time, 189.0, xloc=xloc.bar_time, color=color.new(color.gray, 45), width=1, style=line.style_dashed)
             if showLabels
-                label.new(chart.right_visible_bar_time, 192.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T4 192 根拠不足")
-        if minCount <= 4 and (not onlyDanger or 1 * 1.0 / 4 > 0.5)
-            box.new(chart.left_visible_bar_time, 194.45, chart.right_visible_bar_time, 193.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
+                label.new(chart.right_visible_bar_time, 189.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T7 189")
+            if showTable and row <= 7
+                table.cell(psychTbl, 0, row, "根拠不足", text_color=color.silver, text_size=size.tiny)
+                table.cell(psychTbl, 1, row, "189", text_color=color.white, text_size=size.tiny)
+                table.cell(psychTbl, 2, row, "7", text_color=color.white, text_size=size.tiny)
+                row += 1
+        // Z3: 198 n=5 merged=[197, 198]
+        if shown < maxZones and 5 >= minCount and (not onlyDanger or 0 * 1.0 / 5 > 0.5)
+            shown += 1
+            if showZones
+                line.new(chart.left_visible_bar_time, 198.0, chart.right_visible_bar_time, 198.0, xloc=xloc.bar_time, color=color.new(color.gray, 45), width=1, style=line.style_dashed)
             if showLabels
-                label.new(chart.right_visible_bar_time, 194.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T4 194 根拠不足")
-        if minCount <= 4 and (not onlyDanger or 0 * 1.0 / 4 > 0.5)
-            box.new(chart.left_visible_bar_time, 197.45, chart.right_visible_bar_time, 196.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
+                label.new(chart.right_visible_bar_time, 198.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T5 198")
+            if showTable and row <= 7
+                table.cell(psychTbl, 0, row, "根拠不足", text_color=color.silver, text_size=size.tiny)
+                table.cell(psychTbl, 1, row, "198", text_color=color.white, text_size=size.tiny)
+                table.cell(psychTbl, 2, row, "5", text_color=color.white, text_size=size.tiny)
+                row += 1
+        // Z4: 200 n=4 merged=[200]
+        if shown < maxZones and 4 >= minCount and (not onlyDanger or 2 * 1.0 / 4 > 0.5)
+            shown += 1
+            if showZones
+                line.new(chart.left_visible_bar_time, 200.0, chart.right_visible_bar_time, 200.0, xloc=xloc.bar_time, color=color.new(color.purple, 25), width=1, style=line.style_dashed)
             if showLabels
-                label.new(chart.right_visible_bar_time, 197.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T4 197 根拠不足")
-        if minCount <= 4 and (not onlyDanger or 2 * 1.0 / 4 > 0.5)
-            box.new(chart.left_visible_bar_time, 200.45, chart.right_visible_bar_time, 199.55, xloc=xloc.bar_time, bgcolor=color.new(color.fuchsia, 85), border_color=color.new(color.purple, 35), border_width=1)
+                label.new(chart.right_visible_bar_time, 200.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T4 200")
+            if showTable and row <= 7
+                table.cell(psychTbl, 0, row, "根拠不足", text_color=color.silver, text_size=size.tiny)
+                table.cell(psychTbl, 1, row, "200", text_color=color.white, text_size=size.tiny)
+                table.cell(psychTbl, 2, row, "4", text_color=color.white, text_size=size.tiny)
+                row += 1
+        // Z5: 184 n=3 merged=[183, 185]
+        if shown < maxZones and 3 >= minCount and (not onlyDanger or 1 * 1.0 / 3 > 0.5)
+            shown += 1
+            if showZones
+                line.new(chart.left_visible_bar_time, 184.0, chart.right_visible_bar_time, 184.0, xloc=xloc.bar_time, color=color.new(color.gray, 45), width=1, style=line.style_dashed)
             if showLabels
-                label.new(chart.right_visible_bar_time, 200.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T4 200 根拠不足")
-        if minCount <= 3 and (not onlyDanger or 0 * 1.0 / 3 > 0.5)
-            box.new(chart.left_visible_bar_time, 190.45, chart.right_visible_bar_time, 189.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
-            if showLabels
-                label.new(chart.right_visible_bar_time, 190.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T3 190 根拠不足")
-        if minCount <= 3 and (not onlyDanger or 1 * 1.0 / 3 > 0.5)
-            box.new(chart.left_visible_bar_time, 191.45, chart.right_visible_bar_time, 190.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
-            if showLabels
-                label.new(chart.right_visible_bar_time, 191.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T3 191 根拠不足")
-        if minCount <= 3 and (not onlyDanger or 1 * 1.0 / 3 > 0.5)
-            box.new(chart.left_visible_bar_time, 195.45, chart.right_visible_bar_time, 194.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
-            if showLabels
-                label.new(chart.right_visible_bar_time, 195.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T3 195 根拠不足")
-        if minCount <= 2 and (not onlyDanger or 0 * 1.0 / 2 > 0.5)
-            box.new(chart.left_visible_bar_time, 183.45, chart.right_visible_bar_time, 182.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
-            if showLabels
-                label.new(chart.right_visible_bar_time, 183.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T2 183 損切り判断の遅れ")
-        if minCount <= 2 and (not onlyDanger or 1 * 1.0 / 2 > 0.5)
-            box.new(chart.left_visible_bar_time, 188.45, chart.right_visible_bar_time, 187.55, xloc=xloc.bar_time, bgcolor=color.new(color.fuchsia, 85), border_color=color.new(color.purple, 35), border_width=1)
-            if showLabels
-                label.new(chart.right_visible_bar_time, 188.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T2 188 エントリーが早い")
-        if minCount <= 2 and (not onlyDanger or 1 * 1.0 / 2 > 0.5)
-            box.new(chart.left_visible_bar_time, 189.45, chart.right_visible_bar_time, 188.55, xloc=xloc.bar_time, bgcolor=color.new(color.fuchsia, 85), border_color=color.new(color.purple, 35), border_width=1)
-            if showLabels
-                label.new(chart.right_visible_bar_time, 189.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T2 189 根拠不足")
-        if minCount <= 1 and (not onlyDanger or 1 * 1.0 / 1 > 0.5)
-            box.new(chart.left_visible_bar_time, 185.45, chart.right_visible_bar_time, 184.55, xloc=xloc.bar_time, bgcolor=color.new(color.purple, 82), border_color=color.new(color.purple, 35), border_width=1)
-            if showLabels
-                label.new(chart.right_visible_bar_time, 185.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 185 エントリーが早い")
-        if minCount <= 1 and (not onlyDanger or 0 * 1.0 / 1 > 0.5)
-            box.new(chart.left_visible_bar_time, 198.45, chart.right_visible_bar_time, 197.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
-            if showLabels
-                label.new(chart.right_visible_bar_time, 198.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 198 根拠不足")
+                label.new(chart.right_visible_bar_time, 184.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T3 184")
+            if showTable and row <= 7
+                table.cell(psychTbl, 0, row, "エントリーが早い", text_color=color.silver, text_size=size.tiny)
+                table.cell(psychTbl, 1, row, "184", text_color=color.white, text_size=size.tiny)
+                table.cell(psychTbl, 2, row, "3", text_color=color.white, text_size=size.tiny)
+                row += 1

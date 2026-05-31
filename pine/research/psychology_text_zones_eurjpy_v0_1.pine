@@ -1,23 +1,24 @@
 //@version=5
-indicator("Psychology Text Zones - EURJPY v0.1 [Research]", overlay=true, max_labels_count=500, max_boxes_count=100, max_lines_count=50)
+indicator("Psychology Text Zones - EURJPY v0.1.1 [Research]", overlay=true, max_labels_count=500, max_boxes_count=100, max_lines_count=50)
 
 // =====================================================================
-// Psychology Text Zones - EURJPY v0.1 [Research]
+// Psychology Text Zones - EURJPY v0.1.1 [Research]
 // ---------------------------------------------------------------------
-// 850件心理テキストのうち v0.5(380件・実行価格)と非重複の意識価格のみ
-// ソース行 0 → 集計ゾーン 0
-// 紫=テキスト意識価格（約定ではない） / 日時なし
-// v0.5 student_stumble_zones と併用可（役割が異なる）
+// 850件心理テキスト（v0.5実行380件と非重複）の意識価格帯
+// ソース行 0 → 表示ゾーン 0（近接マージ後・上位のみ）
+// 紫破線=意識節目（約定ではない） / 1H推奨 / v0.5と併用時は件数フィルタを上げる
 // =====================================================================
 
 pairOk = syminfo.basecurrency == "EUR" and syminfo.currency == "JPY"
-showZones   = input.bool(true,  "意識価格帯(紫)を表示")
-showLabels  = input.bool(true,  "ゾーンラベルを表示")
-minCount    = input.int(1,      "最小件数", minval=1, maxval=20)
+showZones   = input.bool(true,  "意識価格線(紫破線)を表示")
+showLabels  = input.bool(false, "右端ラベルを表示")
+showTable   = input.bool(true,  "一覧テーブル(右上)を表示")
+maxZones    = input.int(6, "最大表示ゾーン数", minval=1, maxval=20)
+minCount    = input.int(3,      "最小件数", minval=1, maxval=20)
 onlyDanger  = input.bool(false, "負け率50%超のみ")
 
 if barstate.islast
     if not pairOk
-        label.new(bar_index, high, "⚠ EURJPY 専用\n心理テキスト v0.1", xloc=xloc.bar_index, yloc=yloc.price, style=label.style_label_lower_left, color=color.new(color.orange, 0), textcolor=color.white, size=size.normal)
+        label.new(bar_index, high, "⚠ EURJPY 専用\n心理テキスト v0.1.1", xloc=xloc.bar_index, yloc=yloc.price, style=label.style_label_lower_left, color=color.new(color.orange, 0), textcolor=color.white, size=size.normal)
     else
         label.new(bar_index, high, "心理テキスト v0.1: EURJPY 非重複ゾーンなし", xloc=xloc.bar_index, yloc=yloc.price, style=label.style_label_lower_left, color=color.new(color.gray, 30), textcolor=color.white, size=size.small)

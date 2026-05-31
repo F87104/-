@@ -6,30 +6,68 @@
 
 ---
 
+## 🔍 いま見るべき場所 — 受講生つまずきクラスタ研究
+
+**迷ったらここから。** 複数の受講生が **同じ日時・同じ価格帯** で入って失敗した場所を、TradingView 上に重ねた研究です。
+
+### 3ステップで辿る
+
+| 順番 | やること | ファイル |
+|:---:|---|---|
+| **1** | **結論を読む**（何がつまずきか） | 👉 **[student_stumble_clusters_research_2026-05-31.md](docs/research/student_stumble_clusters_research_2026-05-31.md)** |
+| **2** | **生データを見る**（137件・29クラスタ） | [student_entries_extracted.csv](docs/research/student_entries_extracted.csv) ／ [student_stumble_clusters_v0_2.csv](docs/research/student_stumble_clusters_v0_2.csv) |
+| **3** | **TradingView で重ねる**（1H チャートに貼る） | 下の Pine 表を参照 |
+
+### TradingView 用 Pine（`pine/research/` フォルダ）
+
+| 通貨 | チャート | Pine ファイル | 中身 |
+|---|---|---|---|
+| **GBPJPY** | 1H | [student_stumble_zones_gbpjpy_v0_3.pine](pine/research/student_stumble_zones_gbpjpy_v0_3.pine) | 60エントリー + 全敗ゾーン9個 |
+| **USDJPY** | 1H | [student_stumble_zones_usdjpy_v0_3.pine](pine/research/student_stumble_zones_usdjpy_v0_3.pine) | 16エントリー + 全敗ゾーン3個 |
+| **XAUUSD** | 1H | [student_stumble_zones_xauusd_v0_3.pine](pine/research/student_stumble_zones_xauusd_v0_3.pine) | 42エントリー + 全敗ゾーン3個 |
+
+**使い方:** GitHub で `.pine` を開く → 中身をコピー → TradingView Pine Editor に貼る → 同じ通貨の **1H** チャートで Add to chart。  
+表示: 緑三角=勝ち / 赤三角=負け / **赤い帯=複数人が全員負けたゾーン**。
+
+### 最重要つまずき（全員が負けた15クラスタの代表）
+
+| 通貨 | 人数 | 売買 | 価格帯 | 構造 |
+|---|---:|---|---|---|
+| GBPJPY | **5人** | 買い | 199円台 | 高値追い |
+| GBPJPY | **4人** | 売り | 188円台 | 安値売り（落ちるナイフ） |
+| USDJPY | 3人 | 売り | 140円台 | 割れ狙い→反発 |
+| XAUUSD | 2人 | 買い | **2719** | 天井買い |
+| XAUUSD | 2人 | 買い | **2777** | 天井買い |
+| XAUUSD | 2人 | 買い | **2948** | 天井買い |
+
+### フォルダの場所（GitHub 上）
+
+```
+docs/research/          ← 研究ノート・CSV（ここ）
+  student_stumble_clusters_research_2026-05-31.md   … まとめ（最初に読む）
+  student_entries_extracted.csv                     … 137件の実エントリー
+  student_stumble_clusters_v0_2.csv                 … 29クラスタ集計
+  RESEARCH_INDEX.md                                 … 全研究の台帳
+
+pine/research/          ← TradingView 用 Pine（ここ）
+  student_stumble_zones_gbpjpy_v0_3.pine
+  student_stumble_zones_usdjpy_v0_3.pine
+  student_stumble_zones_xauusd_v0_3.pine
+```
+
+---
+
 ## 研究ダッシュボード
 
-このリポジトリは、戦略コードだけでなく「何を研究しているか」を忘れないための研究台帳としても使います。  
-迷ったら、まずこの表を見ます。
+このリポジトリは、戦略コードだけでなく「何を研究しているか」を忘れないための研究台帳としても使います。
 
-| 優先 | 研究テーマ | 状態 | 何を知りたいか | 途中経過 | 次にやること |
-|---:|---|---|---|---|---|
-| 1 | 受講生つまずきクラスタ研究 | 進行中 | 複数人が同じ日時×価格で失敗した場所を特定し、教材化と v2.x フィルタに使う | 137件の実エントリー抽出、29クラスタ（全敗15）、GBPJPY/USDJPY/XAUUSD Pine v0.3 可視化、通貨別心理仮説を整理 | 全敗ゾーンの「待つ場所」マーキングと通貨別 `S/W/C` 20例記録 |
-| 2 | Market Psychology Squeeze | 記録済み | スクイーズ、投げ売り、踏み上げのパターンを戦略化する | 通貨・時間軸・フィルタ条件を複数検証済み | 有効条件と除外条件をトップページから辿れるようにする |
-| 3 | Wavebox / Rebreak | 記録済み | 再ブレイクや波形パターンがどの条件で機能するかを調べる | 複数の検証・監査メモあり | 実運用で使う条件と保留条件を1枚にまとめる |
-
-研究メモの入口: [docs/research/RESEARCH_INDEX.md](docs/research/RESEARCH_INDEX.md)
-
-トレード心理研究の最新: [docs/research/trade_psychology_optimal_entry_pattern_research_2026-05-31.md](docs/research/trade_psychology_optimal_entry_pattern_research_2026-05-31.md)
-
-群衆心理検出器: [pine/visual/crowd_psychology_detector_visual.pine](pine/visual/crowd_psychology_detector_visual.pine)
-
-群衆心理シンプル版: [pine/visual/crowd_psychology_simple_visual.pine](pine/visual/crowd_psychology_simple_visual.pine)
-
-受講生エントリー集中パターン研究: [docs/research/student_entry_cluster_research_2026-05-31.md](docs/research/student_entry_cluster_research_2026-05-31.md)
-
-受講生つまずきクラスタ研究: [docs/research/student_stumble_clusters_research_2026-05-31.md](docs/research/student_stumble_clusters_research_2026-05-31.md)
-
-通貨別の心理傾向: [docs/research/currency_pair_personality_hypothesis_2026-05-31.md](docs/research/currency_pair_personality_hypothesis_2026-05-31.md)
+| 優先 | 研究テーマ | 状態 | 入口 |
+|---:|---|---|---|
+| 1 | **受講生つまずきクラスタ** | 進行中 | 👉 上の **[3ステップ表](#-いま見るべき場所--受講生つまずきクラスタ研究)** |
+| 2 | 受講生エントリー集中パターン | 進行中 | [student_entry_cluster_research_2026-05-31.md](docs/research/student_entry_cluster_research_2026-05-31.md) |
+| 3 | トレード心理 / 群衆心理 | 進行中 | [RESEARCH_INDEX.md](docs/research/RESEARCH_INDEX.md) ／ [crowd_psychology_simple_visual.pine](pine/visual/crowd_psychology_simple_visual.pine) |
+| 4 | Market Psychology Squeeze | 記録済み | [market_psychology_squeeze_strict_2026-05-30.md](docs/research/market_psychology_squeeze_strict_2026-05-30.md) |
+| 5 | Wavebox / Rebreak | 記録済み | [wavebox_operational_preconditions_v1.md](docs/research/wavebox_operational_preconditions_v1.md) |
 
 ---
 
@@ -116,11 +154,11 @@ fx-ai/
 │   │   ├── TrendBreakV1_Final.pine        主力 (H1 ブレイクアウト)
 │   │   └── h4_t5_macd_bb_live_ready.pine  補助 (H4 T5+MACD+BB)
 │   ├── research/                      研究中 (各通貨個別戦略)
+│   │   ├── student_stumble_zones_gbpjpy_v0_3.pine   ⭐ つまずき可視化
+│   │   ├── student_stumble_zones_usdjpy_v0_3.pine   ⭐ つまずき可視化
+│   │   ├── student_stumble_zones_xauusd_v0_3.pine   ⭐ つまずき可視化
 │   │   ├── wavebox_usdjpy_h1_rebreak_v1_2.pine
-│   │   ├── wavebox_gbpjpy_h1_long_rebreak_v0_1.pine
-│   │   ├── synapse_mtf_wave_reversal_v4.pine
-│   │   ├── chfjpy_h1_exhaustion_short_v0_2.pine
-│   │   └── silver_xagusd_h1_short_rebreak_v0_1.pine
+│   │   └── ... (その他研究用 Pine)
 │   ├── visual/                        可視化ツール (Indicator)
 │   │   ├── h4_t5_macd_bb_visual.pine
 │   │   ├── h4_sharp_drop_v_recovery_visual.pine
@@ -140,12 +178,11 @@ fx-ai/
 │   ├── h4_t5_macd_bb_practical_audit_2026-05-24.md  実用監査
 │   ├── h4_t5_macd_bb_live_ready_notes.md            運用ノート
 │   ├── research/                      研究中 (各戦略のメモ)
-│   │   ├── wavebox_*.md (7ファイル)
-│   │   ├── synapse_method_definition_v0_1.md
-│   │   ├── chfjpy_*.md (4ファイル)
-│   │   ├── silver_xagusd_*.md
-│   │   ├── sequential_countertrend_*.md
-│   │   └── original_wavebox_rebreak_*.md
+│   │   ├── student_stumble_clusters_research_2026-05-31.md  ⭐ つまずき研究まとめ
+│   │   ├── student_entries_extracted.csv                  ⭐ 137件エントリー
+│   │   ├── student_stumble_clusters_v0_2.csv              ⭐ 29クラスタ
+│   │   ├── RESEARCH_INDEX.md                              全研究台帳
+│   │   └── ... (wavebox, chfjpy 等)
 │   ├── reference/                     参考資料 (Word/Doc 等)
 │   │   ├── FX検証研究ノート_2015-2024.docx
 │   │   └── FX検証研究ノート_2015-2024_GoogleDocs.docx

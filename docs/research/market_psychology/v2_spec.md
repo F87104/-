@@ -172,8 +172,9 @@ volume > sma(volume, 20) * 1.3
 - 結果フォルダ: [`backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/`](../../../backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/)
 - 詳細レポート: [`report_ja.md`](../../../backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md)
 
-### Pine (本命 v2 / v2.1)
-- 🏆 **v2.1 Matrix strategy** (Sqz + Cap + LL を通貨別に自動 ON/OFF): [`pine/research/market_psychology_v2_matrix_strategy.pine`](../../../pine/research/market_psychology_v2_matrix_strategy.pine)
+### Pine (本命 v2 / v2.1 / v2.2)
+- 🏆 **v2.2 Matrix strategy** (v2.1 + 棚の質スコア + D1 文脈強化): [`pine/research/market_psychology_v2_2_matrix_strategy.pine`](../../../pine/research/market_psychology_v2_2_matrix_strategy.pine)
+- v2.1 Matrix strategy (Sqz + Cap + LL を通貨別に自動 ON/OFF): [`pine/research/market_psychology_v2_matrix_strategy.pine`](../../../pine/research/market_psychology_v2_matrix_strategy.pine)
 - v2 統合 strategy (Sqz + Cap のみ): [`pine/research/market_psychology_strict_v2_strategy.pine`](../../../pine/research/market_psychology_strict_v2_strategy.pine)
 - Long Liquidation strategy (短側単独): [`pine/research/market_psychology_long_liquidation_strategy.pine`](../../../pine/research/market_psychology_long_liquidation_strategy.pine)
 - Long Liquidation visual: [`pine/visual/market_psychology_long_liquidation_visual.pine`](../../../pine/visual/market_psychology_long_liquidation_visual.pine)

@@ -38,9 +38,27 @@ TradingView Strategy Tester での実測 (STEP 1+2+3) を統合した、**通貨
 
 ### 🏆 メインの Pine (これだけでまず動かす)
 
-| ファイル | TradingView 表示名 |
-|---|---|
-| **[`pine/research/market_psychology_v2_matrix_strategy.pine`](pine/research/market_psychology_v2_matrix_strategy.pine)** | `本命v2.1 Market Psychology Matrix (Sqz + Cap + LL)` |
+| ファイル | TradingView 表示名 | 状態 |
+|---|---|---|
+| 🆕 **[`pine/research/market_psychology_v2_2_matrix_strategy.pine`](pine/research/market_psychology_v2_2_matrix_strategy.pine)** | `本命v2.2 Market Psychology Matrix + 棚質 + D1 (Sqz+Cap+LL)` | **Phase 1 精度向上版** (検証待ち) |
+| [`pine/research/market_psychology_v2_matrix_strategy.pine`](pine/research/market_psychology_v2_matrix_strategy.pine) | `本命v2.1 Market Psychology Matrix (Sqz + Cap + LL)` | **検証済 (+50.71%)** |
+
+**v2.2 で追加された Phase 1 精度向上策**:
+
+| 追加フィルタ | 対象 | 期待効果 |
+|---|---|---|
+| **棚の質スコア** (close 標準偏差 / 傾き / 上下ヒゲ / 終値位置) | Sqz + LL | WR +10pt |
+| **D1 RSI 文脈** (Cap で RSI ≤ 40 / LL で RSI ≥ 55) | Cap + LL | DD -50% |
+
+USDJPY 予測 (v2.1 → v2.2):
+
+| 指標 | v2.1 実測 | v2.2 予測 |
+|---|---:|---:|
+| Trades | 60 | 40-50 |
+| WR | 47% | **55-60%** |
+| PF | 1.63 | **2.0-2.3** |
+| DD | 4.06% | **2.0-2.5%** |
+| Net% | +20.28% | **+25-30%** |
 
 → TradingView の Pine エディタに貼り付け → 7 通貨のチャートで Strategy Tester / アラート設定。
 

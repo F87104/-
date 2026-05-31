@@ -1,5 +1,5 @@
 //@version=5
-strategy("Stumble Chase Suppression Experiment v0.1 [Research]",
+strategy("Stumble Chase Suppression Experiment v0.1.1 [Research]",
      overlay=true,
      initial_capital=10000,
      default_qty_type=strategy.fixed,
@@ -18,28 +18,10 @@ strategy("Stumble Chase Suppression Experiment v0.1 [Research]",
 plot(na, title="Compiler Anchor", display=display.none)
 
 // =====================================================================
-// Stumble Chase Suppression Experiment v0.1 [Research]
+// Stumble Chase Suppression Experiment v0.1.1 [Research]
 // ---------------------------------------------------------------------
-// 目的: つまずきクラスタ研究(v0.4)から導いた「節目飛び乗り抑制」を
-//   v2.x 向け試験フィルタとして A/B 比較する。
-//
-// 根拠: docs/research/student_stumble_wait_zones_v0_1.csv
-//   - pullback: 高値/節目追い → 1段押し待ち
-//   - bounce: 底/天井で逆張り → 戻り待ち
-//   - confirmation: 再加速確認後
-//
-// 方法:
-//   入口は意図的に「飛び乗りやすい」12本高安ブレイク。
-//   フィルタOFF = そのままエントリー
-//   フィルタON  = 下記3条件のいずれかで新規を抑制
-//
-// フィルタ3本柱:
-//   F1 節目近接追い … ラウンド価格±N以内の順張り
-//   F2 伸び切り追い … 大陽線/大陰線直後1-2本の同方向
-//   F3 端追い       … 直近高安からATR×N以内の端追い
-//
-// 使い方: 同じ通貨・同じ期間で filterOn を OFF/ON 切替して
-//   件数 / PF / DD を比較。GBPJPY 1H, XAUUSD 1H 推奨。
+// v0.1.1 fix: F3 が「12本ブレイク」と矛盾し全トレード0件だった問題を修正。
+//   F1/F3 は「初回ブレイク」ではなく「節目/高値での追い」を狙って抑制。
 // =====================================================================
 
 grpEntry = "エントリー(飛び乗りやすいベースライン)"
@@ -51,19 +33,19 @@ grpFilter = "つまずき抑制フィルタ (v2.x 試験)"
 filterOn  = input.bool(true, "フィルタON (OFF=比較用)", group=grpFilter)
 useF1     = input.bool(true, "F1 節目近接追いを抑制", group=grpFilter)
 useF2     = input.bool(true, "F2 伸び切り直後追いを抑制", group=grpFilter)
-useF3     = input.bool(true, "F3 高安端追いを抑制", group=grpFilter)
+useF3     = input.bool(true, "F3 二段目追いを抑制", group=grpFilter)
 showBlock = input.bool(true, "ブロック箇所に×印", group=grpFilter)
 
 grpF1 = "F1 節目"
-roundProxJpy  = input.float(0.35, "JPYペア: 節目±(円)", minval=0.05, step=0.05, group=grpF1)
-roundProxHalf = input.float(0.20, "JPYペア: 50銭±(円)", minval=0.05, step=0.05, group=grpF1)
+roundProxJpy  = input.float(0.25, "JPY: 整数節目±(円)", minval=0.05, step=0.05, group=grpF1)
+roundProxHalf = input.float(0.15, "JPY: 50銭±(円)", minval=0.05, step=0.05, group=grpF1)
 roundProxGold = input.float(12.0, "XAUUSD: 節目±(USD)", minval=1.0, step=1.0, group=grpF1)
 
 grpF2 = "F2 伸び切り"
 bigBodyAtr = input.float(1.10, "大足実体 ×ATR", minval=0.3, step=0.05, group=grpF2)
 impulseLag = input.int(2, "大足後何本まで抑制", minval=1, maxval=5, group=grpF2)
 
-grpF3 = "F3 端追い"
+grpF3 = "F3 二段目追い"
 extLookback = input.int(20, "高安 lookback", minval=5, group=grpF3)
 extAtr      = input.float(0.80, "高安から ×ATR 以内", minval=0.1, step=0.1, group=grpF3)
 
@@ -81,7 +63,6 @@ atr = ta.atr(atrLen)
 ema = ta.ema(close, emaLen)
 body = math.abs(close - open)
 
-isJpy = str.contains(syminfo.ticker, "JPY")
 isGold = str.contains(syminfo.ticker, "XAU") or str.contains(syminfo.ticker, "GOLD")
 
 nearestYen = math.round(close)
@@ -93,8 +74,7 @@ nearest50 = math.round(close / 50.0) * 50.0
 distG10 = math.abs(close - nearest10)
 distG50 = math.abs(close - nearest50)
 
-nearRoundLong = isGold ? (math.min(distG10, distG50) <= roundProxGold) : (distYen <= roundProxJpy or distHalf <= roundProxHalf)
-nearRoundShort = nearRoundLong
+nearRound = isGold ? (math.min(distG10, distG50) <= roundProxGold) : (distYen <= roundProxJpy or distHalf <= roundProxHalf)
 
 bigBull = close > open and body >= atr * bigBodyAtr
 bigBear = close < open and body >= atr * bigBodyAtr
@@ -115,8 +95,24 @@ brkLo = ta.lowest(low[1], brkLen)
 longRaw  = close > ema and ta.crossover(close, brkHi)
 shortRaw = close < ema and ta.crossunder(close, brkLo)
 
-blockLong  = filterOn and ((useF1 and nearRoundLong and longRaw) or (useF2 and impulseAfterBull and longRaw) or (useF3 and nearHigh and longRaw))
-blockShort = filterOn and ((useF1 and nearRoundShort and shortRaw) or (useF2 and impulseAfterBear and shortRaw) or (useF3 and nearLow and shortRaw))
+// 初回ブレイク(前足はレンジ内) … 比較用ベースライン
+firstBreakLong  = longRaw and close[1] <= brkHi
+firstBreakShort = shortRaw and close[1] >= brkLo
+
+// F1: 節目付近 + 高値/安値帯 + 同方向足 … 199円台追い等
+f1BlockLong  = useF1 and nearRound and nearHigh and close > open and longRaw
+f1BlockShort = useF1 and nearRound and nearLow and close < open and shortRaw
+
+// F2: 大足直後の同方向ブレイク
+f2BlockLong  = useF2 and impulseAfterBull and longRaw
+f2BlockShort = useF2 and impulseAfterBear and shortRaw
+
+// F3: 既にレンジ上/下にいての二段目追い(初回ブレイクは通す)
+f3BlockLong  = useF3 and longRaw and not firstBreakLong and close[1] > brkHi[1] and nearHigh
+f3BlockShort = useF3 and shortRaw and not firstBreakShort and close[1] < brkLo[1] and nearLow
+
+blockLong  = filterOn and longRaw and (f1BlockLong or f2BlockLong or f3BlockLong)
+blockShort = filterOn and shortRaw and (f1BlockShort or f2BlockShort or f3BlockShort)
 
 longSig  = longRaw and not blockLong
 shortSig = shortRaw and not blockShort
@@ -133,10 +129,11 @@ if inWindow and shortSig and strategy.position_size >= 0
     strategy.entry("S", strategy.short)
     entryPx := close
 
-if strategy.position_size > 0 and not na(entryPx)
-    strategy.exit("LX", "L", stop=entryPx - atr * slAtr, limit=entryPx + atr * tpAtr)
-if strategy.position_size < 0 and not na(entryPx)
-    strategy.exit("SX", "S", stop=entryPx + atr * slAtr, limit=entryPx - atr * tpAtr)
+avgPx = na(entryPx) ? strategy.position_avg_price : entryPx
+if strategy.position_size > 0 and not na(avgPx)
+    strategy.exit("LX", "L", stop=avgPx - atr * slAtr, limit=avgPx + atr * tpAtr)
+if strategy.position_size < 0 and not na(avgPx)
+    strategy.exit("SX", "S", stop=avgPx + atr * slAtr, limit=avgPx - atr * tpAtr)
 if strategy.position_size == 0
     entryPx := na
 
@@ -148,6 +145,6 @@ plotshape(showBlock and blockShort, title="Blocked Short", style=shape.xcross, l
 var table t = table.new(position.top_right, 1, 4, bgcolor=color.new(color.black, 80))
 if barstate.islast
     table.cell(t, 0, 0, "Chase Filter " + (filterOn ? "ON" : "OFF"), text_color=color.white)
-    table.cell(t, 0, 1, "F1節目 F2伸び F3端", text_color=color.silver, text_size=size.small)
-    table.cell(t, 0, 2, "L blk:" + str.tostring(blockLong) + " S blk:" + str.tostring(blockShort), text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 0, 3, "v2.x trial v0.1", text_color=color.gray, text_size=size.tiny)
+    table.cell(t, 0, 1, "F1節目 F2伸び F3二段", text_color=color.silver, text_size=size.small)
+    table.cell(t, 0, 2, "Trades:" + str.tostring(strategy.closedtrades), text_color=color.silver, text_size=size.small)
+    table.cell(t, 0, 3, "v0.1.1", text_color=color.gray, text_size=size.tiny)

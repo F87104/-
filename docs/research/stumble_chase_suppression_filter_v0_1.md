@@ -24,9 +24,20 @@
 | **F2** | 伸び切り直後 | 大足(≥1.1ATR)の後1-2本の同方向 | 「待てずに飛び乗り」型 |
 | **F3** | 高安端追い | 20本高安から0.8ATR以内の端追い | 高値追い買い / 安値売り |
 
+## v0.1.1 修正（2026-05-31）
+
+**症状:** Strategy Tester が「トレードデータが必要」= 0件。
+
+**原因:** F3「高安端追い」が 12本ブレイクと矛盾。ブレイク足は必ず高値/安値付近になるため、フィルタONで **100%ブロック** されていた。
+
+**修正:**
+- F1: 節目近接 **かつ** 高値/安値帯 **かつ** 同方向足（199円台追い型）
+- F3: **初回ブレイクは通す**。既にレンジ外にいての二段目追いだけ抑制
+- 右上テーブルに `Trades:` 件数を表示
+
 ## 試験 Pine
 
-[stumble_chase_suppression_experiment_v0_1.pine](../../pine/research/stumble_chase_suppression_experiment_v0_1.pine)
+[stumble_chase_suppression_experiment_v0_1.pine](../../pine/research/stumble_chase_suppression_experiment_v0_1.pine)（v0.1.1）
 
 - **入口**: 意図的に飛び乗りやすい「12本高安ブレイク + EMA50方向」
 - **比較**: 入力 `フィルタON` を OFF / ON で切替

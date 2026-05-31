@@ -1,0 +1,103 @@
+//@version=5
+indicator("Common Stumble Zones Visualizer v0.1 [Research]", overlay=true, max_labels_count=500, max_lines_count=500)
+
+// =====================================================================
+// Common Stumble Zones Visualizer v0.1 [Research]
+// ---------------------------------------------------------------------
+// 目的: 受講生データ(290失敗/56人)で「複数の別人が同じ形で失敗した」
+//   つまずきポイントを、実チャート上に警告表示する。
+//   勝てる戦略ではなく「皆が転ぶ場所を自覚する」教材/フィルタ用途。
+//
+// 分析根拠: outputs/student_stumble_points_v0_1.md
+//   1 ブレイク追い(高値/安値)  : 50人 / 183件
+//   2 節目抜け(主要スイング)    : 32人 / 77件
+//   3 V字急反転狙い             : 31人 / 65件
+//   4 レンジ抜け/急変           : 30人 / 63件
+//
+// 各 setup は「人間が動き出しに飛びつく(FOMO)」瞬間を検出する。
+// =====================================================================
+
+// ----------------------------- Inputs --------------------------------
+grpC   = "コア"
+atrLen = input.int(14, "ATR期間", minval=2, group=grpC)
+look   = input.int(20, "ブレイク参照(直近N本)", minval=3, group=grpC)
+majorLook = input.int(60, "主要節目 参照", minval=5, group=grpC)
+
+grpV   = "V字急反転"
+vBars  = input.int(5,   "急変の本数", minval=2, group=grpV)
+vAtr   = input.float(2.0, "急変の値幅 ×ATR以上", minval=0.1, step=0.1, group=grpV)
+
+grpR   = "レンジ抜け"
+rBox   = input.int(12,  "ボックス本数", minval=3, group=grpR)
+rWid   = input.float(2.5, "ボックス幅 ×ATR未満で“レンジ”", minval=0.1, step=0.1, group=grpR)
+
+grpT   = "表示"
+show1  = input.bool(true, "ブレイク追い(50人)", group=grpT)
+show2  = input.bool(true, "節目抜け(32人)",     group=grpT)
+show3  = input.bool(true, "V字急反転(31人)",    group=grpT)
+show4  = input.bool(true, "レンジ抜け(30人)",   group=grpT)
+showTbl= input.bool(true, "つまずき表を表示",   group=grpT)
+
+// ----------------------------- Calc ----------------------------------
+atr = ta.atr(atrLen)
+
+recHigh   = ta.highest(high, look)[1]
+recLow    = ta.lowest(low,  look)[1]
+majorHigh = ta.highest(high, majorLook)[1]
+majorLow  = ta.lowest(low,  majorLook)[1]
+
+// 1) ブレイク追い: 直近N本の高値/安値を実体で抜いた瞬間(初回)
+brkUp  = close > recHigh and close[1] <= recHigh
+brkDn  = close < recLow  and close[1] >= recLow
+
+// 2) 節目抜け: 主要スイング高安(長期)を抜いた瞬間
+majUp  = close > majorHigh and close[1] <= majorHigh
+majDn  = close < majorLow  and close[1] >= majorLow
+
+// 3) V字急反転: 直近vBarsでvAtr以上動いた後の反転足
+fellFast = (high[vBars] - low) >= vAtr * atr   // 直近で急落
+roseFast = (high - low[vBars]) >= vAtr * atr   // 直近で急騰
+vBottom  = fellFast and low <= ta.lowest(low, vBars) + 0.1 * atr and close > open
+vTop     = roseFast and high >= ta.highest(high, vBars) - 0.1 * atr and close < open
+
+// 4) レンジ抜け: 低ボラのボックスを抜けた瞬間
+boxHi = ta.highest(high, rBox)[1]
+boxLo = ta.lowest(low,  rBox)[1]
+tight = (boxHi - boxLo) < rWid * atr
+rngUp = tight and close > boxHi
+rngDn = tight and close < boxLo
+
+// ----------------------------- Plot ----------------------------------
+plotshape(show1 and brkUp, title="ブレイク追い(買)", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0),    size=size.small, text="ブレイク追い")
+plotshape(show1 and brkDn, title="ブレイク追い(売)", style=shape.triangleup,   location=location.belowbar, color=color.new(color.red, 0),    size=size.small, text="ブレイク追い")
+
+plotshape(show2 and majUp, title="節目抜け(買)", style=shape.triangledown, location=location.abovebar, color=color.new(color.orange, 0), size=size.small, text="節目抜け")
+plotshape(show2 and majDn, title="節目抜け(売)", style=shape.triangleup,   location=location.belowbar, color=color.new(color.orange, 0), size=size.small, text="節目抜け")
+
+plotshape(show3 and vBottom, title="V字反転(買い飛びつき)", style=shape.triangleup,   location=location.belowbar, color=color.new(color.fuchsia, 0), size=size.small, text="V字")
+plotshape(show3 and vTop,    title="V字反転(売り飛びつき)", style=shape.triangledown, location=location.abovebar, color=color.new(color.fuchsia, 0), size=size.small, text="V字")
+
+plotshape(show4 and rngUp, title="レンジ抜け(買)", style=shape.triangledown, location=location.abovebar, color=color.new(color.yellow, 0), size=size.tiny, text="レンジ抜け")
+plotshape(show4 and rngDn, title="レンジ抜け(売)", style=shape.triangleup,   location=location.belowbar, color=color.new(color.yellow, 0), size=size.tiny, text="レンジ抜け")
+
+plot(majorHigh, "主要高値", color=color.new(color.gray, 70), style=plot.style_linebr)
+plot(majorLow,  "主要安値", color=color.new(color.gray, 70), style=plot.style_linebr)
+
+// つまずき表(受講生データの人数を常時表示)
+var table t = table.new(position.top_right, 2, 5, border_width=1)
+if showTbl and barstate.islast
+    table.cell(t, 0, 0, "つまずきポイント", text_color=color.white, bgcolor=color.new(color.black, 0), text_size=size.small)
+    table.cell(t, 1, 0, "失敗した別人数",   text_color=color.white, bgcolor=color.new(color.black, 0), text_size=size.small)
+    table.cell(t, 0, 1, "ブレイク追い",     text_color=color.white, bgcolor=color.new(color.red, 30),    text_size=size.small)
+    table.cell(t, 1, 1, "50人",             text_color=color.white, bgcolor=color.new(color.red, 30),    text_size=size.small)
+    table.cell(t, 0, 2, "節目抜け",         text_color=color.white, bgcolor=color.new(color.orange, 30), text_size=size.small)
+    table.cell(t, 1, 2, "32人",             text_color=color.white, bgcolor=color.new(color.orange, 30), text_size=size.small)
+    table.cell(t, 0, 3, "V字急反転",        text_color=color.white, bgcolor=color.new(color.fuchsia, 30),text_size=size.small)
+    table.cell(t, 1, 3, "31人",             text_color=color.white, bgcolor=color.new(color.fuchsia, 30),text_size=size.small)
+    table.cell(t, 0, 4, "レンジ抜け",       text_color=color.white, bgcolor=color.new(color.yellow, 30), text_size=size.small)
+    table.cell(t, 1, 4, "30人",             text_color=color.white, bgcolor=color.new(color.yellow, 30), text_size=size.small)
+
+// ----------------------------- Alerts --------------------------------
+alertcondition(brkUp or brkDn, "ブレイク追い注意", "直近高安を抜けた瞬間。50人が同じ形で失敗したつまずきポイント")
+alertcondition(vBottom or vTop, "V字急反転注意",  "急変後の反転足。31人が飛びついて失敗")
+alertcondition(rngUp or rngDn,  "レンジ抜け注意",  "レンジを抜けた瞬間。30人が失敗")

@@ -1,0 +1,50 @@
+//@version=5
+indicator("Student Real Entries Overlay - GBPJPY v0.2 [Research]", overlay=true, max_labels_count=500, max_lines_count=500)
+
+// =====================================================================
+// Student Real Entries Overlay - GBPJPY v0.2 [Research]
+// ---------------------------------------------------------------------
+// 目的: 受講生の「実際に入った場所」を、実日時×実価格でチャートに重ね、
+//   複数人が本当に同じ価格・同じ時間帯に入った「つまずきクラスタ」を
+//   目視できるようにする。文章クラスタではなく座標クラスタ。
+//
+// データ: outputs/student_entries_extracted.csv (画像から抽出, JST)
+//   この版は GBPJPY のエントリー 10 件を収録。
+//   ※GBPJPY 1H チャートを表示して使ってください。
+//
+// 着色: 勝ち=緑 / 負け=赤   形: 買い=下向きラベル(下から) / 売り=上向き
+// 注意: 学生の手入力には誤記あり。価格がローソク足から大きく浮く点は
+//       データ品質フラグ(下の note / CSVのnote)を参照。
+//   - 2024-09-18 180.297 はGBPJPY9月相場と不整合(誤記疑い)→価格軸で浮く
+// =====================================================================
+
+showWin    = input.bool(true,  "勝ちエントリーを表示(緑)")
+showLoss   = input.bool(true,  "負けエントリーを表示(赤)")
+showLine   = input.bool(true,  "エントリー価格に水平ライン")
+hideFlagged = input.bool(false, "品質フラグ付き(誤記疑い)を隠す")
+
+// エントリー定義(JST = GMT+9) 並び: 時系列
+entryTs   = array.from(timestamp("GMT+9", 2024, 9,  2, 17, 33), timestamp("GMT+9", 2024, 9, 14, 3,  0), timestamp("GMT+9", 2024, 9, 18, 4, 39), timestamp("GMT+9", 2024, 9, 18, 16, 7), timestamp("GMT+9", 2024, 9, 18, 18, 30), timestamp("GMT+9", 2024, 9, 26, 23, 0), timestamp("GMT+9", 2024, 10, 14, 20, 0), timestamp("GMT+9", 2024, 10, 22, 12, 27), timestamp("GMT+9", 2024, 10, 30, 6, 27), timestamp("GMT+9", 2024, 12, 11, 8, 14))
+entryPx   = array.from(192.91, 184.914, 187.223, 186.790, 180.297, 193.4, 195.351, 196.132, 199.64, 194.024)
+entrySide = array.from(1, -1, 1, 1, 1, 1, 1, 1, 1, 1)            // 1=買い -1=売り
+entryRes  = array.from(0, 0, 0, 1, 1, 0, 0, 1, 0, 0)            // 1=勝ち 0=負け
+entryId   = array.from("96D787BA", "75DE4F66", "0DA89E2F", "BB1229AC", "D2B86522", "D2B86522", "B06CFFB4", "CFE02D21", "0EE69571", "73218711")
+entryFlag = array.from(0, 0, 0, 0, 1, 0, 0, 0, 0, 0)            // 1=品質フラグ(誤記疑い)
+
+if barstate.islast
+    for i = 0 to array.size(entryTs) - 1
+        res  = array.get(entryRes, i)
+        side = array.get(entrySide, i)
+        px   = array.get(entryPx, i)
+        ts   = array.get(entryTs, i)
+        id   = array.get(entryId, i)
+        flag = array.get(entryFlag, i)
+        show = ((res == 1 and showWin) or (res == 0 and showLoss)) and not (flag == 1 and hideFlagged)
+        if show
+            col   = res == 1 ? color.new(color.lime, 0) : color.new(color.red, 0)
+            sideS = side == 1 ? "買" : "売"
+            mark  = flag == 1 ? " ?" : ""
+            sty   = side == 1 ? label.style_label_up : label.style_label_down
+            label.new(x=ts, y=px, xloc=xloc.bar_time, style=sty, color=col, textcolor=color.white, size=size.small, text=id + " " + sideS + mark)
+            if showLine
+                line.new(x1=ts, y1=px, x2=ts + 1000 * 60 * 60 * 24, y2=px, xloc=xloc.bar_time, color=color.new(col, 60), width=1)

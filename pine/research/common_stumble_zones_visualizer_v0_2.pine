@@ -1,0 +1,107 @@
+//@version=5
+indicator("Common Stumble Zones Visualizer v0.2 [Research]", overlay=true, max_labels_count=500, max_lines_count=500)
+
+// =====================================================================
+// Common Stumble Zones Visualizer v0.2 [Research]
+// ---------------------------------------------------------------------
+// v0.1 が「見づらすぎ」だったため整理:
+//   - マーカーの文字を全廃(色 + 右上凡例で区別)
+//   - クールダウン: 同じ setup は N 本休んでから再表示(連続発火を抑制)
+//   - デフォルトは最重要「ブレイク追い(50人)」のみ表示。他はトグルON
+//
+// 受講生データ(290失敗/56人)のつまずきポイント:
+//   1 ブレイク追い(高値/安値) 50人  (赤)
+//   2 節目抜け(主要スイング)   32人  (橙)
+//   3 V字急反転狙い            31人  (紫)
+//   4 レンジ抜け/急変          30人  (黄)
+// 分析根拠: outputs/student_stumble_points_v0_1.md
+// =====================================================================
+
+grpC   = "コア"
+atrLen = input.int(14, "ATR期間", minval=2, group=grpC)
+look   = input.int(20, "ブレイク参照(直近N本)", minval=3, group=grpC)
+majorLook = input.int(60, "主要節目 参照", minval=5, group=grpC)
+coolBars  = input.int(10, "クールダウン本数(連続発火抑制)", minval=0, group=grpC)
+
+grpV   = "V字急反転"
+vBars  = input.int(5,   "急変の本数", minval=2, group=grpV)
+vAtr   = input.float(2.0, "急変の値幅 ×ATR以上", minval=0.1, step=0.1, group=grpV)
+
+grpR   = "レンジ抜け"
+rBox   = input.int(12,  "ボックス本数", minval=3, group=grpR)
+rWid   = input.float(2.5, "ボックス幅 ×ATR未満で“レンジ”", minval=0.1, step=0.1, group=grpR)
+
+grpT   = "表示(まず①だけ推奨)"
+show1  = input.bool(true,  "① ブレイク追い(50人)", group=grpT)
+show2  = input.bool(false, "② 節目抜け(32人)",     group=grpT)
+show3  = input.bool(false, "③ V字急反転(31人)",    group=grpT)
+show4  = input.bool(false, "④ レンジ抜け(30人)",   group=grpT)
+showTbl= input.bool(true,  "つまずき表を表示",      group=grpT)
+
+// ----------------------------- Calc ----------------------------------
+atr = ta.atr(atrLen)
+recHigh   = ta.highest(high, look)[1]
+recLow    = ta.lowest(low,  look)[1]
+majorHigh = ta.highest(high, majorLook)[1]
+majorLow  = ta.lowest(low,  majorLook)[1]
+
+// 生シグナル
+brkUpR = close > recHigh and close[1] <= recHigh
+brkDnR = close < recLow  and close[1] >= recLow
+majUpR = close > majorHigh and close[1] <= majorHigh
+majDnR = close < majorLow  and close[1] >= majorLow
+fellFast = (high[vBars] - low) >= vAtr * atr
+roseFast = (high - low[vBars]) >= vAtr * atr
+vBotR = fellFast and low  <= ta.lowest(low, vBars) + 0.1 * atr and close > open
+vTopR = roseFast and high >= ta.highest(high, vBars) - 0.1 * atr and close < open
+boxHi = ta.highest(high, rBox)[1]
+boxLo = ta.lowest(low,  rBox)[1]
+tight = (boxHi - boxLo) < rWid * atr
+rngUpR = tight and close > boxHi and close[1] <= boxHi
+rngDnR = tight and close < boxLo and close[1] >= boxLo
+
+// クールダウン(setupごとに最後の発火からN本空ける)
+var int c1 = -99999
+s1 = (brkUpR or brkDnR) and (bar_index - c1) > coolBars
+if s1
+    c1 := bar_index
+var int c2 = -99999
+s2 = (majUpR or majDnR) and (bar_index - c2) > coolBars
+if s2
+    c2 := bar_index
+var int c3 = -99999
+s3 = (vBotR or vTopR) and (bar_index - c3) > coolBars
+if s3
+    c3 := bar_index
+var int c4 = -99999
+s4 = (rngUpR or rngDnR) and (bar_index - c4) > coolBars
+if s4
+    c4 := bar_index
+
+// 表示用(文字なし・小さめ)
+plotshape(show1 and s1 and brkUpR, title="①ブレイク追い(買)", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0),     size=size.tiny)
+plotshape(show1 and s1 and brkDnR, title="①ブレイク追い(売)", style=shape.triangleup,   location=location.belowbar, color=color.new(color.red, 0),     size=size.tiny)
+plotshape(show2 and s2 and majUpR, title="②節目抜け(買)",     style=shape.triangledown, location=location.abovebar, color=color.new(color.orange, 0),  size=size.tiny)
+plotshape(show2 and s2 and majDnR, title="②節目抜け(売)",     style=shape.triangleup,   location=location.belowbar, color=color.new(color.orange, 0),  size=size.tiny)
+plotshape(show3 and s3 and vBotR,  title="③V字(買飛びつき)",  style=shape.triangleup,   location=location.belowbar, color=color.new(color.fuchsia, 0), size=size.tiny)
+plotshape(show3 and s3 and vTopR,  title="③V字(売飛びつき)",  style=shape.triangledown, location=location.abovebar, color=color.new(color.fuchsia, 0), size=size.tiny)
+plotshape(show4 and s4 and rngUpR, title="④レンジ抜け(買)",   style=shape.triangledown, location=location.abovebar, color=color.new(color.yellow, 0),  size=size.tiny)
+plotshape(show4 and s4 and rngDnR, title="④レンジ抜け(売)",   style=shape.triangleup,   location=location.belowbar, color=color.new(color.yellow, 0),  size=size.tiny)
+
+// つまずき表(凡例 + 受講生人数)
+var table t = table.new(position.top_right, 2, 5, border_width=1)
+if showTbl and barstate.islast
+    table.cell(t, 0, 0, "つまずき", text_color=color.white, bgcolor=color.new(color.black, 0), text_size=size.small)
+    table.cell(t, 1, 0, "別人数",   text_color=color.white, bgcolor=color.new(color.black, 0), text_size=size.small)
+    table.cell(t, 0, 1, "①ブレイク追い", text_color=color.white, bgcolor=color.new(color.red, 20),     text_size=size.small)
+    table.cell(t, 1, 1, "50人", text_color=color.white, bgcolor=color.new(color.red, 20),     text_size=size.small)
+    table.cell(t, 0, 2, "②節目抜け",     text_color=color.white, bgcolor=color.new(color.orange, 20),  text_size=size.small)
+    table.cell(t, 1, 2, "32人", text_color=color.white, bgcolor=color.new(color.orange, 20),  text_size=size.small)
+    table.cell(t, 0, 3, "③V字急反転",    text_color=color.white, bgcolor=color.new(color.fuchsia, 20), text_size=size.small)
+    table.cell(t, 1, 3, "31人", text_color=color.white, bgcolor=color.new(color.fuchsia, 20), text_size=size.small)
+    table.cell(t, 0, 4, "④レンジ抜け",   text_color=color.white, bgcolor=color.new(color.yellow, 20),  text_size=size.small)
+    table.cell(t, 1, 4, "30人", text_color=color.white, bgcolor=color.new(color.yellow, 20),  text_size=size.small)
+
+alertcondition(s1 and (brkUpR or brkDnR), "ブレイク追い注意", "直近高安を抜けた瞬間。50人が同じ形で失敗")
+alertcondition(s3 and (vBotR or vTopR),   "V字急反転注意",   "急変後の反転足。31人が飛びついて失敗")
+alertcondition(s4 and (rngUpR or rngDnR), "レンジ抜け注意",   "レンジを抜けた瞬間。30人が失敗")

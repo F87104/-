@@ -1,0 +1,65 @@
+//@version=5
+indicator("Student Stumble Zones - USDJPY v0.3 [Research]", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=100)
+
+// =====================================================================
+// Student Stumble Zones - USDJPY v0.3 [Research]
+// ---------------------------------------------------------------------
+// 目的: 受講生16件の実エントリー(USDJPY)を実日時×実価格で重ね、
+//   「複数人が同じ場所で失敗した = つまずきゾーン」を可視化する。
+//
+// データ: outputs/student_entries_extracted.csv (画像から抽出, JST)
+//   クラスタ: outputs/student_stumble_clusters_v0_2.csv
+//   ※USDJPY 1H チャートを表示して使ってください。
+//
+// 表示要素:
+//   (A) 全16エントリー … 勝ち=緑/負け=赤の小三角(買い=下,売り=上)
+//   (B) 全敗クラスタ(2名以上が全員負け) … 赤い水平ゾーン帯+人数ラベル
+//
+// 全敗クラスタ(USDJPY):
+//   140.0付近 3人(9/16,売) / 142.0付近 2人(9/18-19,買) / 146.7付近 2人(10/3,買)
+// =====================================================================
+
+showEntries = input.bool(true,  "全エントリーを表示(緑=勝/赤=負)")
+showZones   = input.bool(true,  "全敗クラスタのゾーン帯を表示")
+onlyLoss    = input.bool(false, "負けエントリーのみ表示")
+
+// --- (A) 16エントリー ---
+TS = array.from(timestamp("GMT+9",2024,9,16,15,41), timestamp("GMT+9",2024,9,16,18,0), timestamp("GMT+9",2024,9,16,21,58), timestamp("GMT+9",2024,9,18,8,0), timestamp("GMT+9",2024,9,19,5,12), timestamp("GMT+9",2024,9,23,17,25), timestamp("GMT+9",2024,9,27,8,31), timestamp("GMT+9",2024,10,1,10,12), timestamp("GMT+9",2024,10,2,16,56), timestamp("GMT+9",2024,10,3,8,15), timestamp("GMT+9",2024,10,3,20,16), timestamp("GMT+9",2024,10,7,16,38), timestamp("GMT+9",2024,10,22,23,21), timestamp("GMT+9",2024,11,6,19,23), timestamp("GMT+9",2024,12,16,11,36), timestamp("GMT+9",2024,12,20,0,30))
+PX = array.from(139.972, 140.2, 140.228, 142.081, 142.39, 143.455, 145.146, 144.027, 144.088, 146.7, 146.985, 148.2, 150.93, 154.02, 153.924, 157.446)
+SD = array.from(-1, -1, -1, 1, 1, -1, 1, 1, -1, 1, 1, -1, 1, 1, 1, 1)
+RS = array.from(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0)
+
+// --- (B) 全敗クラスタゾーン: 価格下限/上限, 開始ts, 終了ts, 人数, 買売 ---
+ZLo = array.from(139.97, 142.08, 146.70)
+ZHi = array.from(140.23, 142.39, 146.99)
+ZT1 = array.from(timestamp("GMT+9",2024,9,16,0,0), timestamp("GMT+9",2024,9,18,0,0), timestamp("GMT+9",2024,10,3,0,0))
+ZT2 = array.from(timestamp("GMT+9",2024,9,17,0,0), timestamp("GMT+9",2024,9,20,0,0), timestamp("GMT+9",2024,10,4,0,0))
+ZN  = array.from(3, 2, 2)
+ZB  = array.from(-1, 1, 1)   // 1=買い失敗 -1=売り失敗
+
+if barstate.islast
+    // エントリー描画
+    if showEntries
+        for i = 0 to array.size(TS) - 1
+            res  = array.get(RS, i)
+            if onlyLoss and res == 1
+                continue
+            side = array.get(SD, i)
+            px   = array.get(PX, i)
+            ts   = array.get(TS, i)
+            col  = res == 1 ? color.new(color.lime, 0) : color.new(color.red, 0)
+            sty  = side == 1 ? label.style_triangleup : label.style_triangledown
+            label.new(x=ts, y=px, xloc=xloc.bar_time, style=sty, color=col, size=size.tiny, text="")
+    // 全敗クラスタゾーン
+    if showZones
+        for k = 0 to array.size(ZLo) - 1
+            lo = array.get(ZLo, k)
+            hi = array.get(ZHi, k)
+            t1 = array.get(ZT1, k)
+            t2 = array.get(ZT2, k)
+            n  = array.get(ZN, k)
+            b  = array.get(ZB, k)
+            zc = color.new(color.red, 80)
+            box.new(left=t1, top=hi, right=t2, bottom=lo, xloc=xloc.bar_time, bgcolor=zc, border_color=color.new(color.red, 40), border_width=1)
+            dir = b == 1 ? "買い" : "売り"
+            label.new(x=t2, y=hi, xloc=xloc.bar_time, style=label.style_label_left, color=color.new(color.red, 0), textcolor=color.white, size=size.small, text=str.tostring(n) + "人全敗 " + dir)

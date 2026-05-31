@@ -1,0 +1,169 @@
+//@version=5
+strategy("Failure Inverse Strategy v0.3 [Research]",
+     overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
+     pyramiding=0,
+     calc_on_order_fills=true,
+     calc_on_every_tick=false,
+     process_orders_on_close=true,
+     commission_type=strategy.commission.percent,
+     commission_value=0.0,
+     slippage=2,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500)
+
+plot(na, title="Compiler Anchor", display=display.none)
+
+// =====================================================================
+// Failure Inverse Strategy v0.3 [Research]
+// ---------------------------------------------------------------------
+// 経緯:
+//   v0.1 順張り PF0.875 / フェード PF1.075 -> フェード方向が有効
+//   v0.2 フェード+質フィルタ -> 件数46に絞れたが PF1.044 (建値)
+//   => 固定RR(2R)が平均回帰に不向きだった可能性。
+//
+// v0.3 の狙い: フェード(平均回帰)に合った出口に変える。
+//   - TP = EMA(平均)への回帰。価格が伸びきった分だけ取り、戻ったら利確。
+//   - 損切り = 飛び乗りの極値(直近スイング高安)の外側 = 構造的な否定。
+//   - 時間切れ決済 = 平均回帰は速いはず。N本で戻らなければ撤退。
+//   - 固定RRモードも残し、出口の効果を比較できる。
+//
+// 分析根拠: outputs/failure_breakout_chase_analysis_v0_1.md
+// =====================================================================
+
+// ----------------------------- Inputs --------------------------------
+grpCore   = "コア設定"
+emaLen    = input.int(20,  "平均参照EMA(出口の平均)", minval=2, group=grpCore)
+atrLen    = input.int(14,  "ATR期間",                 minval=2, group=grpCore)
+swingLook = input.int(20,  "スイング参照期間(節目)",  minval=3, group=grpCore)
+majorLook = input.int(60,  "主要節目の参照期間",      minval=5, group=grpCore)
+
+grpFail   = "飛び乗り(失敗)検出"
+extMult   = input.float(1.8, "伸びきり(基本)",  minval=0.1, step=0.1, group=grpFail)
+extStrong = input.float(2.5, "伸びきり(強)",    minval=0.1, step=0.1, group=grpFail)
+runLen    = input.int(4,     "連続足しきい値",  minval=1,   group=grpFail)
+nearLvl   = input.float(0.8, "節目到達 ×ATR内", minval=0.0, step=0.1, group=grpFail)
+chaseBody = input.float(0.6, "追いかけ足実体 ×ATR以上", minval=0.0, step=0.1, group=grpFail)
+
+grpFilt   = "質フィルタ(ON/OFF)"
+useRegime = input.bool(true, "(1)上位足トレンドと一致のみ", group=grpFilt)
+useConfirm= input.bool(true, "(2)反転確認足を待つ",         group=grpFilt)
+useQuality= input.bool(true, "(3)強い伸びきり+主要節目のみ", group=grpFilt)
+armBars   = input.int(10,    "確認を待つ最大バー数",        minval=1, group=grpFilt)
+
+grpExit   = "出口設定"
+exitMode  = input.string("EMA回帰", "利確方式", options=["EMA回帰", "固定RR"], group=grpExit)
+rr        = input.float(1.0, "固定RR(固定RR選択時)", minval=0.1, step=0.1, group=grpExit)
+stopBuf   = input.float(0.5, "損切り余裕 ×ATR(極値の外)", minval=0.0, step=0.1, group=grpExit)
+maxHold   = input.int(20,    "最大保有バー(時間切れ)",     minval=1, group=grpExit)
+
+grpHtf    = "上位足トレンド"
+htfTf     = input.timeframe("240", "上位足", group=grpHtf)
+htfEmaLen = input.int(50, "上位足EMA", minval=2, group=grpHtf)
+
+grpDate   = "期間フィルタ"
+useDates  = input.bool(false, "期間を限定する", group=grpDate)
+startDate = input.time(timestamp("2017-01-01 00:00"), "開始", group=grpDate)
+endDate   = input.time(timestamp("2026-01-01 00:00"), "終了", group=grpDate)
+
+// ----------------------------- Core calc -----------------------------
+ema   = ta.ema(close, emaLen)
+atr   = ta.atr(atrLen)
+ext   = atr > 0 ? (close - ema) / atr : 0.0
+
+recHigh   = ta.highest(high, swingLook)[1]
+recLow    = ta.lowest(low,  swingLook)[1]
+majorHigh = ta.highest(high, majorLook)[1]
+majorLow  = ta.lowest(low,  majorLook)[1]
+
+var int upRun = 0
+upRun := close > close[1] ? upRun + 1 : 0
+var int dnRun = 0
+dnRun := close < close[1] ? dnRun + 1 : 0
+
+body    = math.abs(close - open)
+bigBull = close > open and body > chaseBody * atr
+bigBear = close < open and body > chaseBody * atr
+
+htfEma = request.security(syminfo.tickerid, htfTf, ta.ema(close, htfEmaLen), lookahead=barmerge.lookahead_off)
+htfUp  = close > htfEma
+htfDn  = close < htfEma
+
+// --------------------- 飛び乗り検出 --------------------------------
+chaseLongBase  = ext >  extMult and (close > recHigh or high >= recHigh - nearLvl * atr) and (bigBull or upRun >= runLen)
+chaseShortBase = ext < -extMult and (close < recLow  or low  <= recLow  + nearLvl * atr) and (bigBear or dnRun >= runLen)
+chaseLongStrict  = ext >  extStrong and (high >= majorHigh - nearLvl * atr) and bigBull
+chaseShortStrict = ext < -extStrong and (low  <= majorLow  + nearLvl * atr) and bigBear
+
+chaseLongUse  = useQuality ? chaseLongStrict  : chaseLongBase
+chaseShortUse = useQuality ? chaseShortStrict : chaseShortBase
+clEvt = chaseLongUse  and not chaseLongUse[1]
+csEvt = chaseShortUse and not chaseShortUse[1]
+
+// --------------------- フェード待機ウィンドウ ----------------------
+var int armFadeShort = 0
+armFadeShort := clEvt ? armBars : (armFadeShort > 0 ? armFadeShort - 1 : 0)
+var int armFadeLong = 0
+armFadeLong := csEvt ? armBars : (armFadeLong > 0 ? armFadeLong - 1 : 0)
+
+confDown = close < low[1]
+confUp   = close > high[1]
+regimeOkShort = not useRegime or htfDn
+regimeOkLong  = not useRegime or htfUp
+
+fadeShortCond = armFadeShort > 0 and (not useConfirm or confDown) and regimeOkShort
+fadeLongCond  = armFadeLong  > 0 and (not useConfirm or confUp)   and regimeOkLong
+fadeShort = fadeShortCond and not fadeShortCond[1]
+fadeLong  = fadeLongCond  and not fadeLongCond[1]
+if fadeShort
+    armFadeShort := 0
+if fadeLong
+    armFadeLong := 0
+
+inWindow = not useDates or (time >= startDate and time <= endDate)
+
+// ----------------------------- Orders --------------------------------
+var float longStop  = na
+var float shortStop = na
+var float longTPf   = na
+var float shortTPf  = na
+
+if fadeLong and inWindow and strategy.position_size == 0
+    strategy.entry("L", strategy.long)
+    longStop := math.min(low, recLow) - stopBuf * atr
+    longTPf  := close + (close - longStop) * rr
+
+if fadeShort and inWindow and strategy.position_size == 0
+    strategy.entry("S", strategy.short)
+    shortStop := math.max(high, recHigh) + stopBuf * atr
+    shortTPf  := close - (shortStop - close) * rr
+
+// 平均回帰の利確目標: まだ平均に戻っていなければEMA、既に越えていれば次の節目
+longTarget  = close < ema ? ema : recHigh
+shortTarget = close > ema ? ema : recLow
+
+// 保有バー数(時間切れ)
+var int barsIn = 0
+barsIn := strategy.position_size != 0 ? barsIn + 1 : 0
+
+if strategy.position_size > 0
+    lim = exitMode == "EMA回帰" ? longTarget : longTPf
+    strategy.exit("xL", from_entry="L", stop=longStop, limit=lim)
+    if barsIn >= maxHold
+        strategy.close("L", comment="time")
+
+if strategy.position_size < 0
+    lim = exitMode == "EMA回帰" ? shortTarget : shortTPf
+    strategy.exit("xS", from_entry="S", stop=shortStop, limit=lim)
+    if barsIn >= maxHold
+        strategy.close("S", comment="time")
+
+// ----------------------------- Plot ----------------------------------
+plot(ema, "EMA(出口)", color=color.new(color.gray, 0))
+plotshape(clEvt,     title="飛び乗り(買われすぎ)", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0),  size=size.tiny, text="飛乗")
+plotshape(csEvt,     title="飛び乗り(売られすぎ)", style=shape.triangleup,   location=location.belowbar, color=color.new(color.red, 0),  size=size.tiny, text="飛乗")
+plotshape(fadeLong,  title="フェード買い",         style=shape.triangleup,   location=location.belowbar, color=color.new(color.aqua, 0), size=size.small, text="買✓")
+plotshape(fadeShort, title="フェード売り",         style=shape.triangledown, location=location.abovebar, color=color.new(color.aqua, 0), size=size.small, text="売✓")

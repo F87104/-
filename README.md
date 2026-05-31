@@ -1,41 +1,197 @@
-# FX-AI — 2本柱 自動売買戦略リポジトリ
+# FX-AI — 2 本柱 + 市場心理研究 自動売買戦略リポジトリ
 
-> H1/H4 ベースの自動売買戦略コレクション。10年バックテスト (2015-2024) + OOS (2025-2026) で検証済みの **2本柱戦略** を運用するためのコード一式。
+> H1/H4 ベースの自動売買戦略コレクション。
+> **本番運用**: 10 年バックテスト + OOS 検証済みの **2 本柱戦略** (TrendBreakV1 + H4 T5 + MACD + BB)
+> **進行中**: **市場心理 v2.1 マトリクス** (最優先研究、TV 実測 +50.71% / 128 trades)
 
-**最終更新**: 2026-05-28
+**最終更新**: 2026-05-30
+
+---
+
+# 🧠 進行中の研究 (最優先タスク)
+
+> このセクションには **今後の精度向上で重点的に検証する研究** を集約します。
+> 最優先は **#1 市場心理 v2.1 マトリクス**。フォワード 30 件達成で本番昇格判定。
+
+## 🥇 #1 市場心理 v2.1 マトリクス (Currency × Structure Auto-routing)
+
+**現状ステータス**: 🟠 **本番候補** (TV Strategy Tester で 7 通貨 × 8〜13 年 = 128 件、Net +50.71%、最大 DD 6.16% 確認済み)
+**昇格条件**: フォワード 30 件記録 + 月次レビューで再現確認
+
+TradingView Strategy Tester での実測 (STEP 1+2+3) を統合した、**通貨ごとに最適な心理構造を自動 ON/OFF** する本命 Pine。
+チャートに **1 本載せるだけで運用可能**。
+
+### 採用マトリクス (TV 実測 8〜13 年データ)
+
+| Symbol | Sqz | Cap | LL | 採用 | Net% | trades | PF | DD |
+|---|:-:|:-:|:-:|---|---:|---:|---:|---:|
+| XAUUSD | ✅ | ❌ | ❌ | Sqz only | +0.98% | 2 | 1.97 | 1.40% |
+| XAGUSD (SILVER) | ✅ | ❌ | ❌ | Sqz only | +7.16% | 5 | 8.16 | 1.49% |
+| EURJPY | ✅ | ✅ | ❌ | Sqz + Cap | +4.12% | 5 | 5.07 | 1.89% |
+| AUDJPY | ✅ | ✅ | ❌ | Sqz + Cap | +6.07% | 4 | 275.9 | 0.68% |
+| **USDJPY** | ❌ | ✅ | ✅ | **Cap + LL** | **+20.28%** 🏆 | 60 | 1.63 | 4.06% |
+| CHFJPY | ✅ | ✅ | ✅ | 全 3 構造 | +12.10% | 52 | 1.44 | 6.16% |
+| GBPJPY | ❌ | ❌ | ❌ | 全除外 | — | 0 | — | — |
+| **6 通貨合算 (LL 含)** | | | | | **+50.71%** | **128** | — | **6.16%** (max) |
+
+→ **USDJPY が 40%、CHFJPY が 24%** を稼ぐ。この 2 通貨が本命。
+
+### 🏆 メインの Pine (これだけでまず動かす)
+
+| ファイル | TradingView 表示名 | 状態 |
+|---|---|---|
+| 🆕 **[`pine/research/market_psychology_v2_2_matrix_strategy.pine`](pine/research/market_psychology_v2_2_matrix_strategy.pine)** | `本命v2.2 Market Psychology Matrix + 棚質 + D1 (Sqz+Cap+LL)` | **Phase 1 精度向上版** (検証待ち) |
+| [`pine/research/market_psychology_v2_matrix_strategy.pine`](pine/research/market_psychology_v2_matrix_strategy.pine) | `本命v2.1 Market Psychology Matrix (Sqz + Cap + LL)` | **検証済 (+50.71%)** |
+
+**v2.2 で追加された Phase 1 精度向上策**:
+
+| 追加フィルタ | 対象 | 期待効果 |
+|---|---|---|
+| **棚の質スコア** (close 標準偏差 / 傾き / 上下ヒゲ / 終値位置) | Sqz + LL | WR +10pt |
+| **D1 RSI 文脈** (Cap で RSI ≤ 40 / LL で RSI ≥ 55) | Cap + LL | DD -50% |
+
+USDJPY 予測 (v2.1 → v2.2):
+
+| 指標 | v2.1 実測 | v2.2 予測 |
+|---|---:|---:|
+| Trades | 60 | 40-50 |
+| WR | 47% | **55-60%** |
+| PF | 1.63 | **2.0-2.3** |
+| DD | 4.06% | **2.0-2.5%** |
+| Net% | +20.28% | **+25-30%** |
+
+→ TradingView の Pine エディタに貼り付け → 7 通貨のチャートで Strategy Tester / アラート設定。
+
+### 📂 研究資料 (すべてここに集約)
+
+#### 設計 / 仕様書
+
+| ファイル | 内容 |
+|---|---|
+| [`docs/research/market_psychology/v2_spec.md`](docs/research/market_psychology/v2_spec.md) | v2 / v2.1 統合仕様書、本番昇格チェックリスト |
+| [`docs/research/market_psychology/README.md`](docs/research/market_psychology/README.md) | 研究ハブ (10 心理パターン辞書 / R1〜R7 ステータス) |
+| [`docs/research/market_psychology/framework.md`](docs/research/market_psychology/framework.md) | 共通枠組み (4 段階フロー / 数値化軸 / Pine 化ルール) |
+| [`docs/research/market_psychology/status.md`](docs/research/market_psychology/status.md) | 判定スナップショット / アンチパターン |
+
+#### 検証ログ (TradingView 実測の生データ)
+
+| ファイル | 内容 |
+|---|---|
+| [`docs/research/market_psychology/forward_log_2026_05_step1.md`](docs/research/market_psychology/forward_log_2026_05_step1.md) | STEP 1: Squeeze 単独 6 通貨 |
+| [`docs/research/market_psychology/forward_log_2026_05_step2.md`](docs/research/market_psychology/forward_log_2026_05_step2.md) | STEP 2: Capitulation 単独 + STEP 1+2 統合 |
+| [`docs/research/market_psychology/forward_log_2026_05_step3.md`](docs/research/market_psychology/forward_log_2026_05_step3.md) | STEP 3: Long Liquidation 単独 + STEP 1+2+3 完全マトリクス |
+| 🏆 [`docs/research/market_psychology/forward_log_2026_05_v2_1_matrix.md`](docs/research/market_psychology/forward_log_2026_05_v2_1_matrix.md) | **v2.1 Matrix 統合検証**: 128t / +50.71% の決定打 |
+| [`docs/research/market_psychology/forward_log_template.md`](docs/research/market_psychology/forward_log_template.md) | 月次フォワード記録テンプレート |
+
+#### Python 検証 (Deep Research、10 項目掘り下げ)
+
+| ファイル | 内容 |
+|---|---|
+| [`backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md`](backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md) | 10 項目 deep research レポート |
+| [`backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/`](backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/) | 結果 CSV 17 ファイル (heatmap / sweep / 通貨別 等) |
+| [`backtests/elliott_fibo/run_market_psychology_v2_deep_research.py`](backtests/elliott_fibo/run_market_psychology_v2_deep_research.py) | Python 検証コード |
+
+#### 元になった研究ノート (個別パターン)
+
+| ファイル | 心理パターン |
+|---|---|
+| [`docs/research/market_psychology_pattern_library_2026-05-30.md`](docs/research/market_psychology_pattern_library_2026-05-30.md) | 10 心理パターン辞書 |
+| [`docs/research/market_psychology_squeeze_strict_2026-05-30.md`](docs/research/market_psychology_squeeze_strict_2026-05-30.md) | Squeeze 構造 |
+| [`docs/research/market_psychology_squeeze_currency_compatibility_2026-05-30.md`](docs/research/market_psychology_squeeze_currency_compatibility_2026-05-30.md) | Squeeze 通貨相性 |
+| [`docs/research/trap_false_break_reaction_2026-05-30.md`](docs/research/trap_false_break_reaction_2026-05-30.md) | Trap / False Break |
+| [`docs/research/d1_trap_h4_shelf_strict_2026-05-30.md`](docs/research/d1_trap_h4_shelf_strict_2026-05-30.md) | D1 Trap + H4 Shelf |
+| [`docs/research/d1_bear_trap_h4_v_reclaim_2026-05-29.md`](docs/research/d1_bear_trap_h4_v_reclaim_2026-05-29.md) | D1 Bear Trap + H4 V |
+| [`docs/research/indicator_denial_reaction_2026-05-29.md`](docs/research/indicator_denial_reaction_2026-05-29.md) | Indicator Denial |
+
+#### 派生 / 比較用 Pine (v1 / v2 系)
+
+| ファイル | 用途 |
+|---|---|
+| **[`pine/visual/market_psychology_visual.pine`](pine/visual/market_psychology_visual.pine)** | **シンプル indicator 版** (Sqz + Cap の三角だけ表示、発注しない) ← 目視・アラート用 |
+| [`pine/research/market_psychology_strategy.pine`](pine/research/market_psychology_strategy.pine) | v1 Sqz + Cap (シンプル strategy 版、デフォルトパラメータ) |
+| [`pine/research/market_psychology_strict_v2_strategy.pine`](pine/research/market_psychology_strict_v2_strategy.pine) | v2 Sqz + Cap (手動制御版、v2 パラメータ) |
+| [`pine/research/market_psychology_long_liquidation_strategy.pine`](pine/research/market_psychology_long_liquidation_strategy.pine) | LL 単独検証用 |
+| [`pine/research/market_psychology_dormant_breakout_strategy.pine`](pine/research/market_psychology_dormant_breakout_strategy.pine) | Dormant Breakout 単独 |
+| [`pine/visual/market_psychology_long_liquidation_visual.pine`](pine/visual/market_psychology_long_liquidation_visual.pine) | LL 観測 (indicator) |
+| [`pine/visual/market_psychology_dormant_breakout_visual.pine`](pine/visual/market_psychology_dormant_breakout_visual.pine) | Dormant 観測 (indicator) |
+
+### v1 → v2 → v2.1 の進化
+
+| バージョン | 主な変更 | PF | DD |
+|---|---|---:|---:|
+| v1 SQZ_STRICT ex GBPJPY | (ベースライン) | 2.21 | 3.09R |
+| v2 統合 (Sqz + Cap) | 棚 ≤ 2.2 / 急落 ≥ 4.0 / sig_range ≥ 3.0 / 早期撤退 | 2.88 | 2.06R |
+| **v2.1 Matrix (Sqz + Cap + LL)** | **通貨×構造自動 ON/OFF + 短側 LL 追加** | **マトリクス全体で Net +50.71%** | **6.16%** |
+
+### 残課題 (本番採用前)
+
+- [ ] フォワード 30+ 件記録 (USDJPY / CHFJPY を最優先で)
+- [ ] Pine ↔ Python parity audit
+- [ ] Volume フィルタ実 volume で効果検証 (#1)
+- [ ] STEP 4: Dormant Breakout 検証
+- [ ] **エントリー精度向上策** (棚の質スコア / D1 文脈強化 / 同時シグナル相関フィルタ / ボラ regime ← 次の作業候補)
+
+### 次のアクション候補
+
+| 案 | 内容 |
+|---|---|
+| **A** | エントリー精度向上策の Phase 1 (棚の質スコア / D1 文脈 / 相関 / ボラ regime) を Pine に組み込み |
+| B | STEP 4 (Dormant Breakout) の 6 通貨検証 |
+| C | フォワード 30 件記録開始 (`forward_log_2026_06.md` 作成) |
+
+---
+
+## #2 ショート側研究 2026-05-28 (旧)
+
+**現状ステータス**: 🔬 検証途中、本番未採用
+
+| ファイル | 状態 |
+|---|---|
+| [`docs/research/short_side_research_2026-05-28_in_progress.md`](docs/research/short_side_research_2026-05-28_in_progress.md) | ロング版ミラーは不採用。H4 1 ヶ月安値更新後の安値停滞ブレイクショートが暫定候補 |
+
+→ 市場心理 v2.1 の LL (Long Liquidation) で **ショート側はある程度カバーできた** ため、優先度は #1 より下。
 
 ---
 
 ## 📚 ドキュメント目次
 
+### 🧠 最優先: 市場心理 v2.1 (進行中)
+
 | ドキュメント | 内容 |
 |---|---|
-| 👉 **[STRATEGY_GUIDE.md](STRATEGY_GUIDE.md)** | **メインの説明書 (これを読めばOK)** |
+| 🏆 **[`pine/research/market_psychology_v2_matrix_strategy.pine`](pine/research/market_psychology_v2_matrix_strategy.pine)** | **v2.1 Matrix Pine 本体 (これだけで動作)** |
+| 🏆 **[`docs/research/market_psychology/forward_log_2026_05_v2_1_matrix.md`](docs/research/market_psychology/forward_log_2026_05_v2_1_matrix.md)** | **v2.1 検証ログ (128t / +50.71% / DD 6.16%)** |
+| 📋 [`docs/research/market_psychology/v2_spec.md`](docs/research/market_psychology/v2_spec.md) | v2 / v2.1 仕様書 + 本番昇格チェックリスト |
+| 🧭 [`docs/research/market_psychology/`](docs/research/market_psychology/) | 研究ハブ全体 (README / framework / status / 検証ログ全て) |
+| 🔬 [`backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md`](backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/report_ja.md) | Deep Research レポート (10 項目掘り下げ) |
+
+### 本番 2 本柱 (採用済み)
+
+| ドキュメント | 内容 |
+|---|---|
+| 👉 **[STRATEGY_GUIDE.md](STRATEGY_GUIDE.md)** | **メインの説明書 (これを読めば OK)** |
 | 👉 **[docs/BACKTEST_INDEX.md](docs/BACKTEST_INDEX.md)** | **全検証カタログ (試したもの全部の一覧)** |
-| 📊 [docs/spreadsheet/](docs/spreadsheet/) | **Google スプレッドシート用 CSV/TSV** (9シート) |
-| [docs/two_method_practical_research_2026-05-24.md](docs/two_method_practical_research_2026-05-24.md) | 2本柱研究ノート (公式版) |
+| 📊 [docs/spreadsheet/](docs/spreadsheet/) | Google スプレッドシート用 CSV / TSV (9 シート) |
+| [docs/two_method_practical_research_2026-05-24.md](docs/two_method_practical_research_2026-05-24.md) | 2 本柱研究ノート (公式版) |
 | [docs/h4_t5_macd_bb_practical_audit_2026-05-24.md](docs/h4_t5_macd_bb_practical_audit_2026-05-24.md) | H4 T5 補助手法の実用監査 |
 | [docs/h4_t5_macd_bb_live_ready_notes.md](docs/h4_t5_macd_bb_live_ready_notes.md) | H4 T5 本番運用ノート |
-| [docs/research/short_side_research_2026-05-28_in_progress.md](docs/research/short_side_research_2026-05-28_in_progress.md) | ショート側研究ノート (**検証途中・本番未採用**) |
-| [docs/FX検証研究ノート_2015-2024.docx](docs/FX検証研究ノート_2015-2024.docx) | Word版総合レポート |
-| [backtests/ensemble/trendbreak_t5_practical_combo_2015_2024/report_ja.md](backtests/ensemble/trendbreak_t5_practical_combo_2015_2024/report_ja.md) | TrendBreak+T5 アンサンブル検証 |
+| [docs/research/short_side_research_2026-05-28_in_progress.md](docs/research/short_side_research_2026-05-28_in_progress.md) | ショート側研究ノート (検証途中・本番未採用) |
+| [docs/FX検証研究ノート_2015-2024.docx](docs/FX検証研究ノート_2015-2024.docx) | Word 版総合レポート |
+| [backtests/ensemble/trendbreak_t5_practical_combo_2015_2024/report_ja.md](backtests/ensemble/trendbreak_t5_practical_combo_2015_2024/report_ja.md) | TrendBreak + T5 アンサンブル検証 |
 
 ---
 
-## 🎯 結論 (TL;DR)
+# ✅ 本番運用 (採用済み 2 本柱)
 
-### 採用戦略 — 2本柱
+> ここからは **既に検証 + 採用済み** の本番戦略 (2015-2024 10 年 BT + 2025-2026 OOS で確認済み)。
+> 上記の「進行中の研究」 (市場心理 v2.1) **とは別ライン** で並走運用する想定。
+
+### 採用戦略 — 2 本柱
 
 | 役割 | 戦略 | Pine ファイル | 中身 |
 |---|---|---|---|
 | **主力** | **TrendBreakV1 HYBRID** | [`pine/production/TrendBreakV1_Final.pine`](pine/production/TrendBreakV1_Final.pine) | 高安値ブレイクアウト (H1) |
-| **補助** | **H4 T5 + MACD + BB** | [`pine/production/h4_t5_macd_bb_live_ready.pine`](pine/production/h4_t5_macd_bb_live_ready.pine) | 急落V字回復後の停滞ブレイク (H4) |
-
-### 進行中の研究
-
-| 研究 | 状態 | メモ |
-|---|---|---|
-| [ショート側研究 2026-05-28](docs/research/short_side_research_2026-05-28_in_progress.md) | 🔬 検証途中 | ロング版ミラーは不採用。H4 1ヶ月安値更新後の安値停滞ブレイクショートが暫定候補 |
+| **補助** | **H4 T5 + MACD + BB** | [`pine/production/h4_t5_macd_bb_live_ready.pine`](pine/production/h4_t5_macd_bb_live_ready.pine) | 急落 V 字回復後の停滞ブレイク (H4) |
 
 ### 推奨運用構成
 

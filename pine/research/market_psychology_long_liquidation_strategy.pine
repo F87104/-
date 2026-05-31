@@ -1,0 +1,159 @@
+//@version=5
+// =============================================================================
+// Market Psychology — Long Liquidation Strategy (短側 / Short)
+//
+// 心理仮説:
+//   急騰の天井で「もう買えない」買い方が投げる局面。
+//   Short Squeeze の単純な上下反転 (旧研究) は弱かったため、
+//   買い方の損切り連鎖が起きやすい条件に絞る:
+//     ① 急騰 (rally) のあと
+//     ② 直近高値の更新に失敗
+//     ③ 高値圏で棚を作る
+//     ④ 棚安値を終値で割る = 買い方の投げが始まる
+//
+// 設計書:
+//   backtests/elliott_fibo/results_2026_05_30/market_psychology_v2_deep_research/r5_long_liquidation_plan.md
+//
+// なぜ単純ミラーが弱かったか:
+//   - 急落の底: 新規ショートは強制買い戻し (金利 + ロスカット)
+//   - 急騰の天井: 新規ロングは強制売却されない (持続できる)
+//   → ショート側は「高値更新失敗」が不可欠
+//
+// 検証ステータス: ⚠️ Python 検証は未実施 (ローカル OHLC なし)。
+//   TradingView 上での Strategy Tester による初期検証 + フォワード記録が次。
+//
+// 推奨時間足: H4
+// =============================================================================
+strategy("本命v2 Market Psychology Long Liquidation [Short]",
+     overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
+     pyramiding=0,
+     calc_on_order_fills=true,
+     calc_on_every_tick=false,
+     process_orders_on_close=false,
+     commission_type=strategy.commission.percent,
+     commission_value=0.0,
+     slippage=2,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500)
+
+plot(na, title="Compiler Anchor", display=display.none)
+
+// ---------------------------------------------------------------------
+// Common
+// ---------------------------------------------------------------------
+grpG       = "共通"
+requireH4  = input.bool(true,  "H4チャートのみ売買", group=grpG)
+useDate    = input.bool(true,  "2015〜2026のみ",     group=grpG)
+atrLen     = input.int(14,     "ATR期間",            minval=1, group=grpG)
+rr         = input.float(2.0,  "TP RR",              minval=0.1, step=0.1, group=grpG)
+stopBufATR = input.float(0.25, "SL余白(ATR)",        minval=0.0, step=0.05, group=grpG)
+maxHold    = input.int(120,    "最大保有(本)",       minval=10, group=grpG)
+riskPct    = input.float(1.0,  "1トレードのリスク(%)", minval=0.01, step=0.1, group=grpG)
+excludeGBP = input.bool(true,  "GBPJPYを除外 (経験則)", group=grpG)
+
+// ---------------------------------------------------------------------
+// Long Liquidation core
+// ---------------------------------------------------------------------
+grpLL      = "Long Liquidation コア"
+rallyBars  = input.int(6,    "急騰の窓 (本数)",        minval=3, group=grpLL)
+rallyPrior = input.int(12,   "急騰の比較窓 (本数)",    minval=6, group=grpLL)
+rallyAtr   = input.float(3.0,"急騰幅 >= ?×ATR",        minval=1.0, step=0.1, group=grpLL)
+
+failWin    = input.int(6,    "高値更新失敗の窓 (本)",  minval=2, group=grpLL)
+
+shelfBars  = input.int(6,    "棚の本数",                minval=2, group=grpLL)
+shelfAtr   = input.float(2.0,"棚幅上限 (ATR)",          minval=0.5, step=0.1, group=grpLL)
+
+breakBufATR = input.float(0.0, "棚安値ブレイク余白 (ATR)", minval=0.0, step=0.01, group=grpLL)
+
+// ---------------------------------------------------------------------
+// Volume / hour filters (optional, mirror of v2)
+// ---------------------------------------------------------------------
+grpV2 = "任意フィルタ (#1 / #8)"
+useHourFilter = input.bool(false, "時間フィルタ: 4/8/16/20 UTC のみ (#8)", group=grpV2)
+useVolFilter  = input.bool(false, "Volume: vol > sma(20)*X (#1)", group=grpV2)
+volLen        = input.int(20,  "Volume平均期間", minval=2, group=grpV2)
+volMult       = input.float(1.3, "Volume 倍率", minval=0.5, step=0.1, group=grpV2)
+
+// ---------------------------------------------------------------------
+// Common indicators
+// ---------------------------------------------------------------------
+atr   = ta.atr(atrLen)
+rng   = high - low
+
+int chartSec = timeframe.in_seconds(timeframe.period)
+bool h4Ok    = not requireH4 or chartSec == 240 * 60
+bool dateOk  = not useDate or (year >= 2015 and year <= 2026)
+bool hourOk  = not useHourFilter or hour == 4 or hour == 8 or hour == 16 or hour == 20
+bool symOk   = not excludeGBP or not str.contains(syminfo.ticker, "GBPJPY")
+
+float volAvg = ta.sma(volume, volLen)
+bool  volOk  = not useVolFilter or (not na(volAvg) and volume > volAvg * volMult)
+
+// ---------------------------------------------------------------------
+// ①  Sharp rally — last `rallyBars` high minus last `rallyPrior` low >= 3 ATR
+// ②  Failure to break the prior swing high within `failWin` bars
+// ③  Upper shelf: last `shelfBars` range <= 2 ATR formed at the rally top
+// ④  Close breaks below shelf low
+// ---------------------------------------------------------------------
+float rallyHigh = ta.highest(high, rallyBars)[1]
+float rallyLow  = ta.lowest(low,  rallyPrior)[1 + rallyBars]
+bool  hadRally  = (rallyHigh - rallyLow) >= rallyAtr * atr
+
+// Shelf is the most recent `shelfBars` bars excluding the signal bar
+float shelfHi = ta.highest(high, shelfBars)[1]
+float shelfLo = ta.lowest(low,  shelfBars)[1]
+bool  compressed = (shelfHi - shelfLo) <= shelfAtr * atr
+
+// Prior swing high to attempt = the high reached during the rally window
+float swingHi = ta.highest(high, rallyBars + shelfBars)[1]
+bool  failedNewHigh = shelfHi < swingHi - 0.05 * atr  // shelf top did not exceed the swing
+
+// Fresh break: prior close inside shelf, current close below shelf low
+bool freshBreak = close[1] >= shelfLo and close < shelfLo - breakBufATR * atr
+
+bool atrOk    = not na(atr) and atr > 0
+bool ready    = h4Ok and dateOk and hourOk and symOk and volOk and atrOk
+bool shortSig = ready and hadRally and compressed and failedNewHigh and freshBreak and strategy.position_size == 0
+float sigStop = shelfHi + stopBufATR * atr
+
+// ---------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------
+var float activeStop = na
+var int   entryBar   = na
+
+if shortSig
+    float dist = sigStop - close
+    if dist > 0
+        float qty = (strategy.equity * (riskPct / 100.0)) / dist
+        activeStop := sigStop
+        entryBar   := bar_index
+        strategy.entry("S", strategy.short, qty=qty)
+
+if strategy.position_size < 0 and not na(activeStop)
+    float risk0 = activeStop - strategy.position_avg_price
+    if risk0 > 0
+        float target = strategy.position_avg_price - rr * risk0
+        strategy.exit("X", from_entry="S", stop=activeStop, limit=target)
+        if strategy.opentrades > 0 and bar_index - strategy.opentrades.entry_bar_index(0) >= maxHold
+            strategy.close("S", comment="timeout")
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    activeStop := na
+    entryBar   := na
+
+// ---------------------------------------------------------------------
+// Visuals
+// ---------------------------------------------------------------------
+plot(shortSig ? shelfHi : na, title="棚高値", color=color.new(color.fuchsia, 0), style=plot.style_linebr, linewidth=1, display=display.pane)
+plot(shortSig ? shelfLo : na, title="棚安値", color=color.new(color.aqua, 0),    style=plot.style_linebr, linewidth=1, display=display.pane)
+plotshape(shortSig, title="Long Liquidation Short", style=shape.triangledown,
+     location=location.abovebar, color=color.new(color.red, 0), size=size.small, display=display.pane)
+
+alertcondition(shortSig, title="Long Liquidation Short",
+     message="Long Liquidation short on {{ticker}} {{interval}} @ {{close}}")

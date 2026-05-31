@@ -15,7 +15,7 @@ T-BB1229AC,D-4C7E6392,1,GBPJPY,buy,1H,2024-09-18 16:07,186.790,2024-09-20 22:03,
 T-04FE2BE2,D-5AF3DA73,2,USDJPY,buy,1H,2024-12-20 00:30,157.446,2024-12-20 21:31,156.60,-84,loss,chart_pattern_work/extracted_images/D-5AF3DA73_trade02_img003.png,high,
 T-F3E844E3,D-63AC10CB,1,USDCAD,buy,4H,2024-09-10 22:43,1.35873,2024-09-16 12:50,1.3543,44.3,win,chart_pattern_work/extracted_images/D-63AC10CB_trade01_img001.png,high,他足1H+日足
 T-37A4026E,D-70B473C4,1,EURJPY,sell,1H,2024-09-16 09:50,115.756,2024-09-16 18:30,115.70,5.6,win,chart_pattern_work/extracted_images/D-70B473C4_trade01_img001.png,low,価格115.7はEURJPY2024と不整合・要確認
-T-B06CFFB4,D-75718625,1,GBPJPY,buy,1H,2024-10-14 20:00,195.351,2024-10-15 14:00,195.10,-25.5,loss,chart_pattern_work/extracted_images/D-75718625_trade01_img001.png,med,時刻は20時台/14時台の概算
+T-B06CFFB4,D-75718625,1,GBPJPY,buy,1H,2024-10-14 20:00,195.351,2024-10-15 14:00,195.10,-25.5,loss,chart_pattern_work/extracted_images/D-75718625_trade01_img001.png,medium,時刻は20時台/14時台の概算
 T-52F898E3,D-78261F85,2,EURJPY,buy,1H,2024-09-19 20:42,159.606,2024-09-20 10:11,,92,win,chart_pattern_work/extracted_images/D-78261F85_trade02_img004.png,low,決済価格欄141.80はpips+92と不整合・要確認
 T-73218711,D-008B0F5D,4,XAUUSD,buy,1H,2024-12-12 09:06,2719.85,2024-12-12 23:20,2688.42,-314.3,loss,chart_pattern_work/extracted_images/D-008B0F5D_trade04_img007.png,high,
 T-73218711,D-008B0F5D,5,XAUUSD,buy,1H,2025-01-09 20:28,2670.99,2025-01-13 21:00,2673.16,21.7,win,chart_pattern_work/extracted_images/D-008B0F5D_trade05_img009.png,high,
@@ -136,3 +136,101 @@ T-C3FDDE26,D-7A09B042,5,XAUUSD,buy,1H,2025-01-10 23:58,2683.21,2025-01-13 21:18,
 T-37A4026E,D-CC65C7F6,7,GBPJPY,buy,1H,2024-10-29 17:50,199.277,2024-10-31 15:00,197.50,-177,loss,chart_pattern_work/extracted_images/D-CC65C7F6_trade07_img015.png,high,
 T-04FE2BE2,D-5AF3DA73,1,USDJPY,buy,1H,2024-12-16 11:36,153.924,2024-12-19 20:52,156.764,284,win,chart_pattern_work/extracted_images/D-5AF3DA73_trade01_img001.png,high,
 T-23C38107,D-2621524B,2,EURJPY,sell,1H,2024-09-17 09:04,156.64,2024-09-17 14:05,156.60,4.82,win,chart_pattern_work/extracted_images/D-2621524B_trade02_img004.png,high,
+T-73218711,D-008B0F5D,1,GBPJPY,sell,1H,2024-11-29 20:45,190.412,2024-12-04 10:57,189.95,45.8,win,chart_pattern_work/extracted_images/D-008B0F5D_trade01_img001.png,high,
+T-73218711,D-008B0F5D,3,GBPJPY,buy,1H,2024-12-12 06:42,194.431,2024-12-12 20:57,193.93,-50.3,loss,chart_pattern_work/extracted_images/D-008B0F5D_trade03_img005.png,high,
+T-96D787BA,D-022A1F07,2,GBPJPY,sell,1H,2024-09-06 14:31,187.84,2024-09-10 20:50,187.3,54,win,chart_pattern_work/extracted_images/D-022A1F07_trade02_img003.png,high,
+T-96D787BA,D-022A1F07,3,GBPJPY,buy,1H,2024-09-27 09:12,194.42,2024-09-27 15:30,192.5,-188,loss,chart_pattern_work/extracted_images/D-022A1F07_trade03_img005.png,medium,pips -188 vs price diff ~192 pips
+T-96D787BA,D-022A1F07,4,XAUUSD,buy,1H,2024-09-20 15:57,2595.33,2024-09-21 17:02,2601.96,66,win,chart_pattern_work/extracted_images/D-022A1F07_trade04_img007.png,high,
+T-96D787BA,D-027323F6,2,USDJPY,sell,1H,2025-01-16 10:28,155.791,2025-01-20 08:18,156.43,-140,loss,chart_pattern_work/extracted_images/D-027323F6_trade02_img003.png,low,pips -140 vs price diff ~-64 pips
+T-96D787BA,D-027323F6,3,GBPJPY,sell,1H,2025-02-20 08:19,190.412,2025-02-25 22:34,189.75,66,win,chart_pattern_work/extracted_images/D-027323F6_trade03_img005.png,high,
+T-0EE69571,D-04F9CACF,1,GBPJPY,buy,1H,2024-10-15 07:56,195.65,2024-10-16 10:17,194.6,-105,loss,chart_pattern_work/extracted_images/D-04F9CACF_trade01_img001.png,high,
+T-0EE69571,D-04F9CACF,5,USDJPY,buy,1H,2024-11-12 21:09,154.18,2024-11-16 00:38,154.9,72,win,chart_pattern_work/extracted_images/D-04F9CACF_trade05_img013.png,high,
+T-D2B86522,D-0A8AE576,1,USDJPY,sell,1H,2024-09-16 15:30,140.17,2024-09-17 11:00,140.7,-53,loss,chart_pattern_work/extracted_images/D-0A8AE576_trade01_img001.png,high,
+T-D2B86522,D-0A8AE576,3,XAUUSD,buy,1H,2024-09-20 08:30,2588.04,2024-09-27 23:30,2645.0,569.6,win,chart_pattern_work/extracted_images/D-0A8AE576_trade03_img005.png,high,
+T-5601242C,D-13D9D612,1,EURUSD,buy,1H,2024-09-17 00:00,1.11272,2024-09-19 05:00,1.11079,-19.3,loss,chart_pattern_work/extracted_images/D-13D9D612_trade01_img001.png,high,
+T-5601242C,D-13D9D612,3,GBPJPY,buy,1H,2024-09-18 21:00,187.436,2024-09-20 11:00,188.975,153.9,win,chart_pattern_work/extracted_images/D-13D9D612_trade03_img004.png,high,
+T-CFE02D21,D-19230EF5,3,USDCAD,buy,1H,2024-10-29 22:42,1.39098,2024-11-01 21:38,1.39082,-1.6,loss,chart_pattern_work/extracted_images/D-19230EF5_trade03_img005.png,high,
+T-CFE02D21,D-19230EF5,4,EURUSD,buy,1H,2024-10-31 21:19,1.08743,2024-11-04 07:16,1.08753,1,win,chart_pattern_work/extracted_images/D-19230EF5_trade04_img007.png,high,
+T-B53DB4FB,D-1AED296B,5,GBPJPY,buy,1H,2025-02-13 13:06,192.693,2025-02-17 10:03,191.0,-169.3,loss,chart_pattern_work/extracted_images/D-1AED296B_trade05_img009.png,high,
+T-23C38107,D-2621524B,3,EURJPY,sell,1H,2024-09-17 15:28,156.42,2024-09-17 16:13,156.1,32.82,win,chart_pattern_work/extracted_images/D-2621524B_trade03_img006 3.png,high,
+T-23C38107,D-2621524B,5,EURJPY,buy,1H,2024-09-27 10:29,162.51,2024-09-30 10:17,159.0,-350.41,loss,chart_pattern_work/extracted_images/D-2621524B_trade05_img010.png,high,
+T-23C38107,D-2621524B,8,USDJPY,buy,1H,2024-10-05 04:37,148.81,2024-10-07 08:29,148.97,15.65,win,chart_pattern_work/extracted_images/D-2621524B_trade08_img013.png,high,
+T-75DE4F66,D-28D3622F,2,GBPJPY,buy,1H,2024-09-18 16:03,186.751,2024-09-20 10:06,189.04,229,win,chart_pattern_work/extracted_images/D-28D3622F_trade02_img003.png,high,
+T-73218711,D-2FF72C2A,2,GBPJPY,buy,1H,2024-09-19 07:50,187.904,2024-09-19 12:53,188.85,94.2,win,chart_pattern_work/extracted_images/D-2FF72C2A_trade02_img004.png,high,
+T-73218711,D-2FF72C2A,4,GBPJPY,buy,1H,2024-09-24 13:13,192.123,2024-09-24 20:07,192.18,6,win,chart_pattern_work/extracted_images/D-2FF72C2A_trade04_img007.png,high,pips 6 vs price diff ~5.7 pips rounding
+T-226EA9DE,D-387EDAD6,9,GBPJPY,buy,1H,2024-09-27 07:29,194.393,2024-09-27 15:23,193.41,-98.3,loss,chart_pattern_work/extracted_images/D-387EDAD6_trade09_img013.png,high,
+T-73218711,D-3A5AD422,1,XAUUSD,buy,1H,2025-01-16 18:13,2700.33,2025-01-17 19:42,2703.25,29.2,win,chart_pattern_work/extracted_images/D-3A5AD422_trade01_img001 3.png,high,
+T-73218711,D-3A5AD422,10,XAUUSD,buy,1H,2025-02-24 22:00,2955.85,2025-02-25 17:00,2930.0,-258.5,loss,chart_pattern_work/extracted_images/D-3A5AD422_trade10_img019.png,high,no chart screenshot; table only
+T-73218711,D-3A5AD422,2,GBPJPY,sell,1H,2025-01-16 19:03,189.801,2025-01-18 05:09,190.03,-23.3,loss,chart_pattern_work/extracted_images/D-3A5AD422_trade02_img003.png,medium,entry time table typo 119:03 corrected to 19:03; chart ショート confirms sell
+T-73218711,D-3A5AD422,4,XAUUSD,buy,1H,2025-01-31 16:00,2798.42,2025-02-03 10:56,2780.00,-184.2,loss,chart_pattern_work/extracted_images/D-3A5AD422_trade04_img007 3.png,high,
+T-73218711,D-3A5AD422,5,XAUUSD,buy,1H,2025-02-03 23:17,2814.92,2025-02-07 22:57,2859.58,1018.7,win,chart_pattern_work/extracted_images/D-3A5AD422_trade05_img009.png,medium,2 positions 0.5+0.5 lots; pips 572.1+446.6 summed; exit date table typo 2024/2/7 corrected to 2025/2/7
+T-73218711,D-3A5AD422,7,XAUUSD,buy,1H,2025-02-10 15:59,2890.3,2025-02-11 22:00,2889.67,-6.3,loss,chart_pattern_work/extracted_images/D-3A5AD422_trade07_img013.png,high,
+T-73218711,D-3A5AD422,9,XAUUSD,buy,1H,2025-02-19 17:30,2939.13,2025-02-26 21:30,2925.44,-139.6,loss,chart_pattern_work/extracted_images/D-3A5AD422_trade09_img017.png,high,
+T-06614E39,D-4173E867,1,GBPUSD,buy,1H,2024-09-24 08:15,1.33473,2024-09-24 20:14,1.33630,15.7,win,chart_pattern_work/extracted_images/D-4173E867_trade01_img001.png,high,
+T-06614E39,D-4173E867,5,AUDJPY,buy,1H,2024-10-11 21:10,100.381,2024-10-12 04:45,100.750,37,win,chart_pattern_work/extracted_images/D-4173E867_trade05_img009.png,high,
+T-0DA89E2F,D-43570A72,3,GBPJPY,buy,1H,2024-09-27 08:29,194.563,2024-09-27 15:23,193.404,-115.9,loss,chart_pattern_work/extracted_images/D-43570A72_trade03_img007.png,high,flash-crash exit
+T-226EA9DE,D-46524F3C,1,XAUUSD,buy,1H,2024-10-11 22:28,2647.10,2024-10-21 23:49,2723.00,759,win,chart_pattern_work/extracted_images/D-46524F3C_trade01_img001.png,high,他足4H; scale-in entries on chart
+T-226EA9DE,D-46524F3C,4,GBPJPY,buy,1H,2024-11-01 15:23,196.676,2024-11-06 15:53,196.19,48.3,win,chart_pattern_work/extracted_images/D-46524F3C_trade04_img005.png,low,table exit 196.19 contradicts +48.3 pips and chart 利確 198.193
+T-226EA9DE,D-46524F3C,6,XAUUSD,sell,1H,2024-11-11 22:30,2635.20,2024-11-14 23:45,2563.30,719,win,chart_pattern_work/extracted_images/D-46524F3C_trade06_img007.png,high,他足4H
+T-226EA9DE,D-46524F3C,7,USDJPY,buy,1H,2024-11-15 09:24,156.595,2024-11-15 18:40,155.32,-127.5,loss,chart_pattern_work/extracted_images/D-46524F3C_trade07_img009.png,high,他足4H; chart 損切り 155.314
+T-BB1229AC,D-4C7E6392,2,GBPJPY,buy,1H,2024-09-27 08:08,194.446,2024-09-27 15:22,193.86,-588,loss,chart_pattern_work/extracted_images/D-4C7E6392_trade02_img003.png,high,20 lots
+T-F3E844E3,D-63AC10CB,2,EURUSD,buy,4H,2024-09-19 03:00,1.11483,2024-09-19 10:34,1.107,-78.3,loss,chart_pattern_work/extracted_images/D-63AC10CB_trade02_img003.png,medium,table pips unsigned 78.3; signed loss from prices
+T-F3E844E3,D-63AC10CB,4,EURAUD,sell,4H,2024-09-27 16:03,1.6183,2024-10-03 08:00,1.609,93,win,chart_pattern_work/extracted_images/D-63AC10CB_trade04_img008.png,high,
+T-73218711,D-6E45C69E,1,GBPJPY,buy,1H,2024-10-15 05:14,195.537,2024-10-15 10:20,195.28,-25,loss,chart_pattern_work/extracted_images/D-6E45C69E_trade01_img001.png,high,他足5m
+T-73218711,D-6E45C69E,10,GBPJPY,sell,1H,2024-11-26 17:05,193.09,2024-11-28 09:47,192.19,89.7,win,chart_pattern_work/extracted_images/D-6E45C69E_trade10_img016.png,high,他足4H
+T-73218711,D-6E45C69E,9,XAUUSD,buy,1H,2024-11-23 06:00,2715.41,2024-11-25 15:00,2680.00,-354.1,loss,chart_pattern_work/extracted_images/D-6E45C69E_trade09_img013.png,high,他足4H
+T-37A4026E,D-70B473C4,6,XAUUSD,buy,1H,2024-09-20 00:55,2588,2024-09-23 10:00,2617,40.5,win,chart_pattern_work/extracted_images/D-70B473C4_trade06_img010.png,high,
+T-B06CFFB4,D-75718625,3,GBPJPY,buy,1H,2024-10-23 10:00,196.696,2024-10-25 01:00,196.55,-14.6,loss,chart_pattern_work/extracted_images/D-75718625_trade03_img006.png,medium,entry/exit times approximate (10:00台/1:00台); 他足4H
+T-B06CFFB4,D-75718625,4,GBPJPY,buy,1H,2024-10-29 10:00,199.516,2024-10-30 19:00,198.74,-77.6,loss,chart_pattern_work/extracted_images/D-75718625_trade04_img008.png,medium,pips blank in table; computed -77.6 from prices; times approximate
+T-B06CFFB4,D-75718625,5,XAUUSD,sell,1H,2024-11-14 02:00,2582.71,2024-11-14 15:00,2591.84,-91.3,loss,chart_pattern_work/extracted_images/D-75718625_trade05_img011.png,medium,exit date table typo 2024/6/2; same-day exit inferred from chart
+T-52F898E3,D-78261F85,1,EURUSD,sell,1H,2024-09-18 23:32,1.11097,2024-09-19 02:44,1.11,20,win,chart_pattern_work/extracted_images/D-78261F85_trade01_img001.png,high,他足4H; FOMC event on chart
+T-52F898E3,D-78261F85,6,EURJPY,buy,1H,2024-10-09 16:38,162.85,2024-10-10 18:32,162.74,-12,loss,chart_pattern_work/extracted_images/D-78261F85_trade06_img013.png,high,
+T-C3FDDE26,D-7A09B042,2,XAUUSD,buy,1H,2025-01-02 19:36,2644.47,2025-01-04 00:29,2641.85,-26.2,loss,chart_pattern_work/extracted_images/D-7A09B042_trade02_img003 3.png,high,他足4H
+T-C3FDDE26,D-7A09B042,3,GBPJPY,sell,1H,2025-01-02 21:52,195.124,2025-01-03 01:36,194.98,14.4,win,chart_pattern_work/extracted_images/D-7A09B042_trade03_img005.png,high,
+T-226EA9DE,D-7E327A4E,5,XAUUSD,buy,1H,2025-02-10 16:00,2889.50,2025-02-11 21:05,2899.80,103,win,chart_pattern_work/extracted_images/D-7E327A4E_trade05_img009 3.png,high,
+T-226EA9DE,D-7E327A4E,6,GBPJPY,buy,1H,2025-02-12 23:47,191.4,2025-02-13 20:45,191.80,40,win,chart_pattern_work/extracted_images/D-7E327A4E_trade06_img011 3.png,high,
+T-226EA9DE,D-7E327A4E,7,XAUUSD,buy,1H,2025-02-19 16:07,2934.20,2025-02-26 00:31,2903.20,-310,loss,chart_pattern_work/extracted_images/D-7E327A4E_trade07_img013.png,high,
+T-226EA9DE,D-7E327A4E,8,GBPJPY,sell,1H,2025-02-20 08:21,190.4,2025-02-21 10:30,190.03,37,win,chart_pattern_work/extracted_images/D-7E327A4E_trade08_img015 3.png,high,他足4H
+T-262D039D,D-7F83B807,2,GBPJPY,buy,1H,2024-09-18 22:00,187.60,2024-09-20 10:00,189.00,140,win,chart_pattern_work/extracted_images/D-7F83B807_trade02_img003 3.png,high,他足日足
+T-262D039D,D-7F83B807,3,GBPJPY,buy,1H,2024-09-23 23:00,192.30,2024-09-27 15:23,192.30,0,win,chart_pattern_work/extracted_images/D-7F83B807_trade03_img005 3.png,high,建値決済0pips・他足日足
+T-B53DB4FB,D-8A7E702C,1,GBPJPY,buy,1H,2024-10-15 08:05,195.691,2024-10-15 14:06,195.250,-44.1,loss,chart_pattern_work/extracted_images/D-8A7E702C_trade01_img001 3.png,high,
+T-B53DB4FB,D-8A7E702C,3,GBPJPY,buy,1H,2024-10-22 11:22,195.885,2024-10-22 18:46,195.798,-8.7,loss,chart_pattern_work/extracted_images/D-8A7E702C_trade03_img006 3.png,medium,損益pips符号なし・価格から損失
+T-B53DB4FB,D-8A7E702C,8,GBPJPY,sell,1H,2024-11-22 18:11,193.560,2024-11-25 14:10,194.315,-75.5,loss,chart_pattern_work/extracted_images/D-8A7E702C_trade08_img015 3.png,high,
+T-76069C8F,D-9AA35653,2,XAUUSD,buy,1H,2025-02-03 23:11,2812.89,2025-02-07 03:35,2850.08,372,win,chart_pattern_work/extracted_images/D-9AA35653_trade02_img003.png,high,他足日足
+T-C3FDDE26,D-A484CD47,1,EURUSD,buy,1H,2024-09-13 17:00,1.10973,2024-09-19 04:22,1.11012,3.9,win,chart_pattern_work/extracted_images/D-A484CD47_trade01_img001.png,high,他足4H
+T-C3FDDE26,D-A484CD47,2,EURUSD,buy,1H,2024-09-20 15:31,1.11758,2024-09-20 17:24,1.1154,-21.8,loss,chart_pattern_work/extracted_images/D-A484CD47_trade02_img004.png,high,他足4H
+T-C3FDDE26,D-A484CD47,6,GBPJPY,buy,1H,2024-09-26 23:54,193.812,2024-09-27 15:23,192.50,-131.2,loss,chart_pattern_work/extracted_images/D-A484CD47_trade06_img011.png,high,他足日足
+T-C3FDDE26,D-A484CD47,8,AUDJPY,buy,1H,2024-10-04 01:59,101.216,2024-10-07 17:48,100.64,-58.8,loss,chart_pattern_work/extracted_images/D-A484CD47_trade08_img017.png,high,他足4H
+T-0EE69571,D-A976D05B,3,GBPJPY,buy,1H,2024-09-19 05:19,187.925,2024-09-20 09:59,189.09,116,win,chart_pattern_work/extracted_images/D-A976D05B_trade03_img005.png,high,他足4H
+T-C3FDDE26,D-B2A13DD9,1,GBPJPY,buy,1H,2024-10-18 21:12,195.763,2024-10-24 19:17,196.99,122.2,win,chart_pattern_work/extracted_images/D-B2A13DD9_trade01_img001.png,high,他足4H
+T-C3FDDE26,D-B2A13DD9,3,EURUSD,sell,1H,2024-11-11 13:06,1.07115,2024-11-15 22:26,1.05868,124.7,win,chart_pattern_work/extracted_images/D-B2A13DD9_trade03_img003.png,high,他足4H
+T-C3FDDE26,D-B2A13DD9,4,EURJPY,sell,1H,2024-11-15 02:25,163.032,2024-11-18 22:05,163.83,-79.9,loss,chart_pattern_work/extracted_images/D-B2A13DD9_trade04_img005.png,high,他足日足
+T-C3FDDE26,D-B2A13DD9,5,EURJPY,sell,1H,2024-11-19 15:56,162.322,2024-11-20 15:23,164.10,-177.6,loss,chart_pattern_work/extracted_images/D-B2A13DD9_trade05_img007.png,high,他足4H
+T-C3FDDE26,D-B2A13DD9,6,EURJPY,sell,1H,2024-11-21 17:32,162.791,2024-11-25 15:13,161.79,100.5,win,chart_pattern_work/extracted_images/D-B2A13DD9_trade06_img009.png,medium,決済日表記025.11.2024を2024-11-25に解釈・他足4H
+T-5401AB3A,D-B3A916C1,3,USDJPY,buy,1H,2024-10-03 22:00,146.97,2024-10-15 18:42,148.93,196,win,chart_pattern_work/extracted_images/D-B3A916C1_trade03_img001.png,high,
+T-5401AB3A,D-B3A916C1,4,XAUUSD,buy,1H,2024-10-16 15:14,2673.17,2024-11-05 11:40,2725.65,530,win,chart_pattern_work/extracted_images/D-B3A916C1_trade04_img004.png,medium,表に2件記載・先頭行を採用
+T-5401AB3A,D-B3A916C1,5,USDJPY,buy,1H,2024-10-22 12:12,150.859,2024-10-24 13:16,152.26,140,win,chart_pattern_work/extracted_images/D-B3A916C1_trade05_img007.png,high,他足4H
+T-5401AB3A,D-B3A916C1,7,GBPJPY,buy,1H,2024-10-28 07:26,198.378,2024-10-31 07:37,198.57,19,win,chart_pattern_work/extracted_images/D-B3A916C1_trade07_img011.png,high,他足4H
+T-65028391,D-B61815CB,1,XAUUSD,buy,1H,2024-09-20 12:10,2592.29,2024-09-30 20:02,2634.47,421.8,win,chart_pattern_work/extracted_images/D-B61815CB_trade01_img001.png,high,通貨表記GOLD・他足日足
+T-5601242C,D-BFC89A64,10,XAUUSD,sell,1H,2024-11-13 06:00,2599.52,2024-11-18 11:00,2588.97,105.5,win,chart_pattern_work/extracted_images/D-BFC89A64_trade10_img018 2.png,high,通貨表記GOLD・他足日足
+T-5601242C,D-BFC89A64,4,XAUUSD,buy,1H,2024-10-11 05:00,2629.72,2024-10-15 14:00,2639.19,94.7,win,chart_pattern_work/extracted_images/D-BFC89A64_trade04_img007 2.png,high,通貨表記GOLD・他足日足
+T-229592CF,D-C04EAEF6,2,XAUUSD,buy,1H,2025-01-16 13:22,2697.79,2025-01-30 16:01,2746.00,48.21,win,chart_pattern_work/extracted_images/D-C04EAEF6_trade02_img003 3.png,high,他足日足
+T-229592CF,D-C04EAEF6,3,XAUUSD,buy,1H,2025-01-31 09:22,2798.34,2025-02-12 20:49,2882.84,84.5,win,chart_pattern_work/extracted_images/D-C04EAEF6_trade03_img005 3.png,high,他足日足
+T-C0593442,D-C6D3CF1D,2,GBPJPY,buy,1H,2024-09-23 17:08,190.509,2024-09-24 09:10,191.53,101.9,win,chart_pattern_work/extracted_images/D-C6D3CF1D_trade02_img004.png,high,他足5分足
+T-C0593442,D-C6D3CF1D,3,GBPJPY,buy,1H,2024-09-26 14:55,193.191,2024-09-27 14:22,195.90,270.9,win,chart_pattern_work/extracted_images/D-C6D3CF1D_trade03_img007.png,high,他足4H
+T-64854690,D-CC1E2C02,2,GBPJPY,buy,1H,2024-09-19 00:10,187.534,2024-09-20 09:00,189.01,147,win,chart_pattern_work/extracted_images/D-CC1E2C02_trade02_img005.png,high,
+T-64854690,D-CC1E2C02,3,USDJPY,buy,1H,2024-09-23 09:00,144.011,2024-09-23 19:00,143.41,-60,loss,chart_pattern_work/extracted_images/D-CC1E2C02_trade03_img008.png,high,
+T-64854690,D-CC1E2C02,8,GBPJPY,buy,1H,2024-10-08 21:30,193.63,2024-10-09 16:00,194.086,45,win,chart_pattern_work/extracted_images/D-CC1E2C02_trade08_img017.png,low,表USDJPY→チャートGBPJPY・注文/決済価格欄とpips符号不整合のため安値側をエントリー採用
+T-37A4026E,D-CC65C7F6,2,XAUUSD,buy,1H,2024-10-02 01:34,2676.3,2024-10-02 12:00,2654.70,-21.6,loss,chart_pattern_work/extracted_images/D-CC65C7F6_trade02_img003 3.png,high,他足日足
+T-37A4026E,D-CC65C7F6,3,EURUSD,sell,1H,2024-10-02 23:02,1.10497,2024-10-31 21:30,1.088,170.2,win,chart_pattern_work/extracted_images/D-CC65C7F6_trade03_img006 3.png,high,他足日足
+T-56884632,D-D1AB5BA3,1,XAUUSD,buy,1H,2025-01-21 21:34,2726.56,2025-01-23 22:24,2740.00,134.4,win,chart_pattern_work/extracted_images/D-D1AB5BA3_trade01_img001.png,high,
+T-56884632,D-D1AB5BA3,3,XAUUSD,buy,1H,2025-01-31 08:27,2795.20,2025-02-03 10:56,2780.00,-152.0,loss,chart_pattern_work/extracted_images/D-D1AB5BA3_trade03_img005.png,high,
+T-56884632,D-D1AB5BA3,5,XAUUSD,buy,1H,2025-02-05 10:25,2845.11,2025-02-12 19:43,2880.00,348.9,win,chart_pattern_work/extracted_images/D-D1AB5BA3_trade05_img009.png,high,
+T-56884632,D-D1AB5BA3,7,XAUUSD,buy,1H,2025-02-20 15:24,2946.48,2025-02-20 22:48,2936.44,-100.4,loss,chart_pattern_work/extracted_images/D-D1AB5BA3_trade07_img013.png,high,
+T-0AFD7973,D-D50D7C66,2,XAUUSD,buy,1H,2024-12-23 16:18,2631.4,2024-12-24 00:22,2613.80,-176,loss,chart_pattern_work/extracted_images/D-D50D7C66_trade02_img003 3.png,high,他足日足
+T-0AFD7973,D-D50D7C66,3,EURJPY,buy,1H,2024-12-10 17:07,160.03,2024-12-14 00:15,161.10,107,win,chart_pattern_work/extracted_images/D-D50D7C66_trade03_img005 3.png,high,他足日足
+T-0AFD7973,D-D50D7C66,4,USDJPY,buy,1H,2025-01-08 20:33,158.49,2025-01-09 13:02,157.80,-69,loss,chart_pattern_work/extracted_images/D-D50D7C66_trade04_img007 3.png,high,他足日足
+T-37A4026E,D-F2164363,4,XAUUSD,buy,1H,2025-01-24 18:05,2775,2025-01-27 08:00,2766,-9.7,loss,chart_pattern_work/extracted_images/D-F2164363_trade04_img007 3.png,high,他足日足
+T-37A4026E,D-F2164363,7,XAUUSD,buy,1H,2025-02-20 18:15,2954,2025-02-20 23:05,2930.00,-23.5,loss,chart_pattern_work/extracted_images/D-F2164363_trade07_img013 2.png,high,
+T-37A4026E,D-F2164363,8,XAUUSD,buy,1H,2025-02-24 23:05,2955.4,2025-02-24 23:30,2940.00,-15.4,loss,chart_pattern_work/extracted_images/D-F2164363_trade08_img015 3.png,high,他足日足
+T-901BE1B1,D-F2EB0D28,2,GBPJPY,buy,1H,2024-09-27 10:12,194.85,2024-09-27 15:30,192.40,-262.9,loss,chart_pattern_work/extracted_images/D-F2EB0D28_trade02_img003.png,high,他足4H

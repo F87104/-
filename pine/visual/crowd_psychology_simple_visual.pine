@@ -1,15 +1,15 @@
 //@version=5
-indicator("Crowd Psychology Simple v0.2", overlay=true, max_labels_count=200, max_lines_count=100, max_bars_back=2000)
+indicator("Crowd Psychology Simple v0.3", overlay=true, max_labels_count=200, max_lines_count=100, max_bars_back=2000)
 
 // =====================================================================
-// 群衆心理シンプル版 v0.2
+// 群衆心理シンプル版 v0.3
 // =====================================================================
 // 目的:
 //   リアルタイムで迷わないように、表示を3つだけにする。
 //
-//   STOP  = 今すぐ入らない
-//   WAIT  = 待つだけ
-//   CHECK = 候補として確認
+//   S = STOP  今すぐ入らない
+//   W = WAIT  待つだけ
+//   C = CHECK 候補として確認
 //
 // 注意:
 //   売買サインではなく、反応を遅らせるための研究用表示です。
@@ -18,26 +18,28 @@ indicator("Crowd Psychology Simple v0.2", overlay=true, max_labels_count=200, ma
 grpCore = "基本"
 atrLen = input.int(14, "ATR期間", minval=1, group=grpCore)
 emaLen = input.int(50, "方向EMA", minval=2, group=grpCore)
-levelLookback = input.int(96, "節目 lookback", minval=20, group=grpCore)
+levelLookback = input.int(144, "節目 lookback", minval=20, group=grpCore)
 breakBufferAtr = input.float(0.08, "節目抜け余白(ATR)", minval=0.0, step=0.01, group=grpCore)
-minBreakBody = input.float(0.45, "抜け足の最小実体比率", minval=0.0, maxval=1.0, step=0.05, group=grpCore)
+minBreakBody = input.float(0.50, "抜け足の最小実体比率", minval=0.0, maxval=1.0, step=0.05, group=grpCore)
 
 grpStop = "STOP"
 stopFreshBreak = input.bool(true, "節目抜け直後をSTOP", group=grpStop)
 extensionLookback = input.int(20, "伸び切り判定バー数", minval=5, group=grpStop)
 extensionAtr = input.float(2.0, "伸び切りATR", minval=0.5, step=0.1, group=grpStop)
 runLen = input.int(4, "連続足しきい値", minval=1, group=grpStop)
-rangeLookback = input.int(72, "レンジ lookback", minval=20, group=grpStop)
+rangeLookback = input.int(96, "レンジ lookback", minval=20, group=grpStop)
 rangeMaxAtr = input.float(8.0, "レンジ最大幅(ATR)", minval=1.0, step=0.5, group=grpStop)
 rangeMidLo = input.float(0.30, "レンジ中央 下限", minval=0.0, maxval=1.0, step=0.05, group=grpStop)
 rangeMidHi = input.float(0.70, "レンジ中央 上限", minval=0.0, maxval=1.0, step=0.05, group=grpStop)
 impulseBodyAtr = input.float(0.90, "急変実体ATR", minval=0.1, step=0.1, group=grpStop)
 
 grpWait = "WAIT/CHECK"
-maxWaitBars = input.int(28, "確認待ち最大バー数", minval=3, group=grpWait)
-retestTolAtr = input.float(0.35, "押し戻り許容幅(ATR)", minval=0.05, step=0.05, group=grpWait)
-outsideBarsNeed = input.int(3, "レンジ外定着バー数", minval=1, maxval=20, group=grpWait)
-checkNeedsEma = input.bool(false, "CHECKにEMA方向一致を使う", group=grpWait)
+minBarsAfterBreak = input.int(4, "最低待機バー数", minval=1, maxval=30, group=grpWait)
+maxWaitBars = input.int(36, "確認待ち最大バー数", minval=3, group=grpWait)
+retestTolAtr = input.float(0.30, "押し戻り許容幅(ATR)", minval=0.05, step=0.05, group=grpWait)
+checkConfirmAtr = input.float(0.18, "CHECK再加速余白(ATR)", minval=0.0, step=0.01, group=grpWait)
+outsideBarsNeed = input.int(4, "レンジ外定着バー数", minval=1, maxval=20, group=grpWait)
+checkNeedsEma = input.bool(true, "CHECKにEMA方向一致を使う", group=grpWait)
 
 grpView = "表示"
 showSignals = input.bool(true, "STOP/WAIT/CHECKを表示", group=grpView)
@@ -45,7 +47,7 @@ showLevels = input.bool(true, "節目とレンジを表示", group=grpView)
 showEma = input.bool(true, "EMAを表示", group=grpView)
 paintZones = input.bool(false, "背景を薄く塗る", group=grpView)
 useBarClose = input.bool(true, "確定足だけ表示", group=grpView)
-cooldownBars = input.int(24, "同じ表示の間隔", minval=0, maxval=200, group=grpView)
+cooldownBars = input.int(48, "同じ表示の間隔", minval=0, maxval=200, group=grpView)
 
 atr = ta.atr(atrLen)
 ema = ta.ema(close, emaLen)
@@ -126,8 +128,10 @@ if breakShortActive and bar_index - breakShortIndex > maxWaitBars
     breakShortActive := false
     breakShortRetested := false
 
-waitLongRaw = barOk and breakLongActive and not breakLongRetested and bar_index > breakLongIndex and low <= breakLongLevel + atr * retestTolAtr and close >= breakLongLevel
-waitShortRaw = barOk and breakShortActive and not breakShortRetested and bar_index > breakShortIndex and high >= breakShortLevel - atr * retestTolAtr and close <= breakShortLevel
+longWaitEnough = breakLongActive and not na(breakLongIndex) and bar_index - breakLongIndex >= minBarsAfterBreak
+shortWaitEnough = breakShortActive and not na(breakShortIndex) and bar_index - breakShortIndex >= minBarsAfterBreak
+waitLongRaw = barOk and longWaitEnough and not breakLongRetested and low <= breakLongLevel + atr * retestTolAtr and close >= breakLongLevel
+waitShortRaw = barOk and shortWaitEnough and not breakShortRetested and high >= breakShortLevel - atr * retestTolAtr and close <= breakShortLevel
 
 if waitLongRaw
     breakLongRetested := true
@@ -137,8 +141,8 @@ if waitShortRaw
 
 emaLongOk = not checkNeedsEma or close > ema
 emaShortOk = not checkNeedsEma or close < ema
-checkBreakLongRaw = barOk and breakLongActive and breakLongRetested and not waitLongRaw and close > high[1] and close > breakLongLevel and emaLongOk
-checkBreakShortRaw = barOk and breakShortActive and breakShortRetested and not waitShortRaw and close < low[1] and close < breakShortLevel and emaShortOk
+checkBreakLongRaw = barOk and breakLongActive and breakLongRetested and not waitLongRaw and close > high[1] and close > breakLongLevel + atr * checkConfirmAtr and emaLongOk
+checkBreakShortRaw = barOk and breakShortActive and breakShortRetested and not waitShortRaw and close < low[1] and close < breakShortLevel - atr * checkConfirmAtr and emaShortOk
 
 if checkBreakLongRaw
     breakLongActive := false
@@ -195,12 +199,12 @@ plot(showLevels ? keyLow : na, "節目下限", color=color.new(color.aqua, 65), 
 plot(showLevels and rangeLike ? rangeHigh : na, "レンジ上限", color=color.new(color.yellow, 65), style=plot.style_linebr)
 plot(showLevels and rangeLike ? rangeLow : na, "レンジ下限", color=color.new(color.yellow, 65), style=plot.style_linebr)
 
-plotshape(showSignals and stopLong, title="STOP 上方向", style=shape.xcross, location=location.abovebar, color=color.new(color.red, 0), textcolor=color.red, size=size.small, text="STOP")
-plotshape(showSignals and stopShort, title="STOP 下方向", style=shape.xcross, location=location.belowbar, color=color.new(color.red, 0), textcolor=color.red, size=size.small, text="STOP")
-plotshape(showSignals and waitLong, title="WAIT 上方向", style=shape.circle, location=location.belowbar, color=color.new(color.yellow, 0), textcolor=color.yellow, size=size.tiny, text="WAIT")
-plotshape(showSignals and waitShort, title="WAIT 下方向", style=shape.circle, location=location.abovebar, color=color.new(color.yellow, 0), textcolor=color.yellow, size=size.tiny, text="WAIT")
-plotshape(showSignals and checkLong, title="CHECK 上方向", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), textcolor=color.lime, size=size.small, text="CHECK")
-plotshape(showSignals and checkShort, title="CHECK 下方向", style=shape.triangledown, location=location.abovebar, color=color.new(color.lime, 0), textcolor=color.lime, size=size.small, text="CHECK")
+plotshape(showSignals and stopLong, title="STOP 上方向", style=shape.xcross, location=location.abovebar, color=color.new(color.red, 0), textcolor=color.red, size=size.tiny, text="S")
+plotshape(showSignals and stopShort, title="STOP 下方向", style=shape.xcross, location=location.belowbar, color=color.new(color.red, 0), textcolor=color.red, size=size.tiny, text="S")
+plotshape(showSignals and waitLong, title="WAIT 上方向", style=shape.circle, location=location.belowbar, color=color.new(color.yellow, 0), textcolor=color.yellow, size=size.tiny, text="W")
+plotshape(showSignals and waitShort, title="WAIT 下方向", style=shape.circle, location=location.abovebar, color=color.new(color.yellow, 0), textcolor=color.yellow, size=size.tiny, text="W")
+plotshape(showSignals and checkLong, title="CHECK 上方向", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), textcolor=color.lime, size=size.tiny, text="C")
+plotshape(showSignals and checkShort, title="CHECK 下方向", style=shape.triangledown, location=location.abovebar, color=color.new(color.lime, 0), textcolor=color.lime, size=size.tiny, text="C")
 
 bgcolor(paintZones and stopAny ? color.new(color.red, 92) : na, title="STOP背景")
 bgcolor(paintZones and waitAny ? color.new(color.yellow, 92) : na, title="WAIT背景")

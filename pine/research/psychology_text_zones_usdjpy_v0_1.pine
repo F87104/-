@@ -1,0 +1,93 @@
+//@version=5
+indicator("Psychology Text Zones - USDJPY v0.1 [Research]", overlay=true, max_labels_count=500, max_boxes_count=100, max_lines_count=50)
+
+// =====================================================================
+// Psychology Text Zones - USDJPY v0.1 [Research]
+// ---------------------------------------------------------------------
+// 850件心理テキストのうち v0.5(380件・実行価格)と非重複の意識価格のみ
+// ソース行 15 → 集計ゾーン 14
+// 紫=テキスト意識価格（約定ではない） / 日時なし
+// v0.5 student_stumble_zones と併用可（役割が異なる）
+// =====================================================================
+
+pairOk = syminfo.basecurrency == "USD" and syminfo.currency == "JPY"
+showZones   = input.bool(true,  "意識価格帯(紫)を表示")
+showLabels  = input.bool(true,  "ゾーンラベルを表示")
+minCount    = input.int(1,      "最小件数", minval=1, maxval=20)
+onlyDanger  = input.bool(false, "負け率50%超のみ")
+
+// Z0: 143 n=2 loss=0 根拠不足
+// Z1: 139 n=1 loss=0 根拠不足
+// Z2: 140 n=1 loss=1 根拠不足
+// Z3: 141 n=1 loss=1 根拠不足
+// Z4: 146 n=1 loss=0 エントリーが早い
+// Z5: 147 n=1 loss=0 エントリーが早い
+// Z6: 148 n=1 loss=0 根拠不足
+// Z7: 150 n=1 loss=0 利確・保有判断のブレ
+// Z8: 153 n=1 loss=0 根拠不足
+// Z9: 155 n=1 loss=1 根拠不足
+// Z10: 156 n=1 loss=0 根拠不足
+// Z11: 158 n=1 loss=1 根拠不足
+// Z12: 160 n=1 loss=0 根拠不足
+// Z13: 165 n=1 loss=0 根拠不足
+
+if barstate.islast
+    if not pairOk
+        label.new(bar_index, high, "⚠ USDJPY 専用\n心理テキスト v0.1", xloc=xloc.bar_index, yloc=yloc.price, style=label.style_label_lower_left, color=color.new(color.orange, 0), textcolor=color.white, size=size.normal)
+    else if showZones
+        if minCount <= 2 and (not onlyDanger or 0 * 1.0 / 2 > 0.5)
+            box.new(chart.left_visible_bar_time, 143.45, chart.right_visible_bar_time, 142.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 143.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T2 143 根拠不足")
+        if minCount <= 1 and (not onlyDanger or 0 * 1.0 / 1 > 0.5)
+            box.new(chart.left_visible_bar_time, 139.45, chart.right_visible_bar_time, 138.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 139.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 139 根拠不足")
+        if minCount <= 1 and (not onlyDanger or 1 * 1.0 / 1 > 0.5)
+            box.new(chart.left_visible_bar_time, 140.45, chart.right_visible_bar_time, 139.55, xloc=xloc.bar_time, bgcolor=color.new(color.purple, 82), border_color=color.new(color.purple, 35), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 140.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 140 根拠不足")
+        if minCount <= 1 and (not onlyDanger or 1 * 1.0 / 1 > 0.5)
+            box.new(chart.left_visible_bar_time, 141.45, chart.right_visible_bar_time, 140.55, xloc=xloc.bar_time, bgcolor=color.new(color.purple, 82), border_color=color.new(color.purple, 35), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 141.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 141 根拠不足")
+        if minCount <= 1 and (not onlyDanger or 0 * 1.0 / 1 > 0.5)
+            box.new(chart.left_visible_bar_time, 146.45, chart.right_visible_bar_time, 145.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 146.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 146 エントリーが早い")
+        if minCount <= 1 and (not onlyDanger or 0 * 1.0 / 1 > 0.5)
+            box.new(chart.left_visible_bar_time, 147.45, chart.right_visible_bar_time, 146.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 147.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 147 エントリーが早い")
+        if minCount <= 1 and (not onlyDanger or 0 * 1.0 / 1 > 0.5)
+            box.new(chart.left_visible_bar_time, 148.45, chart.right_visible_bar_time, 147.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 148.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 148 根拠不足")
+        if minCount <= 1 and (not onlyDanger or 0 * 1.0 / 1 > 0.5)
+            box.new(chart.left_visible_bar_time, 150.45, chart.right_visible_bar_time, 149.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 150.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 150 利確・保有判断のブレ")
+        if minCount <= 1 and (not onlyDanger or 0 * 1.0 / 1 > 0.5)
+            box.new(chart.left_visible_bar_time, 153.45, chart.right_visible_bar_time, 152.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 153.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 153 根拠不足")
+        if minCount <= 1 and (not onlyDanger or 1 * 1.0 / 1 > 0.5)
+            box.new(chart.left_visible_bar_time, 155.45, chart.right_visible_bar_time, 154.55, xloc=xloc.bar_time, bgcolor=color.new(color.purple, 82), border_color=color.new(color.purple, 35), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 155.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 155 根拠不足")
+        if minCount <= 1 and (not onlyDanger or 0 * 1.0 / 1 > 0.5)
+            box.new(chart.left_visible_bar_time, 156.45, chart.right_visible_bar_time, 155.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 156.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 156 根拠不足")
+        if minCount <= 1 and (not onlyDanger or 1 * 1.0 / 1 > 0.5)
+            box.new(chart.left_visible_bar_time, 158.45, chart.right_visible_bar_time, 157.55, xloc=xloc.bar_time, bgcolor=color.new(color.purple, 82), border_color=color.new(color.purple, 35), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 158.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 158 根拠不足")
+        if minCount <= 1 and (not onlyDanger or 0 * 1.0 / 1 > 0.5)
+            box.new(chart.left_visible_bar_time, 160.45, chart.right_visible_bar_time, 159.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 160.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 160 根拠不足")
+        if minCount <= 1 and (not onlyDanger or 0 * 1.0 / 1 > 0.5)
+            box.new(chart.left_visible_bar_time, 165.45, chart.right_visible_bar_time, 164.55, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 165.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 165 根拠不足")

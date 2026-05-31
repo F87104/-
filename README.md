@@ -41,6 +41,18 @@
 
 **v2.x 試験フィルタ:** [stumble_chase_suppression_experiment_v0_1.pine](pine/research/stumble_chase_suppression_experiment_v0_1.pine) — フィルタOFF/ON で A/B 比較
 
+### 心理テキスト専用 Pine（v0.5非重複）— **v0.1**
+
+v0.5（380件・実行価格）と**重ならない**意識価格帯のみ。紫帯＝本文から抽出した「見ていた節目」（約定ではない・日時なし）。
+
+| 通貨 | Pine | ソース行 | ゾーン |
+|---|---|---:|---:|
+| **GBPJPY** | [psychology_text_zones_gbpjpy_v0_1.pine](pine/research/psychology_text_zones_gbpjpy_v0_1.pine) | 45 | 14 |
+| **USDJPY** | [psychology_text_zones_usdjpy_v0_1.pine](pine/research/psychology_text_zones_usdjpy_v0_1.pine) | 15 | 14 |
+| **XAUUSD** | [psychology_text_zones_xauusd_v0_1.pine](pine/research/psychology_text_zones_xauusd_v0_1.pine) | 3 | 2 |
+
+監査: [psychology_text_zones_pine_v0_1_audit_2026-05-31.md](docs/research/psychology_text_zones_pine_v0_1_audit_2026-05-31.md)
+
 ### 最重要つまずき（全員が負けた18クラスタの代表）
 
 | 通貨 | 人数 | 売買 | 価格帯 | 構造 |

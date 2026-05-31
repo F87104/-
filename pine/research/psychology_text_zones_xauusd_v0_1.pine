@@ -1,0 +1,33 @@
+//@version=5
+indicator("Psychology Text Zones - XAUUSD v0.1 [Research]", overlay=true, max_labels_count=500, max_boxes_count=100, max_lines_count=50)
+
+// =====================================================================
+// Psychology Text Zones - XAUUSD v0.1 [Research]
+// ---------------------------------------------------------------------
+// 850件心理テキストのうち v0.5(380件・実行価格)と非重複の意識価格のみ
+// ソース行 3 → 集計ゾーン 2
+// 紫=テキスト意識価格（約定ではない） / 日時なし
+// v0.5 student_stumble_zones と併用可（役割が異なる）
+// =====================================================================
+
+pairOk = (syminfo.basecurrency == "XAU" and syminfo.currency == "USD") or str.contains(syminfo.ticker, "GOLD")
+showZones   = input.bool(true,  "意識価格帯(紫)を表示")
+showLabels  = input.bool(true,  "ゾーンラベルを表示")
+minCount    = input.int(1,      "最小件数", minval=1, maxval=20)
+onlyDanger  = input.bool(false, "負け率50%超のみ")
+
+// Z0: 2660 n=2 loss=1 根拠不足
+// Z1: 2600 n=1 loss=0 根拠不足
+
+if barstate.islast
+    if not pairOk
+        label.new(bar_index, high, "⚠ XAUUSD 専用\n心理テキスト v0.1", xloc=xloc.bar_index, yloc=yloc.price, style=label.style_label_lower_left, color=color.new(color.orange, 0), textcolor=color.white, size=size.normal)
+    else if showZones
+        if minCount <= 2 and (not onlyDanger or 1 * 1.0 / 2 > 0.5)
+            box.new(chart.left_visible_bar_time, 2678.0, chart.right_visible_bar_time, 2642.0, xloc=xloc.bar_time, bgcolor=color.new(color.fuchsia, 85), border_color=color.new(color.purple, 35), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 2660.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T2 2660 根拠不足")
+        if minCount <= 1 and (not onlyDanger or 0 * 1.0 / 1 > 0.5)
+            box.new(chart.left_visible_bar_time, 2618.0, chart.right_visible_bar_time, 2582.0, xloc=xloc.bar_time, bgcolor=color.new(color.gray, 88), border_color=color.new(color.gray, 50), border_width=1)
+            if showLabels
+                label.new(chart.right_visible_bar_time, 2600.0, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="T1 2600 根拠不足")

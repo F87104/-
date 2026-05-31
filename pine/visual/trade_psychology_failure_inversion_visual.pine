@@ -1,0 +1,267 @@
+//@version=5
+indicator("Trade Psychology Failure Inversion Visual", overlay=true, max_labels_count=500, max_lines_count=200, max_boxes_count=80, max_bars_back=3000)
+
+// =====================================================================
+// トレード心理研究: 失敗パターン逆利用 可視化
+// =====================================================================
+// 目的:
+//   実践者の失敗チャートから見えた「心理が動きやすい場所」をTradingView上に出す。
+//   赤 = 失敗しやすい入口
+//   緑 = 待てた場合に検討できる入口
+//
+// 対応する研究テーマ:
+//   C01 節目抜けですぐ入らない
+//   C03 レンジ内の急落に反応しない
+//   C07 ローソク足1本だけで決めない
+//
+// 注意:
+//   売買サインではなく、目視研究と教材化のための可視化ツールです。
+// =====================================================================
+
+grpCore = "共通設定"
+atrLen = input.int(14, "ATR期間", minval=1, group=grpCore)
+levelLookback = input.int(96, "節目 lookback", minval=20, group=grpCore)
+breakBufferAtr = input.float(0.08, "節目抜け余白(ATR)", minval=0.0, step=0.01, group=grpCore)
+maxWaitBars = input.int(24, "待てた入口の最大監視本数", minval=3, group=grpCore)
+retestTolAtr = input.float(0.35, "押し戻り許容幅(ATR)", minval=0.05, step=0.05, group=grpCore)
+
+grpBreak = "C01 節目抜け飛び乗り"
+showBreakout = input.bool(true, "表示する", group=grpBreak)
+extensionLookback = input.int(20, "追いかけ判定バー数", minval=5, group=grpBreak)
+extensionAtr = input.float(2.0, "追いかけ判定ATR", minval=0.5, step=0.1, group=grpBreak)
+minBreakBody = input.float(0.45, "抜け足の最小実体比率", minval=0.0, maxval=1.0, step=0.05, group=grpBreak)
+
+grpRange = "C03 レンジ内急落・急騰"
+showRange = input.bool(true, "表示する", group=grpRange)
+rangeLookback = input.int(72, "レンジ lookback", minval=20, group=grpRange)
+rangeMaxAtr = input.float(8.0, "レンジ最大幅(ATR)", minval=1.0, step=0.5, group=grpRange)
+rangeMidLo = input.float(0.30, "レンジ中央 下限", minval=0.0, maxval=1.0, step=0.05, group=grpRange)
+rangeMidHi = input.float(0.70, "レンジ中央 上限", minval=0.0, maxval=1.0, step=0.05, group=grpRange)
+impulseBodyAtr = input.float(0.90, "急変実体ATR", minval=0.1, step=0.1, group=grpRange)
+
+grpCandle = "C07 ローソク足単体"
+showCandle = input.bool(true, "表示する", group=grpCandle)
+wickRatioMin = input.float(0.48, "ヒゲ比率", minval=0.1, maxval=0.95, step=0.01, group=grpCandle)
+wickBodyMin = input.float(1.2, "ヒゲ/実体倍率", minval=0.1, step=0.1, group=grpCandle)
+nearLevelAtr = input.float(0.75, "節目付近判定(ATR)", minval=0.1, step=0.05, group=grpCandle)
+
+grpView = "表示"
+showLevels = input.bool(true, "節目・レンジ線を表示", group=grpView)
+showLabels = input.bool(true, "説明ラベルを表示", group=grpView)
+showTable = input.bool(true, "状態テーブルを表示", group=grpView)
+paintBackground = input.bool(true, "背景を薄く塗る", group=grpView)
+
+atr = ta.atr(atrLen)
+barRange = high - low
+body = math.abs(close - open)
+bodyRatio = barRange > 0 ? body / barRange : 0.0
+
+keyHigh = ta.highest(high[1], levelLookback)
+keyLow = ta.lowest(low[1], levelLookback)
+breakBuf = atr * breakBufferAtr
+
+// ---------------------------------------------------------------------
+// C01: 節目抜け飛び乗り
+// ---------------------------------------------------------------------
+extendedUp = close - ta.lowest(low, extensionLookback) >= atr * extensionAtr
+extendedDown = ta.highest(high, extensionLookback) - close >= atr * extensionAtr
+breakoutLong = showBreakout and close > keyHigh + breakBuf and bodyRatio >= minBreakBody
+breakoutShort = showBreakout and close < keyLow - breakBuf and bodyRatio >= minBreakBody
+
+chaseLongRisk = breakoutLong and extendedUp
+chaseShortRisk = breakoutShort and extendedDown
+
+var bool longBreakActive = false
+var bool longBreakRetested = false
+var int longBreakIndex = na
+var float longBreakLevel = na
+
+var bool shortBreakActive = false
+var bool shortBreakRetested = false
+var int shortBreakIndex = na
+var float shortBreakLevel = na
+
+if breakoutLong
+    longBreakActive := true
+    longBreakRetested := false
+    longBreakIndex := bar_index
+    longBreakLevel := keyHigh
+
+if breakoutShort
+    shortBreakActive := true
+    shortBreakRetested := false
+    shortBreakIndex := bar_index
+    shortBreakLevel := keyLow
+
+longBreakExpired = longBreakActive and bar_index - longBreakIndex > maxWaitBars
+shortBreakExpired = shortBreakActive and bar_index - shortBreakIndex > maxWaitBars
+
+if longBreakExpired
+    longBreakActive := false
+    longBreakRetested := false
+
+if shortBreakExpired
+    shortBreakActive := false
+    shortBreakRetested := false
+
+if longBreakActive and bar_index > longBreakIndex and low <= longBreakLevel + atr * retestTolAtr and close >= longBreakLevel
+    longBreakRetested := true
+
+if shortBreakActive and bar_index > shortBreakIndex and high >= shortBreakLevel - atr * retestTolAtr and close <= shortBreakLevel
+    shortBreakRetested := true
+
+waitedBreakLong = longBreakActive and longBreakRetested and close > high[1] and close > longBreakLevel
+waitedBreakShort = shortBreakActive and shortBreakRetested and close < low[1] and close < shortBreakLevel
+
+if waitedBreakLong
+    longBreakActive := false
+    longBreakRetested := false
+
+if waitedBreakShort
+    shortBreakActive := false
+    shortBreakRetested := false
+
+// ---------------------------------------------------------------------
+// C03: レンジ内の急落・急騰に反応しない
+// ---------------------------------------------------------------------
+rangeHigh = ta.highest(high[1], rangeLookback)
+rangeLow = ta.lowest(low[1], rangeLookback)
+rangeWidth = rangeHigh - rangeLow
+rangeLike = showRange and atr > 0 and rangeWidth <= atr * rangeMaxAtr
+rangePos = rangeWidth > 0 ? (close - rangeLow) / rangeWidth : na
+rangeMid = rangeLike and rangePos >= rangeMidLo and rangePos <= rangeMidHi
+
+bearImpulse = close < open and body >= atr * impulseBodyAtr
+bullImpulse = close > open and body >= atr * impulseBodyAtr
+rangeDropRisk = rangeMid and bearImpulse
+rangeJumpRisk = rangeMid and bullImpulse
+
+rangeBreakLong = rangeLike and close > rangeHigh + breakBuf
+rangeBreakShort = rangeLike and close < rangeLow - breakBuf
+
+var bool rangeLongActive = false
+var bool rangeLongRetested = false
+var int rangeLongIndex = na
+var float rangeLongLevel = na
+
+var bool rangeShortActive = false
+var bool rangeShortRetested = false
+var int rangeShortIndex = na
+var float rangeShortLevel = na
+
+if rangeBreakLong
+    rangeLongActive := true
+    rangeLongRetested := false
+    rangeLongIndex := bar_index
+    rangeLongLevel := rangeHigh
+
+if rangeBreakShort
+    rangeShortActive := true
+    rangeShortRetested := false
+    rangeShortIndex := bar_index
+    rangeShortLevel := rangeLow
+
+if rangeLongActive and bar_index - rangeLongIndex > maxWaitBars
+    rangeLongActive := false
+    rangeLongRetested := false
+
+if rangeShortActive and bar_index - rangeShortIndex > maxWaitBars
+    rangeShortActive := false
+    rangeShortRetested := false
+
+if rangeLongActive and bar_index > rangeLongIndex and low <= rangeLongLevel + atr * retestTolAtr and close >= rangeLongLevel
+    rangeLongRetested := true
+
+if rangeShortActive and bar_index > rangeShortIndex and high >= rangeShortLevel - atr * retestTolAtr and close <= rangeShortLevel
+    rangeShortRetested := true
+
+waitedRangeLong = rangeLongActive and rangeLongRetested and close > high[1] and close > rangeLongLevel
+waitedRangeShort = rangeShortActive and rangeShortRetested and close < low[1] and close < rangeShortLevel
+
+if waitedRangeLong
+    rangeLongActive := false
+    rangeLongRetested := false
+
+if waitedRangeShort
+    rangeShortActive := false
+    rangeShortRetested := false
+
+// ---------------------------------------------------------------------
+// C07: ローソク足単体で決めない
+// ---------------------------------------------------------------------
+upperWick = high - math.max(open, close)
+lowerWick = math.min(open, close) - low
+upperWickRatio = barRange > 0 ? upperWick / barRange : 0.0
+lowerWickRatio = barRange > 0 ? lowerWick / barRange : 0.0
+bodyBase = math.max(body, syminfo.mintick)
+
+nearResistance = high >= keyHigh - atr * nearLevelAtr
+nearSupport = low <= keyLow + atr * nearLevelAtr
+
+upperWickStrong = showCandle and upperWickRatio >= wickRatioMin and upperWick / bodyBase >= wickBodyMin
+lowerWickStrong = showCandle and lowerWickRatio >= wickRatioMin and lowerWick / bodyBase >= wickBodyMin
+
+singleCandleShortRisk = upperWickStrong and not nearResistance
+singleCandleLongRisk = lowerWickStrong and not nearSupport
+
+confirmedWickShort = upperWickStrong[1] and nearResistance[1] and close < low[1]
+confirmedWickLong = lowerWickStrong[1] and nearSupport[1] and close > high[1]
+
+// ---------------------------------------------------------------------
+// 表示
+// ---------------------------------------------------------------------
+riskAny = chaseLongRisk or chaseShortRisk or rangeDropRisk or rangeJumpRisk or singleCandleShortRisk or singleCandleLongRisk
+waitAny = waitedBreakLong or waitedBreakShort or waitedRangeLong or waitedRangeShort or confirmedWickLong or confirmedWickShort
+
+plot(showLevels ? keyHigh : na, "節目上限", color=color.new(color.orange, 65), style=plot.style_linebr)
+plot(showLevels ? keyLow : na, "節目下限", color=color.new(color.aqua, 65), style=plot.style_linebr)
+plot(showLevels and rangeLike ? rangeHigh : na, "レンジ上限", color=color.new(color.yellow, 50), style=plot.style_linebr)
+plot(showLevels and rangeLike ? rangeLow : na, "レンジ下限", color=color.new(color.yellow, 50), style=plot.style_linebr)
+
+plotshape(chaseLongRisk, title="飛び乗り注意 L", style=shape.labeldown, location=location.abovebar, color=color.new(color.red, 0), textcolor=color.white, size=size.tiny, text="飛び乗り注意")
+plotshape(chaseShortRisk, title="飛び乗り注意 S", style=shape.labelup, location=location.belowbar, color=color.new(color.red, 0), textcolor=color.white, size=size.tiny, text="飛び乗り注意")
+plotshape(rangeDropRisk, title="レンジ急落反応注意", style=shape.labelup, location=location.belowbar, color=color.new(color.maroon, 0), textcolor=color.white, size=size.tiny, text="レンジ反応注意")
+plotshape(rangeJumpRisk, title="レンジ急騰反応注意", style=shape.labeldown, location=location.abovebar, color=color.new(color.maroon, 0), textcolor=color.white, size=size.tiny, text="レンジ反応注意")
+plotshape(singleCandleShortRisk, title="上ヒゲ単体注意", style=shape.labeldown, location=location.abovebar, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="足1本注意")
+plotshape(singleCandleLongRisk, title="下ヒゲ単体注意", style=shape.labelup, location=location.belowbar, color=color.new(color.purple, 0), textcolor=color.white, size=size.tiny, text="足1本注意")
+
+plotshape(waitedBreakLong or waitedRangeLong or confirmedWickLong, title="待てた買い候補", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), textcolor=color.black, size=size.small, text="待てたL")
+plotshape(waitedBreakShort or waitedRangeShort or confirmedWickShort, title="待てた売り候補", style=shape.triangledown, location=location.abovebar, color=color.new(color.lime, 0), textcolor=color.black, size=size.small, text="待てたS")
+
+bgcolor(paintBackground and riskAny ? color.new(color.red, 90) : na, title="失敗しやすい場所")
+bgcolor(paintBackground and waitAny ? color.new(color.green, 90) : na, title="待てた入口")
+
+if showLabels and chaseLongRisk
+    label.new(bar_index, high, "C01\n節目抜け直後。\n押し戻り/再停滞を待つ。", style=label.style_label_down, color=color.new(color.red, 0), textcolor=color.white, size=size.small)
+
+if showLabels and chaseShortRisk
+    label.new(bar_index, low, "C01\n節目抜け直後。\n戻り/再停滞を待つ。", style=label.style_label_up, color=color.new(color.red, 0), textcolor=color.white, size=size.small)
+
+if showLabels and (rangeDropRisk or rangeJumpRisk)
+    label.new(bar_index, close, "C03\nレンジ内の急変。\n加速する根拠を言語化。", style=label.style_label_left, color=color.new(color.maroon, 0), textcolor=color.white, size=size.small)
+
+if showLabels and (singleCandleShortRisk or singleCandleLongRisk)
+    label.new(bar_index, close, "C07\nローソク足1本だけ。\n追加根拠2つを確認。", style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.small)
+
+if showLabels and waitAny
+    label.new(bar_index, close, "待てた入口\n失敗パターンの逆側", style=label.style_label_left, color=color.new(color.lime, 0), textcolor=color.black, size=size.small)
+
+var table t = table.new(position.top_right, 2, 7, border_width=1)
+if showTable and barstate.islast
+    table.cell(t, 0, 0, "研究視点", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 0, "失敗の逆を待つ")
+    table.cell(t, 0, 1, "C01 節目", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 1, longBreakActive or shortBreakActive ? "再確認待ち" : "なし")
+    table.cell(t, 0, 2, "C03 レンジ", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 2, rangeLike ? "レンジ中" : "レンジ外")
+    table.cell(t, 0, 3, "C07 足単体", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 3, upperWickStrong ? "上ヒゲ" : lowerWickStrong ? "下ヒゲ" : "なし")
+    table.cell(t, 0, 4, "赤", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 4, riskAny ? "失敗しやすい場所" : "-")
+    table.cell(t, 0, 5, "緑", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 5, waitAny ? "待てた入口" : "-")
+    table.cell(t, 0, 6, "注意", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 6, "売買サインではない")
+
+alertcondition(riskAny, "心理失敗パターン注意", "Trade psychology risk zone: {{ticker}} {{interval}}")
+alertcondition(waitAny, "失敗パターンの逆側候補", "Trade psychology waited candidate: {{ticker}} {{interval}}")

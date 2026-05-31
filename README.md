@@ -85,11 +85,13 @@ TradingView Strategy Tester での実測 (STEP 1+2+3) を統合した、**通貨
 | [`docs/research/d1_bear_trap_h4_v_reclaim_2026-05-29.md`](docs/research/d1_bear_trap_h4_v_reclaim_2026-05-29.md) | D1 Bear Trap + H4 V |
 | [`docs/research/indicator_denial_reaction_2026-05-29.md`](docs/research/indicator_denial_reaction_2026-05-29.md) | Indicator Denial |
 
-#### 派生 / 比較用 Pine (v2 系)
+#### 派生 / 比較用 Pine (v1 / v2 系)
 
 | ファイル | 用途 |
 |---|---|
-| [`pine/research/market_psychology_strict_v2_strategy.pine`](pine/research/market_psychology_strict_v2_strategy.pine) | v2 Sqz + Cap (手動制御版) |
+| **[`pine/visual/market_psychology_visual.pine`](pine/visual/market_psychology_visual.pine)** | **シンプル indicator 版** (Sqz + Cap の三角だけ表示、発注しない) ← 目視・アラート用 |
+| [`pine/research/market_psychology_strategy.pine`](pine/research/market_psychology_strategy.pine) | v1 Sqz + Cap (シンプル strategy 版、デフォルトパラメータ) |
+| [`pine/research/market_psychology_strict_v2_strategy.pine`](pine/research/market_psychology_strict_v2_strategy.pine) | v2 Sqz + Cap (手動制御版、v2 パラメータ) |
 | [`pine/research/market_psychology_long_liquidation_strategy.pine`](pine/research/market_psychology_long_liquidation_strategy.pine) | LL 単独検証用 |
 | [`pine/research/market_psychology_dormant_breakout_strategy.pine`](pine/research/market_psychology_dormant_breakout_strategy.pine) | Dormant Breakout 単独 |
 | [`pine/visual/market_psychology_long_liquidation_visual.pine`](pine/visual/market_psychology_long_liquidation_visual.pine) | LL 観測 (indicator) |

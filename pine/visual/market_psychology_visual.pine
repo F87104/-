@@ -1,0 +1,80 @@
+//@version=5
+// =============================================================================
+// Market Psychology Research — Visual Scanner (観測用インジケーター)
+//
+// 検証済みの2構造をチャート上に自動で印付けする「目視確認ツール」。
+//   ① 投げ切り（Capitulation 底買い） : 売り尽くし反転の買いシグナル
+//   ② 踏み上げ（Short Squeeze）        : 急落→棚→上抜けの買いシグナル
+//
+// これは発注ロジックではなく「いまどの心理構造が出ているか」を観測するための道具。
+// 条件は検証スクリプト(verify_capitulation_reversal.py / verify_from_raw_ohlc.py)と同義。
+// 推奨時間足: H4。
+//
+// 参考: skills/market_psychology_research/
+//   CAPITULATION.md / SHORT_SQUEEZE.md / verification/*
+// =============================================================================
+indicator("本命2Market Psychology Visual (Capitulation + Squeeze)", overlay=true, max_labels_count=500)
+
+// ---- 共通 -------------------------------------------------------------------
+atrLen   = input.int(14, "ATR period", group="共通")
+atr      = ta.atr(atrLen)
+rng      = high - low
+rngOk    = rng > 0
+
+// ============================================================================
+//  ① Capitulation 底買い（売りクライマックス反転）
+// ============================================================================
+grpC        = "① 投げ切り Capitulation（底買い）"
+showCap     = input.bool(true,  "投げ切りを表示", group=grpC)
+declineBars = input.int(24,  "長期下落の窓(本数)",        group=grpC)
+dropAtrCap  = input.float(4.0, "下落幅 >= ?×ATR",          group=grpC)
+spikeAtr    = input.float(1.8, "クライマックス足 値幅 >= ?×ATR", group=grpC)
+wickThr     = input.float(0.5, "下ヒゲ/全体 >= ?",         group=grpC)
+closeLocC   = input.float(0.5, "終値の位置(下から) >= ?",   group=grpC)
+useDownD1   = input.bool(true, "日足が下降トレンドのみ(counter)", group=grpC)
+
+// 長期下落の末に新安値
+priorHighC = ta.highest(high, declineBars)
+newLow     = low <= ta.lowest(low, declineBars)
+prolonged  = (priorHighC - low) >= dropAtrCap * atr
+// 投げ切り足の形
+bigBar     = rng >= spikeAtr * atr
+lowerWick  = rngOk and ((math.min(open, close) - low) / rng) >= wickThr
+closeLocOk = rngOk and ((close - low) / rng) >= closeLocC
+// 日足トレンド(先読みなし)
+d1ema      = request.security(syminfo.tickerid, "D", ta.ema(close, 50), lookahead=barmerge.lookahead_off)
+downtrend  = (not useDownD1) or (close < d1ema)
+
+capLong = showCap and newLow and prolonged and bigBar and lowerWick and closeLocOk and downtrend
+
+plotshape(capLong, title="Capitulation 底買い", style=shape.triangleup,
+     location=location.belowbar, color=color.new(color.aqua, 0), size=size.small, text="投げ切り")
+alertcondition(capLong, title="Capitulation 底買い", message="投げ切りクライマックス反転(買い候補)")
+
+// ============================================================================
+//  ② Short Squeeze 踏み上げ（急落→安値棚→上抜け）
+// ============================================================================
+grpS       = "② 踏み上げ Short Squeeze（買い）"
+showSqz    = input.bool(true,  "踏み上げを表示", group=grpS)
+shelfBars  = input.int(6,   "棚の本数",            group=grpS)
+dropWin    = input.int(6,   "棚直前の急変窓(本数)", group=grpS)
+shelfAtr   = input.float(2.5, "棚レンジ <= ?×ATR(圧縮)", group=grpS)
+moveAtr    = input.float(3.0, "急落幅 >= ?×ATR",     group=grpS)
+
+shelfHi    = ta.highest(high, shelfBars)[1]            // 直前 shelfBars 本の高値
+shelfLo    = ta.lowest(low,  shelfBars)[1]
+shelfRange = shelfHi - shelfLo
+priorHiS   = ta.highest(high, dropWin)[1 + shelfBars]  // 棚に入る直前の高値
+compressed = shelfRange <= shelfAtr * atr
+sharpDrop  = (priorHiS - shelfHi) >= moveAtr * atr
+freshBreak = close[1] <= shelfHi and close > shelfHi
+
+sqzLong = showSqz and compressed and sharpDrop and freshBreak
+
+plotshape(sqzLong, title="Short Squeeze 踏み上げ", style=shape.triangleup,
+     location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="踏み上げ")
+alertcondition(sqzLong, title="Short Squeeze 踏み上げ", message="急落→棚→上抜け(踏み上げ買い候補)")
+
+// ---- 補助: 日足トレンド背景 -------------------------------------------------
+showBg = input.bool(false, "日足トレンドを背景色で表示", group="表示オプション")
+bgcolor(showBg ? (close < d1ema ? color.new(color.red, 92) : color.new(color.green, 94)) : na)

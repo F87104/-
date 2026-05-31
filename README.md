@@ -13,7 +13,7 @@
 
 | 優先 | 研究テーマ | 状態 | 何を知りたいか | 途中経過 | 次にやること |
 |---:|---|---|---|---|---|
-| 1 | トレード心理研究 | 進行中 | 失敗トレードに共通する心理・判断・チャート形状を見つけ、最適エントリーパターンへ変換する | 匿名化705トレードを構造化。群衆心理検出器v0.2をGBPJPY H1で観察し、リアルタイム4段階判定まで整理。 | v0.3でFOMO/PANIC/WAITの意味を分け、判定記録表を作る |
+| 1 | トレード心理研究 | 進行中 | 複数の受講生が同じチャート形状で入る場所を見つけ、成功/失敗の分岐を探す | 匿名化705トレードから、受講生エントリー集中パターンを一次抽出。節目抜け、トレンド継続期待、V字、レンジ急変に反応が集中。 | P01「節目抜け・ブレイク飛び乗り」の画像を20件並べ、STOP/CHECKに分ける |
 | 2 | Market Psychology Squeeze | 記録済み | スクイーズ、投げ売り、踏み上げのパターンを戦略化する | 通貨・時間軸・フィルタ条件を複数検証済み | 有効条件と除外条件をトップページから辿れるようにする |
 | 3 | Wavebox / Rebreak | 記録済み | 再ブレイクや波形パターンがどの条件で機能するかを調べる | 複数の検証・監査メモあり | 実運用で使う条件と保留条件を1枚にまとめる |
 
@@ -22,6 +22,10 @@
 トレード心理研究の最新: [docs/research/trade_psychology_optimal_entry_pattern_research_2026-05-31.md](docs/research/trade_psychology_optimal_entry_pattern_research_2026-05-31.md)
 
 群衆心理検出器: [pine/visual/crowd_psychology_detector_visual.pine](pine/visual/crowd_psychology_detector_visual.pine)
+
+群衆心理シンプル版: [pine/visual/crowd_psychology_simple_visual.pine](pine/visual/crowd_psychology_simple_visual.pine)
+
+受講生エントリー集中パターン研究: [docs/research/student_entry_cluster_research_2026-05-31.md](docs/research/student_entry_cluster_research_2026-05-31.md)
 
 ---
 

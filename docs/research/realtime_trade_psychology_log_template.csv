@@ -1,2 +1,2 @@
-date_time,pair,timeframe,signal,market_context,first_emotion,decision_rank,decision,reason,invalidation_price,risk_note,result,next_improvement
-2026-05-31 00:00,GBPJPY,H1,FOMO,高値抜け直後,入りたい,A,見送り,FOMO直後で押し戻り未確認,,損切り位置不明,未記録,WAITまたはOUTまで待つ
+date_time,pair,timeframe,label,emotion,action,result,note
+2026-05-31 00:00,GBPJPY,H1,STOP,入りたい,入らない,未記録,抜け直後なので待つ

@@ -101,8 +101,34 @@ v0.3（赤のみ）: `student_stumble_zones_*_v0_3.pine` も残している。
 - 待つ場所: [student_stumble_wait_zones_v0_1.csv](student_stumble_wait_zones_v0_1.csv)
 - 前段研究: [student_entry_cluster_research_2026-05-31.md](student_entry_cluster_research_2026-05-31.md)
 
+## データ方針（確定）
+
+**137件の抽出データで十分。** 追加の画像抽出・EURJPY 拡張は行わない。
+
+| 項目 | 値 |
+|---|---|
+| 抽出件数 | 137（high 113 / medium 18 / low 6） |
+| クラスタ | 29（全敗15） |
+| 可視化 | GBPJPY / USDJPY / XAUUSD Pine v0.4 |
+| 待つ場所 | 15件 CSV |
+| フィルタ試験 | v0.1.1（下記） |
+
+## フィルタ試験結果（GBPJPY 1H・全期間・TradingView）
+
+研究用ベースライン（12本ブレイク）での A/B。**本番戦略の成績ではない。**
+
+| 指標 | フィルタ OFF | フィルタ ON |
+|---|---:|---:|
+| 件数 | 1,279 | 473 |
+| 純利益 | -34.61 JPY | -25.51 JPY |
+| PF | 0.906 | 0.78 |
+| 勝率 | 35.73% | 34.67% |
+| 最大DD | 42.85 JPY | 30.56 JPY |
+
+**解釈:** ON で追いエントリー約63%削減、損失額・DD は改善。全期間 PF はやや悪化 → **F1 単独・つまずき期間限定** で v2.x へ載せる方針。詳細は [stumble_chase_suppression_filter_v0_1.md](stumble_chase_suppression_filter_v0_1.md)。
+
 ## 次にやること
 
-1. [stumble_chase_suppression_experiment_v0_1.pine](../../pine/research/stumble_chase_suppression_experiment_v0_1.pine) を TradingView で **フィルタOFF/ON** 比較
-2. F1 / F2 / F3 単独の寄与を切り分け
-3. v2.x マトリクス戦略本体へ同じ抑制ロジックを移植
+1. v2.x マトリクス戦略本体取得後、**F1 節目近接追い抑制**だけを `AND` 移植
+2. 教材として v0.4（赤=失敗 / 青=待つ）を継続利用
+3. ~~データ追加・EURJPY 拡張~~ → **不要（137件で確定）**

@@ -51,26 +51,40 @@
 4. **フィルタON**（F1/F2/F3 全部ON）で再実行 → 差分を比較
 5. 2024/10（GBPJPY 199円台）や 2024/12〜2025/2（XAUUSD 天井）を期間限定して確認
 
-## 期待する結果（仮説）
+## 試験 Pine（確定版 v0.1.1）
 
-| 指標 | フィルタOFF | フィルタON |
-|---|---|---|
-| 件数 | 多い | 減る |
-| PF | 低め（追い負け多） | 改善する可能性 |
-| 勝率 | — | やや下がっても PF 改善ならOK |
+[stumble_chase_suppression_experiment_v0_1.pine](../../pine/research/stumble_chase_suppression_experiment_v0_1.pine)
 
-**成功の定義**: つまずき期間（10/28-30 GBPJPY、12/12 XAUUSD 等）で
-フィルタON が明らかにエントリーを減らし、DD が改善する。
+F1/F2/F3 のロジックはこのファイルで確定。データ137件・待つ場所15件を根拠に v2.x へ **F1 優先** で移植する。
 
-## v2.x への載せ方（次段）
+## TradingView 実測（GBPJPY 1H・全期間）
 
-1. 本試験で F1-F3 のパラメータを通貨別に調整
-2. `market_psychology_v2_matrix_strategy` の新規エントリー前に
-   `not blockLong / not blockShort` を AND する
-3. 通貨別 ON/OFF マトリクス（GBPJPY/XAUUSD=ON、USDJPY=部分ON 等）
+| 指標 | OFF | ON |
+|---|---:|---:|
+| 件数 | 1,279 | 473 |
+| 純利益 | -34.61 JPY | -25.51 JPY |
+| PF | 0.906 | 0.78 |
+| 最大DD | 42.85 JPY | 30.56 JPY |
+
+**結論（試験）**
+
+- ベースラインは研究用の「追いやすい入口」のため PF<1 は想定内
+- フィルタ ON は **件数・DD・損失額を改善** → 抑制ロジック自体は機能
+- 全期間 PF 改善までは未達 → v2.x では **F1 だけ** 載せ、F2/F3 は保留
+
+## v2.x への載せ方
+
+1. 下記 F1 ブロック条件を matrix 戦略の新規エントリー前に `and not f1BlockLong` で追加
+2. 通貨別: GBPJPY=ON / XAUUSD=ON / USDJPY=要検証
+3. F2/F3 は v0.1.1 に残し、本番採用は見送り
+
+```pine
+// F1 core (from v0.1.1)
+f1BlockLong  = nearRound and nearHigh and close > open and longSignal
+f1BlockShort = nearRound and nearLow and close < open and shortSignal
+```
 
 ## 次にやること
 
-1. GBPJPY / XAUUSD / USDJPY で OFF vs ON の数値を TradingView に記録
-2. F1 だけ / F2 だけ / F3 だけ の寄与を切り分け
-3. v2.x 本体ブランチ取得後、同じ関数を matrix 戦略へ移植
+1. v2.x 本体ブランチ取得後 F1 だけ移植
+2. ~~追加データ抽出~~ → **137件で十分（確定）**

@@ -36,6 +36,8 @@
 
 待つ場所データ: [student_stumble_wait_zones_v0_1.csv](docs/research/student_stumble_wait_zones_v0_1.csv)
 
+**v2.x 試験フィルタ:** [stumble_chase_suppression_experiment_v0_1.pine](pine/research/stumble_chase_suppression_experiment_v0_1.pine) — フィルタOFF/ON で A/B 比較
+
 ### 最重要つまずき（全員が負けた15クラスタの代表）
 
 | 通貨 | 人数 | 売買 | 価格帯 | 構造 |

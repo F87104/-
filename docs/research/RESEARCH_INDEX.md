@@ -44,6 +44,7 @@
 | 2026-05-31 | 受講生エントリー集中パターン研究 | GBPJPY H1でSimple v0.3を確認。Sは人が反応したくなる場所をよく拾えており、W/Cで待った後の候補も見やすくなった。ただしCも売買サインではなく、上位足方向と損切り位置が必要。 | v0.3のままS/W/Cを20例だけ目視記録する |
 | 2026-05-31 | 受講生つまずきクラスタ研究 | 失敗チャート137件から entry_datetime / entry_price を画像抽出。48時間×価格近接で29クラスタ、うち15が全敗。GBPJPY 199円台5人全敗・XAUUSD天井買い3ゾーンなどを特定。Pine v0.3で GBPJPY / USDJPY / XAUUSD の実エントリー重ね表示を作成。 | 全敗ゾーンごとに本来待つ場所をマーキングし、v2.x フィルタ候補を試験実装する |
 | 2026-05-31 | 受講生つまずきクラスタ研究 | 全敗15クラスタに「待つ場所」をマーキング（pullback/bounce/confirmation）。wait_zones CSV と Pine v0.4（赤=失敗・青=待つ）を GBPJPY/USDJPY/XAUUSD に追加。 | TradingView で v0.4 の青帯を目視確認し、v2.x 節目飛び乗り抑制フィルタを試験実装する |
+| 2026-05-31 | 節目飛び乗り抑制フィルタ試験 | つまずき研究から F1節目/F2伸び切り/F3端追い の3抑制を Pine strategy 化。filterOn OFF/ON で A/B 比較可能。 | GBPJPY/XAUUSD 1H で OFF vs ON を TradingView 記録 → v2.x matrix へ移植 |
 | 2026-05-31 | 通貨別の心理傾向 | 137件の実エントリー抽出データと705件の匿名化済み心理データから、GBPJPYは勢いの罠、XAUUSDは値幅の罠、USDJPYは節目抜けの罠として見る仮説を追加。 | GBPJPY、XAUUSD、USDJPYで `S/W/C` を各20例ずつ記録し、通貨別にC条件を少し変えるか判断する |
 
 ## 進行中の研究
@@ -116,6 +117,7 @@
 | リアルタイム心理記録テンプレート | [realtime_trade_psychology_log_template.csv](realtime_trade_psychology_log_template.csv) |
 | 受講生エントリー集中パターン研究 | [student_entry_cluster_research_2026-05-31.md](student_entry_cluster_research_2026-05-31.md) |
 | 受講生つまずきクラスタ研究 | [student_stumble_clusters_research_2026-05-31.md](student_stumble_clusters_research_2026-05-31.md) |
+| 節目飛び乗り抑制フィルタ試験 | [stumble_chase_suppression_filter_v0_1.md](stumble_chase_suppression_filter_v0_1.md) |
 | 通貨別の心理傾向 | [currency_pair_personality_hypothesis_2026-05-31.md](currency_pair_personality_hypothesis_2026-05-31.md) |
 
 ## 新しい研究を書くとき

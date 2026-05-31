@@ -103,6 +103,6 @@ v0.3（赤のみ）: `student_stumble_zones_*_v0_3.pine` も残している。
 
 ## 次にやること
 
-1. TradingView で v0.4 を目視確認し、青帯の位置を微調整する
-2. v2.x マトリクス戦略へ「節目飛び乗り抑制」フィルタを試験実装する
-3. EURJPY は9件・クラスタ0のため、データ追加後に再分析
+1. [stumble_chase_suppression_experiment_v0_1.pine](../../pine/research/stumble_chase_suppression_experiment_v0_1.pine) を TradingView で **フィルタOFF/ON** 比較
+2. F1 / F2 / F3 単独の寄与を切り分け
+3. v2.x マトリクス戦略本体へ同じ抑制ロジックを移植

@@ -1,0 +1,153 @@
+//@version=5
+strategy("Stumble Chase Suppression Experiment v0.1 [Research]",
+     overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
+     pyramiding=0,
+     calc_on_order_fills=true,
+     calc_on_every_tick=false,
+     process_orders_on_close=true,
+     commission_type=strategy.commission.percent,
+     commission_value=0.0,
+     slippage=2,
+     max_bars_back=5000,
+     max_lines_count=200,
+     max_labels_count=200)
+
+plot(na, title="Compiler Anchor", display=display.none)
+
+// =====================================================================
+// Stumble Chase Suppression Experiment v0.1 [Research]
+// ---------------------------------------------------------------------
+// 目的: つまずきクラスタ研究(v0.4)から導いた「節目飛び乗り抑制」を
+//   v2.x 向け試験フィルタとして A/B 比較する。
+//
+// 根拠: docs/research/student_stumble_wait_zones_v0_1.csv
+//   - pullback: 高値/節目追い → 1段押し待ち
+//   - bounce: 底/天井で逆張り → 戻り待ち
+//   - confirmation: 再加速確認後
+//
+// 方法:
+//   入口は意図的に「飛び乗りやすい」12本高安ブレイク。
+//   フィルタOFF = そのままエントリー
+//   フィルタON  = 下記3条件のいずれかで新規を抑制
+//
+// フィルタ3本柱:
+//   F1 節目近接追い … ラウンド価格±N以内の順張り
+//   F2 伸び切り追い … 大陽線/大陰線直後1-2本の同方向
+//   F3 端追い       … 直近高安からATR×N以内の端追い
+//
+// 使い方: 同じ通貨・同じ期間で filterOn を OFF/ON 切替して
+//   件数 / PF / DD を比較。GBPJPY 1H, XAUUSD 1H 推奨。
+// =====================================================================
+
+grpEntry = "エントリー(飛び乗りやすいベースライン)"
+brkLen   = input.int(12, "ブレイク lookback", minval=3, group=grpEntry)
+emaLen   = input.int(50, "方向EMA", minval=2, group=grpEntry)
+atrLen   = input.int(14, "ATR期間", minval=2, group=grpEntry)
+
+grpFilter = "つまずき抑制フィルタ (v2.x 試験)"
+filterOn  = input.bool(true, "フィルタON (OFF=比較用)", group=grpFilter)
+useF1     = input.bool(true, "F1 節目近接追いを抑制", group=grpFilter)
+useF2     = input.bool(true, "F2 伸び切り直後追いを抑制", group=grpFilter)
+useF3     = input.bool(true, "F3 高安端追いを抑制", group=grpFilter)
+showBlock = input.bool(true, "ブロック箇所に×印", group=grpFilter)
+
+grpF1 = "F1 節目"
+roundProxJpy  = input.float(0.35, "JPYペア: 節目±(円)", minval=0.05, step=0.05, group=grpF1)
+roundProxHalf = input.float(0.20, "JPYペア: 50銭±(円)", minval=0.05, step=0.05, group=grpF1)
+roundProxGold = input.float(12.0, "XAUUSD: 節目±(USD)", minval=1.0, step=1.0, group=grpF1)
+
+grpF2 = "F2 伸び切り"
+bigBodyAtr = input.float(1.10, "大足実体 ×ATR", minval=0.3, step=0.05, group=grpF2)
+impulseLag = input.int(2, "大足後何本まで抑制", minval=1, maxval=5, group=grpF2)
+
+grpF3 = "F3 端追い"
+extLookback = input.int(20, "高安 lookback", minval=5, group=grpF3)
+extAtr      = input.float(0.80, "高安から ×ATR 以内", minval=0.1, step=0.1, group=grpF3)
+
+grpExit = "出口(固定)"
+slAtr = input.float(1.5, "損切 ×ATR", minval=0.1, step=0.1, group=grpExit)
+tpAtr = input.float(2.5, "利確 ×ATR", minval=0.1, step=0.1, group=grpExit)
+
+grpDate = "期間"
+useDates  = input.bool(false, "期間限定", group=grpDate)
+startDate = input.time(timestamp("2024-01-01 00:00"), "開始", group=grpDate)
+endDate   = input.time(timestamp("2026-01-01 00:00"), "終了", group=grpDate)
+
+// ----------------------------- Calc ----------------------------------
+atr = ta.atr(atrLen)
+ema = ta.ema(close, emaLen)
+body = math.abs(close - open)
+
+isJpy = str.contains(syminfo.ticker, "JPY")
+isGold = str.contains(syminfo.ticker, "XAU") or str.contains(syminfo.ticker, "GOLD")
+
+nearestYen = math.round(close)
+nearestHalf = math.round(close * 2.0) / 2.0
+distYen  = math.abs(close - nearestYen)
+distHalf = math.abs(close - nearestHalf)
+nearest10 = math.round(close / 10.0) * 10.0
+nearest50 = math.round(close / 50.0) * 50.0
+distG10 = math.abs(close - nearest10)
+distG50 = math.abs(close - nearest50)
+
+nearRoundLong = isGold ? (math.min(distG10, distG50) <= roundProxGold) : (distYen <= roundProxJpy or distHalf <= roundProxHalf)
+nearRoundShort = nearRoundLong
+
+bigBull = close > open and body >= atr * bigBodyAtr
+bigBear = close < open and body >= atr * bigBodyAtr
+
+impulseAfterBull = false
+impulseAfterBear = false
+for i = 1 to impulseLag
+    impulseAfterBull := impulseAfterBull or bigBull[i]
+    impulseAfterBear := impulseAfterBear or bigBear[i]
+
+hiExt = ta.highest(high, extLookback)
+loExt = ta.lowest(low, extLookback)
+nearHigh = hiExt - close <= atr * extAtr
+nearLow  = close - loExt <= atr * extAtr
+
+brkHi = ta.highest(high[1], brkLen)
+brkLo = ta.lowest(low[1], brkLen)
+longRaw  = close > ema and ta.crossover(close, brkHi)
+shortRaw = close < ema and ta.crossunder(close, brkLo)
+
+blockLong  = filterOn and ((useF1 and nearRoundLong and longRaw) or (useF2 and impulseAfterBull and longRaw) or (useF3 and nearHigh and longRaw))
+blockShort = filterOn and ((useF1 and nearRoundShort and shortRaw) or (useF2 and impulseAfterBear and shortRaw) or (useF3 and nearLow and shortRaw))
+
+longSig  = longRaw and not blockLong
+shortSig = shortRaw and not blockShort
+
+inWindow = not useDates or (time >= startDate and time <= endDate)
+
+// ----------------------------- Orders --------------------------------
+var float entryPx = na
+
+if inWindow and longSig and strategy.position_size <= 0
+    strategy.entry("L", strategy.long)
+    entryPx := close
+if inWindow and shortSig and strategy.position_size >= 0
+    strategy.entry("S", strategy.short)
+    entryPx := close
+
+if strategy.position_size > 0 and not na(entryPx)
+    strategy.exit("LX", "L", stop=entryPx - atr * slAtr, limit=entryPx + atr * tpAtr)
+if strategy.position_size < 0 and not na(entryPx)
+    strategy.exit("SX", "S", stop=entryPx + atr * slAtr, limit=entryPx - atr * tpAtr)
+if strategy.position_size == 0
+    entryPx := na
+
+// ----------------------------- Visual -------------------------------
+plot(ema, "EMA", color=color.new(color.orange, 0), linewidth=1)
+plotshape(showBlock and blockLong, title="Blocked Long", style=shape.xcross, location=location.belowbar, color=color.new(color.orange, 0), size=size.tiny, text="F")
+plotshape(showBlock and blockShort, title="Blocked Short", style=shape.xcross, location=location.abovebar, color=color.new(color.orange, 0), size=size.tiny, text="F")
+
+var table t = table.new(position.top_right, 1, 4, bgcolor=color.new(color.black, 80))
+if barstate.islast
+    table.cell(t, 0, 0, "Chase Filter " + (filterOn ? "ON" : "OFF"), text_color=color.white)
+    table.cell(t, 0, 1, "F1節目 F2伸び F3端", text_color=color.silver, text_size=size.small)
+    table.cell(t, 0, 2, "L blk:" + str.tostring(blockLong) + " S blk:" + str.tostring(blockShort), text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 0, 3, "v2.x trial v0.1", text_color=color.gray, text_size=size.tiny)

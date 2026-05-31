@@ -13,13 +13,15 @@
 
 | 優先 | 研究テーマ | 状態 | 何を知りたいか | 途中経過 | 次にやること |
 |---:|---|---|---|---|---|
-| 1 | トレード心理研究 | 進行中 | 失敗トレードに共通する心理・判断・チャート形状を見つけ、最適エントリーパターンへ変換する | 匿名化705トレードを構造化。失敗パターン教材化、Pine可視化、最適エントリー一次抽出、成功/失敗ペア比較まで実施。 | P01からP03をPineの緑サイン条件へ変換する |
+| 1 | トレード心理研究 | 進行中 | 失敗トレードに共通する心理・判断・チャート形状を見つけ、最適エントリーパターンへ変換する | 匿名化705トレードを構造化。失敗パターン教材化、最適エントリー一次抽出、成功/失敗ペア比較、群衆心理検出器v0.1まで実施。 | TradingViewで群衆心理検出器の表示位置を確認する |
 | 2 | Market Psychology Squeeze | 記録済み | スクイーズ、投げ売り、踏み上げのパターンを戦略化する | 通貨・時間軸・フィルタ条件を複数検証済み | 有効条件と除外条件をトップページから辿れるようにする |
 | 3 | Wavebox / Rebreak | 記録済み | 再ブレイクや波形パターンがどの条件で機能するかを調べる | 複数の検証・監査メモあり | 実運用で使う条件と保留条件を1枚にまとめる |
 
 研究メモの入口: [docs/research/RESEARCH_INDEX.md](docs/research/RESEARCH_INDEX.md)
 
 トレード心理研究の最新: [docs/research/trade_psychology_optimal_entry_pattern_research_2026-05-31.md](docs/research/trade_psychology_optimal_entry_pattern_research_2026-05-31.md)
+
+群衆心理検出器: [pine/visual/crowd_psychology_detector_visual.pine](pine/visual/crowd_psychology_detector_visual.pine)
 
 ---
 

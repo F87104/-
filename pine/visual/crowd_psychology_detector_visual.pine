@@ -1,0 +1,392 @@
+//@version=5
+indicator("Crowd Psychology Detector Visual v0.1", overlay=true, max_labels_count=500, max_lines_count=500, max_bars_back=3000)
+
+// =====================================================================
+// 群衆心理検出器 v0.1
+// =====================================================================
+// 目的:
+//   トレード心理研究から見えた「人が反応しやすい場所」と
+//   「待てた場合に候補になる場所」をTradingView上に可視化する。
+//
+// 赤/橙/紫 = 群衆心理が動きやすい場所
+//   FOMO  : 節目抜け直後の飛び乗り
+//   PANIC : レンジ中央の急変反応
+//   WICK  : ローソク足1本だけで決めやすい場所
+//
+// 緑 = 待てた候補
+//   WAIT  : 抜け後の押し戻り/再停滞後の再加速
+//   OUT   : レンジ外定着
+//   PB    : 押し戻り継続
+//
+// 注意:
+//   売買サインではなく、群衆心理の研究・目視検証・教材化用です。
+// =====================================================================
+
+grpCore = "共通設定"
+atrLen = input.int(14, "ATR期間", minval=1, group=grpCore)
+fastEmaLen = input.int(20, "短期EMA", minval=2, group=grpCore)
+trendEmaLen = input.int(50, "方向EMA", minval=2, group=grpCore)
+levelLookback = input.int(96, "節目 lookback", minval=20, group=grpCore)
+breakBufferAtr = input.float(0.08, "節目抜け余白(ATR)", minval=0.0, step=0.01, group=grpCore)
+maxWaitBars = input.int(28, "確認待ち最大バー数", minval=3, group=grpCore)
+retestTolAtr = input.float(0.35, "押し戻り許容幅(ATR)", minval=0.05, step=0.05, group=grpCore)
+
+grpCrowd = "赤: 群衆反応"
+showFomo = input.bool(true, "FOMO 飛び乗りを表示", group=grpCrowd)
+extensionLookback = input.int(20, "伸び切り判定バー数", minval=5, group=grpCrowd)
+extensionAtr = input.float(2.0, "伸び切りATR", minval=0.5, step=0.1, group=grpCrowd)
+runLen = input.int(4, "連続足しきい値", minval=1, group=grpCrowd)
+minBreakBody = input.float(0.45, "抜け足の最小実体比率", minval=0.0, maxval=1.0, step=0.05, group=grpCrowd)
+
+showPanic = input.bool(true, "PANIC レンジ中央急変を表示", group=grpCrowd)
+rangeLookback = input.int(72, "レンジ lookback", minval=20, group=grpCrowd)
+rangeMaxAtr = input.float(8.0, "レンジ最大幅(ATR)", minval=1.0, step=0.5, group=grpCrowd)
+rangeMidLo = input.float(0.30, "レンジ中央 下限", minval=0.0, maxval=1.0, step=0.05, group=grpCrowd)
+rangeMidHi = input.float(0.70, "レンジ中央 上限", minval=0.0, maxval=1.0, step=0.05, group=grpCrowd)
+impulseBodyAtr = input.float(0.90, "急変実体ATR", minval=0.1, step=0.1, group=grpCrowd)
+
+showWick = input.bool(true, "WICK 足1本判断を表示", group=grpCrowd)
+wickRatioMin = input.float(0.55, "ヒゲ比率", minval=0.1, maxval=0.95, step=0.01, group=grpCrowd)
+wickBodyMin = input.float(1.8, "ヒゲ/実体倍率", minval=0.1, step=0.1, group=grpCrowd)
+wickLocalLookback = input.int(12, "局所高安値確認バー数", minval=3, group=grpCrowd)
+nearLevelAtr = input.float(0.75, "節目付近判定(ATR)", minval=0.1, step=0.05, group=grpCrowd)
+
+grpCalm = "緑: 待てた候補"
+showWaitedBreak = input.bool(true, "WAIT 抜け後再確認を表示", group=grpCalm)
+showRangeOutside = input.bool(true, "OUT レンジ外定着を表示", group=grpCalm)
+outsideBarsNeed = input.int(3, "レンジ外定着バー数", minval=1, maxval=20, group=grpCalm)
+showPullback = input.bool(true, "PB 押し戻り継続を表示", group=grpCalm)
+pullbackTolAtr = input.float(0.55, "EMA押し戻り許容幅(ATR)", minval=0.05, step=0.05, group=grpCalm)
+trendSlopeBars = input.int(8, "方向EMA傾き確認バー数", minval=1, group=grpCalm)
+
+grpHtf = "上位足"
+useHtf = input.bool(false, "上位足方向を使う", group=grpHtf)
+htfTf = input.timeframe("240", "上位足", group=grpHtf)
+htfEmaLen = input.int(50, "上位足EMA", minval=2, group=grpHtf)
+
+grpVolume = "出来高"
+useVolume = input.bool(false, "出来高急増を群衆圧力に加える", group=grpVolume)
+volumeLen = input.int(20, "出来高平均期間", minval=1, group=grpVolume)
+volumeMult = input.float(1.8, "出来高急増倍率", minval=0.1, step=0.1, group=grpVolume)
+
+grpView = "表示"
+showLevels = input.bool(true, "節目・レンジ線を表示", group=grpView)
+showEma = input.bool(true, "EMAを表示", group=grpView)
+showShapes = input.bool(true, "マーカーを表示", group=grpView)
+labelMode = input.string("なし", "説明ラベル", options=["なし", "最小", "詳細"], group=grpView)
+showTable = input.bool(true, "状態テーブルを表示", group=grpView)
+paintBackground = input.bool(false, "背景を薄く塗る", group=grpView)
+showInvalidation = input.bool(true, "否定ライン候補を表示", group=grpView)
+invalidationBars = input.int(12, "否定ライン表示バー数", minval=1, maxval=100, group=grpView)
+useBarClose = input.bool(true, "確定足だけ表示", group=grpView)
+signalCooldownBars = input.int(12, "同じ種類の表示間隔", minval=0, maxval=200, group=grpView)
+
+// ---------------------------------------------------------------------
+// 共通計算
+// ---------------------------------------------------------------------
+atr = ta.atr(atrLen)
+fastEma = ta.ema(close, fastEmaLen)
+trendEma = ta.ema(close, trendEmaLen)
+htfEma = request.security(syminfo.tickerid, htfTf, ta.ema(close, htfEmaLen), lookahead=barmerge.lookahead_off)
+
+barRange = high - low
+body = math.abs(close - open)
+bodyRatio = barRange > 0 ? body / barRange : 0.0
+bodyBase = math.max(body, syminfo.mintick)
+
+keyHigh = ta.highest(high[1], levelLookback)
+keyLow = ta.lowest(low[1], levelLookback)
+breakBuf = atr * breakBufferAtr
+barOk = not useBarClose or barstate.isconfirmed
+
+volumeSma = ta.sma(volume, volumeLen)
+volumeSpike = useVolume and not na(volume) and volumeSma > 0 and volume > volumeSma * volumeMult
+
+canFire(int lastIndex) =>
+    na(lastIndex) or bar_index - lastIndex >= signalCooldownBars
+
+var int upRun = 0
+upRun := close > close[1] ? upRun + 1 : 0
+
+var int downRun = 0
+downRun := close < close[1] ? downRun + 1 : 0
+
+// ---------------------------------------------------------------------
+// 赤1: FOMO 飛び乗り
+// ---------------------------------------------------------------------
+extendedUp = close - ta.lowest(low, extensionLookback) >= atr * extensionAtr
+extendedDown = ta.highest(high, extensionLookback) - close >= atr * extensionAtr
+breakoutLongCross = ta.crossover(close, keyHigh + breakBuf)
+breakoutShortCross = ta.crossunder(close, keyLow - breakBuf)
+strongBreakLong = close > open and bodyRatio >= minBreakBody
+strongBreakShort = close < open and bodyRatio >= minBreakBody
+
+fomoLongRaw = showFomo and barOk and breakoutLongCross and strongBreakLong and (extendedUp or upRun >= runLen)
+fomoShortRaw = showFomo and barOk and breakoutShortCross and strongBreakShort and (extendedDown or downRun >= runLen)
+
+// ---------------------------------------------------------------------
+// 緑1: 抜け後の再確認 WAIT
+// ---------------------------------------------------------------------
+var bool breakLongActive = false
+var bool breakLongRetested = false
+var int breakLongIndex = na
+var float breakLongLevel = na
+
+var bool breakShortActive = false
+var bool breakShortRetested = false
+var int breakShortIndex = na
+var float breakShortLevel = na
+
+if barOk and breakoutLongCross
+    breakLongActive := true
+    breakLongRetested := false
+    breakLongIndex := bar_index
+    breakLongLevel := keyHigh
+
+if barOk and breakoutShortCross
+    breakShortActive := true
+    breakShortRetested := false
+    breakShortIndex := bar_index
+    breakShortLevel := keyLow
+
+if breakLongActive and bar_index - breakLongIndex > maxWaitBars
+    breakLongActive := false
+    breakLongRetested := false
+
+if breakShortActive and bar_index - breakShortIndex > maxWaitBars
+    breakShortActive := false
+    breakShortRetested := false
+
+if breakLongActive and bar_index > breakLongIndex and low <= breakLongLevel + atr * retestTolAtr and close >= breakLongLevel
+    breakLongRetested := true
+
+if breakShortActive and bar_index > breakShortIndex and high >= breakShortLevel - atr * retestTolAtr and close <= breakShortLevel
+    breakShortRetested := true
+
+waitedBreakLongRaw = showWaitedBreak and barOk and breakLongActive and breakLongRetested and close > high[1] and close > breakLongLevel
+waitedBreakShortRaw = showWaitedBreak and barOk and breakShortActive and breakShortRetested and close < low[1] and close < breakShortLevel
+
+if waitedBreakLongRaw
+    breakLongActive := false
+    breakLongRetested := false
+
+if waitedBreakShortRaw
+    breakShortActive := false
+    breakShortRetested := false
+
+// ---------------------------------------------------------------------
+// 赤2: レンジ中央急変 PANIC / 緑2: レンジ外定着 OUT
+// ---------------------------------------------------------------------
+rangeHigh = ta.highest(high[1], rangeLookback)
+rangeLow = ta.lowest(low[1], rangeLookback)
+rangeWidth = rangeHigh - rangeLow
+rangeLike = atr > 0 and rangeWidth <= atr * rangeMaxAtr
+rangePos = rangeWidth > 0 ? (close - rangeLow) / rangeWidth : na
+rangeMid = rangeLike and rangePos >= rangeMidLo and rangePos <= rangeMidHi
+
+bearImpulse = close < open and body >= atr * impulseBodyAtr
+bullImpulse = close > open and body >= atr * impulseBodyAtr
+panicSellRaw = showPanic and barOk and rangeMid and bearImpulse
+panicBuyRaw = showPanic and barOk and rangeMid and bullImpulse
+
+var int outsideLongCount = 0
+outsideLongCount := rangeLike and close > rangeHigh + breakBuf ? outsideLongCount + 1 : 0
+
+var int outsideShortCount = 0
+outsideShortCount := rangeLike and close < rangeLow - breakBuf ? outsideShortCount + 1 : 0
+
+rangeOutsideLongRaw = showRangeOutside and barOk and outsideLongCount >= outsideBarsNeed and nz(outsideLongCount[1]) < outsideBarsNeed
+rangeOutsideShortRaw = showRangeOutside and barOk and outsideShortCount >= outsideBarsNeed and nz(outsideShortCount[1]) < outsideBarsNeed
+
+// ---------------------------------------------------------------------
+// 赤3: ローソク足単体判断 WICK
+// ---------------------------------------------------------------------
+upperWick = high - math.max(open, close)
+lowerWick = math.min(open, close) - low
+upperWickRatio = barRange > 0 ? upperWick / barRange : 0.0
+lowerWickRatio = barRange > 0 ? lowerWick / barRange : 0.0
+
+nearResistance = high >= keyHigh - atr * nearLevelAtr
+nearSupport = low <= keyLow + atr * nearLevelAtr
+upperAtLocalHigh = high >= ta.highest(high[1], wickLocalLookback) - atr * nearLevelAtr
+lowerAtLocalLow = low <= ta.lowest(low[1], wickLocalLookback) + atr * nearLevelAtr
+
+upperWickStrong = showWick and upperWickRatio >= wickRatioMin and upperWick / bodyBase >= wickBodyMin
+lowerWickStrong = showWick and lowerWickRatio >= wickRatioMin and lowerWick / bodyBase >= wickBodyMin
+
+wickShortRiskRaw = barOk and upperWickStrong and upperAtLocalHigh and not nearResistance
+wickLongRiskRaw = barOk and lowerWickStrong and lowerAtLocalLow and not nearSupport
+
+// ---------------------------------------------------------------------
+// 緑3: 押し戻り継続 PB
+// ---------------------------------------------------------------------
+trendUp = close > trendEma and trendEma > trendEma[trendSlopeBars] and (not useHtf or close > htfEma)
+trendDown = close < trendEma and trendEma < trendEma[trendSlopeBars] and (not useHtf or close < htfEma)
+
+pullbackTouchLong = showPullback and trendUp and low <= fastEma + atr * pullbackTolAtr and close >= fastEma - atr * pullbackTolAtr
+pullbackTouchShort = showPullback and trendDown and high >= fastEma - atr * pullbackTolAtr and close <= fastEma + atr * pullbackTolAtr
+pullLongSwingLow = ta.lowest(low, 5)
+pullShortSwingHigh = ta.highest(high, 5)
+
+var bool pullLongActive = false
+var int pullLongIndex = na
+var float pullLongInvalid = na
+
+var bool pullShortActive = false
+var int pullShortIndex = na
+var float pullShortInvalid = na
+
+if pullbackTouchLong
+    pullLongActive := true
+    pullLongIndex := bar_index
+    pullLongInvalid := pullLongSwingLow
+
+if pullbackTouchShort
+    pullShortActive := true
+    pullShortIndex := bar_index
+    pullShortInvalid := pullShortSwingHigh
+
+if pullLongActive and bar_index - pullLongIndex > maxWaitBars
+    pullLongActive := false
+
+if pullShortActive and bar_index - pullShortIndex > maxWaitBars
+    pullShortActive := false
+
+pullbackLongRaw = showPullback and barOk and pullLongActive and bar_index > pullLongIndex and close > high[1] and close > fastEma and close > open
+pullbackShortRaw = showPullback and barOk and pullShortActive and bar_index > pullShortIndex and close < low[1] and close < fastEma and close < open
+
+if pullbackLongRaw
+    pullLongActive := false
+
+if pullbackShortRaw
+    pullShortActive := false
+
+// ---------------------------------------------------------------------
+// 表示の間引き
+// ---------------------------------------------------------------------
+var int lastFomo = na
+var int lastPanic = na
+var int lastWick = na
+var int lastCalm = na
+
+fomoOk = canFire(lastFomo)
+panicOk = canFire(lastPanic)
+wickOk = canFire(lastWick)
+calmOk = canFire(lastCalm)
+
+fomoLong = fomoLongRaw and fomoOk
+fomoShort = fomoShortRaw and fomoOk
+panicSell = panicSellRaw and panicOk
+panicBuy = panicBuyRaw and panicOk
+wickShortRisk = wickShortRiskRaw and wickOk
+wickLongRisk = wickLongRiskRaw and wickOk
+
+waitedBreakLong = waitedBreakLongRaw and calmOk
+waitedBreakShort = waitedBreakShortRaw and calmOk
+rangeOutsideLong = rangeOutsideLongRaw and calmOk
+rangeOutsideShort = rangeOutsideShortRaw and calmOk
+pullbackLong = pullbackLongRaw and calmOk
+pullbackShort = pullbackShortRaw and calmOk
+
+if fomoLong or fomoShort
+    lastFomo := bar_index
+
+if panicSell or panicBuy
+    lastPanic := bar_index
+
+if wickShortRisk or wickLongRisk
+    lastWick := bar_index
+
+if waitedBreakLong or waitedBreakShort or rangeOutsideLong or rangeOutsideShort or pullbackLong or pullbackShort
+    lastCalm := bar_index
+
+crowdAny = fomoLong or fomoShort or panicSell or panicBuy or wickShortRisk or wickLongRisk
+calmAny = waitedBreakLong or waitedBreakShort or rangeOutsideLong or rangeOutsideShort or pullbackLong or pullbackShort
+
+extensionScore = atr > 0 ? math.min(30.0, math.abs(close - fastEma) / atr * 10.0) : 0.0
+crowdScoreRaw = extensionScore + (fomoLongRaw or fomoShortRaw ? 30.0 : 0.0) + (panicSellRaw or panicBuyRaw ? 25.0 : 0.0) + (wickShortRiskRaw or wickLongRiskRaw ? 15.0 : 0.0) + (volumeSpike ? 10.0 : 0.0)
+crowdScore = math.min(100.0, crowdScoreRaw)
+
+// ---------------------------------------------------------------------
+// 描画
+// ---------------------------------------------------------------------
+plot(showEma ? fastEma : na, "短期EMA", color=color.new(color.gray, 20), linewidth=1)
+plot(showEma ? trendEma : na, "方向EMA", color=color.new(color.blue, 70), linewidth=1)
+plot(showLevels ? keyHigh : na, "節目上限", color=color.new(color.orange, 65), style=plot.style_linebr)
+plot(showLevels ? keyLow : na, "節目下限", color=color.new(color.aqua, 65), style=plot.style_linebr)
+plot(showLevels and rangeLike ? rangeHigh : na, "レンジ上限", color=color.new(color.yellow, 55), style=plot.style_linebr)
+plot(showLevels and rangeLike ? rangeLow : na, "レンジ下限", color=color.new(color.yellow, 55), style=plot.style_linebr)
+
+plotshape(showShapes and fomoLong, title="FOMO 買い飛び乗り", style=shape.xcross, location=location.abovebar, color=color.new(color.red, 0), textcolor=color.red, size=size.tiny, text="FOMO")
+plotshape(showShapes and fomoShort, title="FOMO 売り飛び乗り", style=shape.xcross, location=location.belowbar, color=color.new(color.red, 0), textcolor=color.red, size=size.tiny, text="FOMO")
+plotshape(showShapes and panicBuy, title="PANIC 急騰反応", style=shape.diamond, location=location.abovebar, color=color.new(color.orange, 0), textcolor=color.orange, size=size.tiny, text="PANIC")
+plotshape(showShapes and panicSell, title="PANIC 急落反応", style=shape.diamond, location=location.belowbar, color=color.new(color.orange, 0), textcolor=color.orange, size=size.tiny, text="PANIC")
+plotshape(showShapes and wickShortRisk, title="WICK 上ヒゲ単体注意", style=shape.circle, location=location.abovebar, color=color.new(color.purple, 0), textcolor=color.purple, size=size.tiny, text="WICK")
+plotshape(showShapes and wickLongRisk, title="WICK 下ヒゲ単体注意", style=shape.circle, location=location.belowbar, color=color.new(color.purple, 0), textcolor=color.purple, size=size.tiny, text="WICK")
+
+plotshape(showShapes and (waitedBreakLong or rangeOutsideLong), title="WAIT/OUT 買い候補", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), textcolor=color.lime, size=size.small, text="WAIT")
+plotshape(showShapes and (waitedBreakShort or rangeOutsideShort), title="WAIT/OUT 売り候補", style=shape.triangledown, location=location.abovebar, color=color.new(color.lime, 0), textcolor=color.lime, size=size.small, text="WAIT")
+plotshape(showShapes and pullbackLong, title="PB 押し目継続買い", style=shape.triangleup, location=location.belowbar, color=color.new(color.green, 0), textcolor=color.green, size=size.small, text="PB")
+plotshape(showShapes and pullbackShort, title="PB 戻り継続売り", style=shape.triangledown, location=location.abovebar, color=color.new(color.green, 0), textcolor=color.green, size=size.small, text="PB")
+
+bgcolor(paintBackground and crowdAny ? color.new(color.red, 90) : na, title="群衆反応ゾーン")
+bgcolor(paintBackground and calmAny ? color.new(color.green, 90) : na, title="待てた候補ゾーン")
+
+// 否定ライン候補
+longInvalid = waitedBreakLong ? breakLongLevel : rangeOutsideLong ? rangeHigh : pullbackLong ? pullLongInvalid : na
+shortInvalid = waitedBreakShort ? breakShortLevel : rangeOutsideShort ? rangeLow : pullbackShort ? pullShortInvalid : na
+
+if showInvalidation and (waitedBreakLong or rangeOutsideLong or pullbackLong) and not na(longInvalid)
+    line.new(bar_index, longInvalid, bar_index + invalidationBars, longInvalid, color=color.new(color.lime, 0), style=line.style_dotted, width=1)
+
+if showInvalidation and (waitedBreakShort or rangeOutsideShort or pullbackShort) and not na(shortInvalid)
+    line.new(bar_index, shortInvalid, bar_index + invalidationBars, shortInvalid, color=color.new(color.lime, 0), style=line.style_dotted, width=1)
+
+useMinLabel = labelMode == "最小" or labelMode == "詳細"
+useDetailLabel = labelMode == "詳細"
+
+fomoText = useDetailLabel ? "群衆: FOMO\n抜け直後に反応。\n停滞/押し戻りを待つ。" : "FOMO 待つ"
+panicText = useDetailLabel ? "群衆: PANIC\nレンジ中央の急変。\n端か外まで保留。" : "PANIC 保留"
+wickText = useDetailLabel ? "群衆: WICK\n足1本判断。\n追加根拠2つを確認。" : "WICK 根拠追加"
+calmText = useDetailLabel ? "待てた候補\n否定ラインも確認。" : "WAIT"
+pullText = useDetailLabel ? "押し戻り継続\n伸び切りではなく再開位置。" : "PB"
+
+if useMinLabel and (fomoLong or fomoShort)
+    label.new(bar_index, close, fomoText, style=label.style_label_left, color=color.new(color.red, 0), textcolor=color.white, size=size.small)
+
+if useMinLabel and (panicSell or panicBuy)
+    label.new(bar_index, close, panicText, style=label.style_label_left, color=color.new(color.orange, 0), textcolor=color.white, size=size.small)
+
+if useMinLabel and (wickShortRisk or wickLongRisk)
+    label.new(bar_index, close, wickText, style=label.style_label_left, color=color.new(color.purple, 0), textcolor=color.white, size=size.small)
+
+if useMinLabel and (waitedBreakLong or waitedBreakShort or rangeOutsideLong or rangeOutsideShort)
+    label.new(bar_index, close, calmText, style=label.style_label_left, color=color.new(color.lime, 0), textcolor=color.black, size=size.small)
+
+if useMinLabel and (pullbackLong or pullbackShort)
+    label.new(bar_index, close, pullText, style=label.style_label_left, color=color.new(color.green, 0), textcolor=color.white, size=size.small)
+
+var table t = table.new(position.top_right, 2, 8, border_width=1)
+if showTable and barstate.islast
+    scoreColor = crowdScore >= 70 ? color.red : crowdScore >= 40 ? color.orange : color.new(color.green, 20)
+    table.cell(t, 0, 0, "群衆心理", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 0, crowdAny ? "反応中" : calmAny ? "待てた候補" : "観察", bgcolor=crowdAny ? color.new(color.red, 70) : calmAny ? color.new(color.green, 70) : color.new(color.gray, 80))
+    table.cell(t, 0, 1, "圧力", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 1, str.tostring(math.round(crowdScore)), bgcolor=scoreColor)
+    table.cell(t, 0, 2, "FOMO", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 2, fomoLongRaw or fomoShortRaw ? "抜け直後" : "-")
+    table.cell(t, 0, 3, "PANIC", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 3, panicSellRaw or panicBuyRaw ? "中央急変" : "-")
+    table.cell(t, 0, 4, "WICK", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 4, wickShortRiskRaw or wickLongRiskRaw ? "足1本" : "-")
+    table.cell(t, 0, 5, "WAIT", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 5, breakLongActive or breakShortActive ? "再確認待ち" : "-")
+    table.cell(t, 0, 6, "RANGE", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 6, rangeLike ? "レンジ中" : "レンジ外")
+    table.cell(t, 0, 7, "注意", text_color=color.white, bgcolor=color.black)
+    table.cell(t, 1, 7, "売買サインではない")
+
+plot(crowdScore, "群衆心理圧力", display=display.none)
+
+alertcondition(crowdAny, "群衆心理: 反応注意", "Crowd psychology reaction zone: {{ticker}} {{interval}}")
+alertcondition(calmAny, "群衆心理: 待てた候補", "Crowd psychology waited candidate: {{ticker}} {{interval}}")

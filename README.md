@@ -95,7 +95,8 @@ pine/research/          ← TradingView 用 Pine（ここ）
 | 4 | トレード心理 / 群衆心理 | 進行中 | [RESEARCH_INDEX.md](docs/research/RESEARCH_INDEX.md) ／ [crowd_psychology_simple_visual.pine](pine/visual/crowd_psychology_simple_visual.pine) |
 | 5 | Market Psychology Squeeze / 投げ売り・踏み上げ | 記録済み | [投げ売り・踏み上げ ローソク足レポート](docs/research/market_psychology_capitulation_squeeze_candlestick_2026-06-01.md) ／ [strict研究](docs/research/market_psychology_squeeze_strict_2026-05-30.md) |
 | 6 | **ブログ教材用フォルダ** | **作成済み** | [docs/blog_materials/](docs/blog_materials/) |
-| 7 | Wavebox / Rebreak | 記録済み | [wavebox_operational_preconditions_v1.md](docs/research/wavebox_operational_preconditions_v1.md) |
+| 7 | **トレード実践記録** | **記録開始** | [docs/trade_practice_records/](docs/trade_practice_records/) |
+| 8 | Wavebox / Rebreak | 記録済み | [wavebox_operational_preconditions_v1.md](docs/research/wavebox_operational_preconditions_v1.md) |
 
 ---
 

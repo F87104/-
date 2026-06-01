@@ -1,0 +1,2 @@
+record_id,entry_date_jst,symbol,timeframe,indicator,entry_price,side,status,stop_price,take_profit_price,exit_price,exit_date_jst,result,reason_before_entry,screenshot_note,review_note
+TP-2026-06-01-001,2026-06-01 22:22,USDJPY,H4,すためんH4 Sharp Drop V Recovery Visual,159.674,未記入,保有中,未記入,未記入,未記入,未記入,未記録,作成したインジケータを見てエントリー。右側価格は159.69付近。,スクショはローカル保管。GitHubには元画像パスを載せない。,決済後に損切り位置・利確理由・感情・次回ルールを追記する。

@@ -24,13 +24,30 @@
 
 ## 完成記事下書き
 
+[20本の記事下書き一覧](articles/README.md) にまとめました。
+
 | 順番 | 記事 | 元素材 |
 |---:|---|---|
-| 1 | [投げ売りと踏み上げをローソク足で読む](articles/01_nageuri_fumiage_candlestick_blog.md) | 01 |
-| 2 | [ブレイクした瞬間に入る人が負けやすい理由](articles/02_breakout_instant_entry_loses_blog.md) | 05 / 06 |
-| 3 | [「失敗している人の逆をやる」は逆張りではない](articles/03_failure_inverse_not_countertrend_blog.md) | 06 |
-| 4 | [なぜ同じチャートで多くの人が同じ失敗をするのか](articles/04_same_chart_same_mistake_blog.md) | 03 / 04 |
+| 1 | [ブレイクした瞬間に入る人が負けやすい理由](articles/02_breakout_instant_entry_loses_blog.md) | 05 / 06 |
+| 2 | [投げ売りと踏み上げをローソク足で読む](articles/01_nageuri_fumiage_candlestick_blog.md) | 01 |
+| 3 | [勝てない人ほど「抜けた瞬間」に入りたくなる](articles/06_losing_traders_enter_on_breakout_blog.md) | 05 / 06 |
+| 4 | [トレードで待てない人が見落としている3つのサイン](articles/07_three_signs_waiting_traders_miss_blog.md) | 06 |
 | 5 | [STOP・WAIT・CHECKでエントリーの焦りを減らす方法](articles/05_stop_wait_check_reduce_fomo_blog.md) | 05 |
+| 6 | [なぜ同じチャートで多くの人が同じ失敗をするのか](articles/04_same_chart_same_mistake_blog.md) | 03 / 04 |
+| 7 | [「失敗している人の逆をやる」は逆張りではない](articles/03_failure_inverse_not_countertrend_blog.md) | 06 |
+| 8 | [ローソク足1本だけで判断すると危ない理由](articles/08_single_candle_judgment_risk_blog.md) | 02 / 08 |
+| 9 | [GBPJPYで失敗しやすい人、XAUUSDで失敗しやすい人](articles/09_gbpjpy_xauusd_failure_personality_blog.md) | 07 |
+| 10 | [損切り位置が見えていないエントリーはなぜ危険なのか](articles/10_no_stop_location_entry_risk_blog.md) | 06 |
+| 11 | [勝ったトレードにも危険な勝ちがある](articles/11_dangerous_winning_trades_blog.md) | 06 / 09 |
+| 12 | [トレードの失敗はエントリー前の心理に出ている](articles/12_failure_psychology_before_entry_blog.md) | 02 / 06 |
+| 13 | [なぜ人は高値で買い、安値で売ってしまうのか](articles/13_buy_high_sell_low_psychology_blog.md) | 03 / 04 |
+| 14 | [節目を抜けたのに負ける理由](articles/14_losing_after_level_break_blog.md) | 05 / 06 |
+| 15 | [伸びそうに見えるチャートほど一度待つべき理由](articles/15_wait_when_chart_looks_extend_blog.md) | 06 |
+| 16 | [「もう上がるはず」「もう下がるはず」が危ない理由](articles/16_should_go_up_down_danger_blog.md) | 02 |
+| 17 | [エントリーで焦る人は、チャートのどこを見ているのか](articles/17_where_fomo_traders_look_blog.md) | 06 |
+| 18 | [複数人が同じ場所で負けるチャートの共通点](articles/18_common_loss_zone_patterns_blog.md) | 03 / 04 |
+| 19 | [飛び乗りエントリーを減らすためのチャート心理学](articles/19_chart_psychology_reduce_chasing_blog.md) | 05 / 06 |
+| 20 | [勝てる場所ではなく、負けやすい場所を先に知る](articles/20_know_loss_zones_first_blog.md) | 02 / 03 |
 
 ## ブログ化しやすい記事テーマ
 

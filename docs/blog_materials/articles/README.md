@@ -52,3 +52,4 @@
 | 43 | [見逃した後の次のエントリー、早くなっていませんか？](43_after_missing_next_entry_blog.md) |
 | 44 | [トレード日誌に「なぜ入ったか」だけ書いていませんか？](44_journal_entry_reason_only_blog.md) |
 | 45 | [勝てる場所ばかり探して、負ける場所を見落としていませんか？](45_searching_wins_missing_losses_blog.md) |
+| 46 | [損切り位置をずらした瞬間、トレードはルールから願望に変わる](46_moving_stop_turns_rule_into_wish_blog.md) |

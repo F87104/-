@@ -12,6 +12,7 @@
 |---|---|
 | [trade_practice_log.csv](trade_practice_log.csv) | すべての実践記録を一覧で見る台帳 |
 | [records/](records/) | 1回ごとの詳しいメモ |
+| [images/](images/) | 公開用に切り出したチャート画像 |
 | [records/2026-06-01_usdjpy_h4_entry_159674.md](records/2026-06-01_usdjpy_h4_entry_159674.md) | 2026-06-01 USDJPY H4 159.674 の記録 |
 
 ## 記録する項目

@@ -28,26 +28,26 @@
 
 | 順番 | 記事 | 元素材 |
 |---:|---|---|
-| 1 | [ブレイクした瞬間に入る人が負けやすい理由](articles/02_breakout_instant_entry_loses_blog.md) | 05 / 06 |
-| 2 | [投げ売りと踏み上げをローソク足で読む](articles/01_nageuri_fumiage_candlestick_blog.md) | 01 |
-| 3 | [勝てない人ほど「抜けた瞬間」に入りたくなる](articles/06_losing_traders_enter_on_breakout_blog.md) | 05 / 06 |
-| 4 | [トレードで待てない人が見落としている3つのサイン](articles/07_three_signs_waiting_traders_miss_blog.md) | 06 |
-| 5 | [STOP・WAIT・CHECKでエントリーの焦りを減らす方法](articles/05_stop_wait_check_reduce_fomo_blog.md) | 05 |
-| 6 | [なぜ同じチャートで多くの人が同じ失敗をするのか](articles/04_same_chart_same_mistake_blog.md) | 03 / 04 |
-| 7 | [「失敗している人の逆をやる」は逆張りではない](articles/03_failure_inverse_not_countertrend_blog.md) | 06 |
-| 8 | [ローソク足1本だけで判断すると危ない理由](articles/08_single_candle_judgment_risk_blog.md) | 02 / 08 |
-| 9 | [GBPJPYで失敗しやすい人、XAUUSDで失敗しやすい人](articles/09_gbpjpy_xauusd_failure_personality_blog.md) | 07 |
-| 10 | [損切り位置が見えていないエントリーはなぜ危険なのか](articles/10_no_stop_location_entry_risk_blog.md) | 06 |
-| 11 | [勝ったトレードにも危険な勝ちがある](articles/11_dangerous_winning_trades_blog.md) | 06 / 09 |
-| 12 | [トレードの失敗はエントリー前の心理に出ている](articles/12_failure_psychology_before_entry_blog.md) | 02 / 06 |
-| 13 | [なぜ人は高値で買い、安値で売ってしまうのか](articles/13_buy_high_sell_low_psychology_blog.md) | 03 / 04 |
-| 14 | [節目を抜けたのに負ける理由](articles/14_losing_after_level_break_blog.md) | 05 / 06 |
-| 15 | [伸びそうに見えるチャートほど一度待つべき理由](articles/15_wait_when_chart_looks_extend_blog.md) | 06 |
-| 16 | [「もう上がるはず」「もう下がるはず」が危ない理由](articles/16_should_go_up_down_danger_blog.md) | 02 |
-| 17 | [エントリーで焦る人は、チャートのどこを見ているのか](articles/17_where_fomo_traders_look_blog.md) | 06 |
-| 18 | [複数人が同じ場所で負けるチャートの共通点](articles/18_common_loss_zone_patterns_blog.md) | 03 / 04 |
-| 19 | [飛び乗りエントリーを減らすためのチャート心理学](articles/19_chart_psychology_reduce_chasing_blog.md) | 05 / 06 |
-| 20 | [勝てる場所ではなく、負けやすい場所を先に知る](articles/20_know_loss_zones_first_blog.md) | 02 / 03 |
+| 1 | [ブレイクで負ける人は、抜けた後にライン内へ戻る動きを見ていない](articles/02_breakout_instant_entry_loses_blog.md) | 05 / 06 |
+| 2 | [投げ売りは、大陰線の終わりではなく反発前の損切り集中で起きる](articles/01_nageuri_fumiage_candlestick_blog.md) | 01 |
+| 3 | [勝てない人は、抜けた瞬間だけを見て、戻りを見ていない](articles/06_losing_traders_enter_on_breakout_blog.md) | 05 / 06 |
+| 4 | [待てない人は、抜けた後の戻り・損切り幅・次の足を飛ばしている](articles/07_three_signs_waiting_traders_miss_blog.md) | 06 |
+| 5 | [STOP・WAIT・CHECKは、クリック前に損切り幅と戻りを確認するための手順](articles/05_stop_wait_check_reduce_fomo_blog.md) | 05 |
+| 6 | [多くの人が同じ場所で負けるのは、同じ高値・安値を見ているから](articles/04_same_chart_same_mistake_blog.md) | 03 / 04 |
+| 7 | [失敗している人の逆をやるとは、反対売買ではなく次の足を待つこと](articles/03_failure_inverse_not_countertrend_blog.md) | 06 |
+| 8 | [ローソク足1本だけで入る人は、その足が出た場所を見ていない](articles/08_single_candle_judgment_risk_blog.md) | 02 / 08 |
+| 9 | [GBPJPYで負ける人は値幅に追われ、XAUUSDで負ける人は急反転を見落とす](articles/09_gbpjpy_xauusd_failure_personality_blog.md) | 07 |
+| 10 | [損切り位置が見えていないエントリーは、逆行した瞬間に判断が止まる](articles/10_no_stop_location_entry_risk_blog.md) | 06 |
+| 11 | [ルール外で勝ったトレードを覚えていると、次も同じ入り方をする](articles/11_dangerous_winning_trades_blog.md) | 06 / 09 |
+| 12 | [トレードの失敗は、クリック前の「入りたい理由探し」から始まっている](articles/12_failure_psychology_before_entry_blog.md) | 02 / 06 |
+| 13 | [高値で買ってしまう人は、大陽線の後の利確売りを見ていない](articles/13_buy_high_sell_low_psychology_blog.md) | 03 / 04 |
+| 14 | [節目を抜けたのに負ける人は、抜けた後の終値を確認していない](articles/14_losing_after_level_break_blog.md) | 05 / 06 |
+| 15 | [伸びそうに見えるチャートほど、次の足で買いが続くかを見る](articles/15_wait_when_chart_looks_extend_blog.md) | 06 |
+| 16 | [「もう上がるはず」と思ったら、直近安値を割った時の行動を先に決める](articles/16_should_go_up_down_danger_blog.md) | 02 |
+| 17 | [焦って入る人は、利益方向だけを見て損切り幅を見ていない](articles/17_where_fomo_traders_look_blog.md) | 06 |
+| 18 | [複数人が同じ場所で負けるのは、目立つ高値・安値に注文が集まるから](articles/18_common_loss_zone_patterns_blog.md) | 03 / 04 |
+| 19 | [飛び乗りを減らすには、入る前に「戻ったら見送り」を決めておく](articles/19_chart_psychology_reduce_chasing_blog.md) | 05 / 06 |
+| 20 | [勝てる場所を探す前に、いつも負けるローソク足の形を記録する](articles/20_know_loss_zones_first_blog.md) | 02 / 03 |
 
 21本目以降は、読者が「自分のことかも」と感じやすいタイトルに寄せた追加記事です。  
 全タイトルは [記事一覧](articles/README.md) にまとめています。
@@ -56,14 +56,14 @@
 
 | 優先 | 仮タイトル | 元レポート |
 |---:|---|---|
-| 1 | 投げ売りと踏み上げをローソク足で読む | 01 |
-| 2 | 勝てない人がブレイクで飛び乗る理由 | 05 / 06 |
-| 3 | トレード失敗の正体は根拠不足だけではない | 02 |
-| 4 | STOP、WAIT、CHECKでエントリーを整理する | 05 |
-| 5 | GBPJPYで失敗しやすい心理、XAUUSDで失敗しやすい心理 | 07 |
-| 6 | 「失敗している人の逆をやる」の本当の意味 | 06 |
-| 7 | 複数人が同じ場所で負けるチャートの共通点 | 03 / 04 |
-| 8 | ローソク足1本だけで判断すると危ない理由 | 02 / 08 |
+| 1 | 投げ売りは、大陰線の終わりではなく反発前の損切り集中で起きる | 01 |
+| 2 | ブレイクで負ける人は、抜けた後にライン内へ戻る動きを見ていない | 05 / 06 |
+| 3 | トレードの失敗は、クリック前の「入りたい理由探し」から始まっている | 02 |
+| 4 | STOP・WAIT・CHECKは、クリック前に損切り幅と戻りを確認するための手順 | 05 |
+| 5 | GBPJPYで負ける人は値幅に追われ、XAUUSDで負ける人は急反転を見落とす | 07 |
+| 6 | 失敗している人の逆をやるとは、反対売買ではなく次の足を待つこと | 06 |
+| 7 | 複数人が同じ場所で負けるのは、目立つ高値・安値に注文が集まるから | 03 / 04 |
+| 8 | ローソク足1本だけで入る人は、その足が出た場所を見ていない | 02 / 08 |
 
 ## ブログにするときのルール
 

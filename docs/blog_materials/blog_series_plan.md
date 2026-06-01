@@ -15,30 +15,30 @@
 
 記事下書きの全体一覧:
 
-- [45本の記事下書き一覧](articles/README.md)
+- [46本の記事下書き一覧](articles/README.md)
 
 | 回 | 仮タイトル | 読者に渡す気づき | 使う素材 |
 |---:|---|---|---|
-| 1 | [ブレイクした瞬間に入る人が負けやすい理由](articles/02_breakout_instant_entry_loses_blog.md) | 抜けた瞬間は入口ではなく観察開始 | 05 / 06 |
-| 2 | [投げ売りと踏み上げをローソク足で読む](articles/01_nageuri_fumiage_candlestick_blog.md) | 降参した側の損切りが相場を動かす | 01 |
-| 3 | [勝てない人ほど「抜けた瞬間」に入りたくなる](articles/06_losing_traders_enter_on_breakout_blog.md) | 見えやすい場所ほど飛び乗りが集まる | 05 / 06 |
-| 4 | [トレードで待てない人が見落としている3つのサイン](articles/07_three_signs_waiting_traders_miss_blog.md) | 戻らない時間、損切り位置、追加根拠を見る | 06 |
-| 5 | [STOP・WAIT・CHECKでエントリーの焦りを減らす方法](articles/05_stop_wait_check_reduce_fomo_blog.md) | 入らない、待つ、確認するを分ける | 05 |
-| 6 | [なぜ同じチャートで多くの人が同じ失敗をするのか](articles/04_same_chart_same_mistake_blog.md) | チャートには人が反応しやすい場所がある | 03 / 04 |
-| 7 | [「失敗している人の逆をやる」は逆張りではない](articles/03_failure_inverse_not_countertrend_blog.md) | 逆にするのは方向ではなく反応の早さ | 06 |
-| 8 | [ローソク足1本だけで判断すると危ない理由](articles/08_single_candle_judgment_risk_blog.md) | 1本の足は答えではなく確認開始の合図 | 02 / 08 |
-| 9 | [GBPJPYで失敗しやすい人、XAUUSDで失敗しやすい人](articles/09_gbpjpy_xauusd_failure_personality_blog.md) | 通貨ごとに心理の罠が違う | 07 |
-| 10 | [損切り位置が見えていないエントリーはなぜ危険なのか](articles/10_no_stop_location_entry_risk_blog.md) | 損切り位置はエントリー前に決める | 06 |
-| 11 | [勝ったトレードにも危険な勝ちがある](articles/11_dangerous_winning_trades_blog.md) | 利益結果ではなく、待てたかで分類する | 06 / 09 |
-| 12 | [トレードの失敗はエントリー前の心理に出ている](articles/12_failure_psychology_before_entry_blog.md) | クリック前の焦りや期待が行動に出る | 02 / 06 |
-| 13 | [なぜ人は高値で買い、安値で売ってしまうのか](articles/13_buy_high_sell_low_psychology_blog.md) | 勢いを未来に延長して見てしまう | 03 / 04 |
-| 14 | [節目を抜けたのに負ける理由](articles/14_losing_after_level_break_blog.md) | 抜けた後に維持できるかを見る | 05 / 06 |
-| 15 | [伸びそうに見えるチャートほど一度待つべき理由](articles/15_wait_when_chart_looks_extend_blog.md) | 伸びそうな場所ほど人が集まりやすい | 06 |
-| 16 | [「もう上がるはず」「もう下がるはず」が危ない理由](articles/16_should_go_up_down_danger_blog.md) | 期待が反対情報を見えにくくする | 02 |
-| 17 | [エントリーで焦る人は、チャートのどこを見ているのか](articles/17_where_fomo_traders_look_blog.md) | 焦る人は利益方向を先に見ている | 06 |
-| 18 | [複数人が同じ場所で負けるチャートの共通点](articles/18_common_loss_zone_patterns_blog.md) | わかりやすい場所ほどまず疑う | 03 / 04 |
-| 19 | [飛び乗りエントリーを減らすためのチャート心理学](articles/19_chart_psychology_reduce_chasing_blog.md) | 入りたい瞬間にSTOPと名前をつける | 05 / 06 |
-| 20 | [勝てる場所ではなく、負けやすい場所を先に知る](articles/20_know_loss_zones_first_blog.md) | 入らない場所を知ることも戦略 | 02 / 03 |
+| 1 | [ブレイクで負ける人は、抜けた後にライン内へ戻る動きを見ていない](articles/02_breakout_instant_entry_loses_blog.md) | 抜けた瞬間より、戻った後に維持できるかを見る | 05 / 06 |
+| 2 | [投げ売りは、大陰線の終わりではなく反発前の損切り集中で起きる](articles/01_nageuri_fumiage_candlestick_blog.md) | 大陰線の終わりで売らず、損切り集中後の反応を見る | 01 |
+| 3 | [勝てない人は、抜けた瞬間だけを見て、戻りを見ていない](articles/06_losing_traders_enter_on_breakout_blog.md) | 見えやすいブレイクほど戻りを確認する | 05 / 06 |
+| 4 | [待てない人は、抜けた後の戻り・損切り幅・次の足を飛ばしている](articles/07_three_signs_waiting_traders_miss_blog.md) | 戻り、損切り幅、次の足の3つを順番に見る | 06 |
+| 5 | [STOP・WAIT・CHECKは、クリック前に損切り幅と戻りを確認するための手順](articles/05_stop_wait_check_reduce_fomo_blog.md) | 入る前に、戻りと損切り幅を固定する | 05 |
+| 6 | [多くの人が同じ場所で負けるのは、同じ高値・安値を見ているから](articles/04_same_chart_same_mistake_blog.md) | 目立つ高値・安値ほど注文が集まりやすい | 03 / 04 |
+| 7 | [失敗している人の逆をやるとは、反対売買ではなく次の足を待つこと](articles/03_failure_inverse_not_countertrend_blog.md) | 逆にするのは方向ではなく、クリックの早さ | 06 |
+| 8 | [ローソク足1本だけで入る人は、その足が出た場所を見ていない](articles/08_single_candle_judgment_risk_blog.md) | 足の形より、どの場所で出た足かを見る | 02 / 08 |
+| 9 | [GBPJPYで負ける人は値幅に追われ、XAUUSDで負ける人は急反転を見落とす](articles/09_gbpjpy_xauusd_failure_personality_blog.md) | 通貨ごとの値動きに合わせて見るポイントを変える | 07 |
+| 10 | [損切り位置が見えていないエントリーは、逆行した瞬間に判断が止まる](articles/10_no_stop_location_entry_risk_blog.md) | エントリー前に「違った場所」を決める | 06 |
+| 11 | [ルール外で勝ったトレードを覚えていると、次も同じ入り方をする](articles/11_dangerous_winning_trades_blog.md) | 利益結果ではなく、ルール内かどうかで分類する | 06 / 09 |
+| 12 | [トレードの失敗は、クリック前の「入りたい理由探し」から始まっている](articles/12_failure_psychology_before_entry_blog.md) | クリック前に根拠を後付けしていないかを見る | 02 / 06 |
+| 13 | [高値で買ってしまう人は、大陽線の後の利確売りを見ていない](articles/13_buy_high_sell_low_psychology_blog.md) | 大陽線の後は、追随買いと利確売りの両方を見る | 03 / 04 |
+| 14 | [節目を抜けたのに負ける人は、抜けた後の終値を確認していない](articles/14_losing_after_level_break_blog.md) | 抜けた事実より、終値で残れるかを見る | 05 / 06 |
+| 15 | [伸びそうに見えるチャートほど、次の足で買いが続くかを見る](articles/15_wait_when_chart_looks_extend_blog.md) | 伸びそうな足の次で継続を確認する | 06 |
+| 16 | [「もう上がるはず」と思ったら、直近安値を割った時の行動を先に決める](articles/16_should_go_up_down_danger_blog.md) | 期待ではなく、直近高値・安値を割った時の行動を決める | 02 |
+| 17 | [焦って入る人は、利益方向だけを見て損切り幅を見ていない](articles/17_where_fomo_traders_look_blog.md) | 利益方向を見る前に損切り幅を見る | 06 |
+| 18 | [複数人が同じ場所で負けるのは、目立つ高値・安値に注文が集まるから](articles/18_common_loss_zone_patterns_blog.md) | 人が集まる場所を入口ではなく注意地点にする | 03 / 04 |
+| 19 | [飛び乗りを減らすには、入る前に「戻ったら見送り」を決めておく](articles/19_chart_psychology_reduce_chasing_blog.md) | 入る前に見送り条件を固定する | 05 / 06 |
+| 20 | [勝てる場所を探す前に、いつも負けるローソク足の形を記録する](articles/20_know_loss_zones_first_blog.md) | 勝ち場より先に、自分の負け場を集める | 02 / 03 |
 
 ## 記事テンプレート
 

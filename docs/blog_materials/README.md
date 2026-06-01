@@ -22,6 +22,12 @@
 | 9 | [10 踏み上げ通貨相性](reports/10_squeeze_currency_compatibility.md) | 通貨によって同じ形の効き方が違う話 |
 | 10 | [09 今後の研究テーマ](reports/09_future_research_themes.md) | ブログ連載・研究連載のネタ帳 |
 
+## 完成記事下書き
+
+| 順番 | 記事 | 元素材 |
+|---:|---|---|
+| 1 | [投げ売りと踏み上げをローソク足で読む](articles/01_nageuri_fumiage_candlestick_blog.md) | 01 |
+
 ## ブログ化しやすい記事テーマ
 
 | 優先 | 仮タイトル | 元レポート |
@@ -50,4 +56,3 @@
 
 元レポートは [docs/research](../research/) にあります。  
 このフォルダの `reports/` は、ブログ素材として見つけやすい名前にしたコピーです。
-

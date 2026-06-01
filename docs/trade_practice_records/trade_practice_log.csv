@@ -1,2 +1,2 @@
 record_id,entry_date_jst,symbol,timeframe,indicator,entry_price,side,status,stop_price,take_profit_price,exit_price,exit_date_jst,result,reason_before_entry,screenshot_note,review_note
-TP-2026-06-01-001,2026-06-01 22:22,USDJPY,H4,すためんH4 Sharp Drop V Recovery Visual,159.674,未記入,保有中,未記入,未記入,未記入,未記入,未記録,作成したインジケータを見てエントリー。右側価格は159.69付近。,images/2026-06-01_usdjpy_h4_entry_159674_chart.png,決済後に損切り位置・利確理由・感情・次回ルールを追記する。
+TP-2026-06-01-001,2026-06-01 22:22,USDJPY,H4,すためんH4 Sharp Drop V Recovery Visual,159.674,未記入,保有中,未記入,未記入,未記入,未記入,未記録,作成したインジケータを見てエントリー。右側価格は159.69付近。,images/2026-06-01_usdjpy_h4_entry_159674_chart.png,エントリー時はラベル点灯。翌朝確認すると非点灯。リペイントまたは未確定足ラベルの可能性として要検証。決済後に損切り位置・利確理由・感情・次回ルールを追記する。

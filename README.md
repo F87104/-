@@ -2,7 +2,7 @@
 
 > H1/H4 ベースの自動売買戦略コレクション。10年バックテスト (2015-2024) + OOS (2025-2026) で検証済みの **2本柱戦略** を運用するためのコード一式。
 
-**最終更新**: 2026-05-31
+**最終更新**: 2026-06-01
 
 ---
 
@@ -93,7 +93,7 @@ pine/research/          ← TradingView 用 Pine（ここ）
 | 2 | **2期生トレード心理データ取り込み** | **ローカル統合済み（850行）** | [second_cohort_trade_psychology_import_2026-05-31.md](docs/research/second_cohort_trade_psychology_import_2026-05-31.md) |
 | 3 | 受講生エントリー集中パターン | 進行中 | [student_entry_cluster_research_2026-05-31.md](docs/research/student_entry_cluster_research_2026-05-31.md) |
 | 4 | トレード心理 / 群衆心理 | 進行中 | [RESEARCH_INDEX.md](docs/research/RESEARCH_INDEX.md) ／ [crowd_psychology_simple_visual.pine](pine/visual/crowd_psychology_simple_visual.pine) |
-| 5 | Market Psychology Squeeze | 記録済み | [market_psychology_squeeze_strict_2026-05-30.md](docs/research/market_psychology_squeeze_strict_2026-05-30.md) |
+| 5 | Market Psychology Squeeze / 投げ売り・踏み上げ | 記録済み | [投げ売り・踏み上げ ローソク足レポート](docs/research/market_psychology_capitulation_squeeze_candlestick_2026-06-01.md) ／ [strict研究](docs/research/market_psychology_squeeze_strict_2026-05-30.md) |
 | 6 | Wavebox / Rebreak | 記録済み | [wavebox_operational_preconditions_v1.md](docs/research/wavebox_operational_preconditions_v1.md) |
 
 ---

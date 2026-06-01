@@ -48,6 +48,7 @@
 | 2026-05-31 | 受講生つまずきクラスタ研究 | 1期235+2期145=**380件**へ座標抽出を拡張。66クラスタ・全敗18。XAUUSD 2934–2954（6人全敗）・GBPJPY 205円台（2期3人全敗）など新規。Pine **v0.5** + wait_zones **v0.2**（v0.1手動9件引継）。 | TradingView で v0.5 青帯を目視確認。新規全敗期間で F1 A/B |
 | 2026-05-31 | 850件テキスト失敗理由研究 | 850行から失敗パターン・心理・入口テーマを集計。Pine不要の台帳方針を確定。公開版は集計CSV・タグのみindex・全敗18カード。 | 損失367行をパターン別教材カード化（ローカル） |
 | 2026-06-01 | 投げ売り・踏み上げ研究 | 用語の例え、ローソク足の出方、Pine化する条件を公開メモ化。投げ売りは買い手の降参、踏み上げは売り手の降参として整理。 | `CAPITULATION` / `SQUEEZE` の観察ラベルをPineへ入れる |
+| 2026-06-01 | ブログ教材化 | 教材化しやすい公開レポート10本を `docs/blog_materials/reports/` へ複製し、ブログ連載案と記事テンプレートを追加。 | まず1本目「投げ売りと踏み上げをローソク足で読む」を記事化する |
 
 ## 進行中の研究
 
@@ -125,6 +126,7 @@
 | 2期生トレード心理データ取り込み | [second_cohort_trade_psychology_import_2026-05-31.md](second_cohort_trade_psychology_import_2026-05-31.md) |
 | **850件テキスト失敗理由** | [trade_psychology_failure_reason_research_2026-05-31.md](trade_psychology_failure_reason_research_2026-05-31.md) |
 | 全敗18クラスタ失敗カード | [student_stumble_all_loss_failure_cards_v0_1.md](student_stumble_all_loss_failure_cards_v0_1.md) |
+| ブログ教材用フォルダ | [../blog_materials/README.md](../blog_materials/README.md) |
 
 ## 新しい研究を書くとき
 

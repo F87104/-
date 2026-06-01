@@ -27,6 +27,10 @@
 | 順番 | 記事 | 元素材 |
 |---:|---|---|
 | 1 | [投げ売りと踏み上げをローソク足で読む](articles/01_nageuri_fumiage_candlestick_blog.md) | 01 |
+| 2 | [ブレイクした瞬間に入る人が負けやすい理由](articles/02_breakout_instant_entry_loses_blog.md) | 05 / 06 |
+| 3 | [「失敗している人の逆をやる」は逆張りではない](articles/03_failure_inverse_not_countertrend_blog.md) | 06 |
+| 4 | [なぜ同じチャートで多くの人が同じ失敗をするのか](articles/04_same_chart_same_mistake_blog.md) | 03 / 04 |
+| 5 | [STOP・WAIT・CHECKでエントリーの焦りを減らす方法](articles/05_stop_wait_check_reduce_fomo_blog.md) | 05 |
 
 ## ブログ化しやすい記事テーマ
 

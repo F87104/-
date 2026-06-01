@@ -24,7 +24,7 @@
 
 ## 完成記事下書き
 
-[20本の記事下書き一覧](articles/README.md) にまとめました。
+[45本の記事下書き一覧](articles/README.md) にまとめました。
 
 | 順番 | 記事 | 元素材 |
 |---:|---|---|
@@ -48,6 +48,9 @@
 | 18 | [複数人が同じ場所で負けるチャートの共通点](articles/18_common_loss_zone_patterns_blog.md) | 03 / 04 |
 | 19 | [飛び乗りエントリーを減らすためのチャート心理学](articles/19_chart_psychology_reduce_chasing_blog.md) | 05 / 06 |
 | 20 | [勝てる場所ではなく、負けやすい場所を先に知る](articles/20_know_loss_zones_first_blog.md) | 02 / 03 |
+
+21本目以降は、読者が「自分のことかも」と感じやすいタイトルに寄せた追加記事です。  
+全タイトルは [記事一覧](articles/README.md) にまとめています。
 
 ## ブログ化しやすい記事テーマ
 

@@ -18,6 +18,14 @@
 - `SIGNAL/SKIPに監査情報を追加`
 - ラベルに `Audit key`, `V start/low`, `Candidate` を表示
 
+2026-06-02 追記:
+
+- 監査情報をデフォルトONへ変更
+- `監査ON時は見送りラベルを隠す` を追加
+- SIGNALラベルに `Signal time`, `V times`, `Candidate time` を追加
+
+目的は、SKIPラベルの山に実トレードが埋もれないようにし、Python期待値4件とPine側6件を画面上で直接比較できる状態にすること。
+
 これにより、TradingView側で余計に出る2件について、Python側の `candidate_key = v_start_i-v_extreme_i` 相当の構造と照合しやすくなる。
 
 ## 次の確認手順

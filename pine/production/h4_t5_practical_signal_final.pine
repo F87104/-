@@ -131,7 +131,8 @@ labelShiftBars = input.int(8, "ラベルを右へ逃がす本数", minval=0, max
 labelOffsetAtr = input.float(3.0, "ラベル上下余白(ATR)", minval=0.5, step=0.5, group=grpView)
 
 grpAudit = "■ Python照合監査"
-showAuditDetails = input.bool(false, "SIGNAL/SKIPに監査情報を追加", group=grpAudit, tooltip="ONにすると、売買ロジックは変えずにpairKey、V起点、V安値、候補終値をラベルへ追加します。Python CSVとの照合用です。")
+showAuditDetails = input.bool(true, "SIGNAL/SKIPに監査情報を追加", group=grpAudit, tooltip="ONにすると、売買ロジックは変えずにpairKey、V起点、V安値、候補終値をラベルへ追加します。Python CSVとの照合用です。")
+auditHideSkipped = input.bool(true, "監査ON時は見送りラベルを隠す", group=grpAudit, tooltip="ON推奨。余計な実トレードの特定を優先するため、監査中はSKIPラベルを非表示にします。")
 
 // =====================================================================
 // Effective presets
@@ -182,6 +183,14 @@ fmtPct(float v) =>
 
 fmtR(float v) =>
     string out = na(v) ? "N/A" : str.tostring(v, "#.##") + "R"
+    out
+
+pad2(int v) =>
+    string out = v < 10 ? "0" + str.tostring(v) : str.tostring(v)
+    out
+
+fmtTime(int t) =>
+    string out = na(t) ? "N/A" : str.tostring(year(t)) + "-" + pad2(month(t)) + "-" + pad2(dayofmonth(t)) + " " + pad2(hour(t)) + ":" + pad2(minute(t))
     out
 
 calcQty(float equityNow, float entryPx, float stopPx, bool fixedMode, float fixedValue, float riskP) =>
@@ -674,16 +683,17 @@ if newSetup
 
 bool newSignalAPlus = newSignal and signalGrade == "A+"
 bool newSignalNormal = newSignal and signalGrade != "A+"
+bool showSkipLabelsNow = showSkippedSetups and not (showAuditDetails and auditHideSkipped)
 plotshape(showCandidate and newCandidate, title="V Candidate", style=shape.circle, location=location.belowbar, color=color.new(color.aqua, 0), size=size.tiny, text="V")
 plotshape(newSignalAPlus, title="A+ Long Signal", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="A+")
 plotshape(newSignalNormal, title="Normal Long Signal", style=shape.triangleup, location=location.belowbar, color=color.new(color.teal, 0), size=size.small, text="T5")
-plotshape(showSkippedSetups and setupSkipped, title="Skipped T5 setup", style=shape.xcross, location=location.abovebar, color=color.new(color.orange, 0), size=size.tiny, text="SKIP")
+plotshape(showSkipLabelsNow and setupSkipped, title="Skipped T5 setup", style=shape.xcross, location=location.abovebar, color=color.new(color.orange, 0), size=size.tiny, text="SKIP")
 
 if showSignalLabels and newSignal
     int labelX = time + tfMs * labelShiftBars
     float labelY = low - chartAtr * labelOffsetAtr
     string trigName = trigKind == 3 ? "停滞+再ブレイク" : trigKind == 2 ? "再ブレイク" : "高値停滞"
-    string auditText = showAuditDetails ? "\nAudit key: " + (na(auditPairKey) ? "N/A" : str.tostring(auditPairKey)) + "\nV start/low: " + fmtPrice(vStartPrice) + " / " + fmtPrice(vLowPrice) + "\nCandidate: " + fmtPrice(candClose) : ""
+    string auditText = showAuditDetails ? "\nSignal time: " + fmtTime(time) + "\nAudit key: " + (na(auditPairKey) ? "N/A" : str.tostring(auditPairKey)) + "\nV times: " + fmtTime(vStartTime) + " / " + fmtTime(vLowTime) + "\nV start/low: " + fmtPrice(vStartPrice) + " / " + fmtPrice(vLowPrice) + "\nCandidate: " + fmtPrice(candClose) + " @ " + fmtTime(candTime) : ""
     color signalColor = signalGrade == "A+" ? color.new(color.lime, 0) : opDecision == "HALF" ? color.new(color.orange, 0) : color.new(color.teal, 0)
     if showVLines and not na(vStartTime) and not na(vLowTime)
         keepLine(line.new(vStartTime, vStartPrice, vLowTime, vLowPrice, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2))
@@ -715,7 +725,7 @@ if showSignalLabels and newSignal
          size=size.small)
     keepLabel(sigLb)
 
-if showSignalLabels and showSkippedSetups and setupSkipped
+if showSignalLabels and showSkipLabelsNow and setupSkipped
     lastGrade := "SKIP"
     lastOpDecision := "SKIP"
     lastOpReason := skippedReason
@@ -723,7 +733,7 @@ if showSignalLabels and showSkippedSetups and setupSkipped
     int skipLabelX = time + tfMs * labelShiftBars
     float skipLabelY = high + chartAtr * labelOffsetAtr
     string skipTrigName = trigKind == 3 ? "停滞+再ブレイク" : trigKind == 2 ? "再ブレイク" : "高値停滞"
-    string skipAuditText = showAuditDetails ? "\nAudit key: " + (na(auditPairKey) ? "N/A" : str.tostring(auditPairKey)) + "\nV start/low: " + fmtPrice(vStartPrice) + " / " + fmtPrice(vLowPrice) + "\nCandidate: " + fmtPrice(candClose) : ""
+    string skipAuditText = showAuditDetails ? "\nSignal time: " + fmtTime(time) + "\nAudit key: " + (na(auditPairKey) ? "N/A" : str.tostring(auditPairKey)) + "\nV times: " + fmtTime(vStartTime) + " / " + fmtTime(vLowTime) + "\nV start/low: " + fmtPrice(vStartPrice) + " / " + fmtPrice(vLowPrice) + "\nCandidate: " + fmtPrice(candClose) + " @ " + fmtTime(candTime) : ""
     keepLine(line.new(time, high, skipLabelX, skipLabelY, xloc=xloc.bar_time, color=color.new(color.orange, 0), width=1, style=line.style_dotted))
     label skipLb = label.new(skipLabelX, skipLabelY,
          "見送り (SKIP)\nReason: " + skippedReason +

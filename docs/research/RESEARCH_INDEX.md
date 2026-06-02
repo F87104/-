@@ -12,10 +12,9 @@
 
 ## 次にやること
 
-1. **準本命4手法**の検証続行（SQZ → VIS → LSS parity → DTS）— [near_main_validation_roadmap_2026-06-01.md](near_main_validation_roadmap_2026-06-01.md)
-2. 損失367行を失敗パターン別に教材カード化（代表例はローカル）
+1. **究極手法 v1.0** を日次チェックで運用 — [ultimate_method_v1_2026-06-01.md](ultimate_method_v1_2026-06-01.md)
+2. **準本命4手法**の検証続行（SQZ → VIS → LSS parity → DTS）— [near_main_validation_roadmap_2026-06-01.md](near_main_validation_roadmap_2026-06-01.md)
 3. v2.x マトリクス戦略へ **F1 節目追い抑制** だけ移植（380件データで再確認）
-4. 実践記録の決済後レビューを追記し、インジケータの改善点を残す
 
 ## 進捗ログ
 
@@ -135,6 +134,8 @@
 | 2期生トレード心理データ取り込み | [second_cohort_trade_psychology_import_2026-05-31.md](second_cohort_trade_psychology_import_2026-05-31.md) |
 | **850件テキスト失敗理由** | [trade_psychology_failure_reason_research_2026-05-31.md](trade_psychology_failure_reason_research_2026-05-31.md) |
 | **準本命4手法 検証ロードマップ** | [near_main_validation_roadmap_2026-06-01.md](near_main_validation_roadmap_2026-06-01.md) |
+| **究極手法 v1.0（研究統合）** | [ultimate_method_v1_2026-06-01.md](ultimate_method_v1_2026-06-01.md) |
+| 日次チェックリスト | [ultimate_method_daily_checklist.csv](../trade_practice_records/ultimate_method_daily_checklist.csv) |
 | フォワード検証台帳 | [near_main_forward_validation_log.csv](../trade_practice_records/near_main_forward_validation_log.csv) |
 | 全敗18クラスタ失敗カード | [student_stumble_all_loss_failure_cards_v0_1.md](student_stumble_all_loss_failure_cards_v0_1.md) |
 | ブログ教材用フォルダ | [../blog_materials/README.md](../blog_materials/README.md) |

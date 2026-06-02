@@ -118,6 +118,15 @@ pine/research/          ← TradingView 用 Pine（ここ）
 
 ## 🎯 結論 (TL;DR)
 
+### 究極手法 v1.0 — 研究統合版
+
+> **2本柱エンジン × 三重ゲート（相場状態 / 心理 / リスク）**  
+> 詳細: **[ultimate_method_v1_2026-06-01.md](docs/research/ultimate_method_v1_2026-06-01.md)**
+
+```text
+EXECUTE = エンジンシグナル × ゲート通過 × リスク枠内
+```
+
 ### 採用戦略 — 2本柱
 
 | 役割 | 戦略 | Pine ファイル | 中身 |

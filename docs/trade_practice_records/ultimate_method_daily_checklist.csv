@@ -1,0 +1,13 @@
+step,gate,check_item,pass_action,fail_action,notes
+0,setup,本番Pineは production/ の TB + T5 のみ,続行,visual/research strategy は見送り,2026-06-01 USDJPY visual 事例
+1,engine,エンジン特定: TB(H1) / T5(H4) / 予備,Step2へ,不明なら見送り,
+2,F1,節目±N の追い足ではない,続行,STOP 見送り,GBPJPY 199/195 XAU 2948
+2,STOP,つまずき赤帯外,続行,見送り,stumble v0.5 参考
+2,WAIT,抜け直後1-2本だけではない,続行,1-4本待つ,850件 P01
+2,SL,SL価格を数字で言える,続行,見送り,根拠不足の第一原因
+3,risk,DD < 20%,EXECUTE,全停止,
+3,risk,同時保有 <= 6,EXECUTE,新規見送り,
+3,risk,同方向JPY+金銀 < 3,EXECUTE,1件スキップ,
+3,overlap,同通貨 TB/T5 被りなし,EXECUTE,優先: TB > T5,ロット半減可
+4,size,TB=1R / T5=0.25-0.5R / 予備=0.25R,発注,,
+5,log,checklist + forward log に記録,完了,,

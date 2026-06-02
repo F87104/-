@@ -61,6 +61,14 @@ v2MaxRecoveryBars = input.int(30, "V2 右肩の最大本数", minval=1, maxval=3
 v2CrossBufferAtr = input.float(0.05, "V2左肩起点上抜け余白(ATR)", minval=0.0, step=0.01, group=grpV2)
 v2LowBreakInvalidAtr = input.float(0.10, "V2安値割れ失効(ATR)", minval=0.0, step=0.05, group=grpV2)
 
+grpContext = "高値安値コンテキスト"
+levelFilterMode = input.string("高値または安値付近", "高値安値フィルタ", options=["なし", "高値または安値付近", "安値付近のみ", "高値付近のみ"], group=grpContext)
+levelLookbackBars = input.int(180, "参照する過去本数", minval=20, maxval=1000, group=grpContext)
+levelExcludeRecent = input.int(6, "直近除外本数", minval=1, maxval=100, group=grpContext, tooltip="現在のV自身で高値安値ラインが更新されないように、直近本数を除外します。")
+nearLowAtr = input.float(2.0, "安値付近の許容幅(ATR)", minval=0.1, step=0.1, group=grpContext)
+nearHighAtr = input.float(2.0, "高値付近の許容幅(ATR)", minval=0.1, step=0.1, group=grpContext)
+showContextLevels = input.bool(true, "高値安値ライン", group=grpContext)
+
 grpQuality = "シグナル足品質"
 minBodyRatio = input.float(0.45, "実体比率下限", minval=0.0, maxval=1.0, step=0.05, group=grpQuality)
 minCloseLocation = input.float(0.60, "終値位置下限", minval=0.0, maxval=1.0, step=0.05, group=grpQuality)
@@ -114,6 +122,8 @@ bool holidayOk = not skipHoliday or not ((month == 12 and dayofmonth >= 15) or (
 bool dateOk = not useDateFilter or (year >= 2015 and year <= 2026)
 bool xauSymbol = str.contains(syminfo.ticker, "XAU")
 bool symbolOk = not excludeXau or not xauSymbol
+float contextHigh = ta.highest(high[levelExcludeRecent], levelLookbackBars)
+float contextLow = ta.lowest(low[levelExcludeRecent], levelLookbackBars)
 
 // ---------------------------------------------------------------------
 // Confirmed alternating pivots.
@@ -210,6 +220,8 @@ float signalV1RecoverAtV2 = na
 float signalV2HoldFib = na
 float signalBody = na
 float signalCloseLocation = na
+float signalContextHigh = na
+float signalContextLow = na
 int signalV1StartTime = na
 int signalV1LowTime = na
 int signalV2StartTime = na
@@ -218,6 +230,7 @@ int signalV1DropBars = na
 int signalV2DropBars = na
 int signalV2RecoveryBars = na
 string signalKey = ""
+string signalContext = "N/A"
 
 var bool pendingLong = false
 var int pendingSignalBar = na
@@ -294,9 +307,16 @@ if array.size(pKinds) >= 4 and not na(atrValue) and atrValue > 0
                             bool sequenceOk = v1LowBar < v2StartBar and v2StartBar - v1LowBar <= maxBarsV1LowToV2Start
                             bool v1RecoveredOk = not na(v1RecoverAtV2) and v1RecoverAtV2 >= v1RecoverAtV2Start
                             bool v2HigherLowOk = not na(v2HoldFib) and v2HoldFib >= v2LowHoldV1Fib
+                            bool nearMajorLow = not na(contextLow) and (v1Low <= contextLow + atrValue * nearLowAtr or v2Low <= contextLow + atrValue * nearLowAtr)
+                            bool nearMajorHigh = not na(contextHigh) and (close >= contextHigh - atrValue * nearHighAtr or v2Start >= contextHigh - atrValue * nearHighAtr)
+                            bool contextOk = levelFilterMode == "なし" or (levelFilterMode == "高値または安値付近" and (nearMajorLow or nearMajorHigh)) or (levelFilterMode == "安値付近のみ" and nearMajorLow) or (levelFilterMode == "高値付近のみ" and nearMajorHigh)
                             string doubleKey = str.tostring(v1StartBar) + "-" + str.tostring(v1LowBar) + "-" + str.tostring(v2StartBar) + "-" + str.tostring(v2LowBar)
                             bool unusedOk = not array.includes(usedKeys, doubleKey)
-                            bool setupOk = baseOk and unusedOk and v2Crossed and v1DropOk and v1BarsOk and sequenceOk and v1RecoveredOk and v2HigherLowOk and v2DropOk and v2BarsOk and v2LowHeld and v2SpeedOk and qualityOk
+                            bool setupOk = baseOk and unusedOk and contextOk and v2Crossed and v1DropOk and v1BarsOk and sequenceOk and v1RecoveredOk and v2HigherLowOk and v2DropOk and v2BarsOk and v2LowHeld and v2SpeedOk and qualityOk
+
+                            if v2Crossed and v1DropOk and v1BarsOk and sequenceOk and v1RecoveredOk and v2HigherLowOk and v2DropOk and v2BarsOk and v2LowHeld and not contextOk
+                                rejectedCandidate := true
+                                rejectText := "高安値から遠い"
 
                             if setupOk
                                 float stopBase = stopMode == "V2安値" ? v2Low : math.min(v1Low, v2Low)
@@ -317,6 +337,8 @@ if array.size(pKinds) >= 4 and not na(atrValue) and atrValue > 0
                                     signalV2HoldFib := v2HoldFib
                                     signalBody := bodyRatio
                                     signalCloseLocation := closeLocation
+                                    signalContextHigh := contextHigh
+                                    signalContextLow := contextLow
                                     signalV1StartTime := v1StartTime
                                     signalV1LowTime := v1LowTime
                                     signalV2StartTime := v2StartTime
@@ -325,6 +347,7 @@ if array.size(pKinds) >= 4 and not na(atrValue) and atrValue > 0
                                     signalV2DropBars := v2DropBars
                                     signalV2RecoveryBars := v2RecoveryBars
                                     signalKey := doubleKey
+                                    signalContext := nearMajorLow and nearMajorHigh ? "高値+安値" : nearMajorLow ? "安値付近" : nearMajorHigh ? "高値付近" : "なし"
 
 // ---------------------------------------------------------------------
 // Orders. Market entry fills next bar open.
@@ -356,6 +379,8 @@ if strategy.position_size > 0 and not na(entryBar) and bar_index - entryBar >= m
 // ---------------------------------------------------------------------
 // Visuals.
 // ---------------------------------------------------------------------
+plot(showContextLevels and levelFilterMode != "なし" ? contextHigh : na, title="Context High", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
+plot(showContextLevels and levelFilterMode != "なし" ? contextLow : na, title="Context Low", color=color.new(color.orange, 0), linewidth=2, style=plot.style_linebr)
 plotshape(showSignals and rawSignal, title="Double V Long", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.tiny, text="2V")
 plot(showLevels and strategy.position_size > 0 ? activeStop : na, title="Active SL", color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
 plot(showLevels and strategy.position_size > 0 ? activeTarget : na, title="Active TP", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
@@ -364,7 +389,7 @@ if rawSignal and showSignals
     int labelTime = time + barMs * labelShiftBars
     int lineEndTime = time + barMs * 36
     float labelY = low - atrValue * labelOffsetAtr
-    string txt = "Double V LONG\nV2右肩/左肩: " + fmtNum(signalV2SpeedRatio) + "x\nV1回復@V2: " + fmtNum(signalV1RecoverAtV2) + "\nV2高値維持: " + fmtNum(signalV2HoldFib) + "\nV1/V2 Drop: " + fmtNum(signalV1DropAtr) + "/" + fmtNum(signalV2DropAtr) + "ATR\nBars V1/V2: " + str.tostring(signalV1DropBars) + "/" + str.tostring(signalV2DropBars) + "+" + str.tostring(signalV2RecoveryBars) + "\nSL: " + fmt(signalStop) + "\nTP: " + fmt(signalTarget)
+    string txt = "Double V LONG\n位置: " + signalContext + "\nV2右肩/左肩: " + fmtNum(signalV2SpeedRatio) + "x\nV1回復@V2: " + fmtNum(signalV1RecoverAtV2) + "\nV2高値維持: " + fmtNum(signalV2HoldFib) + "\nV1/V2 Drop: " + fmtNum(signalV1DropAtr) + "/" + fmtNum(signalV2DropAtr) + "ATR\nBars V1/V2: " + str.tostring(signalV1DropBars) + "/" + str.tostring(signalV2DropBars) + "+" + str.tostring(signalV2RecoveryBars) + "\nSL: " + fmt(signalStop) + "\nTP: " + fmt(signalTarget)
     label lb = label.new(labelTime, labelY, txt, xloc=xloc.bar_time, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
     keepLabel(lb)
     if showVLines
@@ -373,6 +398,10 @@ if rawSignal and showSignals
         keepLine(line.new(signalV2StartTime, signalV2Start, signalV2LowTime, signalV2Low, xloc=xloc.bar_time, color=color.new(color.red, 0), width=3))
         keepLine(line.new(signalV2LowTime, signalV2Low, time, close, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=3))
     if showLevels
+        if not na(signalContextHigh)
+            keepLine(line.new(signalV2StartTime, signalContextHigh, lineEndTime, signalContextHigh, xloc=xloc.bar_time, color=color.new(color.lime, 35), width=2))
+        if not na(signalContextLow)
+            keepLine(line.new(signalV2StartTime, signalContextLow, lineEndTime, signalContextLow, xloc=xloc.bar_time, color=color.new(color.orange, 35), width=2))
         keepLine(line.new(signalV2StartTime, signalV2Start, lineEndTime, signalV2Start, xloc=xloc.bar_time, color=color.new(color.aqua, 0), width=1, style=line.style_dashed))
         keepLine(line.new(time, signalStop, lineEndTime, signalStop, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2, style=line.style_dashed))
         keepLine(line.new(time, signalTarget, lineEndTime, signalTarget, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2, style=line.style_dashed))
@@ -382,7 +411,7 @@ if showRejected and rejectedCandidate and not rawSignal
     label rb = label.new(rejectTime, high + atrValue * labelOffsetAtr, rejectText, xloc=xloc.bar_time, style=label.style_label_down, color=color.new(color.gray, 20), textcolor=color.white, size=size.tiny)
     keepLabel(rb)
 
-var table t = table.new(position.top_right, 2, 12, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+var table t = table.new(position.top_right, 2, 13, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
 if showTable and barstate.islast
     table.cell(t, 0, 0, "Method", text_color=color.white, text_size=size.tiny)
     table.cell(t, 1, 0, "Double V", text_color=color.lime, text_size=size.tiny)
@@ -408,6 +437,7 @@ if showTable and barstate.islast
     table.cell(t, 1, 10, strategy.position_size > 0 ? "LONG" : pendingLong ? "PENDING" : "FLAT", text_color=strategy.position_size > 0 ? color.lime : pendingLong ? color.yellow : color.gray, text_size=size.tiny)
     table.cell(t, 0, 11, "Rule", text_color=color.white, text_size=size.tiny)
     table.cell(t, 1, 11, "V1 -> V2 reclaim", text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 12, "HL filter", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 12, levelFilterMode, text_color=levelFilterMode == "なし" ? color.gray : color.yellow, text_size=size.tiny)
 
 alertcondition(rawSignal, title="H4 Double V Reclaim", message="H4 Double V reclaim long on {{ticker}} @ {{close}}")
-

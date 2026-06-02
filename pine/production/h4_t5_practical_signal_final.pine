@@ -130,6 +130,9 @@ maxLabels = input.int(40, "残すラベル数", minval=5, maxval=200, group=grpV
 labelShiftBars = input.int(8, "ラベルを右へ逃がす本数", minval=0, maxval=60, group=grpView)
 labelOffsetAtr = input.float(3.0, "ラベル上下余白(ATR)", minval=0.5, step=0.5, group=grpView)
 
+grpAudit = "■ Python照合監査"
+showAuditDetails = input.bool(false, "SIGNAL/SKIPに監査情報を追加", group=grpAudit, tooltip="ONにすると、売買ロジックは変えずにpairKey、V起点、V安値、候補終値をラベルへ追加します。Python CSVとの照合用です。")
+
 // =====================================================================
 // Effective presets
 // =====================================================================
@@ -328,6 +331,7 @@ f_t5() =>
     float fibRatioNow = na
     int dropBars = na
     int recoveryBars = na
+    int pairKeyOut = na
 
     bool dateOkLocal = not limitPythonWindow or (year >= 2015 and year <= 2026)
     bool holidayOkLocal = not skipHoliday or not ((month == 12 and dayofmonth >= 15) or (month == 1 and dayofmonth <= 10))
@@ -434,6 +438,7 @@ f_t5() =>
                                     recoveryBars := math.max(bar_index - p1Index, 1)
                                     recoveryRatio := recoveryBars / tmpDropBars
                                     fibRatioNow := (close - p1Price) / drop
+                                    pairKeyOut := pairKey
                                     candidateNow := candidateAgeBars == 0
                                     bool macdOk = macdSlope3 > 0
                                     bool bbOk = not na(bbPos) and bbPos >= bbLoEff and bbPos <= bbHiEff
@@ -452,9 +457,9 @@ f_t5() =>
                                         array.shift(usedKeys)
             idx -= 1
 
-    [signalNow, setupNow, candidateNow, triggerKind, prevTimeOut, prevPriceOut, lastTimeOut, lastPriceOut, candidateTime, candidateClose, signalClose, stopLevel, targetLevel, dropAtr, dropSpeed, recoveryRatio, fibRatioNow, dropBars, recoveryBars, bodyRatio, macdHist, macdSlope3, bbPos, bbWidthAtr]
+    [signalNow, setupNow, candidateNow, triggerKind, pairKeyOut, prevTimeOut, prevPriceOut, lastTimeOut, lastPriceOut, candidateTime, candidateClose, signalClose, stopLevel, targetLevel, dropAtr, dropSpeed, recoveryRatio, fibRatioNow, dropBars, recoveryBars, bodyRatio, macdHist, macdSlope3, bbPos, bbWidthAtr]
 
-[sigRaw, setupRaw, candRaw, trigKind, vStartTime, vStartPrice, vLowTime, vLowPrice, candTime, candClose, sigClose, sigStop, sigTarget, dropAtr, dropSpeed, recoveryRatio, fibRatioNow, dropBars, recoveryBars, bodyRatio, macdHist, macdSlope3, bbPos, bbWidthAtr] = request.security(syminfo.tickerid, analysisTf, f_t5(), barmerge.gaps_off, barmerge.lookahead_off)
+[sigRaw, setupRaw, candRaw, trigKind, auditPairKey, vStartTime, vStartPrice, vLowTime, vLowPrice, candTime, candClose, sigClose, sigStop, sigTarget, dropAtr, dropSpeed, recoveryRatio, fibRatioNow, dropBars, recoveryBars, bodyRatio, macdHist, macdSlope3, bbPos, bbWidthAtr] = request.security(syminfo.tickerid, analysisTf, f_t5(), barmerge.gaps_off, barmerge.lookahead_off)
 
 // =====================================================================
 // Live gating
@@ -678,6 +683,7 @@ if showSignalLabels and newSignal
     int labelX = time + tfMs * labelShiftBars
     float labelY = low - chartAtr * labelOffsetAtr
     string trigName = trigKind == 3 ? "停滞+再ブレイク" : trigKind == 2 ? "再ブレイク" : "高値停滞"
+    string auditText = showAuditDetails ? "\nAudit key: " + (na(auditPairKey) ? "N/A" : str.tostring(auditPairKey)) + "\nV start/low: " + fmtPrice(vStartPrice) + " / " + fmtPrice(vLowPrice) + "\nCandidate: " + fmtPrice(candClose) : ""
     color signalColor = signalGrade == "A+" ? color.new(color.lime, 0) : opDecision == "HALF" ? color.new(color.orange, 0) : color.new(color.teal, 0)
     if showVLines and not na(vStartTime) and not na(vLowTime)
         keepLine(line.new(vStartTime, vStartPrice, vLowTime, vLowPrice, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2))
@@ -689,6 +695,7 @@ if showSignalLabels and newSignal
          "\nLot: x" + fmtNum(opLotMult) +
          "\nReason: " + opReason +
          "\nTrigger: " + trigName +
+         auditText +
          "\nSignal: " + fmtPrice(sigClose) +
          "\nEst SL: " + fmtPrice(sigStop) +
          "\nEst TP: " + fmtPrice(sigTarget) +
@@ -716,10 +723,12 @@ if showSignalLabels and showSkippedSetups and setupSkipped
     int skipLabelX = time + tfMs * labelShiftBars
     float skipLabelY = high + chartAtr * labelOffsetAtr
     string skipTrigName = trigKind == 3 ? "停滞+再ブレイク" : trigKind == 2 ? "再ブレイク" : "高値停滞"
+    string skipAuditText = showAuditDetails ? "\nAudit key: " + (na(auditPairKey) ? "N/A" : str.tostring(auditPairKey)) + "\nV start/low: " + fmtPrice(vStartPrice) + " / " + fmtPrice(vLowPrice) + "\nCandidate: " + fmtPrice(candClose) : ""
     keepLine(line.new(time, high, skipLabelX, skipLabelY, xloc=xloc.bar_time, color=color.new(color.orange, 0), width=1, style=line.style_dotted))
     label skipLb = label.new(skipLabelX, skipLabelY,
          "見送り (SKIP)\nReason: " + skippedReason +
          "\nTrigger: " + skipTrigName +
+         skipAuditText +
          "\nClose: " + fmtPrice(close) +
          "\nBB pos: " + fmtNum(bbPos) +
          "\nBB width: " + fmtNum(bbWidthAtr) +

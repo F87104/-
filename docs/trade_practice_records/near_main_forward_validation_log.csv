@@ -1,0 +1,5 @@
+record_id,candidate_code,candidate_name,symbol,timeframe,signal_datetime_jst,entry_datetime_jst,entry_price,side,risk_r,stop_price,target_price,exit_datetime_jst,exit_price,result_r,python_match,pine_match,overlap_with_tb,overlap_with_t5,overlap_note,review_note
+FW-TEMPLATE-SQZ,,Market Psychology Squeeze Strict,,H4,,,,buy,0.25,,,,,,pending,,,,,Python期待CSVとTV strategyの日時一致を先に確認
+FW-TEMPLATE-VIS,,H4 V Initial Shelf Breakout,,H4,,,,buy,0.25,,,,,,pending,,,,,visual版ではなくstrategy版のみ。confirmed pivot必須
+FW-TEMPLATE-LSS,,H4 Low Stagnation Short,,H4,,,,sell,0.25,,,,,,pending,,,,,Pine parity修正完了まで実弾禁止
+FW-TEMPLATE-DTS,,D1 Trap Delayed H4 Shelf,,H4,,,,buy,0.25,,,,,,pending,,,,,年1-2件想定。20件で昇格判断

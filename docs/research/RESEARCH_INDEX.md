@@ -12,9 +12,10 @@
 
 ## 次にやること
 
-1. 損失367行を失敗パターン別に教材カード化（代表例はローカル）
-2. v2.x マトリクス戦略へ **F1 節目追い抑制** だけ移植（380件データで再確認）
-3. 実践記録の決済後レビューを追記し、インジケータの改善点を残す
+1. **準本命4手法**の検証続行（SQZ → VIS → LSS parity → DTS）— [near_main_validation_roadmap_2026-06-01.md](near_main_validation_roadmap_2026-06-01.md)
+2. 損失367行を失敗パターン別に教材カード化（代表例はローカル）
+3. v2.x マトリクス戦略へ **F1 節目追い抑制** だけ移植（380件データで再確認）
+4. 実践記録の決済後レビューを追記し、インジケータの改善点を残す
 
 ## 進捗ログ
 
@@ -49,7 +50,7 @@
 | 2026-05-31 | 850件テキスト失敗理由研究 | 850行から失敗パターン・心理・入口テーマを集計。Pine不要の台帳方針を確定。公開版は集計CSV・タグのみindex・全敗18カード。 | 損失367行をパターン別教材カード化（ローカル） |
 | 2026-06-01 | 投げ売り・踏み上げ研究 | 用語の例え、ローソク足の出方、Pine化する条件を公開メモ化。投げ売りは買い手の降参、踏み上げは売り手の降参として整理。 | `CAPITULATION` / `SQUEEZE` の観察ラベルをPineへ入れる |
 | 2026-06-01 | ブログ教材化 | 教材化しやすい公開レポート10本を `docs/blog_materials/reports/` へ複製し、ブログ連載案と記事テンプレートを追加。 | まず1本目「投げ売りと踏み上げをローソク足で読む」を記事化する |
-| 2026-06-01 | ブログ記事作成 | 1本目の記事「投げ売りと踏み上げをローソク足で読む」を `docs/blog_materials/articles/` に作成。研究メモを読者向けの文章へ変換。 | 2本目「ブレイクした瞬間に入る人が負けやすい理由」を作成する |
+| 2026-06-01 | 準本命4手法検証 | TrendBreak+T5以外で主要に近い候補4つ（SQZ/VIS/LSS/DTS）を優先順・昇格ゲート・フォワード台帳で整理。 | 第1週: VIS+SQZ Pine照合 |
 | 2026-06-01 | ブログ記事作成 | ブログ用の記事5本を作成。「ブレイク直後」「投げ売り/踏み上げ」「失敗の逆利用」「同じ場所での同じ失敗」「STOP/WAIT/CHECK」を教材化。 | 次は各記事にアイキャッチ案とSNS導入文を付ける |
 | 2026-06-01 | ブログ記事作成 | ユーザー指定タイトル20本をすべて記事化し、`docs/blog_materials/articles/` に一覧ページを追加。 | 各記事にアイキャッチ案、リード文、投稿順を付ける |
 | 2026-06-01 | ブログ記事作成 | 「自分のことだと思わせる」追加タイトル25本を記事化し、記事下書きは合計45本に拡張。 | 45本から投稿優先順位を決め、各記事にアイキャッチ案を付ける |
@@ -133,6 +134,8 @@
 | 通貨別の心理傾向 | [currency_pair_personality_hypothesis_2026-05-31.md](currency_pair_personality_hypothesis_2026-05-31.md) |
 | 2期生トレード心理データ取り込み | [second_cohort_trade_psychology_import_2026-05-31.md](second_cohort_trade_psychology_import_2026-05-31.md) |
 | **850件テキスト失敗理由** | [trade_psychology_failure_reason_research_2026-05-31.md](trade_psychology_failure_reason_research_2026-05-31.md) |
+| **準本命4手法 検証ロードマップ** | [near_main_validation_roadmap_2026-06-01.md](near_main_validation_roadmap_2026-06-01.md) |
+| フォワード検証台帳 | [near_main_forward_validation_log.csv](../trade_practice_records/near_main_forward_validation_log.csv) |
 | 全敗18クラスタ失敗カード | [student_stumble_all_loss_failure_cards_v0_1.md](student_stumble_all_loss_failure_cards_v0_1.md) |
 | ブログ教材用フォルダ | [../blog_materials/README.md](../blog_materials/README.md) |
 | トレード実践記録 | [../trade_practice_records/README.md](../trade_practice_records/README.md) |

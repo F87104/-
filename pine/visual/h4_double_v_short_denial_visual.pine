@@ -1,0 +1,436 @@
+//@version=5
+indicator("H4 Double V Short Denial Visual [Research]", overlay=true, max_bars_back=5000, max_lines_count=500, max_labels_count=500)
+
+// =====================================================================
+// H4 Double V Short Denial Visual [Research]
+// ---------------------------------------------------------------------
+// Purpose:
+//   Visualize the Sai-style idea the user is studying:
+//     selloff -> V1 reclaim -> second sell attempt -> V2 reclaim ->
+//     entry candidate only when V2 breaks the V1 right shoulder.
+//
+// This is a visual research tool, not a production strategy.
+// It separates:
+//   1. WATCH  : V1 + V2 structure is ready, but not broken yet.
+//   2. EXECUTE: V2 closes above the V1 right-shoulder high.
+//   3. SKIP   : a breakout-like move appears but the structure is weak.
+//
+// Key idea:
+//   Do not buy a plain V.
+//   Buy only after two sell attempts failed and price reclaims the V1
+//   right-shoulder high.
+// =====================================================================
+
+grpMode = "基本"
+mode = input.string("標準", "検出モード", options=["探索", "標準", "厳選"], group=grpMode, tooltip="探索=多めに拾う / 標準=目視研究用 / 厳選=かなり絞る")
+requireH4 = input.bool(true, "H4チャート専用", group=grpMode)
+skipHoliday = input.bool(true, "12/15〜1/10は新規候補を停止", group=grpMode)
+useDateFilter = input.bool(true, "2015〜2026のみ表示", group=grpMode)
+excludeXau = input.bool(false, "XAUUSD/XAUを除外", group=grpMode)
+
+grpPivot = "Pivot"
+pivotWidth = input.int(3, "Pivot幅", minval=1, maxval=20, group=grpPivot)
+atrLen = input.int(14, "ATR期間", minval=1, group=grpPivot)
+minSwingAtr = input.float(1.6, "Pivot間の最小スイング(ATR)", minval=0.1, step=0.1, group=grpPivot)
+scanWindows = input.int(14, "直近Double V走査数", minval=1, maxval=40, group=grpPivot)
+
+grpV1 = "V1 売り失敗の文脈"
+v1MinDropAtr = input.float(3.0, "V1下落幅 最小ATR", minval=0.1, step=0.1, group=grpV1)
+v1MinDropSpeed = input.float(0.20, "V1左肩速度 最小ATR/本", minval=0.0, step=0.05, group=grpV1)
+v1MinDropBars = input.int(2, "V1左肩 最小本数", minval=1, group=grpV1)
+v1MaxDropBars = input.int(36, "V1左肩 最大本数", minval=2, group=grpV1)
+v1RecoverMin = input.float(0.95, "V1右肩 回復率下限", minval=0.1, maxval=2.0, step=0.05, group=grpV1, tooltip="1.00ならV1右肩が左肩起点まで戻る必要があります。")
+v1RecoverMax = input.float(1.90, "V1右肩 回復率上限", minval=0.5, maxval=5.0, step=0.05, group=grpV1, tooltip="伸び切った後の小さい押しをDouble V扱いしないための上限です。")
+requireV1OriginReclaim = input.bool(true, "V1右肩が左肩起点を上抜け", group=grpV1)
+v1ReclaimBufferAtr = input.float(0.03, "V1左肩上抜け余白(ATR)", minval=0.0, step=0.01, group=grpV1)
+v1RightSpeedMin = input.float(0.85, "V1右肩速度/左肩速度 下限", minval=0.0, step=0.05, group=grpV1)
+
+grpV2 = "V2 戻り売り失敗"
+v2HoldV1Fib = input.float(0.382, "V2安値が守るV1回復ライン", minval=0.0, maxval=1.0, step=0.001, group=grpV2)
+v2MinDropAtr = input.float(1.0, "V2下落幅 最小ATR", minval=0.1, step=0.1, group=grpV2)
+v2MinDropVsV1 = input.float(0.18, "V2下落幅/V1下落幅 下限", minval=0.0, maxval=1.0, step=0.05, group=grpV2)
+v2MaxDropVsV1 = input.float(0.70, "V2下落幅/V1下落幅 上限", minval=0.1, maxval=2.0, step=0.05, group=grpV2, tooltip="V2が大きすぎる場合は、二段目確認ではなく別の下落局面として扱います。")
+v2MinDropBars = input.int(2, "V2左肩 最小本数", minval=1, group=grpV2)
+v2MaxDropBars = input.int(24, "V2左肩 最大本数", minval=2, group=grpV2)
+v2MaxRecoveryBars = input.int(36, "V2右肩 最大本数", minval=1, maxval=300, group=grpV2)
+v2RightSpeedMin = input.float(1.10, "V2右肩速度/左肩速度 下限", minval=0.1, step=0.05, group=grpV2)
+v2BreakBufferAtr = input.float(0.03, "V1右肩突破余白(ATR)", minval=0.0, step=0.01, group=grpV2)
+v2InvalidBreakAtr = input.float(0.10, "V2安値割れ失効(ATR)", minval=0.0, step=0.05, group=grpV2)
+
+grpQuality = "突破足品質"
+minBodyRatio = input.float(0.35, "実体比率 下限", minval=0.0, maxval=1.0, step=0.05, group=grpQuality)
+minCloseLocation = input.float(0.55, "終値位置 下限", minval=0.0, maxval=1.0, step=0.05, group=grpQuality)
+
+grpContext = "高値安値コンテキスト"
+levelMode = input.string("高値または安値付近", "高値安値フィルタ", options=["なし", "高値または安値付近", "安値付近のみ", "高値付近のみ"], group=grpContext)
+levelLookbackBars = input.int(180, "参照本数", minval=20, maxval=1000, group=grpContext)
+levelExcludeRecent = input.int(6, "直近除外本数", minval=1, maxval=100, group=grpContext)
+nearLowAtr = input.float(2.5, "安値付近 許容ATR", minval=0.1, step=0.1, group=grpContext)
+nearHighAtr = input.float(2.5, "高値付近 許容ATR", minval=0.1, step=0.1, group=grpContext)
+
+grpView = "表示"
+showWatch = input.bool(true, "WATCHを表示", group=grpView)
+showExecute = input.bool(true, "EXECUTEを表示", group=grpView)
+showSkip = input.bool(false, "SKIPを表示", group=grpView)
+showVLines = input.bool(true, "V1/V2ライン", group=grpView)
+showLevels = input.bool(true, "V1右肩/SL/TP目安ライン", group=grpView)
+showContextLevels = input.bool(true, "高値安値ライン", group=grpView)
+showTable = input.bool(true, "状態テーブル", group=grpView)
+maxObjects = input.int(120, "残す描画数", minval=20, maxval=300, group=grpView)
+labelOffsetAtr = input.float(2.5, "ラベル上下余白(ATR)", minval=0.5, step=0.5, group=grpView)
+
+grpRisk = "参考SL/TP"
+rr = input.float(1.5, "参考TP RR", minval=0.1, step=0.1, group=grpRisk)
+stopBufferAtr = input.float(0.25, "参考SL余白(ATR)", minval=0.0, step=0.05, group=grpRisk)
+
+fmt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, format.mintick)
+    out
+
+fmtNum(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#.##")
+    out
+
+var label[] labels = array.new_label()
+var line[] lines = array.new_line()
+var string[] usedExecuteKeys = array.new_string()
+var string[] usedWatchKeys = array.new_string()
+
+keepLabel(label lb) =>
+    array.push(labels, lb)
+    while array.size(labels) > maxObjects
+        label.delete(array.shift(labels))
+
+keepLine(line ln) =>
+    array.push(lines, ln)
+    while array.size(lines) > maxObjects * 5
+        line.delete(array.shift(lines))
+
+pushExecuteKey(string key) =>
+    array.push(usedExecuteKeys, key)
+    while array.size(usedExecuteKeys) > 500
+        array.shift(usedExecuteKeys)
+
+pushWatchKey(string key) =>
+    array.push(usedWatchKeys, key)
+    while array.size(usedWatchKeys) > 500
+        array.shift(usedWatchKeys)
+
+atrValue = ta.atr(atrLen)
+barRange = high - low
+bodyRatio = barRange > 0 ? math.abs(close - open) / barRange : 0.0
+closeLocation = barRange > 0 ? (close - low) / barRange : 0.0
+chartSec = timeframe.in_seconds(timeframe.period)
+barMs = chartSec * 1000
+
+h4Ok = not requireH4 or chartSec == 240 * 60
+holidayOk = not skipHoliday or not ((month == 12 and dayofmonth >= 15) or (month == 1 and dayofmonth <= 10))
+dateOk = not useDateFilter or (year >= 2015 and year <= 2026)
+xauSymbol = str.contains(syminfo.ticker, "XAU")
+symbolOk = not excludeXau or not xauSymbol
+baseOk = h4Ok and holidayOk and dateOk and symbolOk
+
+v1MinDropAtrUse = mode == "探索" ? 2.5 : mode == "標準" ? 3.0 : v1MinDropAtr
+v1RecoverMinUse = mode == "探索" ? 0.80 : mode == "標準" ? 0.95 : math.max(v1RecoverMin, 1.00)
+v1RecoverMaxUse = mode == "探索" ? 2.30 : mode == "標準" ? 1.90 : math.min(v1RecoverMax, 1.60)
+v1RightSpeedMinUse = mode == "探索" ? 0.70 : mode == "標準" ? 0.85 : math.max(v1RightSpeedMin, 1.00)
+v2MinDropAtrUse = mode == "探索" ? 0.8 : mode == "標準" ? 1.0 : v2MinDropAtr
+v2MinDropVsV1Use = mode == "探索" ? 0.12 : mode == "標準" ? 0.18 : math.max(v2MinDropVsV1, 0.25)
+v2MaxDropVsV1Use = mode == "探索" ? 0.85 : mode == "標準" ? 0.70 : math.min(v2MaxDropVsV1, 0.60)
+v2RightSpeedMinUse = mode == "探索" ? 1.00 : mode == "標準" ? 1.10 : math.max(v2RightSpeedMin, 1.20)
+minBodyRatioUse = mode == "探索" ? 0.25 : mode == "標準" ? 0.35 : math.max(minBodyRatio, 0.45)
+minCloseLocationUse = mode == "探索" ? 0.50 : mode == "標準" ? 0.55 : math.max(minCloseLocation, 0.60)
+
+contextHigh = ta.highest(high[levelExcludeRecent], levelLookbackBars)
+contextLow = ta.lowest(low[levelExcludeRecent], levelLookbackBars)
+
+plot(showContextLevels and levelMode != "なし" ? contextHigh : na, title="Context High", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
+plot(showContextLevels and levelMode != "なし" ? contextLow : na, title="Context Low", color=color.new(color.orange, 0), linewidth=2, style=plot.style_linebr)
+
+// ---------------------------------------------------------------------
+// Confirmed alternating pivots.
+// Same-type pivots are replaced by the more extreme point.
+// ---------------------------------------------------------------------
+ph = ta.pivothigh(high, pivotWidth, pivotWidth)
+pl = ta.pivotlow(low, pivotWidth, pivotWidth)
+
+var int[] pKinds = array.new_int()
+var float[] pPrices = array.new_float()
+var int[] pBars = array.new_int()
+var int[] pTimes = array.new_int()
+var float[] pAtrs = array.new_float()
+
+int newKind = 0
+float newPrice = na
+int newBar = na
+int newTime = na
+float newAtr = na
+bool acceptedPivot = false
+
+if not na(ph) and na(pl)
+    newKind := 1
+    newPrice := ph
+    newBar := bar_index - pivotWidth
+    newTime := time[pivotWidth]
+    newAtr := atrValue[pivotWidth]
+else if not na(pl) and na(ph)
+    newKind := -1
+    newPrice := pl
+    newBar := bar_index - pivotWidth
+    newTime := time[pivotWidth]
+    newAtr := atrValue[pivotWidth]
+
+if newKind != 0 and not na(newAtr) and newAtr > 0
+    n = array.size(pKinds)
+    if n == 0
+        array.push(pKinds, newKind)
+        array.push(pPrices, newPrice)
+        array.push(pBars, newBar)
+        array.push(pTimes, newTime)
+        array.push(pAtrs, newAtr)
+        acceptedPivot := true
+    else
+        lastKind = array.get(pKinds, n - 1)
+        lastPrice = array.get(pPrices, n - 1)
+        if newKind == lastKind
+            moreExtreme = (newKind == 1 and newPrice > lastPrice) or (newKind == -1 and newPrice < lastPrice)
+            if moreExtreme
+                array.set(pPrices, n - 1, newPrice)
+                array.set(pBars, n - 1, newBar)
+                array.set(pTimes, n - 1, newTime)
+                array.set(pAtrs, n - 1, newAtr)
+                acceptedPivot := true
+        else
+            lastAtr = array.get(pAtrs, n - 1)
+            swing = math.abs(newPrice - lastPrice)
+            if swing >= math.max(lastAtr, newAtr) * minSwingAtr
+                array.push(pKinds, newKind)
+                array.push(pPrices, newPrice)
+                array.push(pBars, newBar)
+                array.push(pTimes, newTime)
+                array.push(pAtrs, newAtr)
+                acceptedPivot := true
+
+while array.size(pKinds) > 120
+    array.shift(pKinds)
+    array.shift(pPrices)
+    array.shift(pBars)
+    array.shift(pTimes)
+    array.shift(pAtrs)
+
+// ---------------------------------------------------------------------
+// Scan immediate H-L-H-L:
+//   P0: V1 left shoulder high
+//   P1: V1 low
+//   P2: V1 right shoulder high / V2 start high
+//   P3: V2 low
+// Entry candidate is current close > P2.
+// ---------------------------------------------------------------------
+bool executeSignal = false
+bool watchSignal = false
+bool skipSignal = false
+string skipReason = ""
+
+float sigP0 = na
+float sigP1 = na
+float sigP2 = na
+float sigP3 = na
+float sigStop = na
+float sigTp = na
+string sigContext = "N/A"
+string sigKey = ""
+int sigP0Time = na
+int sigP1Time = na
+int sigP2Time = na
+int sigP3Time = na
+float sigV1DropAtr = na
+float sigV2DropAtr = na
+float sigV1Recover = na
+float sigV1Speed = na
+float sigV2Speed = na
+float sigV2VsV1 = na
+float sigV2Hold = na
+int sigV1Bars = na
+int sigV1RecoverBars = na
+int sigV2Bars = na
+int sigV2RecoverBars = na
+
+string latestState = "WAIT"
+string latestReason = "N/A"
+
+if array.size(pKinds) >= 4 and not na(atrValue) and atrValue > 0
+    nP = array.size(pKinds)
+    maxScan = math.min(scanWindows, nP - 3)
+    for back = 0 to 39
+        if back < maxScan and not executeSignal and not watchSignal
+            i0 = nP - 4 - back
+            k0 = array.get(pKinds, i0)
+            k1 = array.get(pKinds, i0 + 1)
+            k2 = array.get(pKinds, i0 + 2)
+            k3 = array.get(pKinds, i0 + 3)
+            if k0 == 1 and k1 == -1 and k2 == 1 and k3 == -1
+                p0 = array.get(pPrices, i0)
+                p1 = array.get(pPrices, i0 + 1)
+                p2 = array.get(pPrices, i0 + 2)
+                p3 = array.get(pPrices, i0 + 3)
+                p0Bar = array.get(pBars, i0)
+                p1Bar = array.get(pBars, i0 + 1)
+                p2Bar = array.get(pBars, i0 + 2)
+                p3Bar = array.get(pBars, i0 + 3)
+                p0Time = array.get(pTimes, i0)
+                p1Time = array.get(pTimes, i0 + 1)
+                p2Time = array.get(pTimes, i0 + 2)
+                p3Time = array.get(pTimes, i0 + 3)
+
+                v1Drop = p0 - p1
+                v2Drop = p2 - p3
+                v1DropBars = math.max(p1Bar - p0Bar, 1)
+                v1RecoverBars = math.max(p2Bar - p1Bar, 1)
+                v2DropBars = math.max(p3Bar - p2Bar, 1)
+                v2RecoverBars = math.max(bar_index - p3Bar, 1)
+                v1DropAtr = v1Drop / atrValue
+                v2DropAtr = v2Drop / atrValue
+                v1DropSpeed = v1Drop / v1DropBars / atrValue
+                v1RightSpeed = (p2 - p1) / v1RecoverBars / atrValue
+                v1SpeedRatio = v1DropSpeed > 0 ? v1RightSpeed / v1DropSpeed : na
+                v2LeftSpeed = v2Drop / v2DropBars / atrValue
+                v2RightSpeed = (close - p3) / v2RecoverBars / atrValue
+                v2SpeedRatio = v2LeftSpeed > 0 ? v2RightSpeed / v2LeftSpeed : na
+                v1Recover = v1Drop > 0 ? (p2 - p1) / v1Drop : na
+                v2VsV1 = v1Drop > 0 ? v2Drop / v1Drop : na
+                v2Hold = v1Drop > 0 ? (p3 - p1) / v1Drop : na
+
+                minAfterP3 = low
+                for m = 1 to 300
+                    if m < v2RecoverBars and m <= v2MaxRecoveryBars and not na(low[m])
+                        minAfterP3 := math.min(minAfterP3, low[m])
+
+                nearLow = not na(contextLow) and (p1 <= contextLow + atrValue * nearLowAtr or p3 <= contextLow + atrValue * nearLowAtr)
+                nearHigh = not na(contextHigh) and (p2 >= contextHigh - atrValue * nearHighAtr or close >= contextHigh - atrValue * nearHighAtr)
+                contextOk = levelMode == "なし" or (levelMode == "高値または安値付近" and (nearLow or nearHigh)) or (levelMode == "安値付近のみ" and nearLow) or (levelMode == "高値付近のみ" and nearHigh)
+
+                v1DropOk = v1Drop > 0 and v1DropAtr >= v1MinDropAtrUse and v1DropSpeed >= v1MinDropSpeed
+                v1BarsOk = v1DropBars >= v1MinDropBars and v1DropBars <= v1MaxDropBars
+                v1RecoverOk = not na(v1Recover) and v1Recover >= v1RecoverMinUse and v1Recover <= v1RecoverMaxUse
+                v1OriginOk = not requireV1OriginReclaim or p2 > p0 + atrValue * v1ReclaimBufferAtr
+                v1SpeedOk = not na(v1SpeedRatio) and v1SpeedRatio >= v1RightSpeedMinUse
+                v2DropOk = v2Drop > 0 and v2DropAtr >= v2MinDropAtrUse
+                v2SizeOk = not na(v2VsV1) and v2VsV1 >= v2MinDropVsV1Use and v2VsV1 <= v2MaxDropVsV1Use
+                v2BarsOk = v2DropBars >= v2MinDropBars and v2DropBars <= v2MaxDropBars and v2RecoverBars <= v2MaxRecoveryBars
+                v2HoldOk = not na(v2Hold) and v2Hold >= v2HoldV1Fib and minAfterP3 >= p3 - atrValue * v2InvalidBreakAtr
+                v2SpeedOk = not na(v2SpeedRatio) and v2SpeedRatio >= v2RightSpeedMinUse
+                candleOk = bodyRatio >= minBodyRatioUse and closeLocation >= minCloseLocationUse
+                brokeP2 = close > p2 + atrValue * v2BreakBufferAtr
+                stillWaiting = close <= p2 + atrValue * v2BreakBufferAtr and minAfterP3 >= p3 - atrValue * v2InvalidBreakAtr
+                key = str.tostring(p0Bar) + "-" + str.tostring(p1Bar) + "-" + str.tostring(p2Bar) + "-" + str.tostring(p3Bar)
+                unusedExec = not array.includes(usedExecuteKeys, key)
+                unusedWatch = not array.includes(usedWatchKeys, key)
+                structureOk = baseOk and contextOk and v1DropOk and v1BarsOk and v1RecoverOk and v1OriginOk and v1SpeedOk and v2DropOk and v2SizeOk and v2BarsOk and v2HoldOk
+                setupOk = structureOk and v2SpeedOk and candleOk and brokeP2 and unusedExec
+
+                latestState := brokeP2 ? "BREAK" : stillWaiting ? "WATCH" : "INVALID"
+                latestReason := not baseOk ? "環境NG" : not contextOk ? "高安値から遠い" : not v1DropOk ? "V1が弱い" : not v1RecoverOk ? "V1右肩が弱い/伸びすぎ" : not v1OriginOk ? "V1左肩を未突破" : not v1SpeedOk ? "V1右肩速度不足" : not v2DropOk ? "V2が小さい" : not v2SizeOk ? "V2比率NG" : not v2BarsOk ? "V2本数NG" : not v2HoldOk ? "V2安値維持NG" : not v2SpeedOk ? "V2右肩速度不足" : not candleOk ? "突破足弱い" : "OK"
+
+                if setupOk
+                    executeSignal := true
+                    sigKey := key
+                else if structureOk and stillWaiting and unusedWatch and showWatch and bar_index == p3Bar + pivotWidth
+                    watchSignal := true
+                    sigKey := key
+                else if brokeP2 and unusedExec and showSkip and not setupOk
+                    skipSignal := true
+                    skipReason := latestReason
+                    sigKey := key
+
+                if executeSignal or watchSignal or skipSignal
+                    sigP0 := p0
+                    sigP1 := p1
+                    sigP2 := p2
+                    sigP3 := p3
+                    sigP0Time := p0Time
+                    sigP1Time := p1Time
+                    sigP2Time := p2Time
+                    sigP3Time := p3Time
+                    sigV1DropAtr := v1DropAtr
+                    sigV2DropAtr := v2DropAtr
+                    sigV1Recover := v1Recover
+                    sigV1Speed := v1SpeedRatio
+                    sigV2Speed := v2SpeedRatio
+                    sigV2VsV1 := v2VsV1
+                    sigV2Hold := v2Hold
+                    sigV1Bars := v1DropBars
+                    sigV1RecoverBars := v1RecoverBars
+                    sigV2Bars := v2DropBars
+                    sigV2RecoverBars := v2RecoverBars
+                    sigContext := nearLow and nearHigh ? "高値+安値" : nearLow ? "安値付近" : nearHigh ? "高値付近" : "なし"
+                    sigStop := p3 - atrValue * stopBufferAtr
+                    sigTp := close + (close - sigStop) * rr
+
+plotshape(showWatch and watchSignal, title="Double V Watch", style=shape.circle, location=location.belowbar, color=color.new(color.yellow, 0), size=size.tiny, text="WATCH")
+plotshape(showExecute and executeSignal, title="Double V Execute", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="EXEC")
+plotshape(showSkip and skipSignal, title="Double V Skip", style=shape.xcross, location=location.abovebar, color=color.new(color.orange, 0), size=size.tiny, text="SKIP")
+
+if (executeSignal or watchSignal or skipSignal) and (showWatch or showExecute or showSkip)
+    if executeSignal
+        pushExecuteKey(sigKey)
+    else
+        pushWatchKey(sigKey)
+    lineEndTime = time + barMs * 36
+    labelY = executeSignal ? low - atrValue * labelOffsetAtr : high + atrValue * labelOffsetAtr
+    labelStyle = executeSignal ? label.style_label_up : label.style_label_down
+    labelColor = executeSignal ? color.new(color.lime, 0) : watchSignal ? color.new(color.yellow, 0) : color.new(color.orange, 0)
+    textColor = executeSignal or watchSignal ? color.black : color.white
+    head = executeSignal ? "EXECUTE LONG" : watchSignal ? "WATCH Double V" : "SKIP"
+    txt = head + "\n狙い: V2がV1右肩突破" +
+         "\n位置: " + sigContext +
+         "\nV1回復: " + fmtNum(sigV1Recover) +
+         "\nV1右肩速度: " + fmtNum(sigV1Speed) + "x" +
+         "\nV2右肩速度: " + fmtNum(sigV2Speed) + "x" +
+         "\nV2/V1押し: " + fmtNum(sigV2VsV1) +
+         "\nV2維持: " + fmtNum(sigV2Hold) +
+         "\nDrop ATR: " + fmtNum(sigV1DropAtr) + "/" + fmtNum(sigV2DropAtr) +
+         "\nBars: " + str.tostring(sigV1Bars) + "+" + str.tostring(sigV1RecoverBars) + " / " + str.tostring(sigV2Bars) + "+" + str.tostring(sigV2RecoverBars)
+    txt := skipSignal ? txt + "\nReason: " + skipReason : txt
+    lb = label.new(time, labelY, txt, xloc=xloc.bar_time, style=labelStyle, color=labelColor, textcolor=textColor, size=size.tiny)
+    keepLabel(lb)
+
+    if showVLines
+        keepLine(line.new(sigP0Time, sigP0, sigP1Time, sigP1, xloc=xloc.bar_time, color=color.new(color.red, 45), width=2))
+        keepLine(line.new(sigP1Time, sigP1, sigP2Time, sigP2, xloc=xloc.bar_time, color=color.new(color.lime, 60), width=2))
+        keepLine(line.new(sigP2Time, sigP2, sigP3Time, sigP3, xloc=xloc.bar_time, color=color.new(color.red, 0), width=3))
+        keepLine(line.new(sigP3Time, sigP3, time, close, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=3))
+
+    if showLevels
+        keepLine(line.new(sigP2Time, sigP2, lineEndTime, sigP2, xloc=xloc.bar_time, color=color.new(color.aqua, 0), width=2, style=line.style_dashed))
+        if executeSignal
+            keepLine(line.new(time, sigStop, lineEndTime, sigStop, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2, style=line.style_dashed))
+            keepLine(line.new(time, sigTp, lineEndTime, sigTp, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2, style=line.style_dashed))
+
+var table t = table.new(position.top_right, 2, 12, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+if showTable and barstate.islast
+    table.cell(t, 0, 0, "Method", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 0, "Double V denial", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 1, "Mode", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 1, mode, text_color=mode == "探索" ? color.yellow : mode == "標準" ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 2, "Chart", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 2, h4Ok ? "H4 OK" : "H4以外", text_color=h4Ok ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 3, "State", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 3, latestState, text_color=latestState == "BREAK" ? color.lime : latestState == "WATCH" ? color.yellow : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 4, "Reason", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, latestReason, text_color=latestReason == "OK" ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 5, "Pivots", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 5, str.tostring(array.size(pKinds)), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 6, "V1 min/max", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 6, fmtNum(v1RecoverMinUse) + " / " + fmtNum(v1RecoverMaxUse), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 7, "V2/V1 min/max", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 7, fmtNum(v2MinDropVsV1Use) + " / " + fmtNum(v2MaxDropVsV1Use), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 8, "V2 speed", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 8, fmtNum(v2RightSpeedMinUse), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 9, "Body/Close", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 9, fmtNum(minBodyRatioUse) + " / " + fmtNum(minCloseLocationUse), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 10, "HL filter", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 10, levelMode, text_color=levelMode == "なし" ? color.gray : color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 11, "Rule", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 11, "V2 > V1 right", text_color=color.aqua, text_size=size.tiny)
+
+alertcondition(executeSignal, title="H4 Double V Short Denial Execute", message="H4 Double V short-denial execute on {{ticker}} @ {{close}}")

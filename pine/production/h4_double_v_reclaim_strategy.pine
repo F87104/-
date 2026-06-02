@@ -21,6 +21,7 @@ strategy("H4 Double V Reclaim [Research]", overlay=true, initial_capital=10000, 
 //   - V2 starts after V1 low and its start high has recovered >= 61.8% of V1.
 //   - V2 start high is treated as the V1 right-shoulder high.
 //   - V1 right shoulder must reclaim the V1 left-shoulder origin by default.
+//   - V1 right shoulder must not be too extended above the V1 origin.
 //   - V2 low holds above V1 38.2% recovery line.
 //   - V2 pullback must be large enough versus V1 to avoid tiny noise V.
 //   - V2 right shoulder speed >= V2 left shoulder speed x 1.20.
@@ -51,6 +52,7 @@ v1MinDropSpeed = input.float(0.20, "V1 左肩速度下限(ATR/本)", minval=0.0,
 v1MinDropBars = input.int(2, "V1 左肩の最小本数", minval=1, group=grpV1)
 v1MaxDropBars = input.int(36, "V1 左肩の最大本数", minval=2, group=grpV1)
 v1RecoverAtV2Start = input.float(0.618, "V2開始時に必要なV1回復率", minval=0.1, maxval=1.5, step=0.001, group=grpV1)
+v1RecoverAtV2Max = input.float(1.60, "V2開始時のV1回復率上限", minval=0.5, maxval=5.0, step=0.05, group=grpV1, tooltip="大きく伸びた後の小さい押しをDouble Vとして拾わないための上限です。")
 v2LowHoldV1Fib = input.float(0.382, "V2安値が守るV1回復ライン", minval=0.0, maxval=1.0, step=0.001, group=grpV1)
 maxBarsV1LowToV2Start = input.int(96, "V1安値→V2開始の最大本数", minval=1, maxval=500, group=grpV1)
 requireImmediateDoubleV = input.bool(true, "V1→V2を連続pivotに限定", group=grpV1, tooltip="ONなら H-L-H-L の連続したDouble Vだけを採用します。")
@@ -322,6 +324,7 @@ if array.size(pKinds) >= 4 and not na(atrValue) and atrValue > 0
                             bool sequenceOk = v1LowBar < v2StartBar and v2StartBar - v1LowBar <= maxBarsV1LowToV2Start
                             bool immediateDoubleVOk = not requireImmediateDoubleV or v2Idx == v1Idx + 2
                             bool v1RecoveredOk = not na(v1RecoverAtV2) and v1RecoverAtV2 >= v1RecoverAtV2Start
+                            bool v1NotExtendedOk = not na(v1RecoverAtV2) and v1RecoverAtV2 <= v1RecoverAtV2Max
                             bool v1FullReclaimOk = not requireV1FullReclaim or v2Start > v1Start + atrValue * v1ReclaimBufferAtr
                             bool v1RightSpeedOk = not na(v1RightSpeedRatio) and v1RightSpeedRatio >= v1RightSpeedRatioMin
                             bool v2SizeVsV1Ok = not na(v2DropVsV1) and v2DropVsV1 >= v2MinDropVsV1
@@ -331,12 +334,15 @@ if array.size(pKinds) >= 4 and not na(atrValue) and atrValue > 0
                             bool contextOk = levelFilterMode == "なし" or (levelFilterMode == "高値または安値付近" and (nearMajorLow or nearMajorHigh)) or (levelFilterMode == "安値付近のみ" and nearMajorLow) or (levelFilterMode == "高値付近のみ" and nearMajorHigh)
                             string doubleKey = str.tostring(v1StartBar) + "-" + str.tostring(v1LowBar) + "-" + str.tostring(v2StartBar) + "-" + str.tostring(v2LowBar)
                             bool unusedOk = not array.includes(usedKeys, doubleKey)
-                            bool setupOk = baseOk and unusedOk and contextOk and immediateDoubleVOk and v2Crossed and v1DropOk and v1BarsOk and sequenceOk and v1RecoveredOk and v1FullReclaimOk and v1RightSpeedOk and v2SizeVsV1Ok and v2HigherLowOk and v2DropOk and v2BarsOk and v2LowHeld and v2SpeedOk and qualityOk
+                            bool setupOk = baseOk and unusedOk and contextOk and immediateDoubleVOk and v2Crossed and v1DropOk and v1BarsOk and sequenceOk and v1RecoveredOk and v1NotExtendedOk and v1FullReclaimOk and v1RightSpeedOk and v2SizeVsV1Ok and v2HigherLowOk and v2DropOk and v2BarsOk and v2LowHeld and v2SpeedOk and qualityOk
 
                             if v2Crossed and v1DropOk and v1BarsOk and sequenceOk and v1RecoveredOk and v2HigherLowOk and v2DropOk and v2BarsOk and v2LowHeld
                                 if not immediateDoubleVOk
                                     rejectedCandidate := true
                                     rejectText := "連続2Vでない"
+                                else if not v1NotExtendedOk
+                                    rejectedCandidate := true
+                                    rejectText := "V1右肩が伸びすぎ"
                                 else if not v1FullReclaimOk
                                     rejectedCandidate := true
                                     rejectText := "V1右肩が左肩未満"

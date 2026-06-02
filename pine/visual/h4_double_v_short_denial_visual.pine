@@ -63,11 +63,19 @@ minBodyRatio = input.float(0.35, "実体比率 下限", minval=0.0, maxval=1.0, 
 minCloseLocation = input.float(0.55, "終値位置 下限", minval=0.0, maxval=1.0, step=0.05, group=grpQuality)
 
 grpTrend = "環境フィルタ"
-trendFilterMode = input.string("EMA50傾き>=0", "下降中の戻り除外", options=["なし", "EMA50傾き>=0", "終値>EMA50", "終値>EMA50 + 傾き>=0", "EMA20>EMA50 + 傾き>=0"], group=grpTrend)
+trendFilterMode = input.string("なし", "下降中の戻り除外", options=["なし", "EMA50傾き>=0", "終値>EMA50", "終値>EMA50 + 傾き>=0", "EMA20>EMA50 + 傾き>=0"], group=grpTrend)
 emaFastLen = input.int(20, "EMA短期", minval=1, group=grpTrend)
 emaSlowLen = input.int(50, "EMA長期", minval=1, group=grpTrend)
 emaSlopeBars = input.int(6, "EMA50傾き判定本数", minval=1, maxval=100, group=grpTrend)
 showTrendMAs = input.bool(false, "EMAを表示", group=grpTrend)
+
+grpKickoff = "トレンド初動フィルタ"
+useKickoffFilter = input.bool(true, "初動Vだけ拾う", group=grpKickoff)
+kickoffMode = input.string("20本高値突破+EMA20上向き", "初動確認", options=["なし", "20本高値突破", "EMA20上向き", "20本高値突破+EMA20上向き", "EMA20>EMA50+20本高値突破"], group=grpKickoff)
+kickoffLookback = input.int(24, "直近高値突破 本数", minval=5, maxval=120, group=grpKickoff)
+kickoffBufferAtr = input.float(0.03, "直近高値突破 余白ATR", minval=0.0, step=0.01, group=grpKickoff)
+maxEntryFromVLowAtr = input.float(8.0, "V底からEntryまでの最大ATR", minval=1.0, step=0.5, group=grpKickoff, tooltip="大きなVの右肩が伸び切った後の小さいVを除外します。")
+requireKickoffLowContext = input.bool(true, "安値圏からの反転だけ", group=grpKickoff)
 
 grpContext = "高値安値コンテキスト"
 levelMode = input.string("高値または安値付近", "高値安値フィルタ", options=["なし", "高値または安値付近", "安値付近のみ", "高値付近のみ"], group=grpContext)
@@ -155,8 +163,11 @@ contextLow = ta.lowest(low[levelExcludeRecent], levelLookbackBars)
 emaFast = ta.ema(close, emaFastLen)
 emaSlow = ta.ema(close, emaSlowLen)
 emaSlopeAtr = not na(emaSlow[emaSlopeBars]) and not na(atrValue) and atrValue > 0 ? (emaSlow - emaSlow[emaSlopeBars]) / emaSlopeBars / atrValue : na
+emaFastSlopeAtr = not na(emaFast[emaSlopeBars]) and not na(atrValue) and atrValue > 0 ? (emaFast - emaFast[emaSlopeBars]) / emaSlopeBars / atrValue : na
 emaSlopeOk = not na(emaSlopeAtr) and emaSlopeAtr >= 0
+emaFastSlopeOk = not na(emaFastSlopeAtr) and emaFastSlopeAtr >= 0
 trendOk = trendFilterMode == "なし" or (trendFilterMode == "EMA50傾き>=0" and emaSlopeOk) or (trendFilterMode == "終値>EMA50" and close > emaSlow) or (trendFilterMode == "終値>EMA50 + 傾き>=0" and close > emaSlow and emaSlopeOk) or (trendFilterMode == "EMA20>EMA50 + 傾き>=0" and emaFast > emaSlow and emaSlopeOk)
+localBreakHigh = ta.highest(high[1], kickoffLookback)
 
 plot(showContextLevels and levelMode != "なし" ? contextHigh : na, title="Context High", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
 plot(showContextLevels and levelMode != "なし" ? contextLow : na, title="Context Low", color=color.new(color.orange, 0), linewidth=2, style=plot.style_linebr)
@@ -254,6 +265,7 @@ float sigP3 = na
 float sigStop = na
 float sigTp = na
 float sigBreakLevel = na
+float sigKickoffDistance = na
 string sigContext = "N/A"
 string sigKey = ""
 int sigP0Time = na
@@ -331,6 +343,21 @@ if array.size(pKinds) >= 4 and not na(atrValue) and atrValue > 0
                 nearLow = not na(contextLow) and (p1 <= contextLow + atrValue * nearLowAtr or p3 <= contextLow + atrValue * nearLowAtr)
                 nearHigh = not na(contextHigh) and (breakLevel >= contextHigh - atrValue * nearHighAtr or close >= contextHigh - atrValue * nearHighAtr)
                 contextOk = levelMode == "なし" or (levelMode == "高値または安値付近" and (nearLow or nearHigh)) or (levelMode == "安値付近のみ" and nearLow) or (levelMode == "高値付近のみ" and nearHigh)
+                kickoffBreakOk = not na(localBreakHigh) and close > localBreakHigh + atrValue * kickoffBufferAtr
+                vLowest = math.min(p1, p3)
+                kickoffDistanceAtr = (close - vLowest) / atrValue
+                kickoffDistanceOk = kickoffDistanceAtr <= maxEntryFromVLowAtr
+                kickoffLowContextOk = not requireKickoffLowContext or nearLow
+                kickoffModeOk = kickoffMode == "なし"
+                if kickoffMode == "20本高値突破"
+                    kickoffModeOk := kickoffBreakOk
+                else if kickoffMode == "EMA20上向き"
+                    kickoffModeOk := emaFastSlopeOk
+                else if kickoffMode == "20本高値突破+EMA20上向き"
+                    kickoffModeOk := kickoffBreakOk and emaFastSlopeOk
+                else if kickoffMode == "EMA20>EMA50+20本高値突破"
+                    kickoffModeOk := kickoffBreakOk and emaFast > emaSlow and emaFastSlopeOk
+                kickoffOk = not useKickoffFilter or (kickoffModeOk and kickoffDistanceOk and kickoffLowContextOk)
 
                 v1DropOk = v1Drop > 0 and v1DropAtr >= v1MinDropAtrUse and v1DropSpeed >= v1MinDropSpeed
                 v1BarsOk = v1DropBars >= v1MinDropBars and v1DropBars <= v1MaxDropBars
@@ -348,11 +375,11 @@ if array.size(pKinds) >= 4 and not na(atrValue) and atrValue > 0
                 key = str.tostring(p0Bar) + "-" + str.tostring(p1Bar) + "-" + str.tostring(p2Bar) + "-" + str.tostring(p3Bar)
                 unusedExec = not array.includes(usedExecuteKeys, key)
                 unusedWatch = not array.includes(usedWatchKeys, key)
-                structureOk = baseOk and trendOk and contextOk and v1DropOk and v1BarsOk and v1RecoverOk and v1OriginOk and v1SpeedOk and v2DropOk and v2SizeOk and v2BarsOk and v2HoldOk
+                structureOk = baseOk and trendOk and kickoffOk and contextOk and v1DropOk and v1BarsOk and v1RecoverOk and v1OriginOk and v1SpeedOk and v2DropOk and v2SizeOk and v2BarsOk and v2HoldOk
                 setupOk = structureOk and v2SpeedOk and candleOk and brokeP2 and unusedExec
 
                 latestState := brokeP2 ? "BREAK" : stillWaiting ? "WATCH" : "INVALID"
-                latestReason := not baseOk ? "環境NG" : not trendOk ? "EMA下向き" : not contextOk ? "高安値から遠い" : not v1DropOk ? "V1が弱い" : not v1RecoverOk ? "V1右肩が弱い/伸びすぎ" : not v1OriginOk ? "V1左肩を未突破" : not v1SpeedOk ? "V1右肩速度不足" : not v2DropOk ? "V2が小さい" : not v2SizeOk ? "V2比率NG" : not v2BarsOk ? "V2本数NG" : not v2HoldOk ? "V2安値維持NG" : not v2SpeedOk ? "V2右肩速度不足" : not candleOk ? "突破足弱い" : "OK"
+                latestReason := not baseOk ? "環境NG" : not trendOk ? "EMA下向き" : useKickoffFilter and not kickoffLowContextOk ? "安値圏ではない" : useKickoffFilter and not kickoffDistanceOk ? "V底から伸びすぎ" : useKickoffFilter and not kickoffModeOk ? "初動突破なし" : not contextOk ? "高安値から遠い" : not v1DropOk ? "V1が弱い" : not v1RecoverOk ? "V1右肩が弱い/伸びすぎ" : not v1OriginOk ? "V1左肩を未突破" : not v1SpeedOk ? "V1右肩速度不足" : not v2DropOk ? "V2が小さい" : not v2SizeOk ? "V2比率NG" : not v2BarsOk ? "V2本数NG" : not v2HoldOk ? "V2安値維持NG" : not v2SpeedOk ? "V2右肩速度不足" : not candleOk ? "突破足弱い" : "OK"
 
                 if setupOk
                     executeSignal := true
@@ -371,6 +398,7 @@ if array.size(pKinds) >= 4 and not na(atrValue) and atrValue > 0
                     sigP2 := p2
                     sigP3 := p3
                     sigBreakLevel := breakLevel
+                    sigKickoffDistance := kickoffDistanceAtr
                     sigP0Time := p0Time
                     sigP1Time := p1Time
                     sigP2Time := p2Time
@@ -408,6 +436,7 @@ if (executeSignal or watchSignal or skipSignal) and (showWatch or showExecute or
     txt = head + "\n狙い: V2がV1右肩ゾーン突破" +
          "\n位置: " + sigContext +
          "\n突破基準: " + fmt(sigBreakLevel) +
+         "\n初動距離: " + fmtNum(sigKickoffDistance) + "ATR" +
          "\nV1回復: " + fmtNum(sigV1Recover) +
          "\nV1右肩速度: " + fmtNum(sigV1Speed) + "x" +
          "\nV2右肩速度: " + fmtNum(sigV2Speed) + "x" +
@@ -431,7 +460,7 @@ if (executeSignal or watchSignal or skipSignal) and (showWatch or showExecute or
             keepLine(line.new(time, sigStop, lineEndTime, sigStop, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2, style=line.style_dashed))
             keepLine(line.new(time, sigTp, lineEndTime, sigTp, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2, style=line.style_dashed))
 
-var table t = table.new(position.top_right, 2, 14, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+var table t = table.new(position.top_right, 2, 17, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
 if showTable and barstate.islast
     table.cell(t, 0, 0, "Method", text_color=color.white, text_size=size.tiny)
     table.cell(t, 1, 0, "Double V denial", text_color=color.lime, text_size=size.tiny)
@@ -455,11 +484,17 @@ if showTable and barstate.islast
     table.cell(t, 1, 9, fmtNum(v2HoldV1FibUse), text_color=color.white, text_size=size.tiny)
     table.cell(t, 0, 10, "Trend", text_color=color.white, text_size=size.tiny)
     table.cell(t, 1, 10, trendFilterMode, text_color=trendOk ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 11, "Body/Close", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 11, fmtNum(minBodyRatioUse) + " / " + fmtNum(minCloseLocationUse), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 12, "HL filter", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 12, levelMode, text_color=levelMode == "なし" ? color.gray : color.yellow, text_size=size.tiny)
-    table.cell(t, 0, 13, "Rule", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 13, breakoutBasis, text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 11, "Kickoff", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 11, useKickoffFilter ? kickoffMode : "OFF", text_color=useKickoffFilter ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 12, "Max from low", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 12, fmtNum(maxEntryFromVLowAtr) + "ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 13, "Low context", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 13, requireKickoffLowContext ? "ON" : "OFF", text_color=requireKickoffLowContext ? color.yellow : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 14, "Body/Close", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 14, fmtNum(minBodyRatioUse) + " / " + fmtNum(minCloseLocationUse), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 15, "HL filter", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 15, levelMode, text_color=levelMode == "なし" ? color.gray : color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 16, "Rule", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 16, breakoutBasis, text_color=color.aqua, text_size=size.tiny)
 
 alertcondition(executeSignal, title="H4 Double V Short Denial Execute", message="H4 Double V short-denial execute on {{ticker}} @ {{close}}")

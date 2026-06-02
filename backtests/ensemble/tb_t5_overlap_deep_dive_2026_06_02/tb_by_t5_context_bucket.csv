@@ -1,0 +1,4 @@
+tb_context_bucket,scenario,trades,win_rate,total_r,avg_r,pf,max_dd_r,max_loss_streak
+tb_no_t5_context,tb_context_tb_no_t5_context,369,39.295392953929536,187.39590087386085,0.5078479698478614,1.7891836443002938,11.941818281770324,11
+tb_with_opp_or_mixed_t5_context,tb_context_tb_with_opp_or_mixed_t5_context,2,50.0,1.9212836947631975,0.9606418473815987,2.827317339066051,0.0,1
+tb_with_same_dir_t5_context,tb_context_tb_with_same_dir_t5_context,10,40.0,5.2899135878164705,0.528991358781647,1.8108090762121871,4.212707665056813,5

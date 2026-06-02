@@ -1,0 +1,8 @@
+overlap_bucket,trigger_type,scenario,trades,win_rate,total_r,avg_r,pf,max_dd_r,max_loss_streak
+free,rebreak,bucket_trigger_free_rebreak,11,54.54545454545454,6.870780741389895,0.6246164310354451,2.3649590648902166,2.01210308831363,2
+free,stagnation,bucket_trigger_free_stagnation,4,50.0,1.962748036051454,0.4906870090128635,1.9727359417033716,1.0095537465510678,1
+free,stagnation+rebreak,bucket_trigger_free_stagnation+rebreak,3,66.66666666666666,2.9761325088522703,0.9920441696174235,3.958767341258358,1.0058690547755362,1
+overlap_opposite_or_mixed,rebreak,bucket_trigger_overlap_opposite_or_mixed_rebreak,2,0.0,-1.2886138453514422,-0.6443069226757211,0.0,1.0086437763522806,2
+overlap_same_direction,rebreak,bucket_trigger_overlap_same_direction_rebreak,2,50.0,1.9579060025838726,0.9789530012919363,89.57432252956939,0.0,1
+overlap_same_direction,stagnation,bucket_trigger_overlap_same_direction_stagnation,5,80.0,6.885033280421098,1.3770066560842196,7.532387385478754,0.0,1
+overlap_same_direction,stagnation+rebreak,bucket_trigger_overlap_same_direction_stagnation+rebreak,3,100.0,5.970590124042074,1.9901967080140246,inf,0.0,0

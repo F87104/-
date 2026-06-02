@@ -1,0 +1,7 @@
+symbol,trades,winrate,total_r,avg_r,pf,max_dd_r,max_losing_streak,research_trades,research_total_r,oos_trades,oos_total_r
+AUDJPY,3.0,100.0,5.98,1.99,inf,0.0,0.0,3.0,5.98,0.0,0.0
+XAUUSD,4.0,75.0,4.95,1.24,5.91,1.01,1.0,4.0,4.95,0.0,0.0
+CHFJPY,4.0,75.0,4.93,1.23,5.91,1.0,1.0,3.0,2.94,1.0,1.99
+GBPJPY,3.0,100.0,4.57,1.52,inf,0.0,0.0,2.0,4.01,1.0,0.55
+USDJPY,4.0,50.0,3.5,0.88,8.39,0.45,2.0,4.0,3.5,0.0,0.0
+SILVER,2.0,100.0,2.17,1.09,inf,0.0,0.0,0.0,0.0,2.0,2.17

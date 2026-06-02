@@ -1,0 +1,13 @@
+symbol,overlap_bucket,scenario,trades,win_rate,total_r,avg_r,pf,max_dd_r,max_loss_streak
+CHFJPY,free,symbol_bucket_CHFJPY_free,3,66.66666666666666,2.94242868652551,0.9808095621751699,3.930653191107438,1.0040180446645146,1
+CHFJPY,overlap_same_direction,symbol_bucket_CHFJPY_overlap_same_direction,1,100.0,1.995794151543929,1.995794151543929,inf,0.0,0
+EURJPY,free,symbol_bucket_EURJPY_free,2,50.0,0.9727653516490826,0.4863826758245413,1.963559746048524,0.0,1
+GBPJPY,free,symbol_bucket_GBPJPY_free,5,40.0,0.9708560074084551,0.19417120148169104,1.3212155998311572,1.011724848895423,2
+GBPJPY,overlap_opposite_or_mixed,symbol_bucket_GBPJPY_overlap_opposite_or_mixed,1,0.0,-1.0086437763522806,-1.0086437763522806,0.0,0.0,1
+GBPJPY,overlap_same_direction,symbol_bucket_GBPJPY_overlap_same_direction,3,100.0,5.95142154880672,1.9838071829355732,inf,0.0,0
+SILVER,overlap_same_direction,symbol_bucket_SILVER_overlap_same_direction,1,0.0,-1.0539842287562833,-1.0539842287562833,0.0,0.0,1
+USDJPY,free,symbol_bucket_USDJPY_free,4,50.0,1.9749636744400354,0.49374091861000885,1.9805928758728906,1.0058439785960613,2
+USDJPY,overlap_same_direction,symbol_bucket_USDJPY_overlap_same_direction,4,75.0,5.940287264758811,1.4850718161897027,269.73451504447337,0.0,1
+XAUUSD,free,symbol_bucket_XAUUSD_free,4,75.0,4.948647566270536,1.237161891567634,5.913011164821281,1.0072534745502764,1
+XAUUSD,overlap_opposite_or_mixed,symbol_bucket_XAUUSD_overlap_opposite_or_mixed,1,0.0,-0.2799700689991615,-0.2799700689991615,0.0,0.0,1
+XAUUSD,overlap_same_direction,symbol_bucket_XAUUSD_overlap_same_direction,1,100.0,1.9800106706938685,1.9800106706938685,inf,0.0,0

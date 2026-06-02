@@ -20,6 +20,7 @@ strategy("H4 Double V Reclaim [Research]", overlay=true, initial_capital=10000, 
 //   - V1 confirmed pivot high -> pivot low drop >= 3.0 ATR.
 //   - V2 starts after V1 low and its start high has recovered >= 61.8% of V1.
 //   - V2 start high is treated as the V1 right-shoulder high.
+//   - V1 right shoulder must reclaim the V1 left-shoulder origin by default.
 //   - V2 low holds above V1 38.2% recovery line.
 //   - V2 right shoulder speed >= V2 left shoulder speed x 1.20.
 //   - V2 close breaks V1 right-shoulder high + 0.05 ATR.
@@ -52,6 +53,9 @@ v1RecoverAtV2Start = input.float(0.618, "V2開始時に必要なV1回復率", mi
 v2LowHoldV1Fib = input.float(0.382, "V2安値が守るV1回復ライン", minval=0.0, maxval=1.0, step=0.001, group=grpV1)
 maxBarsV1LowToV2Start = input.int(96, "V1安値→V2開始の最大本数", minval=1, maxval=500, group=grpV1)
 requireImmediateDoubleV = input.bool(true, "V1→V2を連続pivotに限定", group=grpV1, tooltip="ONなら H-L-H-L の連続したDouble Vだけを採用します。")
+requireV1FullReclaim = input.bool(true, "V1右肩が左肩起点を上抜け", group=grpV1, tooltip="ONなら、V1右肩(V2開始高値)がV1左肩起点を超えない部分戻しは除外します。")
+v1ReclaimBufferAtr = input.float(0.05, "V1右肩上抜け余白(ATR)", minval=0.0, step=0.01, group=grpV1)
+v1RightSpeedRatioMin = input.float(1.00, "V1右肩速度/左肩速度の下限", minval=0.0, step=0.05, group=grpV1)
 
 grpV2 = "V2 エントリー"
 v2MinDropAtr = input.float(1.4, "V2 下落幅の最小ATR", minval=0.1, step=0.1, group=grpV2)
@@ -217,6 +221,7 @@ float signalV2Start = na
 float signalV2Low = na
 float signalV1DropAtr = na
 float signalV2DropAtr = na
+float signalV1RightSpeedRatio = na
 float signalV2SpeedRatio = na
 float signalV1RecoverAtV2 = na
 float signalV2HoldFib = na
@@ -229,6 +234,7 @@ int signalV1LowTime = na
 int signalV2StartTime = na
 int signalV2LowTime = na
 int signalV1DropBars = na
+int signalV1RecoveryBars = na
 int signalV2DropBars = na
 int signalV2RecoveryBars = na
 string signalKey = ""
@@ -300,8 +306,11 @@ if array.size(pKinds) >= 4 and not na(atrValue) and atrValue > 0
                             int v1LowTime = array.get(pTimes, v1Idx + 1)
                             float v1Drop = v1Start - v1Low
                             int v1DropBars = math.max(v1LowBar - v1StartBar, 1)
+                            int v1RecoveryBars = math.max(v2StartBar - v1LowBar, 1)
                             float v1DropAtr = v1Drop / atrValue
                             float v1DropSpeed = v1Drop / v1DropBars / atrValue
+                            float v1RightSpeed = (v2Start - v1Low) / v1RecoveryBars / atrValue
+                            float v1RightSpeedRatio = v1DropSpeed > 0 ? v1RightSpeed / v1DropSpeed : na
                             float v1RecoverAtV2 = v1Drop > 0 ? (v2Start - v1Low) / v1Drop : na
                             float v2HoldFib = v1Drop > 0 ? (v2Low - v1Low) / v1Drop : na
                             bool v1DropOk = v1Drop > 0 and v1DropAtr >= v1MinDropAtr and v1DropSpeed >= v1MinDropSpeed
@@ -309,18 +318,26 @@ if array.size(pKinds) >= 4 and not na(atrValue) and atrValue > 0
                             bool sequenceOk = v1LowBar < v2StartBar and v2StartBar - v1LowBar <= maxBarsV1LowToV2Start
                             bool immediateDoubleVOk = not requireImmediateDoubleV or v2Idx == v1Idx + 2
                             bool v1RecoveredOk = not na(v1RecoverAtV2) and v1RecoverAtV2 >= v1RecoverAtV2Start
+                            bool v1FullReclaimOk = not requireV1FullReclaim or v2Start > v1Start + atrValue * v1ReclaimBufferAtr
+                            bool v1RightSpeedOk = not na(v1RightSpeedRatio) and v1RightSpeedRatio >= v1RightSpeedRatioMin
                             bool v2HigherLowOk = not na(v2HoldFib) and v2HoldFib >= v2LowHoldV1Fib
                             bool nearMajorLow = not na(contextLow) and (v1Low <= contextLow + atrValue * nearLowAtr or v2Low <= contextLow + atrValue * nearLowAtr)
                             bool nearMajorHigh = not na(contextHigh) and (close >= contextHigh - atrValue * nearHighAtr or v2Start >= contextHigh - atrValue * nearHighAtr)
                             bool contextOk = levelFilterMode == "なし" or (levelFilterMode == "高値または安値付近" and (nearMajorLow or nearMajorHigh)) or (levelFilterMode == "安値付近のみ" and nearMajorLow) or (levelFilterMode == "高値付近のみ" and nearMajorHigh)
                             string doubleKey = str.tostring(v1StartBar) + "-" + str.tostring(v1LowBar) + "-" + str.tostring(v2StartBar) + "-" + str.tostring(v2LowBar)
                             bool unusedOk = not array.includes(usedKeys, doubleKey)
-                            bool setupOk = baseOk and unusedOk and contextOk and immediateDoubleVOk and v2Crossed and v1DropOk and v1BarsOk and sequenceOk and v1RecoveredOk and v2HigherLowOk and v2DropOk and v2BarsOk and v2LowHeld and v2SpeedOk and qualityOk
+                            bool setupOk = baseOk and unusedOk and contextOk and immediateDoubleVOk and v2Crossed and v1DropOk and v1BarsOk and sequenceOk and v1RecoveredOk and v1FullReclaimOk and v1RightSpeedOk and v2HigherLowOk and v2DropOk and v2BarsOk and v2LowHeld and v2SpeedOk and qualityOk
 
                             if v2Crossed and v1DropOk and v1BarsOk and sequenceOk and v1RecoveredOk and v2HigherLowOk and v2DropOk and v2BarsOk and v2LowHeld
                                 if not immediateDoubleVOk
                                     rejectedCandidate := true
                                     rejectText := "連続2Vでない"
+                                else if not v1FullReclaimOk
+                                    rejectedCandidate := true
+                                    rejectText := "V1右肩が左肩未満"
+                                else if not v1RightSpeedOk
+                                    rejectedCandidate := true
+                                    rejectText := "V1右肩速度不足"
                                 else if not contextOk
                                     rejectedCandidate := true
                                     rejectText := "高安値から遠い"
@@ -339,6 +356,7 @@ if array.size(pKinds) >= 4 and not na(atrValue) and atrValue > 0
                                     signalV2Low := v2Low
                                     signalV1DropAtr := v1DropAtr
                                     signalV2DropAtr := v2DropAtr
+                                    signalV1RightSpeedRatio := v1RightSpeedRatio
                                     signalV2SpeedRatio := v2SpeedRatio
                                     signalV1RecoverAtV2 := v1RecoverAtV2
                                     signalV2HoldFib := v2HoldFib
@@ -351,6 +369,7 @@ if array.size(pKinds) >= 4 and not na(atrValue) and atrValue > 0
                                     signalV2StartTime := v2StartTime
                                     signalV2LowTime := v2LowTime
                                     signalV1DropBars := v1DropBars
+                                    signalV1RecoveryBars := v1RecoveryBars
                                     signalV2DropBars := v2DropBars
                                     signalV2RecoveryBars := v2RecoveryBars
                                     signalKey := doubleKey
@@ -396,7 +415,7 @@ if rawSignal and showSignals
     int labelTime = time + barMs * labelShiftBars
     int lineEndTime = time + barMs * 36
     float labelY = low - atrValue * labelOffsetAtr
-    string txt = "Double V LONG\n突破: V1右肩高値\n位置: " + signalContext + "\nV2右肩/左肩: " + fmtNum(signalV2SpeedRatio) + "x\nV1回復@V2: " + fmtNum(signalV1RecoverAtV2) + "\nV2高値維持: " + fmtNum(signalV2HoldFib) + "\nV1/V2 Drop: " + fmtNum(signalV1DropAtr) + "/" + fmtNum(signalV2DropAtr) + "ATR\nBars V1/V2: " + str.tostring(signalV1DropBars) + "/" + str.tostring(signalV2DropBars) + "+" + str.tostring(signalV2RecoveryBars) + "\nSL: " + fmt(signalStop) + "\nTP: " + fmt(signalTarget)
+    string txt = "Double V LONG\n突破: V1右肩高値\n位置: " + signalContext + "\nV1右肩/左肩: " + fmtNum(signalV1RightSpeedRatio) + "x\nV2右肩/左肩: " + fmtNum(signalV2SpeedRatio) + "x\nV1回復@V2: " + fmtNum(signalV1RecoverAtV2) + "\nV2高値維持: " + fmtNum(signalV2HoldFib) + "\nV1/V2 Drop: " + fmtNum(signalV1DropAtr) + "/" + fmtNum(signalV2DropAtr) + "ATR\nBars V1/V2: " + str.tostring(signalV1DropBars) + "+" + str.tostring(signalV1RecoveryBars) + "/" + str.tostring(signalV2DropBars) + "+" + str.tostring(signalV2RecoveryBars) + "\nSL: " + fmt(signalStop) + "\nTP: " + fmt(signalTarget)
     label lb = label.new(labelTime, labelY, txt, xloc=xloc.bar_time, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
     keepLabel(lb)
     if showVLines

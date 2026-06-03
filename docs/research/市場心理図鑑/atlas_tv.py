@@ -73,23 +73,23 @@ def setup_font() -> None:
 
 def candle_width(n_bars: int) -> float:
     """Slimmer bodies with a little air between bars."""
+    if n_bars <= 12:
+        return 0.58
     if n_bars <= 16:
         return 0.52
-    if n_bars <= 24:
-        return 0.46
-    return 0.40
+    return 0.46
 
 
 def compute_y_range(
     ohlc: pd.DataFrame,
     signal_i: int,
     extra_levels: list[float] | None = None,
-    pad_ratio: float = 0.12,
+    pad_ratio: float = 0.06,
 ) -> tuple[float, float]:
-    """Focus Y-axis on the event context; ignore distant outlier spikes."""
+    """Focus Y-axis tightly on the event bar and immediate neighbors."""
     n = len(ohlc)
-    lo_i = max(0, signal_i - 10)
-    hi_i = min(n, signal_i + 4)
+    lo_i = max(0, signal_i - 6)
+    hi_i = min(n, signal_i + 2)
     sub = ohlc.iloc[lo_i:hi_i]
 
     bar_range = (sub["high"] - sub["low"]).astype(float)
@@ -98,7 +98,7 @@ def compute_y_range(
     else:
         scale = float(bar_range.median()) or 1.0
 
-    cutoff = max(scale * 2.2, float(bar_range.quantile(0.88)))
+    cutoff = max(scale * 1.8, float(bar_range.quantile(0.82)))
     focus = sub[bar_range <= cutoff]
     if focus.empty:
         focus = sub
@@ -106,10 +106,13 @@ def compute_y_range(
     y_lo = float(focus["low"].min())
     y_hi = float(focus["high"].max())
     if extra_levels:
-        y_lo = min(y_lo, min(extra_levels))
-        y_hi = max(y_hi, max(extra_levels))
+        span = max(y_hi - y_lo, scale * 1.5)
+        for lv in extra_levels:
+            if y_lo - span * 0.25 <= lv <= y_hi + span * 0.25:
+                y_lo = min(y_lo, lv)
+                y_hi = max(y_hi, lv)
 
-    pad = max((y_hi - y_lo) * pad_ratio, scale * 0.35)
+    pad = max((y_hi - y_lo) * pad_ratio, scale * 0.18)
     return y_lo - pad, y_hi + pad
 
 
@@ -157,9 +160,9 @@ def render_real_chart(spec: RealChartSpec, out_path: Path) -> None:
     for y0, y1, _ in spec.zones:
         extra_levels.extend([y0, y1])
     y_min, y_max = compute_y_range(ohlc, spec.signal_i, extra_levels or None)
-    pad = (y_max - y_min) * 0.08
+    pad = (y_max - y_min) * 0.05
     ax.set_ylim(y_min, y_max)
-    ax.set_xlim(-0.6, n - 0.4)
+    ax.set_xlim(-0.45, n - 0.55)
 
     tb = fig.add_axes([0, 1 - toolbar_h, 1, toolbar_h])
     tb.set_facecolor(TV.TOOLBAR)

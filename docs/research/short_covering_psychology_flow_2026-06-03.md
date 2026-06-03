@@ -68,6 +68,21 @@
 - 反発が1ATR未満で終わる
 - 直近高値付近まで距離がなく、買い戻し余地が小さい
 
+## 2026-06-03 表示調整メモ
+
+TradingView確認で、初期版は `SELL DOMINANCE`、`SELL FAILURE`、`SHORT COVERING`、`ACCELERATION`、事後分析ラベルをすべて表示していたため、チャートが読みづらくなった。
+
+今回の修正では、初期表示を **実戦レビュー** に寄せ、普段は `SHORT COVERING` と `ACCELERATION` だけを主役にする。
+
+- `SELL DOMINANCE` / `SELL FAILURE` の詳細ラベルは初期OFF
+- 背景表示は初期OFF
+- 事後分析ラベルは初期「なし」
+- `詳細研究` モードに切り替えると、4段階すべてを確認できる
+- 売り優勢と踏み上げ条件を少し厳格化
+- 同一フローの再表示間隔を80本に延長し、観察中の新規フロー開始を抑制
+
+理由: この研究対象は「売り手の損切り買い戻しが起きた可能性」であり、実戦画面では候補段階の赤ラベルを大量に見るより、損切り連鎖が始まった可能性のある `SHORT COVERING` / `ACCELERATION` に集中した方がよい。
+
 ## 次に検証すること
 
 1. GBPJPY / USDJPY / XAUUSD / XAGUSD / CHFJPY / AUDJPY で、SHORT COVERING後の最大上昇ATRを記録する

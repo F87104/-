@@ -89,7 +89,8 @@ pine/research/          ← TradingView 用 Pine（ここ）
 | 3 | 受講生エントリー集中パターン | 進行中 | [student_entry_cluster_research_2026-05-31.md](docs/research/student_entry_cluster_research_2026-05-31.md) |
 | 4 | トレード心理 / 群衆心理 | 進行中 | [RESEARCH_INDEX.md](docs/research/RESEARCH_INDEX.md) ／ [crowd_psychology_simple_visual.pine](pine/visual/crowd_psychology_simple_visual.pine) |
 | 5 | Market Psychology Squeeze | 記録済み | [market_psychology_squeeze_strict_2026-05-30.md](docs/research/market_psychology_squeeze_strict_2026-05-30.md) |
-| 6 | Wavebox / Rebreak | 記録済み | [wavebox_operational_preconditions_v1.md](docs/research/wavebox_operational_preconditions_v1.md) |
+| 6 | **市場心理図鑑 (Atlas)** | **Vol.1 公開** | [market_psychology_atlas/README.md](docs/research/market_psychology_atlas/README.md) |
+| 7 | Wavebox / Rebreak | 記録済み | [wavebox_operational_preconditions_v1.md](docs/research/wavebox_operational_preconditions_v1.md) |
 
 ---
 

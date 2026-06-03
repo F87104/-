@@ -7,7 +7,7 @@
 
 ## 方法
 
-- データ: [student_entries_extracted.csv](student_entries_extracted.csv)（チャート画像から抽出した **137件** の実エントリー、匿名IDのみ）
+- データ: [entries.csv](../trade_diary/archive/student/entries.csv)（チャート画像から抽出した **137件** の実エントリー、匿名IDのみ）
   - 抽出項目: 通貨 / 売買 / 時間軸 / エントリー日時(JST) / エントリー価格 / 決済価格 / pips / 勝敗
   - 信頼度: high 113 / medium 18 / low 6（手入力誤記は note でフラグ）
 - クラスタ定義: **同一通貨 × 48時間以内 × 価格近接**（GBPJPY ±0.8円 / 円ペア ±0.6円 / XAUUSD ±25ドル）で、

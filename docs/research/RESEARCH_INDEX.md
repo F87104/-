@@ -51,7 +51,7 @@
 |---:|---|---|---|---|---|
 | 1 | 受講生つまずきクラスタ研究 | **データ確定** | 137件・全敗15・Pine v0.4 + F1試験 v0.1.1 完了 | 追加抽出不要 | v2.x へ F1 移植 |
 | 2 | Market Psychology Squeeze | 記録済み | スクイーズ、投げ売り、踏み上げを戦略化する | 通貨別の相性と厳格条件を整理済み | 実運用に残す条件と除外条件をまとめる |
-| 3 | **市場心理図鑑 (Atlas)** | **Vol.1 公開** | チャート形状ではなく参加者心理を分類する辞書 | 基本12パターンを記載 | Vol.2 心理合成、Event scanner 実装 |
+| 3 | **市場心理図鑑** | **Vol.1 公開** | チャート形状ではなく参加者心理を分類する辞書 | 基本12パターンを記載 | Vol.2 心理合成、Event scanner 実装 |
 | 4 | Wavebox / Rebreak | 記録済み | 波形、再ブレイク、押し戻りの有効条件を調べる | 運用前提、監査、Pine 実装メモを整理済み | 実運用に使う版と研究保留版を分ける |
 
 ## トレード心理研究の中間整理
@@ -105,7 +105,7 @@
 | テーマ | ファイル |
 |---|---|
 | Market Psychology | [market_psychology_pattern_library_2026-05-30.md](market_psychology_pattern_library_2026-05-30.md) |
-| **市場心理図鑑 (Atlas)** | **[market_psychology_atlas/README.md](market_psychology_atlas/README.md)** ／ [Vol.1 基本12パターン](market_psychology_atlas/vol01_core_patterns.md) |
+| **市場心理図鑑** | **[市場心理図鑑/README.md](市場心理図鑑/README.md)** ／ [Vol.1 基本12パターン](市場心理図鑑/vol01_core_patterns.md) |
 | Market Psychology Squeeze | [market_psychology_squeeze_strict_2026-05-30.md](market_psychology_squeeze_strict_2026-05-30.md) |
 | 通貨別相性 | [market_psychology_squeeze_currency_compatibility_2026-05-30.md](market_psychology_squeeze_currency_compatibility_2026-05-30.md) |
 | Wavebox 運用条件 | [wavebox_operational_preconditions_v1.md](wavebox_operational_preconditions_v1.md) |

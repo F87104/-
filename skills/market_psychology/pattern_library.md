@@ -3,7 +3,7 @@
 > 10 心理パターンを、Python / Pine で検証できる **数値条件** に変換した辞書。
 > [`SKILL.md`](./SKILL.md) / [`framework.md`](./framework.md) の補助資料。
 
-**人間の感情ベースの図鑑版:** [市場心理図鑑 Vol.1](../../docs/research/market_psychology_atlas/README.md)
+**人間の感情ベースの図鑑版:** [市場心理図鑑 Vol.1](../../docs/research/市場心理図鑑/README.md)
 
 このライブラリは売買ルールそのものではなく、**相場が動き出す理由を分類するための辞書** として使う。
 最初は各パターンをイベント検出し、その後の 12 / 24 / 48 / 72 本の MFE / MAE を測る。

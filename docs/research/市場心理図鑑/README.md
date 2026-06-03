@@ -40,7 +40,7 @@
 | **Vol.1** | [vol01_core_patterns.md](vol01_core_patterns.md) | 基本12パターン | 12 |
 | **Gallery** | [gallery.md](gallery.md) | 示意ローソク足イラスト | 12 |
 | **Real** | [real_gallery.md](real_gallery.md) | **実OHLC** 代表1枚×12 | 12 |
-| **Collection** | [collection/index.md](collection/index.md) | **実OHLC** パターン大量収集 | 90+ |
+| **Collection** | [collection/index.md](collection/index.md) | **実OHLC** パターン大量収集 | 278 |
 
 再生成: [SETUP_REAL_CHARTS.md](SETUP_REAL_CHARTS.md) ／ [SETUP_COLLECTION.md](SETUP_COLLECTION.md)
 

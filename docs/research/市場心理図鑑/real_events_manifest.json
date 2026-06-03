@@ -1,47 +1,47 @@
 {
-  "generated_at": "2026-06-03T03:25:55.542443+00:00",
+  "generated_at": "2026-06-03T03:32:21.434529+00:00",
   "data_sources": {
     "XAUUSD": {
-      "source": "yfinance 1H (730d fallback)",
-      "bars": 3722,
-      "from": "2024-01-09T04:00:00",
-      "to": "2026-06-03T00:00:00"
+      "source": "F87104_test (/workspace/F87104_test)",
+      "bars": 18992,
+      "from": "2013-12-31T20:00:00",
+      "to": "2026-05-22T20:00:00"
     },
     "USDJPY": {
-      "source": "yfinance 1H (730d fallback)",
-      "bars": 4431,
-      "from": "2023-08-16T20:00:00",
-      "to": "2026-06-03T00:00:00"
+      "source": "F87104_test (/workspace/F87104_test)",
+      "bars": 19645,
+      "from": "2013-12-31T20:00:00",
+      "to": "2026-05-22T20:00:00"
     },
     "SILVER": {
-      "source": "yfinance 1H (730d fallback)",
-      "bars": 3722,
-      "from": "2024-01-09T04:00:00",
-      "to": "2026-06-03T00:00:00"
+      "source": "F87104_test (/workspace/F87104_test)",
+      "bars": 19768,
+      "from": "2013-12-31T20:00:00",
+      "to": "2026-05-22T20:00:00"
     },
     "EURJPY": {
-      "source": "yfinance 1H (730d fallback)",
-      "bars": 4436,
-      "from": "2023-08-16T20:00:00",
-      "to": "2026-06-03T00:00:00"
+      "source": "F87104_test (/workspace/F87104_test)",
+      "bars": 19413,
+      "from": "2013-12-31T16:00:00",
+      "to": "2026-05-22T20:00:00"
     },
     "GBPJPY": {
-      "source": "yfinance 1H (730d fallback)",
-      "bars": 4435,
-      "from": "2023-08-16T20:00:00",
-      "to": "2026-06-03T00:00:00"
+      "source": "F87104_test (/workspace/F87104_test)",
+      "bars": 20974,
+      "from": "2013-01-01T00:00:00",
+      "to": "2026-05-19T20:00:00"
     },
     "AUDJPY": {
-      "source": "yfinance 1H (730d fallback)",
-      "bars": 4436,
-      "from": "2023-08-16T20:00:00",
-      "to": "2026-06-03T00:00:00"
+      "source": "F87104_test (/workspace/F87104_test)",
+      "bars": 19129,
+      "from": "2013-12-31T20:00:00",
+      "to": "2026-05-22T20:00:00"
     },
     "CHFJPY": {
-      "source": "yfinance 1H (730d fallback)",
-      "bars": 4431,
-      "from": "2023-08-16T20:00:00",
-      "to": "2026-06-03T00:00:00"
+      "source": "F87104_test (/workspace/F87104_test)",
+      "bars": 19912,
+      "from": "2014-01-01T20:00:00",
+      "to": "2026-05-22T20:00:00"
     }
   },
   "events": [
@@ -50,25 +50,25 @@
       "title": "売り方降伏",
       "symbol": "USDJPY",
       "timeframe": "H4",
-      "event_time": "2026-01-27T04:00:00",
-      "score": 7.9422263968191755,
-      "image": "images/real/01_USDJPY_20260127_0400.png",
+      "event_time": "2022-11-14T08:00:00",
+      "score": 7.5855959585740225,
+      "image": "images/real/01_USDJPY_20221114_0800.png",
       "meta": {
-        "shelf_high": 154.468994140625,
-        "shelf_low": 153.29800415039062,
-        "drop_atr": 7.219350803318804
+        "shelf_high": 139.907,
+        "shelf_low": 138.46,
+        "drop_atr": 6.504854850002501
       }
     },
     {
       "pattern_id": "02",
       "title": "期待先行",
-      "symbol": "EURJPY",
+      "symbol": "USDJPY",
       "timeframe": "H4",
-      "event_time": "2024-07-11T12:00:00",
-      "score": 6.769049028472617,
-      "image": "images/real/02_EURJPY_20240711_1200.png",
+      "event_time": "2022-10-21T12:00:00",
+      "score": 7.744272144551617,
+      "image": "images/real/02_USDJPY_20221021_1200.png",
       "meta": {
-        "level": 175.40899658203125
+        "level": 151.587
       }
     },
     {
@@ -77,52 +77,52 @@
       "symbol": "USDJPY",
       "timeframe": "H4",
       "event_time": "2025-04-18T20:00:00",
-      "score": 1.1881191458700446,
+      "score": 1.191230476699274,
       "image": "images/real/03_USDJPY_20250418_2000.png",
       "meta": {
-        "range_atr": 0.8118808541299554
+        "range_atr": 0.8087695233007259
       }
     },
     {
       "pattern_id": "04",
       "title": "損失回収モード",
-      "symbol": "USDJPY",
+      "symbol": "AUDJPY",
       "timeframe": "H4",
-      "event_time": "2024-07-11T12:00:00",
-      "score": 7.510527309399223,
-      "image": "images/real/04_USDJPY_20240711_1200.png",
+      "event_time": "2019-01-02T20:00:00",
+      "score": 7.883432840467493,
+      "image": "images/real/04_AUDJPY_20190102_2000.png",
       "meta": {}
     },
     {
       "pattern_id": "05",
       "title": "現実否認",
-      "symbol": "AUDJPY",
+      "symbol": "XAUUSD",
       "timeframe": "H4",
-      "event_time": "2026-04-30T08:00:00",
-      "score": 5.932649071345495,
-      "image": "images/real/05_AUDJPY_20260430_0800.png",
+      "event_time": "2015-07-20T00:00:00",
+      "score": 7.622094866007077,
+      "image": "images/real/05_XAUUSD_20150720_0000.png",
       "meta": {
-        "pivot": 113.91400146484375
+        "pivot": 1129.288
       }
     },
     {
       "pattern_id": "06",
       "title": "利益取り逃し恐怖",
-      "symbol": "USDJPY",
+      "symbol": "XAUUSD",
       "timeframe": "H4",
-      "event_time": "2024-04-26T12:00:00",
-      "score": 1.9082798547910296,
-      "image": "images/real/06_USDJPY_20240426_1200.png",
+      "event_time": "2026-01-02T00:00:00",
+      "score": 2.9723898473840693,
+      "image": "images/real/06_XAUUSD_20260102_0000.png",
       "meta": {}
     },
     {
       "pattern_id": "07",
       "title": "正解待ち疲弊",
-      "symbol": "XAUUSD",
+      "symbol": "USDJPY",
       "timeframe": "H4",
-      "event_time": "2025-09-04T00:00:00",
-      "score": 7.186468691465064,
-      "image": "images/real/07_XAUUSD_20250904_0000.png",
+      "event_time": "2023-05-02T12:00:00",
+      "score": 7.49392367612878,
+      "image": "images/real/07_USDJPY_20230502_1200.png",
       "meta": {}
     },
     {
@@ -131,18 +131,18 @@
       "symbol": "XAUUSD",
       "timeframe": "H4",
       "event_time": "2026-02-12T16:00:00",
-      "score": 2.724916435744642,
+      "score": 2.7438560336598865,
       "image": "images/real/08_XAUUSD_20260212_1600.png",
       "meta": {}
     },
     {
       "pattern_id": "09",
       "title": "最後の信念者",
-      "symbol": "EURJPY",
+      "symbol": "XAUUSD",
       "timeframe": "H4",
-      "event_time": "2023-10-26T04:00:00",
-      "score": 1.548902546093064,
-      "image": "images/real/09_EURJPY_20231026_0400.png",
+      "event_time": "2019-10-30T16:00:00",
+      "score": 1.757928802588982,
+      "image": "images/real/09_XAUUSD_20191030_1600.png",
       "meta": {}
     },
     {
@@ -150,11 +150,11 @@
       "title": "休眠節目の覚醒",
       "symbol": "XAUUSD",
       "timeframe": "H4",
-      "event_time": "2024-03-01T12:00:00",
+      "event_time": "2014-06-19T12:00:00",
       "score": 1.0,
-      "image": "images/real/10_XAUUSD_20240301_1200.png",
+      "image": "images/real/10_XAUUSD_20140619_1200.png",
       "meta": {
-        "level": 2074.699951171875
+        "level": 1295.376
       }
     },
     {
@@ -162,21 +162,21 @@
       "title": "続落期待の崩壊",
       "symbol": "USDJPY",
       "timeframe": "H4",
-      "event_time": "2024-04-28T20:00:00",
-      "score": 4.150560424722802,
-      "image": "images/real/11_USDJPY_20240428_2000.png",
+      "event_time": "2016-11-09T20:00:00",
+      "score": 5.364055674767158,
+      "image": "images/real/11_USDJPY_20161109_2000.png",
       "meta": {
-        "left_shoulder": 156.82200622558594
+        "left_shoulder": 105.467
       }
     },
     {
       "pattern_id": "12",
       "title": "見送り後悔",
-      "symbol": "USDJPY",
+      "symbol": "XAUUSD",
       "timeframe": "H4",
-      "event_time": "2025-10-08T00:00:00",
-      "score": 10.55902846268463,
-      "image": "images/real/12_USDJPY_20251008_0000.png",
+      "event_time": "2026-01-06T16:00:00",
+      "score": 25.3983842448282,
+      "image": "images/real/12_XAUUSD_20260106_1600.png",
       "meta": {}
     }
   ]

@@ -60,6 +60,20 @@ python3 docs/research/市場心理図鑑/collect_pattern_library.py \
 | 図鑑トップ用・代表例 | `render_real_events.py` | `images/real/` 12枚 |
 | **パターン研究・大量収集** | `collect_pattern_library.py` | `collection/` |
 
+## 本番収集（F87104_test / 2015年〜）
+
+`./scripts/collect_atlas_patterns.sh` のデフォルト設定:
+
+| 項目 | 値 |
+|---|---:|
+| パターンあたり最大 | 25 |
+| 通貨あたり最大 | 8 |
+| イベント間隔 | 24 H4本 |
+| データ期間 | 2013〜2026（7通貨） |
+| 合計 | 約278イベント |
+
+> **08 静寂の蓄圧** は検出条件が厳しく、全期間スキャンでも約3件のみ。Vol.1 の定義を緩めるか Vol.2 で別条件を検討。
+
 ## GitHub へ反映
 
 ```bash

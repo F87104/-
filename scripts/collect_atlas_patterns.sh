@@ -21,8 +21,9 @@ fi
 python3 "$COLLECT" \
   --data-root "$DATA_ROOT" \
   --require-local \
-  --max-per-symbol 5 \
-  --max-per-pattern 15 \
+  --max-per-symbol 8 \
+  --max-per-pattern 25 \
+  --min-gap 24 \
   --symbols XAUUSD USDJPY SILVER EURJPY GBPJPY AUDJPY CHFJPY
 
 echo ""

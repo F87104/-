@@ -38,7 +38,8 @@
 | 巻 | ファイル | 内容 | パターン数 |
 |---|---|---:|---:|
 | **Vol.1** | [vol01_core_patterns.md](vol01_core_patterns.md) | 基本12パターン | 12 |
-| **Gallery** | [gallery.md](gallery.md) | ローソク足イラスト一覧 | 12 |
+| **Gallery** | [gallery.md](gallery.md) | 示意ローソク足イラスト | 12 |
+| **Real** | [real_gallery.md](real_gallery.md) | **実OHLC** 切り出しチャート | 12 |
 
 ---
 

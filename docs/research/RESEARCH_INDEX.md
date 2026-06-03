@@ -105,7 +105,7 @@
 | テーマ | ファイル |
 |---|---|
 | Market Psychology | [market_psychology_pattern_library_2026-05-30.md](market_psychology_pattern_library_2026-05-30.md) |
-| **市場心理図鑑** | **[市場心理図鑑/README.md](市場心理図鑑/README.md)** ／ [Vol.1](市場心理図鑑/vol01_core_patterns.md) ／ [ギャラリー](市場心理図鑑/gallery.md) |
+| **市場心理図鑑** | **[市場心理図鑑/README.md](市場心理図鑑/README.md)** ／ [Vol.1](市場心理図鑑/vol01_core_patterns.md) ／ [実OHLC](市場心理図鑑/real_gallery.md) |
 | Market Psychology Squeeze | [market_psychology_squeeze_strict_2026-05-30.md](market_psychology_squeeze_strict_2026-05-30.md) |
 | 通貨別相性 | [market_psychology_squeeze_currency_compatibility_2026-05-30.md](market_psychology_squeeze_currency_compatibility_2026-05-30.md) |
 | Wavebox 運用条件 | [wavebox_operational_preconditions_v1.md](wavebox_operational_preconditions_v1.md) |

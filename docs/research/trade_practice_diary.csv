@@ -1,0 +1,2 @@
+date_time_jst,symbol,timeframe,side,quantity,entry_price,alert_name,entry_reason,status,unrealized_pnl_jpy,note
+2026-06-03 23:01,XAUUSD,H1,buy,50.0,4446.71,投げ切りクライマックス反転(買い候補),アラート鳴ったため買い,open,-6636,TradingView webhook 400 Bad Request（手動約定）。アラート時刻 22:52 / 23:00

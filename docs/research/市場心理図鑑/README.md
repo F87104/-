@@ -38,6 +38,7 @@
 | 巻 | ファイル | 内容 | パターン数 |
 |---|---|---:|---:|
 | **Vol.1** | [vol01_core_patterns.md](vol01_core_patterns.md) | 基本12パターン | 12 |
+| **Gallery** | [gallery.md](gallery.md) | ローソク足イラスト一覧 | 12 |
 
 ---
 
@@ -60,7 +61,28 @@
 
 ---
 
-## Vol.1 パターン早見表
+## Vol.1 パターン早見表（ビジュアル）
+
+| ID | 図 | パターン名 | 主感情 |
+|---:|---|---|---|
+| 01 | ![売り方降伏](images/01.png) | [売り方降伏](vol01_core_patterns.md#01-売り方降伏) | 降伏 |
+| 02 | ![期待先行](images/02.png) | [期待先行](vol01_core_patterns.md#02-期待先行) | 期待→後悔 |
+| 03 | ![市場の迷い](images/03.png) | [市場の迷い](vol01_core_patterns.md#03-市場の迷い) | 迷い |
+| 04 | ![損失回収モード](images/04.png) | [損失回収モード](vol01_core_patterns.md#04-損失回収モード) | 回収欲求 |
+| 05 | ![現実否認](images/05.png) | [現実否認](vol01_core_patterns.md#05-現実否認) | 執着→降伏 |
+| 06 | ![利益取り逃し恐怖](images/06.png) | [利益取り逃し恐怖](vol01_core_patterns.md#06-利益取り逃し恐怖) | 利益防衛→期待 |
+| 07 | ![正解待ち疲弊](images/07.png) | [正解待ち疲弊](vol01_core_patterns.md#07-正解待ち疲弊) | 執着→降伏 |
+| 08 | ![静寂の蓄圧](images/08.png) | [静寂の蓄圧](vol01_core_patterns.md#08-静寂の蓄圧) | 無関心→期待 |
+| 09 | ![最後の信念者](images/09.png) | [最後の信念者](vol01_core_patterns.md#09-最後の信念者) | 希望→降伏 |
+| 10 | ![休眠節目の覚醒](images/10.png) | [休眠節目の覚醒](vol01_core_patterns.md#10-休眠節目の覚醒) | 期待 |
+| 11 | ![続落期待の崩壊](images/11.png) | [続落期待の崩壊](vol01_core_patterns.md#11-続落期待の崩壊) | 期待→降伏 |
+| 12 | ![見送り後悔](images/12.png) | [見送り後悔](vol01_core_patterns.md#12-見送り後悔) | 後悔→期待 |
+
+> 画像の再生成: `python3 docs/research/市場心理図鑑/generate_charts.py`
+
+---
+
+## Vol.1 パターン早見表（テキスト）
 
 | ID | パターン名 | 主感情 | 方向 | 旧ライブラリ対応 |
 |---:|---|---|---|---|

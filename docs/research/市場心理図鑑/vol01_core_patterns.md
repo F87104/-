@@ -8,6 +8,8 @@
 
 ## 01｜売り方降伏
 
+![01｜売り方降伏](images/01.png)
+
 ### 心理
 
 «ここまで下がったら必ず反発する»  
@@ -75,6 +77,8 @@ reclaim = close > high.rolling(8).max().shift(1)
 
 ## 02｜期待先行
 
+![02｜期待先行](images/02.png)
+
 ### 心理
 
 «抜けた、今入らないと遅れる»  
@@ -138,6 +142,8 @@ trap = broke & denied & (true_range > atr(14) * 1.3)
 
 ## 03｜市場の迷い
 
+![03｜市場の迷い](images/03.png)
+
 ### 心理
 
 «上も下も、どちらも説明がつく»  
@@ -195,6 +201,8 @@ market_indecision = compression and shelf
 ---
 
 ## 04｜損失回収モード
+
+![04｜損失回収モード](images/04.png)
 
 ### 心理
 
@@ -257,6 +265,8 @@ recovery_mode = downtrend and failed_reclaim
 
 ## 05｜現実否認
 
+![05｜現実否認](images/05.png)
+
 ### 心理
 
 «これは一時的な調整だ»  
@@ -314,6 +324,8 @@ reality_denial = denial_break and ta.atr(14) > ta.sma(ta.atr(14), 20) * 1.2
 ---
 
 ## 06｜利益取り逃し恐怖
+
+![06｜利益取り逃し恐怖](images/06.png)
 
 ### 心理
 
@@ -377,6 +389,8 @@ fomo_zone = hh1 and hh2 and hh3 and hh4 and hh5
 
 ## 07｜正解待ち疲弊
 
+![07｜正解待ち疲弊](images/07.png)
+
 ### 心理
 
 «自分の分析は合っている、あとは時間の問題»  
@@ -437,6 +451,8 @@ exhaustion = extended[1] and reversal and ta.tr > ta.atr(14) * 2.0
 
 ## 08｜静寂の蓄圧
 
+![08｜静寂の蓄圧](images/08.png)
+
 ### 心理
 
 «動かない、つまらない»  
@@ -493,6 +509,8 @@ silent_squeeze = calm_bars and expansion and (break_up or break_dn)
 ---
 
 ## 09｜最後の信念者
+
+![09｜最後の信念者](images/09.png)
 
 ### 心理
 
@@ -551,6 +569,8 @@ last_believer = long_downtrend & double_test & capitulation_bar & reversal
 
 ## 10｜休眠節目の覚醒
 
+![10｜休眠節目の覚醒](images/10.png)
+
 ### 心理
 
 «何年も触れなかったラインを超えた»  
@@ -608,6 +628,8 @@ entry = awakening[6] and close > ta.highest(high, 6)[1]
 
 ## 11｜続落期待の崩壊
 
+![11｜続落期待の崩壊](images/11.png)
+
 ### 心理
 
 «この勢いならまだ下がる»  
@@ -663,6 +685,8 @@ expectation_fail = drop_done and reclaim and no_new_low
 ---
 
 ## 12｜見送り後悔
+
+![12｜見送り後悔](images/12.png)
 
 ### 心理
 

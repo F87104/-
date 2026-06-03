@@ -91,7 +91,7 @@ pine/research/          ← TradingView 用 Pine（ここ）
 - 狙い: ローソク足の形ではなく、**売り手が安心していた状態が崩れ、損切りから買い戻しに変わる心理遷移**を可視化する。
 - 表示順: **SELL DOMINANCE -> SELL FAILURE -> SHORT COVERING -> ACCELERATION**
 - 現時点の扱い: 本番エントリーではなく、H4T5 / D1 V Context / Double V 研究に接続するための心理フロー研究。
-- 最新更新: ラベル洪水対策として、初期表示を **実戦レビュー** に変更。SELL DOMINANCE / SELL FAILURE の詳細は隠し、SHORT COVERING / ACCELERATION を主役にする。
+- 最新更新: ラベル洪水対策として、初期表示を **実戦レビュー** に変更。SELL DOMINANCE / SELL FAILURE の詳細は隠し、SHORT COVERING / ACCELERATION を主役にする。検出条件は厳選しすぎず、標準感度で候補が出る状態を維持。
 
 | 優先 | 研究テーマ | 状態 | 入口 |
 |---:|---|---|---|

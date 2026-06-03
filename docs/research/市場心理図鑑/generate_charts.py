@@ -64,7 +64,8 @@ class PatternChart:
 
 
 def draw_candlestick(ax, ohlc: list[tuple[float, float, float, float]]) -> None:
-    width = 0.62
+    n = len(ohlc)
+    width = 0.52 if n <= 16 else (0.46 if n <= 24 else 0.40)
     for i, (o, h, l, c) in enumerate(ohlc):
         bull = c >= o
         color = TV.BULL if bull else TV.BEAR

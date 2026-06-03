@@ -71,16 +71,60 @@ def setup_font() -> None:
     _FONT_READY = True
 
 
-def draw_candles(ax, ohlc: pd.DataFrame, width: float = 0.62) -> None:
+def candle_width(n_bars: int) -> float:
+    """Slimmer bodies with a little air between bars."""
+    if n_bars <= 16:
+        return 0.52
+    if n_bars <= 24:
+        return 0.46
+    return 0.40
+
+
+def compute_y_range(
+    ohlc: pd.DataFrame,
+    signal_i: int,
+    extra_levels: list[float] | None = None,
+    pad_ratio: float = 0.12,
+) -> tuple[float, float]:
+    """Focus Y-axis on the event context; ignore distant outlier spikes."""
+    n = len(ohlc)
+    lo_i = max(0, signal_i - 10)
+    hi_i = min(n, signal_i + 4)
+    sub = ohlc.iloc[lo_i:hi_i]
+
+    bar_range = (sub["high"] - sub["low"]).astype(float)
+    if "atr" in sub.columns:
+        scale = float(sub["atr"].median())
+    else:
+        scale = float(bar_range.median()) or 1.0
+
+    cutoff = max(scale * 2.2, float(bar_range.quantile(0.88)))
+    focus = sub[bar_range <= cutoff]
+    if focus.empty:
+        focus = sub
+
+    y_lo = float(focus["low"].min())
+    y_hi = float(focus["high"].max())
+    if extra_levels:
+        y_lo = min(y_lo, min(extra_levels))
+        y_hi = max(y_hi, max(extra_levels))
+
+    pad = max((y_hi - y_lo) * pad_ratio, scale * 0.35)
+    return y_lo - pad, y_hi + pad
+
+
+def draw_candles(ax, ohlc: pd.DataFrame, width: float | None = None) -> None:
+    if width is None:
+        width = candle_width(len(ohlc))
     for i, row in enumerate(ohlc.itertuples()):
         o, h, l, c = float(row.open), float(row.high), float(row.low), float(row.close)
         bull = c >= o
         color = TV.BULL if bull else TV.BEAR
         body_low = min(o, c)
         body_high = max(o, c)
-        body_h = max(body_high - body_low, (h - l) * 0.04)
-        ax.plot([i, i], [l, body_low], color=color, linewidth=1.0, solid_capstyle="round", zorder=3)
-        ax.plot([i, i], [body_high, h], color=color, linewidth=1.0, solid_capstyle="round", zorder=3)
+        body_h = max(body_high - body_low, (h - l) * 0.06)
+        ax.plot([i, i], [l, body_low], color=color, linewidth=0.9, solid_capstyle="round", zorder=3)
+        ax.plot([i, i], [body_high, h], color=color, linewidth=0.9, solid_capstyle="round", zorder=3)
         ax.add_patch(
             Rectangle(
                 (i - width / 2, body_low),
@@ -109,12 +153,13 @@ def render_real_chart(spec: RealChartSpec, out_path: Path) -> None:
     ax = fig.add_axes([0.07, 0.11, 0.76, 0.76])
     ax.set_facecolor(TV.BG)
 
-    lows = ohlc["low"].astype(float)
-    highs = ohlc["high"].astype(float)
-    pad = (highs.max() - lows.min()) * 0.12
-    y_min, y_max = float(lows.min() - pad), float(highs.max() + pad)
+    extra_levels = [y for y, _ in spec.hlines]
+    for y0, y1, _ in spec.zones:
+        extra_levels.extend([y0, y1])
+    y_min, y_max = compute_y_range(ohlc, spec.signal_i, extra_levels or None)
+    pad = (y_max - y_min) * 0.08
     ax.set_ylim(y_min, y_max)
-    ax.set_xlim(-0.8, n - 0.2)
+    ax.set_xlim(-0.6, n - 0.4)
 
     tb = fig.add_axes([0, 1 - toolbar_h, 1, toolbar_h])
     tb.set_facecolor(TV.TOOLBAR)
@@ -158,7 +203,7 @@ def render_real_chart(spec: RealChartSpec, out_path: Path) -> None:
             zorder=6,
         )
 
-    draw_candles(ax, ohlc)
+    draw_candles(ax, ohlc, width=candle_width(n))
 
     if 0 <= spec.signal_i < n:
         ax.axvline(spec.signal_i, color=TV.SIGNAL, linewidth=1.0, alpha=0.55, linestyle=":", zorder=5)

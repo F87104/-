@@ -358,7 +358,7 @@ SCANNERS = {
 }
 
 
-def slice_window(df: pd.DataFrame, signal_i: int, before: int = 18, after: int = 8) -> tuple[pd.DataFrame, int]:
+def slice_window(df: pd.DataFrame, signal_i: int, before: int = 14, after: int = 5) -> tuple[pd.DataFrame, int]:
     start = max(0, signal_i - before)
     end = min(len(df), signal_i + after + 1)
     chunk = df.iloc[start:end].copy()

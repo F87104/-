@@ -78,7 +78,7 @@
 | 11 | ![続落期待の崩壊](images/11.png) | [続落期待の崩壊](vol01_core_patterns.md#11-続落期待の崩壊) | 期待→降伏 |
 | 12 | ![見送り後悔](images/12.png) | [見送り後悔](vol01_core_patterns.md#12-見送り後悔) | 後悔→期待 |
 
-> 画像の再生成: `python3 docs/research/市場心理図鑑/generate_charts.py`
+> 画像の再生成: `python3 docs/research/市場心理図鑑/generate_charts.py`（TradingView ダークテーマ）
 
 ---
 

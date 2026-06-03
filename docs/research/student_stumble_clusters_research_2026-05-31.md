@@ -96,7 +96,7 @@ v0.3（赤のみ）: `student_stumble_zones_*_v0_3.pine` も残している。
 
 ## 関連ファイル
 
-- エントリーデータ: [student_entries_extracted.csv](student_entries_extracted.csv)
+- エントリーデータ: [entries.csv](../trade_diary/archive/student/entries.csv)
 - クラスタ集計: [student_stumble_clusters_v0_2.csv](student_stumble_clusters_v0_2.csv)
 - 待つ場所: [student_stumble_wait_zones_v0_1.csv](student_stumble_wait_zones_v0_1.csv)
 - 前段研究: [student_entry_cluster_research_2026-05-31.md](student_entry_cluster_research_2026-05-31.md)

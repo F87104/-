@@ -1,5 +1,7 @@
 # 2026-06-03 XAUUSD H1 買い — アラート鳴ったため
 
+[← 実践日誌](../README.md) ／ [← トレード日誌トップ](../../README.md)
+
 ## サマリー
 
 | 項目 | 内容 |
@@ -19,21 +21,21 @@
 
 ### 1. TradingView アラートログ
 
-![TradingView アラートログ — 投げ切りクライマックス反転(買い候補)、Webhook 400](images/2026-06-03_xauusd_01_tradingview_alert.png)
+![TradingView アラートログ — 投げ切りクライマックス反転(買い候補)、Webhook 400](../images/2026-06-03_xauusd_01_tradingview_alert.png)
 
 - XAUUSD 1時間でアラートが2回（22:52 / 23:00）
 - Webhook 送信失敗（400 Bad Request）→ 自動連携は未反映、手動で買い
 
 ### 2. 建玉サマリー（約定直後）
 
-![モバイル建玉 — 買い 50.0、建値 4446.71](images/2026-06-03_xauusd_02_position_summary.png)
+![モバイル建玉 — 買い 50.0、建値 4446.71](../images/2026-06-03_xauusd_02_position_summary.png)
 
 - 買い 50.0、平均建玉 4446.71
 - 記録時点の現在値 4445.88、評価損益 -6,636
 
 ### 3. TradingView チャート（投げ切りマーカー）
 
-![TradingView チャート — 投げ切りシグナル付近で買い](images/2026-06-03_xauusd_03_chart_nagekiri.png)
+![TradingView チャート — 投げ切りシグナル付近で買い](../images/2026-06-03_xauusd_03_chart_nagekiri.png)
 
 - 現在値付近 **4,447.52**、直近の **投げ切り** マーカー（青三角）がエントリー根拠のチャート状況
 - 5月高値（約4,800）からの下落後、6月にかけて底打ち・反発待ちの局面
@@ -41,4 +43,4 @@
 ## メモ
 
 - ルール通りのシグナル待ちではなく、**アラート音をトリガーにエントリー**したケースとして記録。
-- 決済後は [trade_practice_diary.csv](../trade_practice_diary.csv) の `status` と損益を更新する。
+- 決済後は [index.csv](../index.csv) の `status` と損益を更新する。

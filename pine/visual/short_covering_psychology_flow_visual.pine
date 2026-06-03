@@ -1,0 +1,420 @@
+//@version=5
+indicator("Short Covering Psychology Flow Visual [Research]", overlay=true, max_bars_back=5000, max_lines_count=500, max_labels_count=500)
+
+// =====================================================================
+// Short Covering Psychology Flow Visual [Research]
+// ---------------------------------------------------------------------
+// Purpose:
+//   This script does not search for a chart pattern.
+//   It visualizes a likely psychological sequence:
+//
+//   SELL DOMINANCE -> SHORT COVERING -> ACCELERATION
+//
+// Meaning:
+//   SELL DOMINANCE:
+//     Sellers are likely comfortable because the market has been falling,
+//     making lower lows, and pullback selling has worked.
+//
+//   SHORT COVERING:
+//     That seller comfort is likely broken when price rejects the low area
+//     and closes above the recent seller stop / lower-high line.
+//
+//   ACCELERATION:
+//     After the stop area is broken, price continues higher enough to suggest
+//     forced buybacks and new longs are overlapping.
+//
+// Use:
+//   Start on H4. Treat labels as research states, not final entry signals.
+//   Compare what happens after SHORT COVERING: distance, duration, failures.
+// =====================================================================
+
+grpMode = "基本"
+requireH4 = input.bool(true, "H4チャートで見る", group=grpMode)
+useDateFilter = input.bool(true, "2015〜2026のみ表示", group=grpMode)
+skipHoliday = input.bool(false, "12/15〜1/10は新規候補を停止", group=grpMode)
+signalCooldownBars = input.int(36, "同じ流れの再表示間隔", minval=0, maxval=300, group=grpMode)
+
+grpDom = "1. SELL DOMINANCE"
+atrLen = input.int(14, "ATR期間", minval=1, group=grpDom)
+emaFastLen = input.int(20, "短期EMA", minval=2, group=grpDom)
+emaTrendLen = input.int(50, "方向EMA", minval=2, group=grpDom)
+trendSlopeBars = input.int(24, "方向EMAの傾き確認本数", minval=3, maxval=100, group=grpDom)
+dominanceBars = input.int(24, "売り優勢を測る本数", minval=6, maxval=120, group=grpDom)
+minDominanceDropAtr = input.float(3.0, "下落幅 下限(ATR)", minval=0.5, step=0.1, group=grpDom)
+lowerLowLookback = input.int(8, "安値更新判定 lookback", minval=2, maxval=50, group=grpDom)
+minLowerLowBreaks = input.int(2, "安値更新回数 下限", minval=0, maxval=20, group=grpDom)
+minBearBars = input.int(10, "陰線本数 下限", minval=0, maxval=80, group=grpDom)
+minPullbackSellRejects = input.int(2, "戻り売り成功回数 下限", minval=0, maxval=20, group=grpDom)
+minDominanceScore = input.int(4, "売り優勢スコア 下限", minval=1, maxval=6, group=grpDom)
+
+grpAnom = "2. 異変 / 売り失敗"
+maxWaitAfterDominance = input.int(48, "売り優勢後の監視本数", minval=5, maxval=200, group=grpAnom)
+stopLineLookback = input.int(12, "売り手損切りライン lookback", minval=3, maxval=80, group=grpAnom)
+failedLowLookback = input.int(12, "安値更新失敗 lookback", minval=3, maxval=80, group=grpAnom)
+failedLowBufferAtr = input.float(0.03, "安値割れ余白(ATR)", minval=0.0, step=0.01, group=grpAnom)
+minLowerWickRatio = input.float(0.45, "下ヒゲ比率 下限", minval=0.0, maxval=1.0, step=0.05, group=grpAnom)
+minReversalBodyAtr = input.float(0.70, "反転陽線 実体ATR 下限", minval=0.0, step=0.05, group=grpAnom)
+minReversalCloseLoc = input.float(0.55, "反転足 終値位置 下限", minval=0.0, maxval=1.0, step=0.05, group=grpAnom)
+
+grpCover = "3. SHORT COVERING"
+coverBreakBufferAtr = input.float(0.05, "損切りライン上抜け余白(ATR)", minval=0.0, step=0.01, group=grpCover)
+minCoverBodyRatio = input.float(0.35, "踏み上げ足 実体比率 下限", minval=0.0, maxval=1.0, step=0.05, group=grpCover)
+minCoverCloseLoc = input.float(0.60, "踏み上げ足 終値位置 下限", minval=0.0, maxval=1.0, step=0.05, group=grpCover)
+requireBullCoverBar = input.bool(true, "踏み上げ足は陽線", group=grpCover)
+
+grpVol = "出来高 / ティック量"
+useVolumeAsScore = input.bool(false, "出来高増加を売り圧力スコアに加える", group=grpVol)
+useVolumeForCover = input.bool(false, "踏み上げに出来高増加を要求", group=grpVol)
+volumeLen = input.int(20, "出来高平均期間", minval=1, group=grpVol)
+volumeMult = input.float(1.4, "出来高倍率", minval=0.1, step=0.1, group=grpVol)
+
+grpAccel = "4. ACCELERATION / 事後分析"
+probeBars = input.int(24, "SHORT COVERING後の観察本数", minval=3, maxval=200, group=grpAccel)
+accelMinAtr = input.float(1.2, "加速認定 上昇幅(ATR)", minval=0.1, step=0.1, group=grpAccel)
+failBackInsideAtr = input.float(0.10, "失敗: 損切りライン内へ戻る幅(ATR)", minval=0.0, step=0.01, group=grpAccel)
+
+grpView = "表示"
+showBackground = input.bool(true, "心理状態の背景", group=grpView)
+showLabels = input.bool(true, "ラベル", group=grpView)
+showLines = input.bool(true, "損切りライン/安値ライン", group=grpView)
+showResultLabels = input.bool(true, "事後分析ラベル", group=grpView)
+showTable = input.bool(true, "状態テーブル", group=grpView)
+maxObjects = input.int(90, "残す描画数", minval=10, maxval=250, group=grpView)
+labelOffsetAtr = input.float(1.6, "ラベル上下余白(ATR)", minval=0.3, step=0.1, group=grpView)
+
+fmt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, format.mintick)
+    out
+
+fmtNum(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#.##")
+    out
+
+fmtPct(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v * 100.0, "#.#") + "%"
+    out
+
+stageText(int s) =>
+    string out = s == 0 ? "WAIT" :
+         s == 1 ? "SELL DOMINANCE" :
+         s == 2 ? "LOW REJECTION" :
+         s == 3 ? "SHORT COVERING" :
+         s == 4 ? "ACCELERATION" :
+         "N/A"
+    out
+
+var label[] keptLabels = array.new_label()
+var line[] keptLines = array.new_line()
+
+keepLabel(label lb) =>
+    array.push(keptLabels, lb)
+    while array.size(keptLabels) > maxObjects
+        label.delete(array.shift(keptLabels))
+
+keepLine(line ln) =>
+    array.push(keptLines, ln)
+    while array.size(keptLines) > maxObjects * 3
+        line.delete(array.shift(keptLines))
+
+// ---------------------------------------------------------------------
+// Common calculations.
+// ---------------------------------------------------------------------
+int chartSec = timeframe.in_seconds(timeframe.period)
+bool h4Ok = not requireH4 or chartSec == 240 * 60
+bool dateOk = not useDateFilter or (year >= 2015 and year <= 2026)
+bool holidayOk = not skipHoliday or not ((month == 12 and dayofmonth >= 15) or (month == 1 and dayofmonth <= 10))
+bool baseOk = h4Ok and dateOk and holidayOk
+
+float atrValue = ta.atr(atrLen)
+float emaFast = ta.ema(close, emaFastLen)
+float emaTrend = ta.ema(close, emaTrendLen)
+float barRange = high - low
+float body = math.abs(close - open)
+float bodyRatio = barRange > 0 ? body / barRange : 0.0
+float closeLocation = barRange > 0 ? (close - low) / barRange : 0.0
+float lowerWick = math.min(open, close) - low
+float lowerWickRatio = barRange > 0 ? lowerWick / barRange : 0.0
+
+float volAvg = ta.sma(volume, volumeLen)
+bool volumeSpike = not na(volume) and volAvg > 0 and volume > volAvg * volumeMult
+
+// ---------------------------------------------------------------------
+// 1. SELL DOMINANCE: sellers are likely profitable and comfortable.
+// ---------------------------------------------------------------------
+float dominanceHigh = ta.highest(high, dominanceBars)
+float dominanceLow = ta.lowest(low, dominanceBars)
+float dominanceDropAtr = atrValue > 0 ? (dominanceHigh - low) / atrValue : na
+float recentRangeAtr = atrValue > 0 ? (dominanceHigh - dominanceLow) / atrValue : na
+
+bool lowerLowBreak = low < ta.lowest(low, lowerLowLookback)[1]
+float lowerLowBreaks = math.sum(lowerLowBreak ? 1.0 : 0.0, dominanceBars)
+float bearBars = math.sum(close < open ? 1.0 : 0.0, dominanceBars)
+bool pullbackSellReject = high >= emaFast and close < emaFast and close < open
+float pullbackSellRejects = math.sum(pullbackSellReject ? 1.0 : 0.0, dominanceBars)
+bool trendDown = close < emaTrend and emaFast < emaTrend and emaTrend <= emaTrend[trendSlopeBars]
+bool dropOk = not na(dominanceDropAtr) and dominanceDropAtr >= minDominanceDropAtr
+bool lowerLowOk = lowerLowBreaks >= minLowerLowBreaks
+bool bearBarsOk = bearBars >= minBearBars
+bool rejectOk = pullbackSellRejects >= minPullbackSellRejects
+float volumeDownSpikes = math.sum(volumeSpike and close < open ? 1.0 : 0.0, dominanceBars)
+bool volumePressureOk = not useVolumeAsScore or volumeDownSpikes >= 1
+bool volumeScoreOk = useVolumeAsScore and volumeDownSpikes >= 1
+
+int dominanceScore = (dropOk ? 1 : 0) +
+     (lowerLowOk ? 1 : 0) +
+     (bearBarsOk ? 1 : 0) +
+     (rejectOk ? 1 : 0) +
+     (trendDown ? 1 : 0) +
+     (volumeScoreOk ? 1 : 0)
+int dominanceScoreMax = useVolumeAsScore ? 6 : 5
+
+bool sellDominanceRaw = baseOk and dominanceScore >= minDominanceScore and dropOk and volumePressureOk
+
+// ---------------------------------------------------------------------
+// 2. Anomaly: seller comfort starts to break.
+// ---------------------------------------------------------------------
+float priorLow = ta.lowest(low, failedLowLookback)[1]
+bool failedLow = not na(priorLow) and low < priorLow - atrValue * failedLowBufferAtr and close > priorLow
+bool lowerWickReject = lowerWickRatio >= minLowerWickRatio and closeLocation >= minReversalCloseLoc
+bool strongBullReaction = close > open and body >= atrValue * minReversalBodyAtr and closeLocation >= minReversalCloseLoc
+bool anomalyRaw = failedLow or lowerWickReject or strongBullReaction
+
+// ---------------------------------------------------------------------
+// Stateful psychological flow.
+// ---------------------------------------------------------------------
+var bool dominanceActive = false
+var bool anomalyActive = false
+var int dominanceStartBar = na
+var float dominanceStartPrice = na
+var float activeDominanceLow = na
+var float activeCoverLine = na
+var int anomalyBar = na
+var float anomalyLow = na
+var int lastCoverSignalBar = na
+var int currentStage = 0
+var string lastReason = "WAIT"
+
+bool canStartNewFlow = na(lastCoverSignalBar) or bar_index - lastCoverSignalBar >= signalCooldownBars
+bool dominanceStart = false
+bool anomalySignal = false
+bool shortCoverSignal = false
+bool accelerationSignal = false
+
+if sellDominanceRaw and not dominanceActive and canStartNewFlow
+    dominanceActive := true
+    anomalyActive := false
+    dominanceStartBar := bar_index
+    dominanceStartPrice := close
+    activeDominanceLow := low
+    activeCoverLine := ta.highest(high, stopLineLookback)[1]
+    anomalyBar := na
+    anomalyLow := na
+    currentStage := 1
+    lastReason := "売り優勢"
+    dominanceStart := true
+
+if dominanceActive
+    activeDominanceLow := math.min(nz(activeDominanceLow, low), low)
+    if not anomalyActive
+        activeCoverLine := ta.highest(high, stopLineLookback)[1]
+    if bar_index - dominanceStartBar > maxWaitAfterDominance
+        dominanceActive := false
+        anomalyActive := false
+        currentStage := 0
+        lastReason := "監視期限切れ"
+
+if dominanceActive and not anomalyActive and anomalyRaw
+    anomalyActive := true
+    anomalyBar := bar_index
+    anomalyLow := low
+    activeCoverLine := ta.highest(high, stopLineLookback)[1]
+    currentStage := 2
+    lastReason := failedLow ? "安値更新失敗" : lowerWickReject ? "下ヒゲ反発" : "強い陽線"
+    anomalySignal := true
+
+bool coverBullOk = not requireBullCoverBar or close > open
+bool coverQualityOk = bodyRatio >= minCoverBodyRatio and closeLocation >= minCoverCloseLoc and coverBullOk
+bool coverVolumeOk = not useVolumeForCover or volumeSpike
+bool coverBreakOk = dominanceActive and anomalyActive and not na(activeCoverLine) and close > activeCoverLine + atrValue * coverBreakBufferAtr
+shortCoverSignal := coverBreakOk and coverQualityOk and coverVolumeOk
+
+// ---------------------------------------------------------------------
+// After-signal probe: how far and how long the covering move continues.
+// ---------------------------------------------------------------------
+var bool probeActive = false
+var bool accelPrinted = false
+var int probeStartBar = na
+var float probeEntry = na
+var float probeAtr = na
+var float probeCoverLine = na
+var float probeDomLow = na
+var float probeMaxHigh = na
+var int probeMaxHighBar = na
+var float probeMinLow = na
+var int totalProbes = 0
+var int accelProbes = 0
+var int failProbes = 0
+var float lastProbeUpAtr = na
+var float lastProbeDownAtr = na
+var int lastProbeBarsToHigh = na
+
+if shortCoverSignal
+    lastCoverSignalBar := bar_index
+    currentStage := 3
+    lastReason := "売り手損切り候補突破"
+    probeActive := true
+    accelPrinted := false
+    probeStartBar := bar_index
+    probeEntry := close
+    probeAtr := atrValue
+    probeCoverLine := activeCoverLine
+    probeDomLow := activeDominanceLow
+    probeMaxHigh := high
+    probeMaxHighBar := bar_index
+    probeMinLow := low
+    dominanceActive := false
+    anomalyActive := false
+
+if probeActive
+    if high > probeMaxHigh
+        probeMaxHigh := high
+        probeMaxHighBar := bar_index
+    probeMinLow := math.min(probeMinLow, low)
+    bool accelNow = not accelPrinted and probeAtr > 0 and (probeMaxHigh - probeEntry) / probeAtr >= accelMinAtr
+    bool failedBackInside = not na(probeCoverLine) and close < probeCoverLine - probeAtr * failBackInsideAtr
+    if accelNow
+        accelerationSignal := true
+        accelPrinted := true
+        currentStage := 4
+        lastReason := "損切り後の上昇加速"
+    if bar_index - probeStartBar >= probeBars or failedBackInside
+        totalProbes += 1
+        lastProbeUpAtr := probeAtr > 0 ? (probeMaxHigh - probeEntry) / probeAtr : na
+        lastProbeDownAtr := probeAtr > 0 ? (probeEntry - probeMinLow) / probeAtr : na
+        lastProbeBarsToHigh := probeMaxHighBar - probeStartBar
+        bool probeSuccess = not na(lastProbeUpAtr) and lastProbeUpAtr >= accelMinAtr
+        if probeSuccess
+            accelProbes += 1
+        if failedBackInside and not probeSuccess
+            failProbes += 1
+        if showResultLabels
+            string resultTxt = (probeSuccess ? "RESULT: ACCEL" : failedBackInside ? "RESULT: FAILED" : "RESULT: WATCH") +
+                 "\nMax up: " + fmtNum(lastProbeUpAtr) + " ATR" +
+                 "\nMax adverse: " + fmtNum(lastProbeDownAtr) + " ATR" +
+                 "\nBars to high: " + str.tostring(lastProbeBarsToHigh)
+            label resultLabel = label.new(bar_index, probeSuccess ? high + atrValue * labelOffsetAtr : low - atrValue * labelOffsetAtr,
+                 resultTxt, xloc=xloc.bar_index,
+                 style=probeSuccess ? label.style_label_down : label.style_label_up,
+                 color=probeSuccess ? color.new(color.lime, 5) : color.new(color.orange, 5),
+                 textcolor=probeSuccess ? color.black : color.white, size=size.tiny)
+            keepLabel(resultLabel)
+        probeActive := false
+        accelPrinted := false
+
+// ---------------------------------------------------------------------
+// Visuals.
+// ---------------------------------------------------------------------
+plot(na, title="Compiler Anchor", display=display.none)
+plot(showLines and (dominanceActive or anomalyActive) ? activeCoverLine : na, title="Seller Stop / Cover Line", color=color.new(color.aqua, 0), linewidth=2, style=plot.style_linebr)
+plot(showLines and (dominanceActive or anomalyActive) ? activeDominanceLow : na, title="Dominance Low", color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
+plot(showLines and probeActive ? probeCoverLine : na, title="Post Cover Line", color=color.new(color.aqua, 30), linewidth=1, style=plot.style_linebr)
+
+bgcolor(showBackground and dominanceActive and not anomalyActive ? color.new(color.red, 92) : na, title="SELL DOMINANCE BG")
+bgcolor(showBackground and anomalyActive ? color.new(color.orange, 90) : na, title="LOW REJECTION BG")
+bgcolor(showBackground and probeActive ? color.new(color.aqua, 92) : na, title="SHORT COVERING BG")
+
+plotshape(dominanceStart, title="SELL DOMINANCE", style=shape.circle, location=location.abovebar, color=color.new(color.red, 0), size=size.tiny, text="SELL")
+plotshape(anomalySignal, title="LOW REJECTION", style=shape.diamond, location=location.belowbar, color=color.new(color.orange, 0), size=size.tiny, text="!")
+plotshape(shortCoverSignal, title="SHORT COVERING", style=shape.triangleup, location=location.belowbar, color=color.new(color.aqua, 0), size=size.small, text="COVER")
+plotshape(accelerationSignal, title="ACCELERATION", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="ACCEL")
+
+if dominanceStart and showLabels
+    string domTxt = "SELL DOMINANCE" +
+         "\nDrop: " + fmtNum(dominanceDropAtr) + " ATR" +
+         "\nLL breaks: " + fmtNum(lowerLowBreaks) +
+         "\nBear bars: " + fmtNum(bearBars) +
+         "\nPullback sells: " + fmtNum(pullbackSellRejects) +
+         "\nScore: " + str.tostring(dominanceScore) + " / " + str.tostring(dominanceScoreMax)
+    label domLabel = label.new(bar_index, high + atrValue * labelOffsetAtr, domTxt,
+         xloc=xloc.bar_index, style=label.style_label_down,
+         color=color.new(color.red, 0), textcolor=color.white, size=size.tiny)
+    keepLabel(domLabel)
+    if showLines and not na(activeCoverLine)
+        keepLine(line.new(bar_index, activeCoverLine, bar_index + maxWaitAfterDominance, activeCoverLine,
+             xloc=xloc.bar_index, color=color.new(color.aqua, 20), width=2, style=line.style_dashed))
+
+if anomalySignal and showLabels
+    string anomTxt = "SELL FAILURE" +
+         "\nReason: " + lastReason +
+         "\nLow: " + fmt(low) +
+         "\nCover line: " + fmt(activeCoverLine)
+    label anomLabel = label.new(bar_index, low - atrValue * labelOffsetAtr, anomTxt,
+         xloc=xloc.bar_index, style=label.style_label_up,
+         color=color.new(color.orange, 0), textcolor=color.black, size=size.tiny)
+    keepLabel(anomLabel)
+
+if shortCoverSignal and showLabels
+    float coverFromLowAtr = atrValue > 0 and not na(activeDominanceLow) ? (close - activeDominanceLow) / atrValue : na
+    string coverTxt = "SHORT COVERING" +
+         "\nSeller stop: " + fmt(activeCoverLine) +
+         "\nClose: " + fmt(close) +
+         "\nFrom low: " + fmtNum(coverFromLowAtr) + " ATR" +
+         "\nBody/Close: " + fmtPct(bodyRatio) + " / " + fmtPct(closeLocation) +
+         "\nProbe: " + str.tostring(probeBars) + " bars"
+    label coverLabel = label.new(bar_index, low - atrValue * labelOffsetAtr, coverTxt,
+         xloc=xloc.bar_index, style=label.style_label_up,
+         color=color.new(color.aqua, 0), textcolor=color.black, size=size.small)
+    keepLabel(coverLabel)
+    if showLines
+        keepLine(line.new(bar_index, activeCoverLine, bar_index + probeBars, activeCoverLine,
+             xloc=xloc.bar_index, color=color.new(color.aqua, 0), width=2))
+        keepLine(line.new(bar_index, activeDominanceLow, bar_index + probeBars, activeDominanceLow,
+             xloc=xloc.bar_index, color=color.new(color.red, 30), width=1, style=line.style_dashed))
+
+if accelerationSignal and showLabels
+    float upAtrNow = probeAtr > 0 ? (probeMaxHigh - probeEntry) / probeAtr : na
+    string accelTxt = "ACCELERATION" +
+         "\nUp: " + fmtNum(upAtrNow) + " ATR" +
+         "\nBars: " + str.tostring(bar_index - probeStartBar)
+    label accelLabel = label.new(bar_index, high + atrValue * labelOffsetAtr, accelTxt,
+         xloc=xloc.bar_index, style=label.style_label_down,
+         color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+    keepLabel(accelLabel)
+
+// ---------------------------------------------------------------------
+// Status table.
+// ---------------------------------------------------------------------
+var table t = table.new(position.top_right, 2, 14, bgcolor=color.new(color.black, 82), border_color=color.gray, border_width=1)
+if showTable and barstate.islast
+    table.cell(t, 0, 0, "Method", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 0, "Short Cover Flow", text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 1, "Chart", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 1, h4Ok ? "H4 OK" : "H4外", text_color=h4Ok ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 2, "Stage", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 2, stageText(currentStage), text_color=currentStage >= 3 ? color.lime : currentStage == 2 ? color.orange : currentStage == 1 ? color.red : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 3, "Reason", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 3, lastReason, text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 4, "Drop ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, fmtNum(dominanceDropAtr), text_color=dropOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 5, "Score", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 5, str.tostring(dominanceScore) + " / " + str.tostring(dominanceScoreMax), text_color=dominanceScore >= minDominanceScore ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 6, "LL / Bear", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 6, fmtNum(lowerLowBreaks) + " / " + fmtNum(bearBars), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 7, "Pullback sell", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 7, fmtNum(pullbackSellRejects), text_color=rejectOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 8, "Anomaly", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 8, anomalyRaw ? "ON" : "OFF", text_color=anomalyRaw ? color.orange : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 9, "Cover line", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 9, fmt(activeCoverLine), text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 10, "Cover quality", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 10, fmtPct(bodyRatio) + " / " + fmtPct(closeLocation), text_color=coverQualityOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 11, "Last result", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 11, "Up " + fmtNum(lastProbeUpAtr) + " / Down " + fmtNum(lastProbeDownAtr), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 12, "Probes", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 12, str.tostring(accelProbes) + " accel / " + str.tostring(totalProbes), text_color=totalProbes > 0 ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 13, "Rule", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 13, "SELL -> COVER -> ACCEL", text_color=color.aqua, text_size=size.tiny)
+
+alertcondition(dominanceStart, title="SELL DOMINANCE", message="SELL DOMINANCE on {{ticker}} {{interval}} @ {{close}}")
+alertcondition(shortCoverSignal, title="SHORT COVERING", message="SHORT COVERING on {{ticker}} {{interval}} @ {{close}}")
+alertcondition(accelerationSignal, title="ACCELERATION", message="ACCELERATION after short covering on {{ticker}} {{interval}} @ {{close}}")

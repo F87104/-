@@ -115,7 +115,7 @@
 | トレード心理Pine化 | [trade_psychology_failure_patterns_to_pine_2026-05-31.md](trade_psychology_failure_patterns_to_pine_2026-05-31.md) |
 | トレード心理 最適エントリー研究 | [trade_psychology_optimal_entry_pattern_research_2026-05-31.md](trade_psychology_optimal_entry_pattern_research_2026-05-31.md) |
 | リアルタイム心理記録テンプレート | [realtime_trade_psychology_log_template.csv](realtime_trade_psychology_log_template.csv) |
-| **トレード実践日誌** | [trade_practice_diary.csv](trade_practice_diary.csv) |
+| **トレード実践日誌** | [trade_practice_diary/README.md](trade_practice_diary/README.md) ／ [CSV一覧](trade_practice_diary.csv) |
 | 受講生エントリー集中パターン研究 | [student_entry_cluster_research_2026-05-31.md](student_entry_cluster_research_2026-05-31.md) |
 | 受講生つまずきクラスタ研究 | [student_stumble_clusters_research_2026-05-31.md](student_stumble_clusters_research_2026-05-31.md) |
 | 節目飛び乗り抑制フィルタ試験 | [stumble_chase_suppression_filter_v0_1.md](stumble_chase_suppression_filter_v0_1.md) |

@@ -75,18 +75,19 @@ pine/research/          ← TradingView 用 Pine（ここ）
 
 - 研究メモ: [docs/research/h4_double_v_reclaim_2026-06-02.md](docs/research/h4_double_v_reclaim_2026-06-02.md)
 - TradingView可視化: [pine/visual/h4_double_v_short_denial_visual.pine](pine/visual/h4_double_v_short_denial_visual.pine)
+- D1 V 日足専用可視化: [pine/visual/d1_v_context_daily_visual.pine](pine/visual/d1_v_context_daily_visual.pine)
 - D1 V -> H4確認可視化: [pine/visual/d1_v_context_h4_visual.pine](pine/visual/d1_v_context_h4_visual.pine)
 - H4T5級 高精度V可視化: [pine/visual/h4_psychological_v_t5_quality_visual.pine](pine/visual/h4_psychological_v_t5_quality_visual.pine)
 - Strategy検証: [pine/production/h4_double_v_reclaim_strategy.pine](pine/production/h4_double_v_reclaim_strategy.pine)
 - D1 V -> H4検証Strategy: [pine/production/d1_v_context_h4_strategy.pine](pine/production/d1_v_context_h4_strategy.pine)
 - 狙い: 急落後のVそのものではなく、**V1売り失敗 -> V2押し -> V1右肩ゾーン突破**で、トレンド初動候補を探す研究。
 - 最新仮説: H4単独ではなく、**D1 V Context + H4 Execute** に分けると、日足級の反転初動を拾える可能性がある。
-- 最新更新: H4T5と同じ思想で、Vを直接エントリーにせず、**WATCH -> T5確認SIGNAL -> SKIP理由** に分けた高精度V可視化を追加。
+- 最新更新: **日足チャートでD1 Vそのものを見る専用可視化** を追加。H4T5と同じ思想で、Vを直接エントリーにせず、**WATCH -> SIGNAL -> SKIP理由** に分ける。
 
 | 優先 | 研究テーマ | 状態 | 入口 |
 |---:|---|---|---|
 | 1 | **受講生つまずきクラスタ** | 進行中 | 👉 上の **[3ステップ表](#-いま見るべき場所--受講生つまずきクラスタ研究)** |
-| 2 | **H4 Double V Reclaim / 初動V** | **最重要・検証中** | [研究メモ](docs/research/h4_double_v_reclaim_2026-06-02.md) ／ [H4T5級 高精度V](pine/visual/h4_psychological_v_t5_quality_visual.pine) ／ [D1 V->H4可視化](pine/visual/d1_v_context_h4_visual.pine) ／ [D1 V->H4検証](pine/production/d1_v_context_h4_strategy.pine) ／ [H4 Double V](pine/visual/h4_double_v_short_denial_visual.pine) |
+| 2 | **H4 Double V Reclaim / 初動V** | **最重要・検証中** | [研究メモ](docs/research/h4_double_v_reclaim_2026-06-02.md) ／ [D1 V日足表示](pine/visual/d1_v_context_daily_visual.pine) ／ [D1 V->H4可視化](pine/visual/d1_v_context_h4_visual.pine) ／ [D1 V->H4検証](pine/production/d1_v_context_h4_strategy.pine) ／ [H4T5級 高精度V](pine/visual/h4_psychological_v_t5_quality_visual.pine) ／ [H4 Double V](pine/visual/h4_double_v_short_denial_visual.pine) |
 | 3 | 受講生エントリー集中パターン | 進行中 | [student_entry_cluster_research_2026-05-31.md](docs/research/student_entry_cluster_research_2026-05-31.md) |
 | 4 | トレード心理 / 群衆心理 | 進行中 | [RESEARCH_INDEX.md](docs/research/RESEARCH_INDEX.md) ／ [crowd_psychology_simple_visual.pine](pine/visual/crowd_psychology_simple_visual.pine) |
 | 5 | Market Psychology Squeeze | 記録済み | [market_psychology_squeeze_strict_2026-05-30.md](docs/research/market_psychology_squeeze_strict_2026-05-30.md) |

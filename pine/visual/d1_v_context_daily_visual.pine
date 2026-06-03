@@ -1,0 +1,356 @@
+//@version=5
+indicator("D1 Psychological V Context Daily Visual [Research]", overlay=true, max_bars_back=5000, max_lines_count=500, max_labels_count=500)
+
+// =====================================================================
+// D1 Psychological V Context Daily Visual [Research]
+// ---------------------------------------------------------------------
+// Purpose:
+//   Inspect the daily V itself on a D1 chart.
+//   This is the environment-recognition layer only.
+//
+// Meaning:
+//   WATCH  : daily pivot high -> pivot low selloff is large enough.
+//   SIGNAL : daily close reclaims the configured recovery line with
+//            enough speed/candle quality.
+//   SKIP   : daily reclaim happened, but a quality filter failed.
+//
+// Use:
+//   Add this to a Daily chart first. After a convincing D1 V appears,
+//   switch to H4 and use d1_v_context_h4_visual.pine for execution study.
+// =====================================================================
+
+grpMode = "基本"
+requireDaily = input.bool(true, "日足チャートで見る", group=grpMode)
+skipHoliday = input.bool(true, "12/15〜1/10は新規候補を停止", group=grpMode)
+useDateFilter = input.bool(true, "2015〜2026のみ表示", group=grpMode)
+excludeXau = input.bool(false, "XAUUSD/XAUを除外", group=grpMode)
+
+grpPivot = "D1 Pivot"
+pivotLeft = input.int(2, "Pivot left", minval=1, maxval=20, group=grpPivot)
+pivotRight = input.int(2, "Pivot right", minval=1, maxval=20, group=grpPivot)
+atrLen = input.int(14, "ATR期間", minval=1, group=grpPivot)
+minSwingAtr = input.float(1.8, "Pivot間の最小スイング(ATR)", minval=0.1, step=0.1, group=grpPivot)
+
+grpV = "D1 V条件"
+minDropAtr = input.float(3.0, "D1下落幅 最小ATR", minval=0.1, step=0.1, group=grpV)
+minDropDays = input.int(2, "D1下落 最小日数", minval=1, group=grpV)
+maxDropDays = input.int(90, "D1下落 最大日数", minval=2, group=grpV)
+maxRecoveryDays = input.int(90, "D1回復 最大日数", minval=2, group=grpV)
+recoveryFib = input.float(0.50, "D1回復判定", minval=0.1, maxval=1.2, step=0.001, group=grpV)
+maxRecoverAtSignal = input.float(1.40, "シグナル時 回復率上限", minval=0.5, maxval=3.0, step=0.05, group=grpV)
+breakBufferAtr = input.float(0.03, "回復ライン上抜け余白(ATR)", minval=0.0, step=0.01, group=grpV)
+minDropSpeed = input.float(0.08, "D1下落速度 最小ATR/日", minval=0.0, step=0.01, group=grpV)
+minRecoveryVsDrop = input.float(0.60, "D1回復速度/下落速度 下限", minval=0.0, maxval=2.0, step=0.05, group=grpV)
+minBodyRatio = input.float(0.25, "確認足 実体比率 下限", minval=0.0, maxval=1.0, step=0.05, group=grpV)
+minCloseLocation = input.float(0.50, "確認足 終値位置 下限", minval=0.0, maxval=1.0, step=0.05, group=grpV)
+
+grpCandle = "D1ローソク足品質"
+useLowCandleFilter = input.bool(true, "D1谷足の反発形を要求", group=grpCandle)
+minLowLowerWick = input.float(0.20, "谷足 下ヒゲ比率 下限", minval=0.0, maxval=1.0, step=0.05, group=grpCandle)
+minLowCloseLocation = input.float(0.35, "谷足 終値位置 下限", minval=0.0, maxval=1.0, step=0.05, group=grpCandle)
+minLowRangeAtr = input.float(0.80, "谷足 値幅ATR 下限", minval=0.0, step=0.1, group=grpCandle)
+requireConfirmBull = input.bool(true, "確認足は陽線", group=grpCandle)
+requireConfirmCloseUp = input.bool(true, "確認足は前日終値より上", group=grpCandle)
+
+grpContext = "D1安値圏"
+requireNearD1Low = input.bool(true, "D1安値圏からのVだけ", group=grpContext)
+d1LowLookback = input.int(120, "D1安値参照日数", minval=20, maxval=500, group=grpContext)
+nearLowAtr = input.float(3.0, "安値付近 許容ATR", minval=0.1, step=0.1, group=grpContext)
+
+grpView = "表示"
+showWatch = input.bool(true, "WATCHを表示", group=grpView)
+showSkip = input.bool(true, "SKIP理由を表示", group=grpView)
+showLines = input.bool(true, "D1 Vライン", group=grpView)
+showLevels = input.bool(true, "回復/安値/起点ライン", group=grpView)
+showLabels = input.bool(true, "ラベル", group=grpView)
+showTable = input.bool(true, "状態テーブル", group=grpView)
+maxObjects = input.int(80, "残す描画数", minval=10, maxval=250, group=grpView)
+labelOffsetAtr = input.float(2.0, "ラベル上下余白(ATR)", minval=0.5, step=0.5, group=grpView)
+
+fmt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, format.mintick)
+    out
+
+fmtNum(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#.##")
+    out
+
+fmtPct(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v * 100.0, "#.#") + "%"
+    out
+
+reasonText(int code) =>
+    string out = code == 0 ? "OK" :
+         code == 1 ? "D1 Vなし" :
+         code == 2 ? "D1下落が弱い" :
+         code == 3 ? "D1下落日数NG" :
+         code == 4 ? "D1回復期限切れ" :
+         code == 5 ? "D1回復不足" :
+         code == 6 ? "D1回復しすぎ" :
+         code == 7 ? "D1安値圏ではない" :
+         code == 8 ? "D1速度不足" :
+         code == 9 ? "D1確認足弱い" :
+         code == 10 ? "D1谷足反発弱い" :
+         code == 11 ? "D1確認足方向弱い" :
+         "N/A"
+    out
+
+var line[] keptLines = array.new_line()
+var label[] keptLabels = array.new_label()
+
+keepLine(line ln) =>
+    array.push(keptLines, ln)
+    while array.size(keptLines) > maxObjects * 4
+        line.delete(array.shift(keptLines))
+
+keepLabel(label lb) =>
+    array.push(keptLabels, lb)
+    while array.size(keptLabels) > maxObjects
+        label.delete(array.shift(keptLabels))
+
+float atrValue = ta.atr(atrLen)
+float barRange = high - low
+float bodyRatio = barRange > 0 ? math.abs(close - open) / barRange : 0.0
+float closeLocation = barRange > 0 ? (close - low) / barRange : 0.0
+
+bool dailyOk = not requireDaily or timeframe.isdaily
+bool holidayOk = not skipHoliday or not ((month == 12 and dayofmonth >= 15) or (month == 1 and dayofmonth <= 10))
+bool dateOk = not useDateFilter or (year >= 2015 and year <= 2026)
+bool xauSymbol = str.contains(syminfo.ticker, "XAU")
+bool symbolOk = not excludeXau or not xauSymbol
+bool baseOk = dailyOk and holidayOk and dateOk and symbolOk
+
+float ph = ta.pivothigh(high, pivotLeft, pivotRight)
+float pl = ta.pivotlow(low, pivotLeft, pivotRight)
+
+var int prevKind = 0
+var float prevPrice = na
+var int prevIndex = na
+var int prevTime = na
+var float prevAtr = na
+var float prevLowerWick = na
+var float prevCloseLocation = na
+var float prevRangeAtr = na
+
+var int lastKind = 0
+var float lastPrice = na
+var int lastIndex = na
+var int lastTime = na
+var float lastAtr = na
+var float lastLowerWick = na
+var float lastCloseLocation = na
+var float lastRangeAtr = na
+
+var int activePrevIndex = na
+var int activeLastIndex = na
+var bool usedCurrentV = false
+var bool watchPrinted = false
+
+int newKind = 0
+float newPrice = na
+int newIndex = na
+int newTime = na
+float newAtr = na
+float newLowerWick = na
+float newCloseLocation = na
+float newRangeAtr = na
+
+if not na(ph) and na(pl)
+    newKind := 1
+    newPrice := ph
+    newIndex := bar_index - pivotRight
+    newTime := time[pivotRight]
+    newAtr := atrValue[pivotRight]
+else if not na(pl) and na(ph)
+    newKind := -1
+    newPrice := pl
+    newIndex := bar_index - pivotRight
+    newTime := time[pivotRight]
+    newAtr := atrValue[pivotRight]
+
+if newKind != 0
+    float pivotRange = high[pivotRight] - low[pivotRight]
+    newLowerWick := pivotRange > 0 ? (math.min(open[pivotRight], close[pivotRight]) - low[pivotRight]) / pivotRange : na
+    newCloseLocation := pivotRange > 0 ? (close[pivotRight] - low[pivotRight]) / pivotRange : na
+    newRangeAtr := not na(atrValue[pivotRight]) and atrValue[pivotRight] > 0 ? pivotRange / atrValue[pivotRight] : na
+
+if newKind != 0 and not na(newAtr) and newAtr > 0
+    if lastKind == 0
+        lastKind := newKind
+        lastPrice := newPrice
+        lastIndex := newIndex
+        lastTime := newTime
+        lastAtr := newAtr
+        lastLowerWick := newLowerWick
+        lastCloseLocation := newCloseLocation
+        lastRangeAtr := newRangeAtr
+    else if newKind == lastKind
+        bool moreExtreme = (newKind == 1 and newPrice > lastPrice) or (newKind == -1 and newPrice < lastPrice)
+        if moreExtreme
+            lastPrice := newPrice
+            lastIndex := newIndex
+            lastTime := newTime
+            lastAtr := newAtr
+            lastLowerWick := newLowerWick
+            lastCloseLocation := newCloseLocation
+            lastRangeAtr := newRangeAtr
+    else
+        float swing = math.abs(newPrice - lastPrice)
+        float swingThreshold = math.max(lastAtr, newAtr) * minSwingAtr
+        if swing >= swingThreshold
+            prevKind := lastKind
+            prevPrice := lastPrice
+            prevIndex := lastIndex
+            prevTime := lastTime
+            prevAtr := lastAtr
+            prevLowerWick := lastLowerWick
+            prevCloseLocation := lastCloseLocation
+            prevRangeAtr := lastRangeAtr
+            lastKind := newKind
+            lastPrice := newPrice
+            lastIndex := newIndex
+            lastTime := newTime
+            lastAtr := newAtr
+            lastLowerWick := newLowerWick
+            lastCloseLocation := newCloseLocation
+            lastRangeAtr := newRangeAtr
+
+bool vBase = prevKind == 1 and lastKind == -1 and not na(prevPrice) and not na(lastPrice) and prevPrice > lastPrice and not na(atrValue) and atrValue > 0
+bool newPair = vBase and (na(activePrevIndex) or na(activeLastIndex) or activePrevIndex != prevIndex or activeLastIndex != lastIndex)
+if newPair
+    activePrevIndex := prevIndex
+    activeLastIndex := lastIndex
+    usedCurrentV := false
+    watchPrinted := false
+
+float drop = na
+float dropAtr = na
+float dropSpeed = na
+float recoverySpeed = na
+float recoveryVsDrop = na
+float recoverNow = na
+float recoverPrev = na
+float trigger = na
+float majorLow = ta.lowest(low, d1LowLookback)
+int dropDays = na
+int recoveryDays = na
+int reason = 1
+bool watch = false
+bool signal = false
+bool skip = false
+
+if vBase
+    drop := prevPrice - lastPrice
+    dropDays := math.max(lastIndex - prevIndex, 1)
+    recoveryDays := math.max(bar_index - lastIndex, 1)
+    dropAtr := drop / atrValue
+    dropSpeed := drop / dropDays / atrValue
+    recoverySpeed := (close - lastPrice) / recoveryDays / atrValue
+    recoveryVsDrop := dropSpeed > 0 ? recoverySpeed / dropSpeed : na
+    recoverNow := drop > 0 ? (close - lastPrice) / drop : na
+    recoverPrev := drop > 0 ? (close[1] - lastPrice) / drop : na
+    trigger := lastPrice + drop * recoveryFib
+
+    bool dropOk = dropAtr >= minDropAtr
+    bool dropDaysOk = dropDays >= minDropDays and dropDays <= maxDropDays
+    bool recoveryDaysOk = recoveryDays <= maxRecoveryDays
+    bool recoverCross = not na(recoverPrev) and recoverPrev < recoveryFib and recoverNow >= recoveryFib and close > trigger + atrValue * breakBufferAtr
+    bool recoverNotTooFar = recoverNow <= maxRecoverAtSignal
+    bool nearLowOk = not requireNearD1Low or (not na(majorLow) and lastPrice <= majorLow + atrValue * nearLowAtr)
+    bool speedOk = dropSpeed >= minDropSpeed and not na(recoveryVsDrop) and recoveryVsDrop >= minRecoveryVsDrop
+    bool lowCandleOk = not useLowCandleFilter or ((not na(lastLowerWick) and lastLowerWick >= minLowLowerWick) or (not na(lastCloseLocation) and lastCloseLocation >= minLowCloseLocation) or (not na(lastRangeAtr) and lastRangeAtr >= minLowRangeAtr))
+    bool confirmStructureOk = bodyRatio >= minBodyRatio and closeLocation >= minCloseLocation
+    bool confirmDirectionOk = (not requireConfirmBull or close > open) and (not requireConfirmCloseUp or close > close[1])
+
+    watch := baseOk and not usedCurrentV and dropOk and dropDaysOk and recoveryDaysOk and nearLowOk
+    reason := not dropOk ? 2 : not dropDaysOk ? 3 : not recoveryDaysOk ? 4 : not recoverCross ? 5 : not recoverNotTooFar ? 6 : not nearLowOk ? 7 : not speedOk ? 8 : not lowCandleOk ? 10 : not confirmStructureOk ? 9 : not confirmDirectionOk ? 11 : 0
+    signal := baseOk and not usedCurrentV and reason == 0
+    skip := baseOk and not usedCurrentV and recoverCross and reason != 0
+
+    if signal or recoveryDays > maxRecoveryDays or recoverNow > maxRecoverAtSignal
+        usedCurrentV := true
+
+bool watchNow = watch and not watchPrinted
+if watchNow
+    watchPrinted := true
+
+plot(showLevels and watch ? trigger : na, title="D1 V Recovery Trigger", color=color.new(color.aqua, 0), linewidth=2, style=plot.style_linebr)
+plot(showLevels and watch ? lastPrice : na, title="D1 V Low", color=color.new(color.orange, 0), linewidth=2, style=plot.style_linebr)
+plot(showLevels and watch ? prevPrice : na, title="D1 V Start", color=color.new(color.lime, 40), linewidth=1, style=plot.style_linebr)
+plot(showLevels and requireNearD1Low ? majorLow : na, title="D1 Major Low", color=color.new(color.yellow, 20), linewidth=1, style=plot.style_linebr)
+
+if watchNow and showWatch and showLabels
+    keepLabel(label.new(bar_index, low - atrValue * labelOffsetAtr,
+         "WATCH D1 V\nDrop: " + fmtNum(dropAtr) + " ATR" +
+         "\nRecover: " + fmtPct(recoverNow) +
+         "\nDays: " + str.tostring(dropDays) + " -> " + str.tostring(recoveryDays),
+         xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.yellow, 0), textcolor=color.black, size=size.small))
+
+if signal
+    if showLines and not na(prevTime) and not na(lastTime)
+        keepLine(line.new(prevTime, prevPrice, lastTime, lastPrice, xloc=xloc.bar_time, color=color.new(color.red, 0), width=3))
+        keepLine(line.new(lastTime, lastPrice, time, close, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=3))
+    if showLevels
+        keepLine(line.new(time, trigger, time + timeframe.in_seconds(timeframe.period) * 1000 * 20, trigger, xloc=xloc.bar_time, color=color.new(color.aqua, 0), width=2, style=line.style_dashed))
+        keepLine(line.new(time, lastPrice, time + timeframe.in_seconds(timeframe.period) * 1000 * 20, lastPrice, xloc=xloc.bar_time, color=color.new(color.orange, 0), width=2, style=line.style_dashed))
+        keepLine(line.new(time, prevPrice, time + timeframe.in_seconds(timeframe.period) * 1000 * 20, prevPrice, xloc=xloc.bar_time, color=color.new(color.lime, 45), width=1, style=line.style_dotted))
+    if showLabels
+        keepLabel(label.new(bar_index, low - atrValue * labelOffsetAtr,
+             "D1 V CONTEXT\nDrop: " + fmtNum(dropAtr) + " ATR" +
+             "\nRecover: " + fmtPct(recoverNow) +
+             "\nSpeed R/D: " + fmtNum(recoveryVsDrop) + "x" +
+             "\nLow W/C/R: " + fmtPct(lastLowerWick) + " / " + fmtPct(lastCloseLocation) + " / " + fmtNum(lastRangeAtr) +
+             "\nConfirm B/C: " + fmtPct(bodyRatio) + " / " + fmtPct(closeLocation) +
+             "\nDays: " + str.tostring(dropDays) + " -> " + str.tostring(recoveryDays),
+             xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.small))
+
+if skip and showSkip and showLabels
+    keepLabel(label.new(bar_index, high + atrValue * labelOffsetAtr,
+         "SKIP D1 V\n" + reasonText(reason) +
+         "\nDrop: " + fmtNum(dropAtr) + " ATR" +
+         "\nRecover: " + fmtPct(recoverNow) +
+         "\nSpeed R/D: " + fmtNum(recoveryVsDrop) + "x" +
+         "\nLow W/C/R: " + fmtPct(lastLowerWick) + " / " + fmtPct(lastCloseLocation) + " / " + fmtNum(lastRangeAtr),
+         xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.orange, 0), textcolor=color.black, size=size.tiny))
+
+plotshape(signal, title="D1 V Context", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="D1 V")
+plotshape(watchNow and showWatch, title="D1 V Watch", style=shape.circle, location=location.belowbar, color=color.new(color.yellow, 0), size=size.tiny, text="W")
+
+var table t = table.new(position.top_right, 2, 17, bgcolor=color.new(color.black, 75), border_color=color.gray, border_width=1)
+if showTable and barstate.islast
+    table.cell(t, 0, 0, "Method", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 0, "D1 V Daily", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 1, "Chart", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 1, dailyOk ? "D1 OK" : "日足推奨", text_color=dailyOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 2, "State", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 2, signal ? "SIGNAL" : watch ? "WATCH" : "OFF", text_color=signal ? color.lime : watch ? color.yellow : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 3, "Reason", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 3, reasonText(reason), text_color=reason == 0 ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 4, "Trigger", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, fmt(trigger), text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 5, "D1 low", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 5, fmt(lastPrice), text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 0, 6, "D1 start", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 6, fmt(prevPrice), text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 7, "Drop ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 7, fmtNum(dropAtr), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 8, "Recover", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 8, fmtPct(recoverNow), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 9, "Speed R/D", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 9, fmtNum(recoveryVsDrop), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 10, "Days D/R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 10, str.tostring(dropDays) + " / " + str.tostring(recoveryDays), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 11, "Near low", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 11, requireNearD1Low ? "ON" : "OFF", text_color=requireNearD1Low ? color.yellow : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 12, "Major low", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 12, fmt(majorLow), text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 13, "Low W/C/R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 13, fmtPct(lastLowerWick) + " / " + fmtPct(lastCloseLocation) + " / " + fmtNum(lastRangeAtr), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 14, "Conf B/C", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 14, fmtPct(bodyRatio) + " / " + fmtPct(closeLocation), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 15, "Rule", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 15, "D1 context only", text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 16, "Next", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 16, "H4 execute", text_color=color.aqua, text_size=size.tiny)
+
+alertcondition(signal, title="D1 Psychological V Context", message="D1 psychological V context detected on {{ticker}}.")

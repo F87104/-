@@ -2,14 +2,9 @@
 
 > [← 図鑑トップ](README.md) ／ [示意図ギャラリー](gallery.md) ／ [Vol.1 詳細](vol01_core_patterns.md)
 
-yfinance（またはローカル `F87104_test`）の **H4 実データ** からイベントを自動検出し、TradingView 風に切り出したチャート。
+H4 **実データ**からイベントを自動検出し、TradingView 風に切り出したチャート。
 
-再生成:
-
-```bash
-pip install matplotlib yfinance
-python3 docs/research/市場心理図鑑/render_real_events.py
-```
+再生成手順は [SETUP_REAL_CHARTS.md](SETUP_REAL_CHARTS.md) を参照。
 
 ## 01 売り方降伏
 
@@ -61,11 +56,11 @@ python3 docs/research/市場心理図鑑/render_real_events.py
 
 ## 05 現実否認
 
-![現実否認](images/real/05_SILVER_20240918_1600.png)
+![現実否認](images/real/05_AUDJPY_20260430_0800.png)
 
-- **通貨:** SILVER H4
-- **イベント時刻:** 2024-09-18T16:00:00
-- **検出スコア:** 4.31
+- **通貨:** AUDJPY H4
+- **イベント時刻:** 2026-04-30T08:00:00
+- **検出スコア:** 5.93
 
 [Vol.1 詳細 →](vol01_core_patterns.md#05-現実否認)
 

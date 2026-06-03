@@ -112,7 +112,7 @@ def load_yf_h4(symbol: str) -> pd.DataFrame | None:
     return resample_h4(out)
 
 
-def load_symbol_h4(symbol: str) -> pd.DataFrame | None:
+def load_symbol_h4(symbol: str) -> tuple[pd.DataFrame | None, str]:
     import os
 
     data_root = Path(os.environ.get("F87104_DATA_ROOT", REPO / "F87104_test"))
@@ -125,10 +125,14 @@ def load_symbol_h4(symbol: str) -> pd.DataFrame | None:
 
             raw = load_instrument(symbol)
             if raw is not None and not raw.empty:
-                return resample_h4(raw)
+                h4 = resample_h4(raw)
+                return h4, f"F87104_test ({data_root})"
         except Exception as exc:
             print(f"  local OHLC miss {symbol}: {exc}")
-    return load_yf_h4(symbol)
+    h4 = load_yf_h4(symbol)
+    if h4 is not None:
+        return h4, "yfinance 1H (730d fallback)"
+    return None, "none"
 
 
 def add_base(df: pd.DataFrame) -> pd.DataFrame:
@@ -458,6 +462,11 @@ def main() -> None:
         default=["XAUUSD", "USDJPY", "SILVER", "EURJPY", "GBPJPY", "AUDJPY", "CHFJPY"],
         help="Symbols to scan",
     )
+    parser.add_argument(
+        "--require-local",
+        action="store_true",
+        help="Fail if F87104_test is not used (no yfinance fallback)",
+    )
     args = parser.parse_args()
 
     if args.data_root and args.data_root.exists():
@@ -468,15 +477,35 @@ def main() -> None:
 
     symbols = args.symbols
     data: dict[str, pd.DataFrame] = {}
+    data_sources: dict[str, dict] = {}
     for sym in symbols:
-        h4 = load_symbol_h4(sym)
+        h4, source = load_symbol_h4(sym)
         if h4 is not None and len(h4) > 150:
             data[sym] = add_base(h4)
-            print(f"loaded {sym}: {len(h4)} H4 bars ({h4.index.min()} .. {h4.index.max()})")
+            data_sources[sym] = {
+                "source": source,
+                "bars": len(h4),
+                "from": h4.index.min().isoformat(),
+                "to": h4.index.max().isoformat(),
+            }
+            print(f"loaded {sym}: {len(h4)} H4 bars [{source}]")
+            print(f"         {h4.index.min()} .. {h4.index.max()}")
         else:
             print(f"skip {sym}: no data")
 
-    manifest = []
+    if args.require_local:
+        bad = [s for s, m in data_sources.items() if not m["source"].startswith("F87104_test")]
+        if bad or not data_sources:
+            raise SystemExit(
+                "ERROR: --require-local set but F87104_test data missing for: "
+                + ", ".join(bad or symbols)
+            )
+
+    manifest_meta = {
+        "generated_at": pd.Timestamp.utcnow().isoformat(),
+        "data_sources": data_sources,
+        "events": [],
+    }
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     for pid, scanner in SCANNERS.items():
@@ -501,12 +530,12 @@ def main() -> None:
             "image": f"images/real/{fname}",
             "meta": best.meta,
         }
-        manifest.append(entry)
+        manifest_meta["events"].append(entry)
         print(f"saved {out}")
 
-    MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
-    write_gallery(manifest)
-    print(f"manifest: {MANIFEST} ({len(manifest)} events)")
+    MANIFEST.write_text(json.dumps(manifest_meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_gallery(manifest_meta["events"])
+    print(f"manifest: {MANIFEST} ({len(manifest_meta['events'])} events)")
     print(f"gallery:  {THIS_DIR / 'real_gallery.md'}")
 
 

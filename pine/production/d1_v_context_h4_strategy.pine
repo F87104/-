@@ -54,6 +54,14 @@ minRecoveryVsDrop = input.float(0.60, "D1回復速度/下落速度 下限", minv
 minBodyRatio = input.float(0.25, "D1確認足 実体比率 下限", minval=0.0, maxval=1.0, step=0.05, group=grpV)
 minCloseLocation = input.float(0.50, "D1確認足 終値位置 下限", minval=0.0, maxval=1.0, step=0.05, group=grpV)
 
+grpCandle = "D1ローソク足品質"
+useLowCandleFilter = input.bool(true, "D1谷足の反発形を要求", group=grpCandle)
+minLowLowerWick = input.float(0.20, "谷足 下ヒゲ比率 下限", minval=0.0, maxval=1.0, step=0.05, group=grpCandle)
+minLowCloseLocation = input.float(0.35, "谷足 終値位置 下限", minval=0.0, maxval=1.0, step=0.05, group=grpCandle)
+minLowRangeAtr = input.float(0.80, "谷足 値幅ATR 下限", minval=0.0, step=0.1, group=grpCandle)
+requireConfirmBull = input.bool(true, "確認足は陽線", group=grpCandle)
+requireConfirmCloseUp = input.bool(true, "確認足は前日終値より上", group=grpCandle)
+
 grpContext = "D1安値圏"
 requireNearD1Low = input.bool(true, "D1安値圏からのVだけ", group=grpContext)
 d1LowLookback = input.int(120, "D1安値参照日数", minval=20, maxval=500, group=grpContext)
@@ -112,6 +120,8 @@ reasonText(int code) =>
          code == 7 ? "D1安値圏ではない" :
          code == 8 ? "D1速度不足" :
          code == 9 ? "D1確認足弱い" :
+         code == 10 ? "D1谷足反発弱い" :
+         code == 11 ? "D1確認足方向弱い" :
          "N/A"
     out
 
@@ -142,12 +152,18 @@ f_d1_v_context() =>
     var int prevIndex = na
     var int prevTime = na
     var float prevAtr = na
+    var float prevLowerWick = na
+    var float prevCloseLocation = na
+    var float prevRangeAtr = na
 
     var int lastKind = 0
     var float lastPrice = na
     var int lastIndex = na
     var int lastTime = na
     var float lastAtr = na
+    var float lastLowerWick = na
+    var float lastCloseLocation = na
+    var float lastRangeAtr = na
     var bool usedCurrentV = false
 
     int newKind = 0
@@ -155,6 +171,9 @@ f_d1_v_context() =>
     int newIndex = na
     int newTime = na
     float newAtr = na
+    float newLowerWick = na
+    float newCloseLocation = na
+    float newRangeAtr = na
     bool acceptedPivot = false
 
     if not na(ph) and na(pl)
@@ -170,6 +189,12 @@ f_d1_v_context() =>
         newTime := time[pivotRight]
         newAtr := atrValue[pivotRight]
 
+    if newKind != 0
+        float pivotRange = high[pivotRight] - low[pivotRight]
+        newLowerWick := pivotRange > 0 ? (math.min(open[pivotRight], close[pivotRight]) - low[pivotRight]) / pivotRange : na
+        newCloseLocation := pivotRange > 0 ? (close[pivotRight] - low[pivotRight]) / pivotRange : na
+        newRangeAtr := not na(atrValue[pivotRight]) and atrValue[pivotRight] > 0 ? pivotRange / atrValue[pivotRight] : na
+
     if newKind != 0 and not na(newAtr) and newAtr > 0
         int n = lastKind == 0 ? 0 : 1
         if n == 0
@@ -178,6 +203,9 @@ f_d1_v_context() =>
             lastIndex := newIndex
             lastTime := newTime
             lastAtr := newAtr
+            lastLowerWick := newLowerWick
+            lastCloseLocation := newCloseLocation
+            lastRangeAtr := newRangeAtr
             usedCurrentV := false
             acceptedPivot := true
         else if newKind == lastKind
@@ -187,6 +215,9 @@ f_d1_v_context() =>
                 lastIndex := newIndex
                 lastTime := newTime
                 lastAtr := newAtr
+                lastLowerWick := newLowerWick
+                lastCloseLocation := newCloseLocation
+                lastRangeAtr := newRangeAtr
                 usedCurrentV := false
                 acceptedPivot := true
         else
@@ -198,11 +229,17 @@ f_d1_v_context() =>
                 prevIndex := lastIndex
                 prevTime := lastTime
                 prevAtr := lastAtr
+                prevLowerWick := lastLowerWick
+                prevCloseLocation := lastCloseLocation
+                prevRangeAtr := lastRangeAtr
                 lastKind := newKind
                 lastPrice := newPrice
                 lastIndex := newIndex
                 lastTime := newTime
                 lastAtr := newAtr
+                lastLowerWick := newLowerWick
+                lastCloseLocation := newCloseLocation
+                lastRangeAtr := newRangeAtr
                 usedCurrentV := false
                 acceptedPivot := true
 
@@ -216,6 +253,11 @@ f_d1_v_context() =>
     float recoverySpeed = na
     float recoveryVsDrop = na
     float recoverNow = na
+    float lowLowerWick = na
+    float lowCloseLocation = na
+    float lowRangeAtr = na
+    float confirmBody = bodyRatio
+    float confirmCloseLocation = closeLocation
     int dropDays = na
     int recoveryDays = na
     float majorLow = ta.lowest(low, d1LowLookback)
@@ -232,6 +274,9 @@ f_d1_v_context() =>
         trigger := lastPrice + drop * recoveryFib
         stop := lastPrice
         recoverNow := drop > 0 ? (close - lastPrice) / drop : na
+        lowLowerWick := lastLowerWick
+        lowCloseLocation := lastCloseLocation
+        lowRangeAtr := lastRangeAtr
         float recoverPrev = drop > 0 ? (close[1] - lastPrice) / drop : na
 
         bool dropOk = dropAtr >= minDropAtr
@@ -241,17 +286,19 @@ f_d1_v_context() =>
         bool recoverNotTooFar = recoverNow <= maxRecoverAtSignal
         bool nearLowOk = not requireNearD1Low or (not na(majorLow) and lastPrice <= majorLow + atrValue * nearLowAtr)
         bool speedOk = dropSpeed >= minDropSpeed and not na(recoveryVsDrop) and recoveryVsDrop >= minRecoveryVsDrop
-        bool candleOk = bodyRatio >= minBodyRatio and closeLocation >= minCloseLocation
+        bool lowCandleOk = not useLowCandleFilter or ((not na(lowLowerWick) and lowLowerWick >= minLowLowerWick) or (not na(lowCloseLocation) and lowCloseLocation >= minLowCloseLocation) or (not na(lowRangeAtr) and lowRangeAtr >= minLowRangeAtr))
+        bool confirmStructureOk = bodyRatio >= minBodyRatio and closeLocation >= minCloseLocation
+        bool confirmDirectionOk = (not requireConfirmBull or close > open) and (not requireConfirmCloseUp or close > close[1])
 
         watch := dropOk and dropDaysOk and recoveryDaysOk and nearLowOk and not usedCurrentV
-        reason := not dropOk ? 2 : not dropDaysOk ? 3 : not recoveryDaysOk ? 4 : not recoverEnough ? 5 : not recoverNotTooFar ? 6 : not nearLowOk ? 7 : not speedOk ? 8 : not candleOk ? 9 : 0
+        reason := not dropOk ? 2 : not dropDaysOk ? 3 : not recoveryDaysOk ? 4 : not recoverEnough ? 5 : not recoverNotTooFar ? 6 : not nearLowOk ? 7 : not speedOk ? 8 : not lowCandleOk ? 10 : not confirmStructureOk ? 9 : not confirmDirectionOk ? 11 : 0
         sig := not usedCurrentV and reason == 0
         if sig or recoveryDays > maxRecoveryDays
             usedCurrentV := true
 
-    [sig, watch, reason, prevPrice, prevTime, lastPrice, lastTime, time, close, trigger, stop, dropAtr, dropSpeed, recoverySpeed, recoveryVsDrop, recoverNow, dropDays, recoveryDays, acceptedPivot]
+    [sig, watch, reason, prevPrice, prevTime, lastPrice, lastTime, time, close, trigger, stop, dropAtr, dropSpeed, recoverySpeed, recoveryVsDrop, recoverNow, dropDays, recoveryDays, acceptedPivot, lowLowerWick, lowCloseLocation, lowRangeAtr, confirmBody, confirmCloseLocation]
 
-[d1Sig, d1Watch, d1Reason, d1StartPrice, d1StartTime, d1LowPrice, d1LowTime, d1SignalTime, d1SignalClose, d1Trigger, d1Stop, d1DropAtr, d1DropSpeed, d1RecoverySpeed, d1RecoveryVsDrop, d1RecoverNow, d1DropDays, d1RecoveryDays, d1PivotAccepted] =
+[d1Sig, d1Watch, d1Reason, d1StartPrice, d1StartTime, d1LowPrice, d1LowTime, d1SignalTime, d1SignalClose, d1Trigger, d1Stop, d1DropAtr, d1DropSpeed, d1RecoverySpeed, d1RecoveryVsDrop, d1RecoverNow, d1DropDays, d1RecoveryDays, d1PivotAccepted, d1LowLowerWick, d1LowCloseLocation, d1LowRangeAtr, d1ConfirmBody, d1ConfirmCloseLocation] =
      request.security(syminfo.tickerid, analysisTf, f_d1_v_context(), barmerge.gaps_off, barmerge.lookahead_off)
 
 int chartSec = timeframe.in_seconds(timeframe.period)
@@ -389,6 +436,8 @@ if newD1Signal
         string txt = "D1 V CONTEXT\nDrop: " + fmtNum(d1DropAtr) + " ATR" +
              "\nRecover: " + fmtPct(d1RecoverNow) +
              "\nSpeed: " + fmtNum(d1RecoveryVsDrop) + "x" +
+             "\nLow W/C: " + fmtPct(d1LowLowerWick) + " / " + fmtPct(d1LowCloseLocation) +
+             "\nConfirm B/C: " + fmtPct(d1ConfirmBody) + " / " + fmtPct(d1ConfirmCloseLocation) +
              "\nDays: " + str.tostring(d1DropDays) + " -> " + str.tostring(d1RecoveryDays) +
              "\nH4 watch: " + str.tostring(monitorH4Bars)
         keepLabel(label.new(bar_index, low - h4Atr * labelOffsetAtr, txt, xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.small))
@@ -396,7 +445,7 @@ if newD1Signal
 plotshape(newD1Signal, title="D1 V Context", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="D1")
 plotshape(canEnter, title="H4 Confirm Entry", style=shape.triangleup, location=location.belowbar, color=color.new(color.aqua, 0), size=size.small, text="H4")
 
-var table t = table.new(position.top_right, 2, 18, bgcolor=color.new(color.black, 75), border_color=color.gray, border_width=1)
+var table t = table.new(position.top_right, 2, 20, bgcolor=color.new(color.black, 75), border_color=color.gray, border_width=1)
 if showTable and barstate.islast
     table.cell(t, 0, 0, "Method", text_color=color.white, text_size=size.tiny)
     table.cell(t, 1, 0, "D1 V -> H4", text_color=color.lime, text_size=size.tiny)
@@ -436,6 +485,10 @@ if showTable and barstate.islast
     table.cell(t, 1, 16, str.tostring(rr, "#.##") + " / " + str.tostring(maxHoldBars), text_color=color.white, text_size=size.tiny)
     table.cell(t, 0, 17, "Status", text_color=color.white, text_size=size.tiny)
     table.cell(t, 1, 17, canEnter ? "ENTRY" : h4EntryUsed ? "USED" : activeContext ? "WATCH" : "OFF", text_color=canEnter ? color.lime : activeContext ? color.yellow : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 18, "D1 low W/C/R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 18, fmtPct(d1LowLowerWick) + " / " + fmtPct(d1LowCloseLocation) + " / " + fmtNum(d1LowRangeAtr), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 19, "D1 conf B/C", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 19, fmtPct(d1ConfirmBody) + " / " + fmtPct(d1ConfirmCloseLocation), text_color=color.white, text_size=size.tiny)
 
 alertcondition(newD1Signal, title="D1 V Context", message="D1 V context detected on {{ticker}}. H4 confirmation window started.")
 alertcondition(canEnter, title="H4 Confirm Entry after D1 V", message="H4 confirmation entry after D1 V context on {{ticker}}.")

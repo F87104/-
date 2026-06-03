@@ -80,6 +80,7 @@ pine/research/          ← TradingView 用 Pine（ここ）
 - D1 V -> H4検証Strategy: [pine/production/d1_v_context_h4_strategy.pine](pine/production/d1_v_context_h4_strategy.pine)
 - 狙い: 急落後のVそのものではなく、**V1売り失敗 -> V2押し -> V1右肩ゾーン突破**で、トレンド初動候補を探す研究。
 - 最新仮説: H4単独ではなく、**D1 V Context + H4 Execute** に分けると、日足級の反転初動を拾える可能性がある。
+- 最新更新: D1 Vの谷足と確認足に、下ヒゲ・終値位置・値幅ATR・陽線/前日終値超えの品質チェックを追加。
 
 | 優先 | 研究テーマ | 状態 | 入口 |
 |---:|---|---|---|

@@ -1,0 +1,400 @@
+//@version=5
+indicator("D1 V Context on H4 Visual [Research]", overlay=true, max_bars_back=5000, max_lines_count=500, max_labels_count=500)
+
+// =====================================================================
+// D1 V Context on H4 Visual [Research]
+// ---------------------------------------------------------------------
+// Purpose:
+//   Detect the larger daily V-shape that may start a new trend, then
+//   project that context onto H4.
+//
+// Core idea:
+//   H4-only V detection can pick up too many small/noisy V shapes.
+//   Use D1 to define the larger sell-failure / reversal context, then
+//   inspect H4 only inside that context.
+//
+// Visual meaning:
+//   Red line   : D1 selloff leg, confirmed pivot high -> pivot low.
+//   Green line : D1 recovery leg, pivot low -> D1 recovery confirmation.
+//   Aqua line  : D1 recovery trigger.
+//   Orange line: D1 pivot low / structural invalidation reference.
+//   Green bg   : H4 bars inside the D1 V context monitoring window.
+//   Blue label : H4 confirmation entry after the D1 V context.
+// =====================================================================
+
+grpMode = "基本"
+requireH4 = input.bool(true, "H4チャートで見る", group=grpMode)
+analysisTf = input.timeframe("D", "V検知時間足", group=grpMode)
+skipHoliday = input.bool(true, "12/15〜1/10は新規候補を停止", group=grpMode)
+useDateFilter = input.bool(true, "2015〜2026のみ表示", group=grpMode)
+excludeXau = input.bool(false, "XAUUSD/XAUを除外", group=grpMode)
+
+grpPivot = "D1 Pivot"
+pivotLeft = input.int(2, "Pivot left", minval=1, maxval=20, group=grpPivot)
+pivotRight = input.int(2, "Pivot right", minval=1, maxval=20, group=grpPivot)
+atrLen = input.int(14, "ATR期間", minval=1, group=grpPivot)
+minSwingAtr = input.float(1.8, "Pivot間の最小スイング(ATR)", minval=0.1, step=0.1, group=grpPivot)
+
+grpV = "D1 V条件"
+minDropAtr = input.float(3.0, "D1下落幅 最小ATR", minval=0.1, step=0.1, group=grpV)
+minDropDays = input.int(2, "D1下落 最小日数", minval=1, group=grpV)
+maxDropDays = input.int(90, "D1下落 最大日数", minval=2, group=grpV)
+maxRecoveryDays = input.int(90, "D1回復 最大日数", minval=2, group=grpV)
+recoveryFib = input.float(0.50, "D1回復判定", minval=0.1, maxval=1.2, step=0.001, group=grpV, tooltip="0.50なら下落幅の50%回復でD1 V文脈を点灯。0.618ならより厳しめ。")
+maxRecoverAtSignal = input.float(1.40, "シグナル時 回復率上限", minval=0.5, maxval=3.0, step=0.05, group=grpV, tooltip="伸び切った後の小さい押しをD1 V起点と誤認しにくくする上限。")
+breakBufferAtr = input.float(0.03, "回復ライン上抜け余白(ATR)", minval=0.0, step=0.01, group=grpV)
+minDropSpeed = input.float(0.08, "D1下落速度 最小ATR/日", minval=0.0, step=0.01, group=grpV)
+minRecoveryVsDrop = input.float(0.60, "D1回復速度/下落速度 下限", minval=0.0, maxval=2.0, step=0.05, group=grpV)
+minBodyRatio = input.float(0.25, "確認足 実体比率 下限", minval=0.0, maxval=1.0, step=0.05, group=grpV)
+minCloseLocation = input.float(0.50, "確認足 終値位置 下限", minval=0.0, maxval=1.0, step=0.05, group=grpV)
+
+grpContext = "D1安値圏"
+requireNearD1Low = input.bool(true, "D1安値圏からのVだけ", group=grpContext)
+d1LowLookback = input.int(120, "D1安値参照日数", minval=20, maxval=500, group=grpContext)
+nearLowAtr = input.float(3.0, "安値付近 許容ATR", minval=0.1, step=0.1, group=grpContext)
+
+grpH4 = "H4表示/監視"
+monitorH4Bars = input.int(80, "D1 V成立後 H4監視本数", minval=6, maxval=400, group=grpH4)
+showContextBg = input.bool(true, "D1 V文脈の背景", group=grpH4)
+showD1Levels = input.bool(true, "D1水準ライン", group=grpH4)
+showVLines = input.bool(true, "D1 Vライン", group=grpH4)
+showLabels = input.bool(true, "D1 Vラベル", group=grpH4)
+showTable = input.bool(true, "状態テーブル", group=grpH4)
+maxObjects = input.int(80, "残す描画数", minval=10, maxval=250, group=grpH4)
+labelOffsetAtr = input.float(3.0, "ラベル上下余白(ATR)", minval=0.5, step=0.5, group=grpH4)
+
+grpEntry = "H4確認エントリー"
+useH4Entry = input.bool(true, "H4確認エントリーを表示", group=grpEntry)
+h4EntryMode = input.string("押し目高値突破+EMA20上向き", "確認方法", options=["押し目高値突破", "押し目高値突破+EMA20上向き", "直近高値突破"], group=grpEntry)
+h4BreakLookback = input.int(20, "直近高値突破 本数", minval=5, maxval=120, group=grpEntry)
+h4MinPullbackAtr = input.float(0.8, "H4押し目 最小ATR", minval=0.1, step=0.1, group=grpEntry)
+h4MaxPullbackAtr = input.float(6.0, "H4押し目 最大ATR", minval=0.5, step=0.5, group=grpEntry)
+h4BreakBufferAtr = input.float(0.03, "H4高値突破 余白ATR", minval=0.0, step=0.01, group=grpEntry)
+h4MinBodyRatio = input.float(0.35, "H4突破足 実体比率", minval=0.0, maxval=1.0, step=0.05, group=grpEntry)
+h4MinCloseLocation = input.float(0.55, "H4突破足 終値位置", minval=0.0, maxval=1.0, step=0.05, group=grpEntry)
+h4RequireAboveD1Trigger = input.bool(true, "D1回復ライン上だけ入る", group=grpEntry)
+h4InvalidAtr = input.float(0.25, "D1安値割れ失効ATR", minval=0.0, step=0.05, group=grpEntry)
+h4StopBufferAtr = input.float(0.25, "参考SL余白ATR", minval=0.0, step=0.05, group=grpEntry)
+h4RR = input.float(1.5, "参考TP RR", minval=0.1, step=0.1, group=grpEntry)
+
+fmt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, format.mintick)
+    out
+
+fmtNum(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#.##")
+    out
+
+fmtPct(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v * 100.0, "#.#") + "%"
+    out
+
+reasonText(int code) =>
+    string out = code == 0 ? "OK" :
+         code == 1 ? "D1 Vなし" :
+         code == 2 ? "D1下落が弱い" :
+         code == 3 ? "D1下落日数NG" :
+         code == 4 ? "D1回復期限切れ" :
+         code == 5 ? "D1回復不足" :
+         code == 6 ? "D1回復しすぎ" :
+         code == 7 ? "D1安値圏ではない" :
+         code == 8 ? "D1速度不足" :
+         code == 9 ? "D1確認足弱い" :
+         "N/A"
+    out
+
+var line[] keptLines = array.new_line()
+var label[] keptLabels = array.new_label()
+
+keepLine(line ln) =>
+    array.push(keptLines, ln)
+    while array.size(keptLines) > maxObjects * 5
+        line.delete(array.shift(keptLines))
+
+keepLabel(label lb) =>
+    array.push(keptLabels, lb)
+    while array.size(keptLabels) > maxObjects
+        label.delete(array.shift(keptLabels))
+
+f_d1_v_context() =>
+    float atrValue = ta.atr(atrLen)
+    float barRange = high - low
+    float bodyRatio = barRange > 0 ? math.abs(close - open) / barRange : 0.0
+    float closeLocation = barRange > 0 ? (close - low) / barRange : 0.0
+
+    float ph = ta.pivothigh(high, pivotLeft, pivotRight)
+    float pl = ta.pivotlow(low, pivotLeft, pivotRight)
+
+    var int prevKind = 0
+    var float prevPrice = na
+    var int prevIndex = na
+    var int prevTime = na
+    var float prevAtr = na
+
+    var int lastKind = 0
+    var float lastPrice = na
+    var int lastIndex = na
+    var int lastTime = na
+    var float lastAtr = na
+    var bool usedCurrentV = false
+
+    int newKind = 0
+    float newPrice = na
+    int newIndex = na
+    int newTime = na
+    float newAtr = na
+    bool acceptedPivot = false
+
+    if not na(ph) and na(pl)
+        newKind := 1
+        newPrice := ph
+        newIndex := bar_index - pivotRight
+        newTime := time[pivotRight]
+        newAtr := atrValue[pivotRight]
+    else if not na(pl) and na(ph)
+        newKind := -1
+        newPrice := pl
+        newIndex := bar_index - pivotRight
+        newTime := time[pivotRight]
+        newAtr := atrValue[pivotRight]
+
+    if newKind != 0 and not na(newAtr) and newAtr > 0
+        int n = lastKind == 0 ? 0 : 1
+        if n == 0
+            lastKind := newKind
+            lastPrice := newPrice
+            lastIndex := newIndex
+            lastTime := newTime
+            lastAtr := newAtr
+            usedCurrentV := false
+            acceptedPivot := true
+        else if newKind == lastKind
+            bool moreExtreme = (newKind == 1 and newPrice > lastPrice) or (newKind == -1 and newPrice < lastPrice)
+            if moreExtreme
+                lastPrice := newPrice
+                lastIndex := newIndex
+                lastTime := newTime
+                lastAtr := newAtr
+                usedCurrentV := false
+                acceptedPivot := true
+        else
+            float swing = math.abs(newPrice - lastPrice)
+            float swingThreshold = math.max(lastAtr, newAtr) * minSwingAtr
+            if swing >= swingThreshold
+                prevKind := lastKind
+                prevPrice := lastPrice
+                prevIndex := lastIndex
+                prevTime := lastTime
+                prevAtr := lastAtr
+                lastKind := newKind
+                lastPrice := newPrice
+                lastIndex := newIndex
+                lastTime := newTime
+                lastAtr := newAtr
+                usedCurrentV := false
+                acceptedPivot := true
+
+    bool sig = false
+    bool watch = false
+    int reason = 1
+    float trigger = na
+    float stop = na
+    float dropAtr = na
+    float dropSpeed = na
+    float recoverySpeed = na
+    float recoveryVsDrop = na
+    float recoverNow = na
+    int dropDays = na
+    int recoveryDays = na
+    float majorLow = ta.lowest(low, d1LowLookback)
+
+    bool vBase = prevKind == 1 and lastKind == -1 and not na(prevPrice) and not na(lastPrice) and not na(atrValue) and atrValue > 0
+    if vBase
+        float drop = prevPrice - lastPrice
+        dropDays := math.max(lastIndex - prevIndex, 1)
+        recoveryDays := math.max(bar_index - lastIndex, 1)
+        dropAtr := drop / atrValue
+        dropSpeed := drop / dropDays / atrValue
+        recoverySpeed := (close - lastPrice) / recoveryDays / atrValue
+        recoveryVsDrop := dropSpeed > 0 ? recoverySpeed / dropSpeed : na
+        trigger := lastPrice + drop * recoveryFib
+        stop := lastPrice
+        recoverNow := drop > 0 ? (close - lastPrice) / drop : na
+        float recoverPrev = drop > 0 ? (close[1] - lastPrice) / drop : na
+
+        bool dropOk = dropAtr >= minDropAtr
+        bool dropDaysOk = dropDays >= minDropDays and dropDays <= maxDropDays
+        bool recoveryDaysOk = recoveryDays <= maxRecoveryDays
+        bool recoverEnough = not na(recoverPrev) and recoverPrev < recoveryFib and recoverNow >= recoveryFib and close > trigger + atrValue * breakBufferAtr
+        bool recoverNotTooFar = recoverNow <= maxRecoverAtSignal
+        bool nearLowOk = not requireNearD1Low or (not na(majorLow) and lastPrice <= majorLow + atrValue * nearLowAtr)
+        bool speedOk = dropSpeed >= minDropSpeed and not na(recoveryVsDrop) and recoveryVsDrop >= minRecoveryVsDrop
+        bool candleOk = bodyRatio >= minBodyRatio and closeLocation >= minCloseLocation
+
+        watch := dropOk and dropDaysOk and recoveryDaysOk and nearLowOk and not usedCurrentV
+        reason := not dropOk ? 2 : not dropDaysOk ? 3 : not recoveryDaysOk ? 4 : not recoverEnough ? 5 : not recoverNotTooFar ? 6 : not nearLowOk ? 7 : not speedOk ? 8 : not candleOk ? 9 : 0
+        sig := not usedCurrentV and reason == 0
+        if sig or recoveryDays > maxRecoveryDays
+            usedCurrentV := true
+
+    [sig, watch, reason, prevPrice, prevTime, lastPrice, lastTime, time, close, trigger, stop, dropAtr, dropSpeed, recoverySpeed, recoveryVsDrop, recoverNow, dropDays, recoveryDays, acceptedPivot]
+
+[d1Sig, d1Watch, d1Reason, d1StartPrice, d1StartTime, d1LowPrice, d1LowTime, d1SignalTime, d1SignalClose, d1Trigger, d1Stop, d1DropAtr, d1DropSpeed, d1RecoverySpeed, d1RecoveryVsDrop, d1RecoverNow, d1DropDays, d1RecoveryDays, d1PivotAccepted] =
+     request.security(syminfo.tickerid, analysisTf, f_d1_v_context(), barmerge.gaps_off, barmerge.lookahead_off)
+
+int chartSec = timeframe.in_seconds(timeframe.period)
+bool h4Ok = not requireH4 or chartSec == 240 * 60
+bool holidayOk = not skipHoliday or not ((month == 12 and dayofmonth >= 15) or (month == 1 and dayofmonth <= 10))
+bool dateOk = not useDateFilter or (year >= 2015 and year <= 2026)
+bool xauSymbol = str.contains(syminfo.ticker, "XAU")
+bool symbolOk = not excludeXau or not xauSymbol
+bool baseOk = h4Ok and holidayOk and dateOk and symbolOk
+
+bool newD1Signal = baseOk and d1Sig and not d1Sig[1]
+float h4Atr = ta.atr(14)
+
+var bool activeContext = false
+var int contextEndBar = na
+var float activeTrigger = na
+var float activeLow = na
+var float activeStart = na
+var bool h4PulledBack = false
+var bool h4EntryUsed = false
+var float h4PrePullbackHigh = na
+var float h4PullbackLow = na
+var float h4EntryLevel = na
+
+if newD1Signal
+    activeContext := true
+    contextEndBar := bar_index + monitorH4Bars
+    activeTrigger := d1Trigger
+    activeLow := d1LowPrice
+    activeStart := d1StartPrice
+    h4PulledBack := false
+    h4EntryUsed := false
+    h4PrePullbackHigh := high
+    h4PullbackLow := low
+    h4EntryLevel := na
+
+if activeContext and not na(contextEndBar) and bar_index > contextEndBar
+    activeContext := false
+
+float h4Range = high - low
+float h4BodyRatioNow = h4Range > 0 ? math.abs(close - open) / h4Range : 0.0
+float h4CloseLocationNow = h4Range > 0 ? (close - low) / h4Range : 0.0
+float h4Ema20 = ta.ema(close, 20)
+bool h4Ema20Up = not na(h4Ema20[3]) and h4Ema20 > h4Ema20[3]
+float h4RecentHigh = ta.highest(high[1], h4BreakLookback)
+bool h4ContextValid = activeContext and not na(activeLow) and low > activeLow - h4Atr * h4InvalidAtr
+bool h4CandleOk = h4BodyRatioNow >= h4MinBodyRatio and h4CloseLocationNow >= h4MinCloseLocation
+bool h4AboveD1TriggerOk = not h4RequireAboveD1Trigger or (not na(activeTrigger) and close > activeTrigger)
+bool h4EmaOk = h4EntryMode != "押し目高値突破+EMA20上向き" or h4Ema20Up
+
+if activeContext and not h4ContextValid
+    activeContext := false
+
+if activeContext and useH4Entry and not h4EntryUsed
+    if h4EntryMode == "直近高値突破"
+        h4EntryLevel := h4RecentHigh
+    else
+        if not h4PulledBack
+            h4PrePullbackHigh := na(h4PrePullbackHigh) ? high : math.max(h4PrePullbackHigh, high)
+            float pullbackDepthAtr = not na(h4PrePullbackHigh) and h4Atr > 0 ? (h4PrePullbackHigh - low) / h4Atr : na
+            if not na(pullbackDepthAtr) and pullbackDepthAtr >= h4MinPullbackAtr and pullbackDepthAtr <= h4MaxPullbackAtr
+                h4PulledBack := true
+                h4PullbackLow := low
+                h4EntryLevel := h4PrePullbackHigh
+        else
+            h4PullbackLow := math.min(h4PullbackLow, low)
+
+bool h4NeedsPullback = h4EntryMode != "直近高値突破"
+bool h4SetupReady = activeContext and useH4Entry and not h4EntryUsed and (not h4NeedsPullback or h4PulledBack) and not na(h4EntryLevel)
+bool h4EntrySignal = h4SetupReady and close > h4EntryLevel + h4Atr * h4BreakBufferAtr and h4CandleOk and h4AboveD1TriggerOk and h4EmaOk
+
+if h4EntrySignal
+    h4EntryUsed := true
+    float h4Stop = (h4NeedsPullback and not na(h4PullbackLow) ? h4PullbackLow : activeLow) - h4Atr * h4StopBufferAtr
+    float h4Risk = close - h4Stop
+    float h4Target = h4Risk > 0 ? close + h4Risk * h4RR : na
+    if showLabels
+        string entryText = "H4 CONFIRM LONG" +
+             "\nD1 V context" +
+             "\nEntry: " + fmt(close) +
+             "\nBreak: " + fmt(h4EntryLevel) +
+             "\nSL: " + fmt(h4Stop) +
+             "\nTP: " + fmt(h4Target)
+        keepLabel(label.new(bar_index, low - h4Atr * labelOffsetAtr, entryText, xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.aqua, 0), textcolor=color.black, size=size.small))
+    if showD1Levels
+        keepLine(line.new(bar_index, h4EntryLevel, bar_index + 20, h4EntryLevel, xloc=xloc.bar_index, color=color.new(color.aqua, 0), width=2, style=line.style_dashed))
+        keepLine(line.new(bar_index, h4Stop, bar_index + 20, h4Stop, xloc=xloc.bar_index, color=color.new(color.red, 0), width=2, style=line.style_dashed))
+        if not na(h4Target)
+            keepLine(line.new(bar_index, h4Target, bar_index + 20, h4Target, xloc=xloc.bar_index, color=color.new(color.lime, 0), width=2, style=line.style_dashed))
+
+bgcolor(showContextBg and activeContext ? color.new(color.lime, 91) : na, title="D1 V Context Window")
+
+plot(showD1Levels and d1Watch ? d1Trigger : na, title="D1 V Trigger", color=color.new(color.aqua, 0), linewidth=2, style=plot.style_linebr)
+plot(showD1Levels and d1Watch ? d1LowPrice : na, title="D1 V Low", color=color.new(color.orange, 0), linewidth=2, style=plot.style_linebr)
+plot(showD1Levels and d1Watch ? d1StartPrice : na, title="D1 V Start", color=color.new(color.lime, 35), linewidth=1, style=plot.style_linebr)
+
+if newD1Signal
+    int monitorMs = monitorH4Bars * chartSec * 1000
+    if showVLines and not na(d1StartTime) and not na(d1LowTime) and not na(d1SignalTime)
+        keepLine(line.new(d1StartTime, d1StartPrice, d1LowTime, d1LowPrice, xloc=xloc.bar_time, color=color.new(color.red, 0), width=3))
+        keepLine(line.new(d1LowTime, d1LowPrice, d1SignalTime, d1SignalClose, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=3))
+    if showD1Levels and not na(d1SignalTime)
+        keepLine(line.new(d1SignalTime, d1Trigger, d1SignalTime + monitorMs, d1Trigger, xloc=xloc.bar_time, color=color.new(color.aqua, 0), width=2, style=line.style_dashed))
+        keepLine(line.new(d1SignalTime, d1LowPrice, d1SignalTime + monitorMs, d1LowPrice, xloc=xloc.bar_time, color=color.new(color.orange, 0), width=2, style=line.style_dashed))
+        keepLine(line.new(d1SignalTime, d1StartPrice, d1SignalTime + monitorMs, d1StartPrice, xloc=xloc.bar_time, color=color.new(color.lime, 45), width=1, style=line.style_dotted))
+    if showLabels
+        string txt = "D1 V CONTEXT\nDrop: " + fmtNum(d1DropAtr) + " ATR" +
+             "\nRecover: " + fmtPct(d1RecoverNow) +
+             "\nSpeed: " + fmtNum(d1RecoveryVsDrop) + "x" +
+             "\nDays: " + str.tostring(d1DropDays) + " -> " + str.tostring(d1RecoveryDays) +
+             "\nH4 watch: " + str.tostring(monitorH4Bars)
+        keepLabel(label.new(bar_index, low - h4Atr * labelOffsetAtr, txt, xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.small))
+
+plotshape(newD1Signal, title="D1 V Context", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="D1 V")
+plotshape(baseOk and d1Watch and not d1Watch[1] and not d1Sig, title="D1 V Watch", style=shape.circle, location=location.belowbar, color=color.new(color.yellow, 0), size=size.tiny, text="W")
+plotshape(h4EntrySignal, title="H4 Confirm Entry", style=shape.triangleup, location=location.belowbar, color=color.new(color.aqua, 0), size=size.small, text="H4")
+
+var table t = table.new(position.top_right, 2, 17, bgcolor=color.new(color.black, 75), border_color=color.gray, border_width=1)
+if showTable and barstate.islast
+    table.cell(t, 0, 0, "Method", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 0, "D1 V -> H4", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 1, "Chart", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 1, h4Ok ? "H4 OK" : "H4推奨", text_color=h4Ok ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 2, "D1 State", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 2, d1Sig ? "SIGNAL" : d1Watch ? "WATCH" : "OFF", text_color=d1Sig ? color.lime : d1Watch ? color.yellow : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 3, "Reason", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 3, reasonText(d1Reason), text_color=d1Reason == 0 ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 4, "Trigger", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, fmt(d1Trigger), text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 5, "D1 low", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 5, fmt(d1LowPrice), text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 0, 6, "Drop ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 6, fmtNum(d1DropAtr), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 7, "Recover", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 7, fmtPct(d1RecoverNow), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 8, "Speed R/D", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 8, fmtNum(d1RecoveryVsDrop), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 9, "Days D/R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 9, str.tostring(d1DropDays) + " / " + str.tostring(d1RecoveryDays), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 10, "H4 context", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 10, activeContext ? "ACTIVE" : "OFF", text_color=activeContext ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 11, "D1 low filter", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 11, requireNearD1Low ? "ON" : "OFF", text_color=requireNearD1Low ? color.yellow : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 12, "Rule", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 12, "D1 V context", text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 13, "H4 entry", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 13, useH4Entry ? h4EntryMode : "OFF", text_color=useH4Entry ? color.aqua : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 14, "H4 pullback", text_color=color.white, text_size=size.tiny)
+    string h4PullbackText = h4NeedsPullback ? (h4PulledBack ? "DONE" : "WAIT") : "N/A"
+    color h4PullbackColor = not h4NeedsPullback ? color.gray : h4PulledBack ? color.lime : color.orange
+    table.cell(t, 1, 14, h4PullbackText, text_color=h4PullbackColor, text_size=size.tiny)
+    table.cell(t, 0, 15, "H4 break", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 15, fmt(h4EntryLevel), text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 16, "H4 status", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 16, h4EntrySignal ? "ENTRY" : h4EntryUsed ? "USED" : activeContext ? "WATCH" : "OFF", text_color=h4EntrySignal ? color.lime : activeContext ? color.yellow : color.gray, text_size=size.tiny)
+
+alertcondition(newD1Signal, title="D1 V Context on H4", message="D1 V context detected on {{ticker}}. Inspect H4 execution.")
+alertcondition(h4EntrySignal, title="H4 Confirm Entry after D1 V", message="H4 confirmation entry after D1 V context on {{ticker}}.")

@@ -113,9 +113,14 @@ def load_yf_h4(symbol: str) -> pd.DataFrame | None:
 
 
 def load_symbol_h4(symbol: str) -> pd.DataFrame | None:
-    data_root = REPO / "F87104_test"
+    import os
+
+    data_root = Path(os.environ.get("F87104_DATA_ROOT", REPO / "F87104_test"))
     if data_root.exists():
         try:
+            import sai_backtest  # type: ignore
+
+            sai_backtest.DATA_ROOT = str(data_root)
             from sai_backtest import load_instrument  # type: ignore
 
             raw = load_instrument(symbol)
@@ -405,8 +410,63 @@ def pick_best(hits: list[EventHit]) -> EventHit | None:
     return sorted(hits, key=lambda h: h.score, reverse=True)[0]
 
 
+def write_gallery(manifest: list[dict]) -> None:
+    lines = [
+        "# 市場心理図鑑 — 実OHLCギャラリー",
+        "",
+        "> [← 図鑑トップ](README.md) ／ [示意図ギャラリー](gallery.md) ／ [Vol.1 詳細](vol01_core_patterns.md)",
+        "",
+        "H4 **実データ**からイベントを自動検出し、TradingView 風に切り出したチャート。",
+        "",
+        "再生成手順は [SETUP_REAL_CHARTS.md](SETUP_REAL_CHARTS.md) を参照。",
+        "",
+    ]
+    for e in manifest:
+        pid = e["pattern_id"]
+        title = e["title"]
+        anchor = f"#{pid.zfill(2)}-{title}"
+        lines += [
+            f"## {pid} {title}",
+            "",
+            f"![{title}]({e['image']})",
+            "",
+            f"- **通貨:** {e['symbol']} {e['timeframe']}",
+            f"- **イベント時刻:** {e['event_time']}",
+            f"- **検出スコア:** {e['score']:.2f}",
+            "",
+            f"[Vol.1 詳細 →](vol01_core_patterns.md{anchor})",
+            "",
+            "---",
+            "",
+        ]
+    (THIS_DIR / "real_gallery.md").write_text("\n".join(lines), encoding="utf-8")
+
+
 def main() -> None:
-    symbols = ["XAUUSD", "USDJPY", "SILVER", "EURJPY"]
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Render real OHLC psychology event charts")
+    parser.add_argument(
+        "--data-root",
+        type=Path,
+        default=None,
+        help="Path to F87104_test (overrides repo default)",
+    )
+    parser.add_argument(
+        "--symbols",
+        nargs="+",
+        default=["XAUUSD", "USDJPY", "SILVER", "EURJPY", "GBPJPY", "AUDJPY", "CHFJPY"],
+        help="Symbols to scan",
+    )
+    args = parser.parse_args()
+
+    if args.data_root and args.data_root.exists():
+        import os
+
+        os.environ["F87104_DATA_ROOT"] = str(args.data_root.resolve())
+        print(f"data root: {args.data_root.resolve()}")
+
+    symbols = args.symbols
     data: dict[str, pd.DataFrame] = {}
     for sym in symbols:
         h4 = load_symbol_h4(sym)
@@ -445,7 +505,9 @@ def main() -> None:
         print(f"saved {out}")
 
     MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_gallery(manifest)
     print(f"manifest: {MANIFEST} ({len(manifest)} events)")
+    print(f"gallery:  {THIS_DIR / 'real_gallery.md'}")
 
 
 if __name__ == "__main__":

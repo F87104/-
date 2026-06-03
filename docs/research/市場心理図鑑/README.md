@@ -41,6 +41,8 @@
 | **Gallery** | [gallery.md](gallery.md) | 示意ローソク足イラスト | 12 |
 | **Real** | [real_gallery.md](real_gallery.md) | **実OHLC** 切り出しチャート | 12 |
 
+再生成: [SETUP_REAL_CHARTS.md](SETUP_REAL_CHARTS.md)
+
 ---
 
 ## 感情カテゴリ（共通分類）

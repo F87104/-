@@ -18,5 +18,6 @@
 
 | ID | 日付 | 内容 |
 |---|---|---|
+| E-2026-06-04-001 | 2026-06-04 | [GBPJPY 買い — 投げ切りシグナル](entries/2026-06-04_gbpjpy_nagekiri_signal_buy.md) |
 | E-2026-06-01-001 | 2026-06-01 | [USDJPY H4 買い — 4HT5シグナル点灯](entries/2026-06-01_usdjpy_h4t5_signal_buy.md) |
-| E-2026-06-03-001 | 2026-06-03 | [XAUUSD H1 買い — アラート鳴ったため](entries/2026-06-03_xauusd_h1_alert_buy.md) |
+| E-2026-06-03-001 | 2026-06-03 | [XAUUSD H1 買い — 投げ切りシグナル](entries/2026-06-03_xauusd_h1_alert_buy.md) |

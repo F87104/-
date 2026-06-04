@@ -1,0 +1,262 @@
+//@version=5
+// H4チャート専用: ローソク足とラベル位置のズレ防止版
+// 修正点:
+// - ラベルを yloc.belowbar で未来バーに吸着させない。
+// - シグナル足の価格に y を固定し、横だけ右へ逃がす。
+// - コネクタをシグナル足の価格から水平に引き、どの足の情報か明確にする。
+indicator("踏み上げ投げ切り TB [Label Anchor Fixed]", overlay=true, max_labels_count=500, max_lines_count=500)
+
+plot(na, title="Anchor", display=display.none)
+
+string analysisTf = "240"
+bool chartIsH4 = timeframe.in_seconds(timeframe.period) == timeframe.in_seconds(analysisTf)
+
+fmtPrice(float v) =>
+    na(v) ? "N/A" : str.tostring(v, format.mintick)
+
+atrLen = input.int(14, "ATR period", group="共通")
+atr = ta.atr(atrLen)
+rng = high - low
+rngOk = rng > 0
+
+grpC = "① 投げ切り（監視）"
+showCap = input.bool(true, "投げ切り▲", group=grpC)
+declineBars = input.int(24, "長期下落の窓", group=grpC)
+dropAtrCap = input.float(4.0, "下落幅 >= ?×ATR", group=grpC)
+spikeAtr = input.float(1.8, "クライマックス足 >= ?×ATR", group=grpC)
+wickThr = input.float(0.5, "下ヒゲ比率", group=grpC)
+closeLocC = input.float(0.5, "終値位置", group=grpC)
+useDownD1 = input.bool(true, "日足下降のみ", group=grpC)
+
+priorHighC = ta.highest(high, declineBars)
+newLow = low <= ta.lowest(low, declineBars)
+prolonged = (priorHighC - low) >= dropAtrCap * atr
+bigBar = rng >= spikeAtr * atr
+lowerWick = rngOk and ((math.min(open, close) - low) / rng) >= wickThr
+closeLocOk = rngOk and ((close - low) / rng) >= closeLocC
+d1ema = request.security(syminfo.tickerid, "D", ta.ema(close, 50), lookahead=barmerge.lookahead_off)
+downtrend = (not useDownD1) or (close < d1ema)
+capLong = showCap and newLow and prolonged and bigBar and lowerWick and closeLocOk and downtrend
+
+plotshape(capLong, title="投げ切り", style=shape.triangleup, location=location.belowbar,
+     color=color.new(color.aqua, 0), size=size.tiny, text="")
+
+grpS = "② 踏み上げ（H4）"
+shelfBars = input.int(6, "棚の本数", group=grpS)
+dropWin = input.int(6, "急変窓", group=grpS)
+shelfAtr = input.float(2.5, "棚 <= ?×ATR", group=grpS)
+moveAtr = input.float(3.0, "急落 >= ?×ATR", group=grpS)
+stopBuf = input.float(0.25, "SL余白ATR", step=0.05, group=grpS)
+rr = input.float(2.0, "TP (R)", step=0.1, group=grpS)
+maxHold = input.int(120, "最大保有H4本", minval=1, group=grpS)
+overlapMode = input.string("Python同等(保有中スキップ)", "重複▲",
+     options=["Python同等(保有中スキップ)", "新▲で前ポジ決済"], group=grpS)
+bool closeOnNewSqz = overlapMode == "新▲で前ポジ決済"
+
+grpVis = "■ 可視化"
+showLines = input.bool(true, "黄赤緑ライン（約定足から）", group=grpVis)
+showLevelPlots = input.bool(true, "保有中 水平線", group=grpVis)
+showSignals = input.bool(true, "▲マーク", group=grpVis)
+showTradeLabels = input.bool(true, "SIG/約定ラベル", group=grpVis)
+compactTradeLabels = input.bool(true, "短いラベル", group=grpVis)
+showHistoricalTradeLabels = input.bool(false, "過去ラベルも残す", group=grpVis)
+showLabelConnectors = input.bool(true, "足→ラベル 水平点線", group=grpVis)
+labelOffsetBars = input.int(8, "ラベル右ずらし(本)", minval=0, maxval=60, group=grpVis)
+labelStaggerBars = input.int(4, "約定ラベル追加ずらし", minval=0, maxval=30, group=grpVis)
+labelOffsetAtr = input.float(1.2, "ラベル上下余白(ATR)", minval=0.1, step=0.1, group=grpVis)
+
+f_sqz_pine_default() =>
+    float a = ta.atr(atrLen)
+    float sh = ta.highest(high, shelfBars)[1]
+    float sl = ta.lowest(low, shelfBars)[1]
+    float sr = sh - sl
+    float ph = ta.highest(high, dropWin)[1 + shelfBars]
+    bool ok = sr <= shelfAtr * a and (ph - sh) >= moveAtr * a and close[1] <= sh and close > sh
+    [ok, sl, a, close]
+
+[sqzLoc, shelfLoc, atrLoc, closeLoc] = f_sqz_pine_default()
+[sqzSec, shelfSec, atrSec, closeSec] = request.security(syminfo.tickerid, analysisTf, f_sqz_pine_default(),
+     barmerge.gaps_off, barmerge.lookahead_off)
+
+bool sqzOk = chartIsH4 ? sqzLoc : sqzSec
+float shelfLo = chartIsH4 ? shelfLoc : shelfSec
+float sqzAtr = chartIsH4 ? atrLoc : atrSec
+float sqzClose = chartIsH4 ? closeLoc : closeSec
+
+bool sqzLong = chartIsH4 and sqzOk
+float sigStop = shelfLo - sqzAtr * stopBuf
+bool sqzConfirmed = sqzLong and barstate.isconfirmed
+bool sigValid = sqzConfirmed and sqzClose > sigStop
+
+var bool simInPos = false
+var float simEnt = na
+var float simSl = na
+var float simTp = na
+var int simEntBar = na
+var int simBars = 0
+var bool pendEntry = false
+var float pendStop = na
+var float signalPrice = na
+var label latestTradeLabel = na
+var line latestTradeConnector = na
+var line entryLine = na
+var line slLine = na
+var line tpLine = na
+var int sigCnt = 0
+var int tradeCnt = 0
+
+bool justFilled = false
+bool justSig = false
+bool justExited = false
+
+if simInPos
+    simBars += 1
+    bool hitSl = low <= simSl
+    bool hitTp = high >= simTp
+    bool tOut = simBars >= maxHold
+    if hitSl or hitTp or tOut
+        simInPos := false
+        justExited := true
+        simEnt := na
+        simSl := na
+        simTp := na
+        simEntBar := na
+        simBars := 0
+
+if sqzConfirmed and sigValid
+    sigCnt += 1
+    if simInPos and closeOnNewSqz
+        simInPos := false
+        justExited := true
+        simEnt := na
+        simSl := na
+        simTp := na
+        simEntBar := na
+        simBars := 0
+        if not na(entryLine)
+            line.delete(entryLine)
+        if not na(slLine)
+            line.delete(slLine)
+        if not na(tpLine)
+            line.delete(tpLine)
+        entryLine := na
+        slLine := na
+        tpLine := na
+    if not simInPos
+        pendEntry := true
+        pendStop := sigStop
+        signalPrice := sqzClose
+        justSig := true
+
+if pendEntry[1] and barstate.isconfirmed
+    float entPx = open
+    float st = nz(pendStop[1], sigStop)
+    float rk = entPx - st
+    pendEntry := false
+    if rk > 0
+        simInPos := true
+        simEnt := entPx
+        simSl := st
+        simTp := entPx + rk * rr
+        simEntBar := bar_index
+        simBars := 0
+        tradeCnt += 1
+        justFilled := true
+
+if justSig and showTradeLabels
+    if not showHistoricalTradeLabels
+        if not na(latestTradeLabel)
+            label.delete(latestTradeLabel)
+        if not na(latestTradeConnector)
+            line.delete(latestTradeConnector)
+        latestTradeLabel := na
+        latestTradeConnector := na
+    float estSl = sigStop
+    float estTp = sqzClose + (sqzClose - estSl) * rr
+    int sigX = bar_index + labelOffsetBars
+    float sigY = low - atr * labelOffsetAtr
+    string sigTxt = compactTradeLabels ?
+         "SIG\nS:" + fmtPrice(sqzClose) + "\nSL:" + fmtPrice(estSl) + "\nTP:" + fmtPrice(estTp) :
+         "踏み上げ SIG\nS:" + fmtPrice(sqzClose) + "\nSL:" + fmtPrice(estSl) + "\nTP:" + fmtPrice(estTp)
+    latestTradeLabel := label.new(sigX, sigY, sigTxt, xloc=xloc.bar_index, yloc=yloc.price,
+         style=label.style_label_left, color=color.new(color.lime, 10), textcolor=color.black, size=size.tiny)
+    if showLabelConnectors
+        latestTradeConnector := line.new(bar_index, sigY, sigX, sigY, xloc=xloc.bar_index,
+             color=color.new(color.lime, 55), width=1, style=line.style_dotted)
+
+if justFilled
+    if not showHistoricalTradeLabels
+        if not na(latestTradeLabel)
+            label.delete(latestTradeLabel)
+        if not na(latestTradeConnector)
+            line.delete(latestTradeConnector)
+        latestTradeLabel := na
+        latestTradeConnector := na
+    if not na(entryLine)
+        line.delete(entryLine)
+    if not na(slLine)
+        line.delete(slLine)
+    if not na(tpLine)
+        line.delete(tpLine)
+    entryLine := na
+    slLine := na
+    tpLine := na
+    if showTradeLabels
+        int fillX = bar_index + labelOffsetBars + labelStaggerBars
+        float fillY = low - atr * labelOffsetAtr
+        string fillTxt = compactTradeLabels ?
+             "IN\nE:" + fmtPrice(simEnt) + "\nSL:" + fmtPrice(simSl) + "\nTP:" + fmtPrice(simTp) :
+             "踏み上げ IN\nE:" + fmtPrice(simEnt) + "\nSL:" + fmtPrice(simSl) + "\nTP:" + fmtPrice(simTp)
+        latestTradeLabel := label.new(fillX, fillY, fillTxt, xloc=xloc.bar_index, yloc=yloc.price,
+             style=label.style_label_left, color=color.new(color.yellow, 0), textcolor=color.black, size=size.tiny)
+        if showLabelConnectors
+            latestTradeConnector := line.new(bar_index, fillY, fillX, fillY, xloc=xloc.bar_index,
+                 color=color.new(color.yellow, 45), width=1, style=line.style_dotted)
+    if showLines
+        entryLine := line.new(simEntBar, simEnt, simEntBar + 1, simEnt, color=color.new(color.yellow, 0), width=2)
+        slLine := line.new(simEntBar, simSl, simEntBar + 1, simSl, color=color.new(color.red, 0), width=2, style=line.style_dashed)
+        tpLine := line.new(simEntBar, simTp, simEntBar + 1, simTp, color=color.new(color.lime, 0), width=2, style=line.style_dashed)
+
+if showLines and simInPos and not na(entryLine)
+    line.set_x2(entryLine, bar_index + 1)
+    line.set_x2(slLine, bar_index + 1)
+    line.set_x2(tpLine, bar_index + 1)
+
+if justExited
+    if not na(entryLine)
+        line.delete(entryLine)
+    if not na(slLine)
+        line.delete(slLine)
+    if not na(tpLine)
+        line.delete(tpLine)
+    entryLine := na
+    slLine := na
+    tpLine := na
+
+plotshape(showSignals and justSig, title="踏み上げ SIG", style=shape.triangleup,
+     location=location.belowbar, color=color.new(color.lime, 0), size=size.tiny, text="")
+
+plot(showLevelPlots and simInPos ? simEnt : na, "Active Entry", color=color.new(color.yellow, 0), linewidth=2, style=plot.style_linebr)
+plot(showLevelPlots and simInPos ? simSl : na, "Active SL", color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
+plot(showLevelPlots and simInPos ? simTp : na, "Active TP", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
+
+bgcolor(not chartIsH4 ? color.new(color.orange, 92) : na)
+
+var table t = table.new(position.top_right, 2, 5, bgcolor=color.new(color.black, 80))
+if barstate.islast
+    table.cell(t, 0, 0, "▲/約定", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 0, chartIsH4 ? str.tostring(sigCnt) + "/" + str.tostring(tradeCnt) : "要H4",
+         text_color=chartIsH4 ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 1, "データ", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 1, chartIsH4 ? "H4直計算" : "security", text_color=chartIsH4 ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 2, "ラベル", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 2, "価格固定", text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 3, "価格一致", text_color=color.white, text_size=size.tiny)
+    float pxDiff = math.abs(sqzClose - close)
+    table.cell(t, 1, 3, chartIsH4 and pxDiff < syminfo.mintick * 2 ? "OK" : str.tostring(pxDiff, "#.###"),
+         text_color=pxDiff < syminfo.mintick * 2 ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 4, "右ずらし", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, str.tostring(labelOffsetBars) + "本", text_color=color.gray, text_size=size.tiny)
+
+alertcondition(justSig, "踏み上げ SIG", "踏み上げ SIG {{ticker}}")
+alertcondition(justFilled, "踏み上げ 約定", "踏み上げ IN {{ticker}}")

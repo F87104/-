@@ -10,7 +10,7 @@
 | やりたいこと | 行き先 |
 |---|---|
 | **自分の実践トレードを見る・追加する** | 👉 [practice/](practice/) |
-| **最新エントリー** | [[2026-06-04 GBPJPY 買い](practice/entries/2026-06-04_gbpjpy_nagekiri_signal_buy.md) ／ [2026-06-03 XAUUSD](practice/entries/2026-06-03_xauusd_h1_alert_buy.md) ／ [2026-06-01 USDJPY](practice/entries/2026-06-01_usdjpy_h4t5_signal_buy.md) |
+| **最新エントリー** | [2026-06-04 GBPJPY 買い](practice/entries/2026-06-04_gbpjpy_nagekiri_signal_buy.md) ／ [2026-06-03 XAUUSD](practice/entries/2026-06-03_xauusd_h1_alert_buy.md) ／ [2026-06-01 USDJPY](practice/entries/2026-06-01_usdjpy_h4t5_signal_buy.md) |
 | **リアルタイム心理を記録する** | [psychology/](psychology/) |
 | **受講生トレード記録（137件・研究用）** | [archive/student/](archive/student/) |
 | **トレード心理の研究ノート** | [reference/](reference/) |

@@ -51,9 +51,9 @@ docs/trade_diary/
 | 日付 | 銘柄 | 方向 | 理由 | 詳細 |
 |---|---|---|---|---|
 | 2026-06-01 | USDJPY H4 | 買い | 4HT5シグナル点灯 | [エントリー](practice/entries/2026-06-01_usdjpy_h4t5_signal_buy.md) |
-| 2026-06-03 | XAUUSD H1 | 買い | 損切り（投げ切りシグナル） | [エントリー](practice/entries/2026-06-03_xauusd_h1_alert_buy.md) |
+| 2026-06-03 | XAUUSD H1 | 買い | 損切り -668,492（投げ切り） | [エントリー](practice/entries/2026-06-03_xauusd_h1_alert_buy.md) |
 | 2026-06-04 | XAUUSD H1 | 売り | V1ショートシグナル | [エントリー](practice/entries/2026-06-04_xauusd_v1_short_signal.md) |
-| 2026-06-04 | GBPJPY H4 | 買い | 損切り（投げ切りシグナル） | [エントリー](practice/entries/2026-06-04_gbpjpy_nagekiri_signal_buy.md) |
+| 2026-06-04 | GBPJPY H4 | 買い | 損切り -668,492（投げ切り） | [エントリー](practice/entries/2026-06-04_gbpjpy_nagekiri_signal_buy.md) |
 
 一覧 CSV: [practice/index.csv](practice/index.csv)
 

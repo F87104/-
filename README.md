@@ -1,6 +1,6 @@
 # FX-AI — 自動売買・群衆心理研究リポジトリ
 
-> **3本の実装ライン:** 系統A（ブレイク追い+V字）／ **踏み上げ・投げ切り** ／ 系統B（棚ブレイク系）  
+> **2本の実装ライン:** 系統A（ブレイク追い+V字+踏み上げ）／ 系統B（棚ブレイク系）  
 > 10年バックテスト (2015-2024) + OOS (2025-2026) で検証済み。
 
 **最終更新**: 2026-06-01
@@ -13,7 +13,7 @@
 
 ```text
 系統A  V1(H1) + T5(H4) + 踏み上げ投げ切り(H4)  … 本番（H4は3本セット）
-系統B  棚抜け（B06）                          … JPY4・TV37件OK
+系統B  棚抜け（B06）                          … JPY4・Pine34件執行正
 ```
 
 ---
@@ -25,43 +25,13 @@
 | **ブレイク追い** | H1 | 高安ブレイク | [TrendBreakV1_Final.pine](pine/production/TrendBreakV1_Final.pine) | **本番** |
 | **V字反転買い** | H4 | 急落V→停滞ブレイク | [h4_t5_macd_bb_live_ready.pine](pine/production/h4_t5_macd_bb_live_ready.pine) | **本番** |
 | **踏み上げ投げ切り** | H4 | 投げ切り①+踏み上げ②の観測 | [market_psychology_cap_sqz_visual.pine](pine/visual/market_psychology_cap_sqz_visual.pine) | **本番表示** |
-| **踏み上げ** | H4 | 棚上抜け買い（翌足始値） | [h4_sqz_tv_validation.pine](pine/production/h4_sqz_tv_validation.pine) | **本番**（XAU・円・瑞・銀） |
+| **踏み上げ** | H4 | 棚上抜け買い（翌足始値） | [h4_sqz_tv_validation.pine](pine/production/h4_sqz_tv_validation.pine) | **本番** |
 
 **6通貨（AUDJPY除外）:** XAUUSD・USDJPY・EURJPY・GBPJPY・CHFJPY・SILVER  
-**H4は3本セット:** T5 + 踏み上げ投げ切り（インジ）+ 踏み上げ TV検証 → [系統A 運用](docs/operations/system_a/README.md)
+**H4は3本:** T5 + インジ + 踏み上げ strategy → [系統A 運用](docs/operations/system_a/README.md)
 
-**運用ルール（確定）:** TB/T5 重複時は **T5優先**。T5 と踏み上げが重なれば **T5優先** → [A-path 決定](docs/research/original_a_path_DECISION_2026-06-01.md)  
+**運用ルール:** TB/T5 重複時は **T5優先**。T5 と踏み上げが重なれば **T5優先**  
 **数値:** TB+T5 = **+219.9R** / 411件 / PF1.86 → [究極手法 v1.0](docs/research/ultimate_method_v1_2026-06-01.md)
-
----
-
-### 踏み上げ・投げ切り — 詳細（系統A H4 に含む）
-
-上の **系統A** 表の 3・4行目がこれです。H4 チャートには T5 と一緒に載せます。
-
-**踏み上げ strategy の対象通貨（H4・OANDA）**
-
-| タグ | 通貨 | リスク | 備考 |
-|------|------|--------|------|
-| **踏金** | **XAUUSD** | 1.0R | フルサイズ候補 |
-| **踏銀** | **XAGUSD** | 1.0R | フルサイズ候補 |
-| **踏円** | **USDJPY** | 0.25R | OOS注意・フォワード監視 |
-| **踏瑞** | CHFJPY | 観測 | 10年1件（統計未成立） |
-| ~~踏欧~~ | EURJPY | **OFF** | Research マイナス → 本番除外 |
-| — | GBPJPY・AUDJPY | **禁止** | SQZ常時除外 |
-
-**条件（メイン）:** 棚≤**2.5**ATR / 急落≥**3.0**ATR（インジ②・strategy と同一）  
-**コア数値（Python STRICT 2.0/3.5・参考）:** コア4通貨 PF **3.62** / +26.9R / maxDD 2.1R  
-**投げ切り単独:** PF≈1.04 → **エントリーしない**（踏み上げの文脈把握用）
-
-| 読む順 | ドキュメント |
-|--------|--------------|
-| 1 | [用語・ローソク足の読み方](docs/research/market_psychology_capitulation_squeeze_candlestick_2026-06-01.md) |
-| 2 | [徹底検証 DECISION（GO判定）](docs/research/cap_sqz_thorough_validation_2026-06-01/DECISION.md) |
-| 3 | [本番導入判定](docs/research/cap_sqz_production_validation_2026-06-01/DECISION.md) |
-| 4 | TV CSV: [XAU](docs/research/system_b_pine_parity_2026-06-01/tv_xauusd_h4.csv) / [XAG](docs/research/system_b_pine_parity_2026-06-01/tv_xagusd_h4.csv)（照合待ち） |
-
-**TB/T5との関係:** SQZ と TB/T5 の同時保有重複 ≈ **0%**。空きスロットで SQZ を足す候補（合算 PF1.79 想定）→ [徹底検証](docs/research/cap_sqz_thorough_validation_2026-06-01/DECISION.md)
 
 ---
 
@@ -74,7 +44,7 @@
 **入口:** [系統B 運用](docs/operations/system_b/README.md) ／ [B06 37件確定](docs/research/system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md)  
 **B07 ﾄﾗ棚:** 退役（B06とH4重複のため本番から外した）→ [lane_exclusions](docs/operations/system_b/lane_exclusions.md#b07-dts-trap-shelf-retired)
 
-**重複ルール（全系統）:** 同日・同銘柄は `踏金→踏円→踏銀→棚抜` で **1件のみ**
+**重複ルール（全系統）:** 同日・同銘柄は T5 / 棚抜（B06）で **1件のみ**（レーン優先は [系統B運用](docs/operations/system_b/README.md)）
 
 ---
 
@@ -82,14 +52,14 @@
 
 | 通貨 | H1（1本） | H4（3本セット） |
 |------|-----------|-----------------|
-| **XAUUSD** | [TrendBreakV1](pine/production/TrendBreakV1_Final.pine) | T5 → [踏み上げ投げ切り](pine/visual/market_psychology_cap_sqz_visual.pine) → [踏み上げ TV検証](pine/production/h4_sqz_tv_validation.pine) |
-| **USDJPY** | 同上 | 同上（踏円・0.25R） |
-| **EURJPY** | 同上 | T5 + インジのみ（踏み上げ strategy **OFF**） |
-| **GBPJPY** | 同上 | T5 + インジのみ（SQZ禁止） |
-| **CHFJPY** | 同上 | T5 + インジ（踏瑞・strategy OFF） |
-| **XAGUSD** | 同上 | T5 + インジ + 踏み上げ（踏銀） |
+| **XAUUSD** | [TrendBreakV1](pine/production/TrendBreakV1_Final.pine) | T5 + インジ + 踏み上げ + **B06試験** |
+| **USDJPY** | 同上 | T5 + インジ + 踏み上げ + **[B06棚抜](pine/research/h4_v_initial_shelf_breakout_strategy.pine)** |
+| **EURJPY** | 同上 | T5 + インジ + **B06** |
+| **GBPJPY** | 同上 | T5 + インジ + **B06** |
+| **CHFJPY** | 同上 | T5 + インジ + **B06試験** |
+| **XAGUSD** | 同上 | T5 + インジ + 踏み上げ + **B06試験** |
 
-**系統B（JPY4）を足す場合:** 上記4通貨 H4 に [棚抜 B06](pine/research/h4_v_initial_shelf_breakout_strategy.pine) を追加 → [系統B 運用](docs/operations/system_b/README.md)
+**B06 棚抜:** JPY4（USD/EUR/GBP/AUD）は H4 **4本目** 本番 0.25R。XAU/CHFJPY/銀は **試験3銘柄**（`symbolMode=試験3銘柄`）→ [chart_bundle](docs/operations/system_b/chart_bundle.yaml)
 
 ---
 
@@ -185,9 +155,9 @@ pine/research/          ← TradingView 用 Pine（ここ）
 
 | 優先 | 研究テーマ | 状態 | 入口 |
 |---:|---|---|---|
-| 1 | **系統A 本番（V1+T5+踏み上げ）** | **運用確定** | [系統A 運用](docs/operations/system_a/README.md) |
-| 2 | **踏み上げ SQZ 研究** | 徹底検証・準本番判定 | [cap_sqz DECISION](docs/research/cap_sqz_thorough_validation_2026-06-01/DECISION.md) |
-| 3 | **系統B — 棚抜（B06）** | **TV照合37件OK・本番** | [DECISION_b06](docs/research/system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md) |
+| 1 | **系統A 本番（V1+T5）** | **運用確定** | [系統A 運用](docs/operations/system_a/README.md) |
+| 2 | **系統B — 棚抜（B06）** | **Pine34件執行正・本番** | [DECISION_b06](docs/research/system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md) |
+| — | ~~踏み上げ SQZ~~ | **退役** | [cap_sqz DECISION（RETIRED）](docs/research/cap_sqz_thorough_validation_2026-06-01/DECISION.md) |
 | 4 | **H4 T5 深掘り** | 記録済み | [t5_method_deep_research](docs/research/t5_method_deep_research_2026-06-01.md) |
 | 5 | 受講生つまずき（教材） | アーカイブ | 下の [つまずき研究](#-参考--受講生つまずきクラスタ研究教材アーカイブ) |
 | 6 | **トレード実践記録** | 記録中 | [trade_practice_records/](docs/trade_practice_records/) |
@@ -221,14 +191,12 @@ pine/research/          ← TradingView 用 Pine（ここ）
 EXECUTE = エンジンシグナル × ゲート通過 × リスク枠内
 ```
 
-### 採用戦略 — 系統A（V1 + H4 T5 + 踏み上げ）
+### 採用戦略 — 系統A（V1 + H4 T5）
 
 | TF | 役割 | Pine ファイル | 中身 |
 |-----|------|---------------|------|
 | H1 | **主力** TrendBreakV1 | [`TrendBreakV1_Final.pine`](pine/production/TrendBreakV1_Final.pine) | 高安ブレイク |
 | H4 | **補助** T5 | [`h4_t5_macd_bb_live_ready.pine`](pine/production/h4_t5_macd_bb_live_ready.pine) | 急落V→停滞ブレイク |
-| H4 | **観測** 踏み上げ投げ切り | [`market_psychology_cap_sqz_visual.pine`](pine/visual/market_psychology_cap_sqz_visual.pine) | 投げ切り①+踏み上げ②（▲のみ） |
-| H4 | **追加** 踏み上げ | [`h4_sqz_tv_validation.pine`](pine/production/h4_sqz_tv_validation.pine) | 棚上抜け買い（XAU・円・銀） |
 
 ### 進行中の研究
 
@@ -269,12 +237,11 @@ EXECUTE = エンジンシグナル × ゲート通過 × リスク枠内
 
 1. **TradingView** を開く（OANDA 推奨）
 2. **H1 × 6通貨** に [TrendBreakV1_Final.pine](pine/production/TrendBreakV1_Final.pine)（preset **Auto**）
-3. **H4 × 6通貨** に **この順で3本** Add to chart:
-   1. [h4_t5_macd_bb_live_ready.pine](pine/production/h4_t5_macd_bb_live_ready.pine) — Strict + Balanced REC1.2
-   2. [market_psychology_cap_sqz_visual.pine](pine/visual/market_psychology_cap_sqz_visual.pine) — 観測専用（▲印）
-   3. [h4_sqz_tv_validation.pine](pine/production/h4_sqz_tv_validation.pine) — 踏み上げ（XAU・USDJPY・銀のみ／▲描画OFF）
-4. 通貨: **XAUUSD, USDJPY, EURJPY, GBPJPY, CHFJPY, SILVER**（**AUDJPY除外**）
-5. アラート → 手動または API で発注。**T5 と踏み上げが重なれば T5 優先**
+3. **H4** Add to chart（通貨別）:
+   - 全6通貨: T5 + [インジ](pine/visual/market_psychology_cap_sqz_visual.pine)
+   - XAU/USDJPY/銀: + [踏み上げ](pine/production/h4_sqz_tv_validation.pine)
+   - **JPY4（USD/EUR/GBP）:** + **[B06棚抜 4本目](pine/research/h4_v_initial_shelf_breakout_strategy.pine)**
+4. **T5優先**（踏み上げ・B06と重複時）
 
 詳細: **[系統A 運用](docs/operations/system_a/README.md)** ／ **[STRATEGY_GUIDE.md](STRATEGY_GUIDE.md)**
 
@@ -289,10 +256,8 @@ fx-ai/
 ├── pine/                           ← TradingView Pine Script
 │   ├── production/                    本番運用中 ⭐
 │   │   ├── TrendBreakV1_Final.pine        系統A H1
-│   │   ├── h4_t5_macd_bb_live_ready.pine  系統A H4 T5
-│   │   └── h4_sqz_tv_validation.pine      系統A H4 踏み上げ
+│   │   └── h4_t5_macd_bb_live_ready.pine  系統A H4 T5
 │   ├── visual/                        可視化ツール (Indicator)
-│   │   ├── market_psychology_cap_sqz_visual.pine  系統A 踏み上げ投げ切り ⭐
 │   │   ├── h4_t5_macd_bb_visual.pine
 │   │   └── ...
 │   ├── research/                      研究中 (各通貨個別戦略)

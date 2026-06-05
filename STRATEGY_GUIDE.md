@@ -193,17 +193,18 @@
 | Tab | シンボル | TF | 戦略 |
 |---|---|---|---|
 | 1 | XAUUSD | H1 | TrendBreakV1 |
-| 2 | XAUUSD | H4 | H4 T5 + 踏み上げ投げ切り + 踏み上げ TV検証 |
+| 2 | XAUUSD | H4 | T5 + 踏み上げ投げ切り + 踏み上げ |
 | 3 | USDJPY | H1 | TrendBreakV1 |
-| 4 | USDJPY | H4 | H4 T5 + 踏み上げ投げ切り + 踏み上げ TV検証 |
+| 4 | USDJPY | H4 | T5 + 踏み上げ投げ切り + 踏み上げ + **B06棚抜** |
 | 5 | EURJPY | H1 | TrendBreakV1 |
-| 6 | EURJPY | H4 | H4 T5 + 踏み上げ投げ切り（strategy OFF） |
+| 6 | EURJPY | H4 | T5 + 踏み上げ投げ切り + **B06棚抜** |
 | 7 | GBPJPY | H1 | TrendBreakV1 |
-| 8 | GBPJPY | H4 | H4 T5 + 踏み上げ投げ切り（strategy OFF） |
+| 8 | GBPJPY | H4 | T5 + 踏み上げ投げ切り + **B06棚抜** |
 | 9 | CHFJPY | H1 | TrendBreakV1 |
-| 10 | CHFJPY | H4 | H4 T5 + 踏み上げ投げ切り（strategy OFF） |
+| 10 | CHFJPY | H4 | T5 + 踏み上げ投げ切り |
 | 11 | SILVER (XAGUSD) | H1 | TrendBreakV1 |
-| 12 | SILVER (XAGUSD) | H4 | H4 T5 + 踏み上げ投げ切り + 踏み上げ TV検証 |
+| 12 | SILVER (XAGUSD) | H4 | T5 + 踏み上げ投げ切り + 踏み上げ |
+| 13 | AUDJPY | H4 | **B06棚抜**（系統A外・任意） |
 
 > Pine v5 の制約上、1チャートに別TFのStrategyを2つ載せるのは推奨しません。
 > 別チャートで管理する方が、検証結果との一致度が高くなります。
@@ -218,25 +219,19 @@
    - `riskPct` = **`1.0`** (1%)
    - `maxDDPctIn` = **`20`** (DD 20%で停止)
 
-#### Step 3: H4チャートに 3本セットを貼る（順番推奨）
+#### Step 3: H4チャートに 3本セットを貼る
 
-**3a. H4 T5 MACD BB（strategy）**
+**3a. H4 T5（strategy）** — [`h4_t5_macd_bb_live_ready.pine`](pine/production/h4_t5_macd_bb_live_ready.pine)
 
-1. [`pine/production/h4_t5_macd_bb_live_ready.pine`](pine/production/h4_t5_macd_bb_live_ready.pine) をコピペ → Add to chart
-2. パラメータ: `analysisTf=240`, `requireTfMatch=ON`, `filterPreset=Strict 0.75-1.00 + width<=7`, `vShapePreset=Balanced REC1.2`, `useGuardFilters=ON`
+**3b. 踏み上げ投げ切り（indicator・メイン）** — [`market_psychology_cap_sqz_visual.pine`](pine/visual/market_psychology_cap_sqz_visual.pine)
 
-**3b. 踏み上げ投げ切り（indicator・観測専用）**
+**3c. 踏み上げ TV検証（strategy・メイン）** — [`h4_sqz_tv_validation.pine`](pine/production/h4_sqz_tv_validation.pine)  
+XAU / USDJPY / 銀のみ。`▲をここでも描画=OFF`
 
-1. [`pine/visual/market_psychology_cap_sqz_visual.pine`](pine/visual/market_psychology_cap_sqz_visual.pine) を Add to chart
-2. 投げ切り①（水色▲）と踏み上げ②（緑▲）が表示される。発注ロジックではない
+**3d. B06 棚抜（strategy・JPY4・4本目）** — [`h4_v_initial_shelf_breakout_strategy.pine`](pine/research/h4_v_initial_shelf_breakout_strategy.pine)  
+USDJPY / EURJPY / GBPJPY / AUDJPY の H4 に追加。設定: `4通貨のみ`・PRECALM ON・`Signal基準` TP・0.25R
 
-**3c. 踏み上げ TV検証（strategy・XAU/USDJPY/SILVER のみ推奨）**
-
-1. [`pine/production/h4_sqz_tv_validation.pine`](pine/production/h4_sqz_tv_validation.pine) を Add to chart
-2. パラメータ: `▲をここでも描画=OFF`, `SIG/約定ラベル=OFF`（インジと二重防止）
-3. EURJPY・GBPJPY・CHFJPY では載せないか、参考表示のみ
-
-定義ファイル: [`docs/operations/system_a/chart_bundle.yaml`](docs/operations/system_a/chart_bundle.yaml)
+定義: [`system_a/chart_bundle.yaml`](docs/operations/system_a/chart_bundle.yaml) ／ [`system_b/chart_bundle.yaml`](docs/operations/system_b/chart_bundle.yaml)
 
 #### Step 4: アラート設定
 

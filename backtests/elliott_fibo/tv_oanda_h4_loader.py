@@ -50,5 +50,19 @@ def load_tv_oanda_h4_csv(path: Path) -> pd.DataFrame:
     return kickoff.add_features(out)
 
 
+# TradingView ticker vs export filename (e.g. SILVER → tv_xagusd_h4.csv)
+TV_CSV_BASENAME_ALIASES: dict[str, str] = {
+    "SILVER": "xagusd",
+}
+
+
 def default_tv_csv_path(symbol: str, base_dir: Path) -> Path:
-    return base_dir / f"tv_{symbol.lower()}_h4.csv"
+    primary = base_dir / f"tv_{symbol.lower()}_h4.csv"
+    if primary.exists():
+        return primary
+    alias = TV_CSV_BASENAME_ALIASES.get(symbol.upper())
+    if alias:
+        alt = base_dir / f"tv_{alias}_h4.csv"
+        if alt.exists():
+            return alt
+    return primary

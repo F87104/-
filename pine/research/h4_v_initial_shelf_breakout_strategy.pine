@@ -35,7 +35,7 @@ grpMode = "基本"
 requireH4 = input.bool(true, "H4チャートのみ売買", group=grpMode)
 useDateFilter = input.bool(true, "2015〜2026のみ検証", group=grpMode)
 skipHoliday = input.bool(true, "12/15〜1/10は新規停止", group=grpMode)
-symbolMode = input.string("4通貨のみ", "銘柄フィルタ", options=["4通貨のみ","除外3銘柄のみ","制限なし"], group=grpMode)
+symbolMode = input.string("7通貨(JPY4+試験)", "銘柄フィルタ", options=["4通貨のみ","試験3銘柄","7通貨(JPY4+試験)","除外3銘柄のみ","制限なし"], group=grpMode, tooltip="金・銀・CHFJPYは「4通貨のみ」だと一切出ません。試験は「試験3銘柄」か「7通貨」。JPY4本番は「4通貨のみ」。")
 
 grpPivot = "Pivot / V条件"
 pivotWidth = input.int(3, "Pivot幅", minval=1, maxval=20, group=grpPivot)
@@ -145,10 +145,21 @@ int barMs = chartSec * 1000
 bool h4Ok = not requireH4 or chartSec == 240 * 60
 bool dateOk = not useDateFilter or (year >= 2015 and year <= 2026)
 bool holidayOk = not skipHoliday or not ((month == 12 and dayofmonth >= 15) or (month == 1 and dayofmonth <= 10))
+symHas(string hay, string needle) =>
+    str.length(needle) > 0 and str.contains(hay, needle)
+
 string tickerText = syminfo.ticker
-bool selectedSymbol = str.contains(tickerText, "USDJPY") or str.contains(tickerText, "EURJPY") or str.contains(tickerText, "GBPJPY") or str.contains(tickerText, "AUDJPY")
-bool excludedSymbol = str.contains(tickerText, "XAU") or str.contains(tickerText, "CHFJPY") or str.contains(tickerText, "XAG") or str.contains(tickerText, "SILVER")
-bool symbolOk = symbolMode == "4通貨のみ" ? selectedSymbol : symbolMode == "除外3銘柄のみ" ? not excludedSymbol : true
+string tickerFull = syminfo.tickerid
+bool isJpy4 = symHas(tickerText, "USDJPY") or symHas(tickerFull, "USDJPY") or
+     symHas(tickerText, "EURJPY") or symHas(tickerFull, "EURJPY") or
+     symHas(tickerText, "GBPJPY") or symHas(tickerFull, "GBPJPY") or
+     symHas(tickerText, "AUDJPY") or symHas(tickerFull, "AUDJPY")
+bool isTrial3 = symHas(tickerText, "XAU") or symHas(tickerFull, "XAU") or symHas(tickerText, "GOLD") or symHas(tickerFull, "GOLD") or
+     symHas(tickerText, "CHFJPY") or symHas(tickerFull, "CHFJPY") or
+     symHas(tickerText, "XAG") or symHas(tickerFull, "XAG") or symHas(tickerText, "SILVER") or symHas(tickerFull, "SILVER")
+bool excludedSymbol = isTrial3
+bool symbolOk = symbolMode == "4通貨のみ" ? isJpy4 : symbolMode == "試験3銘柄" ? isTrial3 : symbolMode == "7通貨(JPY4+試験)" ? (isJpy4 or isTrial3) : symbolMode == "除外3銘柄のみ" ? not excludedSymbol : true
+string symbolFilterText = symbolOk ? syminfo.ticker : symbolMode + "→対象外"
 
 // ---------------------------------------------------------------------
 // Confirmed pivots. This mirrors the Python check:
@@ -496,44 +507,48 @@ if showSignals and rawSignal
         keepLine(line.new(time, signalStop, lineEndTime, signalStop, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2, style=line.style_dashed))
         keepLine(line.new(time, signalTargetSignalBasis, lineEndTime, signalTargetSignalBasis, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2, style=line.style_dashed))
 
-var table t = table.new(position.top_right, 2, 18, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+var table t = table.new(position.top_right, 2, 20, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
 if showTable and barstate.islast
     table.cell(t, 0, 0, "Method", text_color=color.white, text_size=size.tiny)
     table.cell(t, 1, 0, "Initial Shelf", text_color=color.lime, text_size=size.tiny)
     table.cell(t, 0, 1, "Chart", text_color=color.white, text_size=size.tiny)
     table.cell(t, 1, 1, h4Ok ? "H4 OK" : "H4以外", text_color=h4Ok ? color.lime : color.red, text_size=size.tiny)
-    table.cell(t, 0, 2, "Symbol", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 2, symbolOk ? syminfo.ticker : "対象外", text_color=symbolOk ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 3, "State", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 3, strategy.position_size > 0 ? "LONG" : pendingLong ? "PENDING" : contextActive ? "棚待ち" : "FLAT", text_color=strategy.position_size > 0 ? color.lime : pendingLong ? color.yellow : contextActive ? color.aqua : color.gray, text_size=size.tiny)
-    table.cell(t, 0, 4, "Pivots", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 4, str.tostring(array.size(pKinds)), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 5, "Ctx age", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 5, contextActive ? str.tostring(bar_index - ctxBar) : "N/A", text_color=contextActive ? color.aqua : color.gray, text_size=size.tiny)
-    table.cell(t, 0, 6, "Drop ATR", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 6, fmtNum(ctxDropAtr), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 7, "Fib/Speed", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 7, fmtNum(ctxRecoveryRatio) + " / " + fmtNum(ctxSpeedRatio), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 8, "Bars L/R", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 8, fmtInt(ctxDropBars) + " / " + fmtInt(ctxRecoveryBars), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 9, "Pre ADX", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 9, fmtNum(ctxPreAdx), text_color=not na(ctxPreAdx) and ctxPreAdx <= preAdxMax ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 10, "Pre slope", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 10, fmtNum(ctxPreSlope), text_color=not na(ctxPreSlope) and ctxPreSlope <= preEma50SlopeMax ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 11, "Pre range60", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 11, fmtNum(ctxPreRange60), text_color=not na(ctxPreRange60) and ctxPreRange60 <= preRange60Max ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 12, "Shelf rng", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 12, fmtNum(signalShelfRangeAtr), text_color=not na(signalShelfRangeAtr) and signalShelfRangeAtr <= maxShelfRangeAtr ? color.lime : color.gray, text_size=size.tiny)
-    table.cell(t, 0, 13, "Break ATR", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 13, fmtNum(signalBreakoutAtr), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 14, "Body/Close", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 14, fmtNum(bodyRatio) + " / " + fmtNum(closeLocation), text_color=bodyRatio >= minBodyRatio and closeLocation >= minCloseLocation ? color.lime : color.gray, text_size=size.tiny)
-    table.cell(t, 0, 15, "Risk ATR", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 15, fmtNum(signalRiskAtr), text_color=not na(signalRiskAtr) and signalRiskAtr <= maxRiskAtr ? color.lime : color.gray, text_size=size.tiny)
-    table.cell(t, 0, 16, "Last skip", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 16, skipCode == 0 ? "OK/待機" : skipText(skipCode), text_color=skipCode == 0 ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 17, "Target", text_color=color.white, text_size=size.tiny)
-    table.cell(t, 1, 17, tpBasis, text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 2, "Filter", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 2, symbolMode, text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 3, "Symbol", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 3, symbolFilterText, text_color=symbolOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 4, "State", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, strategy.position_size > 0 ? "LONG" : pendingLong ? "PENDING" : contextActive ? "棚待ち" : "FLAT", text_color=strategy.position_size > 0 ? color.lime : pendingLong ? color.yellow : contextActive ? color.aqua : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 5, "Pivots", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 5, str.tostring(array.size(pKinds)), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 6, "Ctx age", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 6, contextActive ? str.tostring(bar_index - ctxBar) : "N/A", text_color=contextActive ? color.aqua : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 7, "Drop ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 7, fmtNum(ctxDropAtr), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 8, "Fib/Speed", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 8, fmtNum(ctxRecoveryRatio) + " / " + fmtNum(ctxSpeedRatio), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 9, "Bars L/R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 9, fmtInt(ctxDropBars) + " / " + fmtInt(ctxRecoveryBars), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 10, "Pre ADX", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 10, fmtNum(ctxPreAdx), text_color=not na(ctxPreAdx) and ctxPreAdx <= preAdxMax ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 11, "Pre slope", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 11, fmtNum(ctxPreSlope), text_color=not na(ctxPreSlope) and ctxPreSlope <= preEma50SlopeMax ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 12, "Pre range60", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 12, fmtNum(ctxPreRange60), text_color=not na(ctxPreRange60) and ctxPreRange60 <= preRange60Max ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 13, "Shelf rng", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 13, fmtNum(signalShelfRangeAtr), text_color=not na(signalShelfRangeAtr) and signalShelfRangeAtr <= maxShelfRangeAtr ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 14, "Break ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 14, fmtNum(signalBreakoutAtr), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 15, "Body/Close", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 15, fmtNum(bodyRatio) + " / " + fmtNum(closeLocation), text_color=bodyRatio >= minBodyRatio and closeLocation >= minCloseLocation ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 16, "Risk ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 16, fmtNum(signalRiskAtr), text_color=not na(signalRiskAtr) and signalRiskAtr <= maxRiskAtr ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 17, "Last skip", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 17, skipCode == 0 ? "OK/待機" : skipText(skipCode), text_color=skipCode == 0 ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 18, "Target", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 18, tpBasis, text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 19, "TickerID", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 19, tickerFull, text_color=color.gray, text_size=size.tiny)
 
 alertcondition(newContext, title="H4 V Initial Shelf Context", message="H4 V initial shelf context on {{ticker}} {{interval}}")
 alertcondition(rawSignal, title="H4 V Initial Shelf Breakout Long", message="H4 V initial shelf breakout long on {{ticker}} {{interval}}")

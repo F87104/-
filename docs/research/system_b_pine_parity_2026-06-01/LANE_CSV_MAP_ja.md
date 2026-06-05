@@ -1,6 +1,6 @@
 # 系統B — TV CSV とレーンの対応
 
-## B06 棚ブレイク（完了・pine_ready yes）
+## B06 棚ブレイク — JPY4 本番（完了・pine_ready yes）
 
 | 銘柄 | CSV | 件数 |
 |------|-----|------|
@@ -8,6 +8,14 @@
 | EURJPY | `tv_eurjpy_h4.csv` | 9 |
 | GBPJPY | `tv_gbpjpy_h4.csv` | 8 |
 | AUDJPY | `tv_audjpy_h4.csv` | 11 |
+
+## B06 棚ブレイク — 試験3銘柄（Pine照合完了 2026-06-05）
+
+| 銘柄 | CSV | 備考 |
+|------|-----|------|
+| XAUUSD | `tv_xauusd_h4.csv` | **Pine9 = Python9 照合OK**（2026-06-05・FX 4H） |
+| SILVER | `tv_xagusd_h4.csv` | **Pine2 = Python2 照合OK**（2026-06-05・OANDA XAGUSD） |
+| CHFJPY | `tv_chfjpy_h4.csv` | **Pine9 = Python9 照合OK**（2026-06-05・FOREXCOM） |
 
 ## B07 DTS（TV-OHLC Python 基準・Pine照合中）
 

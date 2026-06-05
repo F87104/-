@@ -1,10 +1,9 @@
-# 系統A — V1 + H4T5 本番チャート構成
-# 作成日: 2026-06-01
-# 運用: docs/operations/system_a/README.md
+# 系統A + 系統B(B06) — H4 チャート構成
+# 更新: 2026-05-31 — JPY4 に B06 棚抜を4本目として追加
 
-version: "2026-06-01"
+version: "2026-05-31"
 system_id: system_a
-system_name_ja: "TrendBreak V1 + H4 T5 + 踏み上げ投げ切り"
+system_name_ja: "TrendBreak V1 + H4 T5 + 踏み上げ投げ切り + B06棚抜(JPY4)"
 
 symbols_core:
   - XAUUSD
@@ -19,8 +18,10 @@ excluded_symbols:
 
 overlap_rules:
   tb_vs_t5: "T5優先（同一通貨・保有重複時はTB新規を見送り）"
-  t5_vs_sqz: "重複≈0%想定。同日・同銘柄で両方出たら T5優先 → SQZは空きスロット"
-  cap_entry: "投げ切り①はエントリーしない（表示のみ）"
+  t5_vs_sqz: "同日・同銘柄で両方出たら T5優先"
+  t5_vs_b06: "同日・同銘柄で T5 と B06 が重なったら T5優先"
+  sqz_vs_b06: "同日・同銘柄は1件のみ（SQZ > B06棚抜）"
+  cap_entry: "投げ切り①はエントリーしない（インジ表示のみ）"
 
 h1_charts:
   pine: pine/production/TrendBreakV1_Final.pine
@@ -28,7 +29,6 @@ h1_charts:
   symbols: [XAUUSD, USDJPY, EURJPY, GBPJPY, CHFJPY, SILVER]
 
 h4_charts:
-  # 各通貨の H4 タブにこの順で Add to chart（下→上の重ね順推奨）
   stack:
     - id: t5
       role: 本番エントリー
@@ -43,21 +43,21 @@ h4_charts:
         useGuardFilters: true
 
     - id: cap_sqz_visual
-      role: 観測（投げ切り+踏み上げ▲）
+      role: 観測（投げ切り+踏み上げ▲）— メイン
       pine: pine/visual/market_psychology_cap_sqz_visual.pine
       type: indicator
       all_symbols: true
-      note: "発注なし。心理構造の目視確認用"
+      note: "発注なし。心理構造の目視確認"
 
     - id: sqz_tv
-      role: 踏み上げエントリー（準本番）
+      role: 踏み上げエントリー — メイン
       pine: pine/production/h4_sqz_tv_validation.pine
       type: strategy
       all_symbols: false
       params:
         overlapMode: "Python同等(保有中スキップ)"
         showSqzOnStrategy: false
-        showLbl: false
+        showLbl: true
         riskPct: 1.0
       symbols:
         XAUUSD:
@@ -70,15 +70,78 @@ h4_charts:
           risk_r: 0.25
         EURJPY:
           enabled: false
-          reason: "SQZ Research マイナス・本番除外"
+          reason: "本番除外"
         GBPJPY:
           enabled: false
           reason: "SQZ 常時禁止"
         CHFJPY:
           enabled: false
-          tag: 踏瑞
-          reason: "統計未成立・観測のみ（visual は ON）"
+          reason: "統計未成立・観測のみ（visual ON）"
         SILVER:
           enabled: true
           tag: 踏銀
           risk_r: 1.0
+
+    - id: b06_vis_precalm
+      role: 系統B 棚抜（JPY4本番 + 試験3銘柄・4本目）
+      pine: pine/research/h4_v_initial_shelf_breakout_strategy.pine
+      type: strategy
+      system_b_lane: B06_VIS_PRECALM
+      all_symbols: false
+      params:
+        usePreCalm: true
+        skipHoliday: true
+        tpBasis: "Signal基準(36d90e6再現)"
+        showSignals: true
+        showSkips: false
+        showLevels: true
+      symbols:
+        USDJPY:
+          enabled: true
+          tag: 棚抜
+          risk_r: 0.25
+          symbolMode: "4通貨のみ"
+          status: LIVE
+        EURJPY:
+          enabled: true
+          tag: 棚抜
+          risk_r: 0.25
+          symbolMode: "4通貨のみ"
+          status: LIVE
+        GBPJPY:
+          enabled: true
+          tag: 棚抜
+          risk_r: 0.25
+          symbolMode: "4通貨のみ"
+          status: LIVE
+          note: "執行正=Pine5件。python_expected_*_gbpjpy_pine_authoritative.csv"
+        AUDJPY:
+          enabled: true
+          tag: 棚抜
+          risk_r: 0.25
+          symbolMode: "4通貨のみ"
+          status: LIVE
+          note: "系統A6通貨外。B06用に H4 タブを別途用意可"
+        XAUUSD:
+          enabled: true
+          tag: 棚抜試
+          risk_r: 0.25
+          symbolMode: "試験3銘柄"
+          status: TRIAL_PINE_OK
+          note: "Pine9=Python9照合OK(2026-06-05)。symbolMode=試験3銘柄 or 7通貨"
+        CHFJPY:
+          enabled: true
+          tag: 棚抜試
+          risk_r: 0.25
+          symbolMode: "試験3銘柄"
+          status: TRIAL_PINE_OK
+          note: "Pine9=Python9照合OK。成績弱(-4.29R)のため0.25R試行継続"
+        SILVER:
+          enabled: true
+          tag: 棚抜試
+          risk_r: 0.25
+          symbolMode: "試験3銘柄"
+          status: TRIAL_PINE_OK
+          note: "Pine2=Python2照合OK(2026-06-05)。OANDA XAGUSD"
+      parity_csv: docs/research/system_b_pine_parity_2026-06-01/python_expected_b06_tv_oanda_{symbol}.csv
+      trial_parity_csv: docs/research/system_b_pine_parity_2026-06-01/python_expected_b06_tv_oanda_trial_all.csv

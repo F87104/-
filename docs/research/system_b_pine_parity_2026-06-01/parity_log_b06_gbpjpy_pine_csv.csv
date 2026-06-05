@@ -1,0 +1,9 @@
+symbol,signal_time_tv,py_match,pine_csv_match,status,notes
+GBPJPY,2016-11-04 22:00:00,yes,yes,OK,Initial Shelf Long=1
+GBPJPY,2018-07-05 14:00:00,yes,yes,OK,
+GBPJPY,2019-02-19 15:00:00,yes,yes,OK,
+GBPJPY,2020-05-26 06:00:00,yes,yes,OK,
+GBPJPY,2021-07-23 18:00:00,yes,no,REJECT,TVチャート確認:シグナルなし(2026-05-31)
+GBPJPY,2024-10-09 18:00:00,yes,yes,OK,
+GBPJPY,2025-03-21 10:00:00,yes,no,REJECT,TVチャート確認:シグナルなし(2026-05-31)
+GBPJPY,2026-03-23 18:00:00,yes,no,REJECT,TVチャート確認:シグナルなし(2026-05-31)

@@ -1,6 +1,11 @@
 # 踏み上げ・投げ切り — 実装判定（徹底検証後）
 
-**判定: 条件付き GO** — **SQZ STRICT のみ本番実装**。CAP は監視のみ。
+**判定: メイン2本運用（2026-05-31 復元）**
+
+- インジ: `pine/visual/market_psychology_cap_sqz_visual.pine`
+- strategy: `pine/production/h4_sqz_tv_validation.pine`（2.5/3.0・インジ②と同一）
+
+投げ切り単独エントリーは引き続きしない。strict / live_ready 等の別バリアントは使わない。
 
 **時間足: 踏み上げは H4 のみ（確定）。H1でのSQZエントリーは行わない。**
 

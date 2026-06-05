@@ -4,7 +4,7 @@
 // =====================================================================
 // 踏み上げ [TV Validation] — 投げ切りインジと完全一致
 //   同一: f_sqz_pine_default + security 240 + 2.5/3.0 + 翌足始値 + SL/TP計算
-//   インジ②踏み上げ▲と同一条件 + 翌足始値約定
+//   インジ仮想約定と同じ overlapMode / maxHold / stopBuf / rr
 // =====================================================================
 strategy("踏み上げ [TV Validation]",
      overlay=true,
@@ -34,7 +34,7 @@ stopBuf = input.float(0.25, "SL: 棚安 - ?ATR", step=0.05, group=grpSqz)
 rr = input.float(2.0, "TP (R)", step=0.1, group=grpSqz)
 maxHold = input.int(120, "最大保有H4本", minval=1, group=grpSqz)
 
-grpRun = "検証（Python backtest と揃える）"
+grpRun = "検証（インジ grpTrade と揃える）"
 riskPct = input.float(1.0, "リスク%", step=0.1, group=grpRun)
 overlapMode = input.string("Python同等(保有中スキップ)", "重複▲の扱い",
      options=["Python同等(保有中スキップ)", "新▲で前ポジ決済"], group=grpRun)
@@ -156,7 +156,7 @@ if barstate.islast
     table.cell(tb, 1, 2, str.tostring(strategy.closedtrades) + "件", text_size=size.tiny, text_color=color.yellow)
     int openAdj = inPos ? 1 : 0
     int diff = pendCnt - strategy.closedtrades - openAdj
-    table.cell(tb, 0, 3, "SIG→約定", text_size=size.tiny, text_color=color.white)
+    table.cell(tb, 0, 3, "インジ一致", text_size=size.tiny, text_color=color.white)
     table.cell(tb, 1, 3, diff == 0 ? "OK" : "差" + str.tostring(diff), text_size=size.tiny,
          text_color=diff == 0 ? color.lime : color.orange)
     table.cell(tb, 0, 4, "重複", text_size=size.tiny, text_color=color.white)

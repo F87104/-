@@ -1,42 +1,51 @@
-# 系統A — V1 + H4 T5 本番運用
+# 系統A — V1 + H4 T5 + 踏み上げ投げ切り
 
-作成日: 2026-06-01
+更新: 2026-05-31
 
-TrendBreak V1（H1）+ H4 T5 + **踏み上げ投げ切り（表示）** + **踏み上げ TV検証（strategy）** を同一 H4 チャートに載せる本番定義。
+TrendBreak V1（H1）+ H4（T5 + 踏み上げ投げ切り + 踏み上げ + **B06棚抜**）
 
-## ファイル
+## H4 Pine（載せ順）
 
-| ファイル | 用途 |
-|----------|------|
-| [portfolio_slots.yaml](portfolio_slots.yaml) | 6通貨・H1/H4・Pine3本の載せ方・重複ルール |
-| [chart_bundle.yaml](chart_bundle.yaml) | H4 3本スタック・通貨別 ON/OFF |
+| 順 | ファイル | 種類 | 対象 |
+|:---:|----------|------|------|
+| 1 | [h4_t5_macd_bb_live_ready.pine](../../pine/production/h4_t5_macd_bb_live_ready.pine) | strategy | 6通貨 |
+| 2 | [market_psychology_cap_sqz_visual.pine](../../pine/visual/market_psychology_cap_sqz_visual.pine) | indicator | 6通貨 |
+| 3 | [h4_sqz_tv_validation.pine](../../pine/production/h4_sqz_tv_validation.pine) | strategy | XAU/USDJPY/銀 |
+| 4 | [h4_v_initial_shelf_breakout_strategy.pine](../../pine/research/h4_v_initial_shelf_breakout_strategy.pine) | **strategy（B06棚抜）** | **JPY4** |
 
-## H4チャートに載せる順（6通貨）
+## 役割
 
-| 順 | Pine | 種類 |
-|:---:|------|------|
-| 1 | [h4_t5_macd_bb_live_ready.pine](../../pine/production/h4_t5_macd_bb_live_ready.pine) | strategy（本番） |
-| 2 | [market_psychology_cap_sqz_visual.pine](../../pine/visual/market_psychology_cap_sqz_visual.pine) | indicator（観測） |
-| 3 | [h4_sqz_tv_validation.pine](../../pine/production/h4_sqz_tv_validation.pine) | strategy（踏み上げ・対象通貨のみ） |
+- **インジ:** 投げ切り①（水色）+ 踏み上げ②（緑）— 発注なし
+- **strategy:** インジ②踏み上げと同一条件（2.5/3.0 ATR・翌足始値・RR2）
 
-**踏み上げ strategy の対象:** XAUUSD・USDJPY・CHFJPY・SILVER  
-**除外:** EURJPY（研究マイナス）・GBPJPY・AUDJPY
+## 踏み上げ strategy の対象
+
+| 通貨 | 載せる |
+|------|--------|
+| XAUUSD, USDJPY, SILVER | ✅ |
+| EURJPY, GBPJPY | ❌ |
+| CHFJPY | インジのみ |
+
+## JPY4 の4本目（B06）
+
+USDJPY / EURJPY / GBPJPY / AUDJPY の H4 に **4本目** で B06 を追加。  
+詳細: [系統B chart_bundle](../system_b/chart_bundle.yaml)
+
+- リスク **0.25R**
+- GBPJPY は **Pine 5件** が執行正
+- T5・踏み上げと重なったら **T5優先**
 
 ## 重複ルール
 
-1. **TB vs T5（同一通貨）:** T5 優先 → [A-path DECISION](../../research/original_a_path_DECISION_2026-06-01.md)
-2. **T5 vs 踏み上げ:** 同時保有ほぼなし。重なれば **T5 優先**
-3. **投げ切り:** ラベルのみ。エントリーしない
+1. TB vs T5 → **T5優先**
+2. T5 vs 踏み上げ / B06 → **T5優先**
+3. 投げ切り → **エントリーしない**
 
-## 踏み上げ strategy の表示設定
+## strategy 表示設定
 
-インジと二重にならないよう:
-
-- `▲をここでも描画` → **OFF**
-- `SIG/約定ラベル` → **OFF**（インジで十分な場合）
+- `▲をここでも描画` → **OFF**（インジと二重防止）
 
 ## 参照
 
-- [STRATEGY_GUIDE.md](../../STRATEGY_GUIDE.md) — TVデプロイ手順
-- [h4_t5_macd_bb_live_ready_notes.md](../../h4_t5_macd_bb_live_ready_notes.md)
-- [cap_sqz DECISION](../../research/cap_sqz_thorough_validation_2026-06-01/DECISION.md)
+- [chart_bundle.yaml](chart_bundle.yaml)
+- [STRATEGY_GUIDE.md](../../STRATEGY_GUIDE.md)

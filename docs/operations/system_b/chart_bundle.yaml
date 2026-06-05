@@ -1,0 +1,46 @@
+# 系統B — B06 棚抜 H4 追加構成（系統A H4 の4本目）
+# 作成日: 2026-05-31
+
+version: "2026-05-31"
+system_id: system_b
+lane_id: B06_VIS_PRECALM
+tag: 棚抜
+
+# 系統A H4 3本のあとに Add to chart（JPY4 のみ）
+mount_after:
+  - pine/production/h4_t5_macd_bb_live_ready.pine
+  - pine/visual/market_psychology_cap_sqz_visual.pine
+  - pine/production/h4_sqz_tv_validation.pine   # USDJPYのみ。EUR/GBPは載せない
+
+fourth_script:
+  pine: pine/research/h4_v_initial_shelf_breakout_strategy.pine
+  type: strategy
+  symbols_jpy4: [USDJPY, EURJPY, GBPJPY, AUDJPY]
+  symbols_trial: [XAUUSD, CHFJPY, SILVER]
+  risk_r_default: 0.25
+  params:
+    usePreCalm: true
+    skipHoliday: true
+    tpBasis: "Signal基準(36d90e6再現)"
+    showSignals: true
+    showSkips: false
+
+per_symbol_h4_stack:
+  USDJPY: [t5, cap_sqz_visual, sqz_tv, b06]
+  EURJPY: [t5, cap_sqz_visual, b06]
+  GBPJPY: [t5, cap_sqz_visual, b06]
+  AUDJPY: [b06]
+  XAUUSD: [t5, cap_sqz_visual, sqz_tv, b06_trial]
+  CHFJPY: [t5, cap_sqz_visual, b06_trial]
+  SILVER: [t5, cap_sqz_visual, sqz_tv, b06_trial]
+  note: |
+    AUDJPYは系統A対象外。B06専用H4タブ1本でも可。
+    試験3銘柄は symbolMode=試験3銘柄・0.25R・Pine照合前。
+
+overlap:
+  vs_t5: "T5優先"
+  vs_sqz: "SQZ優先（同日・同銘柄1件）"
+
+parity:
+  decision: docs/research/system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md
+  gbpjpy_authoritative: docs/research/system_b_pine_parity_2026-06-01/python_expected_b06_tv_oanda_gbpjpy_pine_authoritative.csv

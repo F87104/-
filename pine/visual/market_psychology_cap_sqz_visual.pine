@@ -10,7 +10,6 @@
 // 条件は検証スクリプト(verify_capitulation_reversal.py / verify_from_raw_ohlc.py)と同義。
 // 推奨時間足: H4。
 //
-// 約定・TV検証は pine/production/h4_sqz_tv_validation.pine（strategy）を別途載せる。
 // 参考: skills/market_psychology_research/
 //   CAPITULATION.md / SHORT_SQUEEZE.md / verification/*
 // =============================================================================

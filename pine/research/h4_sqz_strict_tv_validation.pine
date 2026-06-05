@@ -1,0 +1,166 @@
+//@version=5
+// 【重要】strategy のみ。TP/SLラベル・▲はインジ「踏み上げ投げ切り」だけに任せる。
+// TVの約定ラベル二重化を防ぐため entry/exit の comment は空。
+// =====================================================================
+strategy("踏み上げ [TV Validation]",
+     overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
+     pyramiding=0,
+     calc_on_every_tick=false,
+     process_orders_on_close=false,
+     commission_type=strategy.commission.percent,
+     commission_value=0.0,
+     slippage=0,
+     max_lines_count=500,
+     max_labels_count=500)
+
+plot(na, title="Anchor", display=display.none)
+
+string analysisTf = "240"
+
+grpSqz = "② 踏み上げ（投げ切りインジと同一）"
+atrLen = input.int(14, "ATR period", group=grpSqz)
+shelfBars = input.int(6, "棚の本数", group=grpSqz)
+dropWin = input.int(6, "棚直前の急変窓(本数)", group=grpSqz)
+shelfAtr = input.float(2.5, "棚レンジ <= ?×ATR", step=0.1, group=grpSqz)
+moveAtr = input.float(3.0, "急落幅 >= ?×ATR", step=0.1, group=grpSqz)
+stopBuf = input.float(0.25, "SL: 棚安 - ?ATR", step=0.05, group=grpSqz)
+rr = input.float(2.0, "TP (R)", step=0.1, group=grpSqz)
+maxHold = input.int(120, "最大保有H4本", minval=1, group=grpSqz)
+
+grpRun = "検証（インジ grpTrade と揃える）"
+riskPct = input.float(1.0, "リスク%", step=0.1, group=grpRun)
+overlapMode = input.string("Python同等(保有中スキップ)", "重複▲の扱い",
+     options=["Python同等(保有中スキップ)", "新▲で前ポジ決済"], group=grpRun)
+
+bool closeOnNewSqz = overlapMode == "新▲で前ポジ決済"
+
+grpVis = "表示（ラベルはインジのみ。ここはOFF推奨）"
+showSqzOnStrategy = input.bool(false, "▲（二重になる）", group=grpVis)
+showLv = input.bool(false, "黄赤緑ライン（インジと二重）", group=grpVis)
+showEntryMark = input.bool(false, "約定マーク（インジと二重）", group=grpVis)
+
+bool chartIsH4 = timeframe.in_seconds(timeframe.period) == timeframe.in_seconds(analysisTf)
+
+f_sqz_pine_default() =>
+    float a = ta.atr(atrLen)
+    float sh = ta.highest(high, shelfBars)[1]
+    float sl = ta.lowest(low, shelfBars)[1]
+    float sr = sh - sl
+    float ph = ta.highest(high, dropWin)[1 + shelfBars]
+    bool ok = sr <= shelfAtr * a and (ph - sh) >= moveAtr * a and close[1] <= sh and close > sh
+    [ok, sl, a, close]
+
+[sqzLoc, shelfLoc, atrLoc, closeLoc] = f_sqz_pine_default()
+[sqzSec, shelfSec, atrSec, closeSec] = request.security(syminfo.tickerid, analysisTf, f_sqz_pine_default(),
+     barmerge.gaps_off, barmerge.lookahead_off)
+
+bool sqzOk = chartIsH4 ? sqzLoc : sqzSec
+float h4ShelfLo = chartIsH4 ? shelfLoc : shelfSec
+float h4Atr = chartIsH4 ? atrLoc : atrSec
+float h4Close = chartIsH4 ? closeLoc : closeSec
+
+bool sqzLong = chartIsH4 and sqzOk
+float sigStop = h4ShelfLo - h4Atr * stopBuf
+bool sqzConfirmed = sqzLong and barstate.isconfirmed
+bool sigValid = sqzConfirmed and h4Close > sigStop
+
+var bool pendEntry = false
+var float pendStop = na
+var float frozenStop = na
+
+var float entPx = na
+var float slPx = na
+var float tpPx = na
+var int entBar = na
+
+bool justSig = false
+
+bool skipNewSig = strategy.position_size > 0 and not closeOnNewSqz
+
+if sqzConfirmed and sigValid
+    if strategy.position_size > 0 and closeOnNewSqz
+        strategy.close("L", comment="")
+    if not skipNewSig
+        pendEntry := true
+        pendStop := sigStop
+        justSig := true
+
+bool tryEnter = pendEntry[1] and barstate.isconfirmed
+float entOpen = open
+float stOpen = nz(pendStop[1], sigStop)
+float openRisk = entOpen - stOpen
+
+if tryEnter
+    pendEntry := false
+
+bool canEnter = tryEnter and openRisk > 0 and strategy.position_size == 0
+
+if canEnter
+    frozenStop := stOpen
+    strategy.entry("L", strategy.long, qty=(strategy.equity * riskPct / 100) / openRisk, comment="")
+
+bool filled = strategy.position_size > 0 and strategy.position_size[1] <= 0
+
+if filled
+    entPx := strategy.position_avg_price
+    slPx := nz(frozenStop, stOpen)
+    float riskDist = entPx - slPx
+    tpPx := riskDist > 0 ? entPx + riskDist * rr : na
+    entBar := bar_index
+
+if strategy.position_size > 0 and not na(slPx) and not na(tpPx)
+    strategy.exit("X", "L", stop=slPx, limit=tpPx)
+
+if strategy.position_size > 0 and not na(entBar) and bar_index - entBar >= maxHold
+    strategy.close("L", comment="")
+
+bool inPos = strategy.position_size > 0
+
+plotshape(showSqzOnStrategy and justSig, title="踏み上げ SIG", style=shape.triangleup, location=location.belowbar,
+     color=color.lime, size=size.small, text="踏み上げ")
+plotshape(showEntryMark and filled, title="約定(次足)", style=shape.circle, location=location.belowbar,
+     color=color.yellow, size=size.tiny, text="約")
+
+plot(showLv and inPos ? entPx : na, "Entry", color=color.new(color.yellow, 0), linewidth=2, style=plot.style_linebr)
+plot(showLv and inPos ? slPx : na, "SL", color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
+plot(showLv and inPos ? tpPx : na, "TP", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
+
+bgcolor(not chartIsH4 ? color.new(color.orange, 90) : na)
+
+var int sigCnt = 0
+var int pendCnt = 0
+if sqzConfirmed and sigValid
+    sigCnt += 1
+    if not skipNewSig
+        pendCnt += 1
+
+var table tb = table.new(position.top_right, 2, 9, bgcolor=color.new(color.black, 85))
+if barstate.islast
+    table.cell(tb, 0, 0, "▲シグナル", text_size=size.tiny, text_color=color.white)
+    table.cell(tb, 1, 0, str.tostring(sigCnt) + "本", text_size=size.tiny, text_color=color.lime)
+    table.cell(tb, 0, 1, "エントリー予定", text_size=size.tiny, text_color=color.white)
+    table.cell(tb, 1, 1, str.tostring(pendCnt) + "本", text_size=size.tiny, text_color=color.aqua)
+    table.cell(tb, 0, 2, "トレード", text_size=size.tiny, text_color=color.white)
+    table.cell(tb, 1, 2, str.tostring(strategy.closedtrades) + "件", text_size=size.tiny, text_color=color.yellow)
+    int openAdj = inPos ? 1 : 0
+    int diff = pendCnt - strategy.closedtrades - openAdj
+    table.cell(tb, 0, 3, "インジ一致", text_size=size.tiny, text_color=color.white)
+    table.cell(tb, 1, 3, diff == 0 ? "OK" : "差" + str.tostring(diff), text_size=size.tiny,
+         text_color=diff == 0 ? color.lime : color.orange)
+    table.cell(tb, 0, 4, "表示", text_size=size.tiny, text_color=color.white)
+    table.cell(tb, 1, 4, "ｲﾝｼﾞのみ", text_size=size.tiny, text_color=color.lime)
+    table.cell(tb, 0, 5, "約定", text_size=size.tiny, text_color=color.white)
+    table.cell(tb, 1, 5, "▲の次足始値", text_size=size.tiny, text_color=color.aqua)
+    table.cell(tb, 0, 6, "条件", text_size=size.tiny, text_color=color.white)
+    table.cell(tb, 1, 6, str.tostring(shelfAtr, "#.#") + "/" + str.tostring(moveAtr, "#.#"), text_size=size.tiny, text_color=color.aqua)
+    float pf = math.abs(strategy.grossloss) > 0 ? strategy.grossprofit / math.abs(strategy.grossloss) : na
+    table.cell(tb, 0, 7, "PF", text_size=size.tiny, text_color=color.white)
+    table.cell(tb, 1, 7, na(pf) ? "-" : str.tostring(pf, "#.##"), text_size=size.tiny,
+         text_color=na(pf) ? color.gray : pf >= 1.0 ? color.lime : color.red)
+    table.cell(tb, 0, 8, "H4", text_size=size.tiny, text_color=color.white)
+    table.cell(tb, 1, 8, chartIsH4 ? "OK" : "要H4", text_size=size.tiny, text_color=chartIsH4 ? color.lime : color.red)
+
+alertcondition(justSig, "踏み上げ SIG", "踏み上げ SIG {{ticker}} @ {{close}}")

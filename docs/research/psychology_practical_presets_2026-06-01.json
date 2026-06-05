@@ -1,0 +1,46 @@
+{
+  "GBPJPY": {
+    "prox_yen": 0.25,
+    "prox_half": 0.15,
+    "ext_atr": 0.6,
+    "swing_len": 48,
+    "big_mult": 1.05,
+    "strict_f1": true,
+    "wick_atr": 0.4,
+    "sweep_lb": 20,
+    "fwd_bars": 72
+  },
+  "XAUUSD": {
+    "prox_yen": 0.25,
+    "prox_half": 0.15,
+    "ext_atr": 0.85,
+    "swing_len": 48,
+    "big_mult": 1.05,
+    "strict_f1": false,
+    "wick_atr": 0.4,
+    "sweep_lb": 20,
+    "fwd_bars": 48
+  },
+  "USDJPY": {
+    "prox_yen": 0.25,
+    "prox_half": 0.15,
+    "ext_atr": 0.6,
+    "swing_len": 48,
+    "big_mult": 1.05,
+    "strict_f1": true,
+    "wick_atr": 0.4,
+    "sweep_lb": 20,
+    "fwd_bars": 12
+  },
+  "DEFAULT": {
+    "prox_yen": 0.25,
+    "prox_half": 0.15,
+    "ext_atr": 0.85,
+    "swing_len": 48,
+    "big_mult": 1.05,
+    "strict_f1": true,
+    "wick_atr": 0.4,
+    "sweep_lb": 20,
+    "fwd_bars": 24
+  }
+}

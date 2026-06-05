@@ -1,0 +1,89 @@
+//@version=5
+indicator("Psychology Map Simple - GBPJPY v0.2", overlay=true, max_boxes_count=80, max_labels_count=120)
+
+// =====================================================================
+// 【過去の学習用】受講生の固定データ — 未来の新しい節目には出ない
+// 未来の相場 → psychology_map_live.pine を使う
+// シンプル: 赤=入るな / 青緑=待つ / 橙=どテン候補 のみ
+// =====================================================================
+
+pairOk = syminfo.basecurrency == "GBP" and syminfo.currency == "JPY"
+dispMode   = input.string("シンプル", "表示", options=["シンプル", "詳細"], group="表示")
+onlyVisible = input.bool(true, "画面内の期間だけ描画", group="表示")
+minStopN   = input.int(2, "赤帯: 最低人数", minval=2, maxval=5, group="表示")
+showLegend = input.bool(true, "凡例（左上）", group="表示")
+
+// --- 全敗クラスタ ---
+ZLo = array.from(195.351, 188.016, 194.309, 205.870, 184.914, 187.428, 203.707, 211.860)
+ZHi = array.from(195.691, 188.430, 194.900, 206.600, 184.934, 187.788, 203.760, 211.900)
+ZT1 = array.from(timestamp("GMT+9",2024,10,14,0,0), timestamp("GMT+9",2025,2,6,0,0), timestamp("GMT+9",2024,10,3,0,0), timestamp("GMT+9",2025,11,26,0,0), timestamp("GMT+9",2024,9,14,0,0), timestamp("GMT+9",2025,2,11,0,0), timestamp("GMT+9",2025,10,23,0,0), timestamp("GMT+9",2026,1,6,0,0))
+ZT2 = array.from(timestamp("GMT+9",2024,10,15,23,59), timestamp("GMT+9",2025,2,7,23,59), timestamp("GMT+9",2024,10,3,23,59), timestamp("GMT+9",2025,11,27,23,59), timestamp("GMT+9",2024,9,14,23,59), timestamp("GMT+9",2025,2,11,23,59), timestamp("GMT+9",2025,10,24,23,59), timestamp("GMT+9",2026,1,6,23,59))
+ZN  = array.from(5, 4, 3, 3, 2, 2, 2, 2)
+ZB  = array.from(1, -1, 1, 1, -1, -1, 1, 1)
+
+// --- 待つ場所 ---
+WLo = array.from(192.800, 190.000, 192.800, 204.980, 186.500, 190.000, 202.854, 211.020)
+WHi = array.from(193.400, 191.200, 193.400, 205.580, 187.500, 191.200, 203.696, 211.852)
+WT1 = array.from(timestamp("GMT+9",2024,10,2,0,0), timestamp("GMT+9",2025,2,10,0,0), timestamp("GMT+9",2024,10,2,0,0), timestamp("GMT+9",2025,11,24,3,12), timestamp("GMT+9",2024,9,15,0,0), timestamp("GMT+9",2025,2,10,0,0), timestamp("GMT+9",2025,10,21,20,35), timestamp("GMT+9",2026,1,4,15,0))
+WT2 = array.from(timestamp("GMT+9",2024,10,4,23,59), timestamp("GMT+9",2025,2,14,23,59), timestamp("GMT+9",2024,10,4,23,59), timestamp("GMT+9",2025,11,28,16,33), timestamp("GMT+9",2024,9,18,23,59), timestamp("GMT+9",2025,2,14,23,59), timestamp("GMT+9",2025,10,25,14,0), timestamp("GMT+9",2026,1,7,17,30))
+WS  = array.from(1, -1, 1, 1, -1, -1, 1, 1)
+
+// --- どテン候補（損切後72h・同方向）GBPJPYのみ ---
+RTs = array.from(timestamp("GMT+9",2024,9,21,3,16), timestamp("GMT+9",2024,9,26,16,40), timestamp("GMT+9",2024,9,27,7,29), timestamp("GMT+9",2024,10,4,21,0), timestamp("GMT+9",2024,9,25,21,25), timestamp("GMT+9",2024,10,30,5,24), timestamp("GMT+9",2024,12,12,6,42), timestamp("GMT+9",2025,10,29,19,50), timestamp("GMT+9",2025,10,31,20,13), timestamp("GMT+9",2025,10,27,23,0))
+RPx = array.from(191.659, 193.744, 194.393, 193.1, 193.281, 199.565, 194.431, 201.0, 202.07, 204.17)
+
+inView(t1, t2) =>
+    if not onlyVisible
+        true
+    else
+        t2 >= chart.left_visible_bar_time and t1 <= chart.right_visible_bar_time
+
+if barstate.islast
+    if not pairOk
+        label.new(bar_index, high, "GBPJPY 1H 専用\n現在: " + syminfo.ticker, style=label.style_label_lower_left, color=color.orange, textcolor=color.white, size=size.normal)
+    else
+        stopDrawn = 0
+        waitDrawn = 0
+        revDrawn  = 0
+        for k = 0 to array.size(ZLo) - 1
+            n = array.get(ZN, k)
+            if n < minStopN
+                continue
+            t1 = array.get(ZT1, k)
+            t2 = array.get(ZT2, k)
+            if not inView(t1, t2)
+                continue
+            lo = array.get(ZLo, k)
+            hi = array.get(ZHi, k)
+            b  = array.get(ZB, k)
+            mid = (lo + hi) / 2.0
+            tMid = t1 + int((t2 - t1) / 2)
+            yLbl = mid + (stopDrawn - 1) * syminfo.mintick * 120
+            box.new(t1, hi, t2, lo, xloc=xloc.bar_time, bgcolor=color.new(color.red, 88), border_color=color.new(color.red, 50), border_width=1)
+            sideTxt = b == 1 ? "買" : "売"
+            label.new(tMid, yLbl, "STOP " + str.tostring(n) + "人" + sideTxt, xloc=xloc.bar_time, style=label.style_label_center, color=color.new(color.red, 0), textcolor=color.white, size=size.small)
+            stopDrawn += 1
+        for j = 0 to array.size(WLo) - 1
+            t1 = array.get(WT1, j)
+            t2 = array.get(WT2, j)
+            if not inView(t1, t2)
+                continue
+            lo = array.get(WLo, j)
+            hi = array.get(WHi, j)
+            b  = array.get(WS, j)
+            mid = (lo + hi) / 2.0
+            tMid = t1 + int((t2 - t1) / 2)
+            box.new(t1, hi, t2, lo, xloc=xloc.bar_time, bgcolor=color.new(color.teal, 90), border_color=color.new(color.teal, 40), border_width=1)
+            sideTxt = b == 1 ? "買" : "売"
+            label.new(tMid, mid, "WAIT " + sideTxt, xloc=xloc.bar_time, style=label.style_label_center, color=color.new(color.teal, 0), textcolor=color.white, size=size.tiny)
+            waitDrawn += 1
+        for r = 0 to array.size(RTs) - 1
+            ts = array.get(RTs, r)
+            if onlyVisible and (ts < chart.left_visible_bar_time or ts > chart.right_visible_bar_time)
+                continue
+            px = array.get(RPx, r)
+            label.new(ts, px, "◇", xloc=xloc.bar_time, style=label.style_circle, color=color.new(color.orange, 0), textcolor=color.white, size=size.tiny, tooltip="どテン候補（損切後72h・同方向）")
+            revDrawn += 1
+        if showLegend
+            txt = dispMode == "シンプル" ? "赤=STOP(入るな)  青緑=WAIT  橙◇=どテン" : "詳細モード+他インジ併用可"
+            label.new(bar_index, high, txt + "\n画面内 STOP:" + str.tostring(stopDrawn) + " WAIT:" + str.tostring(waitDrawn) + " ◇:" + str.tostring(revDrawn), style=label.style_label_lower_left, color=color.new(color.black, 30), textcolor=color.white, size=size.small)

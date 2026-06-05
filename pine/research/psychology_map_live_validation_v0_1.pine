@@ -1,0 +1,220 @@
+//@version=5
+strategy("Psychology Map Live Validation v0.1 [Research]",
+     overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
+     pyramiding=0,
+     process_orders_on_close=true,
+     commission_type=strategy.commission.percent,
+     commission_value=0.0,
+     slippage=2,
+     max_bars_back=5000,
+     max_labels_count=200)
+
+// =====================================================================
+// 検証用 Strategy — Live ルールが「追いエントリー」をどれだけ避けられるか
+// 受講生の全敗帯は参考ラインのみ（未来相場の判定には使わない）
+//
+// 手順:
+//   1) GBPJPY or XAUUSD 1H
+//   2) モード=比較 → フィルタOFFで1回 → フィルタONで1回 → 件数/PF/DD比較
+//   3) モード=STOPのみ → トレード0で STOP件数だけ確認可
+// =====================================================================
+
+plot(na, title="Anchor", display=display.none)
+
+grpMode = "検証モード"
+valMode = input.string("比較(フィルタ切替)", "モード", options=["比較(フィルタ切替)", "STOPのみ(トレードなし)", "WAITエントリー試験"], group=grpMode)
+filterOn = input.bool(true, "STOP時はエントリー禁止", group=grpMode)
+blockRevenge = input.bool(true, "どテン候補も禁止", group=grpMode)
+
+grpCore = "ルール(Live同一)"
+atrLen = input.int(14, "ATR", group=grpCore)
+emaLen = input.int(50, "EMA", group=grpCore)
+brkLen = input.int(12, "追いブレイク lookback", minval=3, group=grpCore)
+swingLen = input.int(48, "節目 lookback", minval=12, group=grpCore)
+extLen = input.int(20, "高安 lookback", minval=5, group=grpCore)
+extAtr = input.float(0.85, "高安端×ATR", minval=0.2, step=0.05, group=grpCore)
+useF1 = input.bool(true, "F1", group=grpCore)
+useF2 = input.bool(true, "F2", group=grpCore)
+useBrk = input.bool(true, "節目抜けSTOP", group=grpCore)
+proxJpy = input.float(0.25, "JPY整数±", minval=0.05, step=0.05, group=grpCore)
+proxHalf = input.float(0.15, "JPY50銭±", minval=0.05, step=0.05, group=grpCore)
+proxXau = input.float(12.0, "XAU±", minval=1.0, step=1.0, group=grpCore)
+bigBodyAtr = input.float(1.05, "大足×ATR", minval=0.3, step=0.05, group=grpCore)
+impulseLag = input.int(2, "大足後N本", minval=1, maxval=5, group=grpCore)
+breakBufAtr = input.float(0.08, "抜け余白×ATR", minval=0.0, step=0.01, group=grpCore)
+minBodyRatio = input.float(0.45, "抜け実体比", minval=0.2, maxval=1.0, step=0.05, group=grpCore)
+revengeBars = input.int(72, "どテン監視本数", minval=12, maxval=200, group=grpCore)
+waitPullback = input.float(1.0, "WAIT押し×ATR", minval=0.3, step=0.1, group=grpCore)
+waitBandAtr = input.float(0.35, "WAIT帯×ATR", minval=0.1, step=0.05, group=grpCore)
+waitZoneBars = input.int(24, "WAIT有効本数", minval=4, maxval=96, group=grpCore)
+
+grpExit = "出口"
+slAtr = input.float(1.5, "損切×ATR", minval=0.1, step=0.1, group=grpExit)
+tpAtr = input.float(2.5, "利確×ATR", minval=0.1, step=0.1, group=grpExit)
+
+grpRef = "受講生参考(検証用・未来判定に不使用)"
+showRef = input.bool(true, "参考: 全敗帯を薄く表示", group=grpRef)
+// GBPJPY 主要3クラスタのみ
+refLo = array.from(195.351, 188.016, 205.87)
+refHi = array.from(195.691, 188.430, 206.60)
+refT1 = array.from(timestamp("GMT+9",2024,10,14,0,0), timestamp("GMT+9",2025,2,6,0,0), timestamp("GMT+9",2025,11,26,0,0))
+refT2 = array.from(timestamp("GMT+9",2024,10,15,23,59), timestamp("GMT+9",2025,2,7,23,59), timestamp("GMT+9",2025,11,27,23,59))
+
+grpDate = "期間"
+useDates = input.bool(false, "期間限定", group=grpDate)
+startDate = input.time(timestamp("2024-01-01 00:00"), "開始", group=grpDate)
+endDate = input.time(timestamp("2026-12-31 00:00"), "終了", group=grpDate)
+
+grpVis = "表示"
+showStopMark = input.bool(true, "STOP=S", group=grpVis)
+showWaitMark = input.bool(true, "WAIT=W", group=grpVis)
+showBlockMark = input.bool(true, "ブロック×", group=grpVis)
+
+// --- Calc (Live v1.0.1 同一) ---
+atr = ta.atr(atrLen)
+ema = ta.ema(close, emaLen)
+body = math.abs(close - open)
+barRange = high - low
+bodyRatio = barRange > 0 ? body / barRange : 0.0
+
+isGold = str.contains(syminfo.ticker, "XAU") or str.contains(syminfo.ticker, "GOLD")
+nearestYen = math.round(close)
+nearestHalf = math.round(close * 2.0) / 2.0
+nearest10 = math.round(close / 10.0) * 10.0
+nearest50 = math.round(close / 50.0) * 50.0
+nearRound = isGold ? (math.min(math.abs(close - nearest10), math.abs(close - nearest50)) <= proxXau) : (math.abs(close - nearestYen) <= proxJpy or math.abs(close - nearestHalf) <= proxHalf)
+
+keyHigh = ta.highest(high[1], swingLen)
+keyLow = ta.lowest(low[1], swingLen)
+breakBuf = atr * breakBufAtr
+hiExt = ta.highest(high, extLen)
+loExt = ta.lowest(low, extLen)
+nearHigh = hiExt - close <= atr * extAtr
+nearLow = close - loExt <= atr * extAtr
+
+bigBull = close > open and body >= atr * bigBodyAtr
+bigBear = close < open and body >= atr * bigBodyAtr
+impulseBull = false
+impulseBear = false
+for i = 1 to impulseLag
+    impulseBull := impulseBull or bigBull[i]
+    impulseBear := impulseBear or bigBear[i]
+
+breakoutUp = ta.crossover(close, keyHigh + breakBuf)
+breakoutDown = ta.crossunder(close, keyLow - breakBuf)
+strongUp = close > open and bodyRatio >= minBodyRatio
+strongDown = close < open and bodyRatio >= minBodyRatio
+
+f1L = useF1 and nearRound and nearHigh and close > open
+f1S = useF1 and nearRound and nearLow and close < open
+f2L = useF2 and impulseBull and close > open
+f2S = useF2 and impulseBear and close < open
+brkL = useBrk and breakoutUp and strongUp
+brkS = useBrk and breakoutDown and strongDown
+
+stopLong = f1L or f2L or brkL
+stopShort = f1S or f2S or brkS
+
+var int lastStopBar = na
+var int lastStopDir = 0
+if stopLong
+    lastStopBar := bar_index
+    lastStopDir := 1
+if stopShort
+    lastStopBar := bar_index
+    lastStopDir := -1
+
+revengeLong = not na(lastStopBar) and lastStopDir == 1 and bar_index - lastStopBar <= revengeBars and bar_index > lastStopBar and (f1L or f2L)
+revengeShort = not na(lastStopBar) and lastStopDir == -1 and bar_index - lastStopBar <= revengeBars and bar_index > lastStopBar and (f1S or f2S)
+
+var float waitAnchor = na
+var int waitDir = 0
+var int waitStartBar = na
+if stopLong
+    waitAnchor := keyHigh
+    waitDir := 1
+    waitStartBar := bar_index
+if stopShort
+    waitAnchor := keyLow
+    waitDir := -1
+    waitStartBar := bar_index
+
+waitActive = not na(waitStartBar) and bar_index - waitStartBar <= waitZoneBars
+waitLong = waitActive and waitDir == 1 and low <= waitAnchor - atr * waitPullback and close >= waitAnchor - atr * (waitPullback + waitBandAtr)
+waitShort = waitActive and waitDir == -1 and high >= waitAnchor + atr * waitPullback and close <= waitAnchor + atr * (waitPullback + waitBandAtr)
+
+if waitActive and bar_index - waitStartBar > waitZoneBars
+    waitStartBar := na
+    waitDir := 0
+
+// 追いやすいベースライン（つまずき実験と同系）
+brkHi = ta.highest(high[1], brkLen)
+brkLo = ta.lowest(low[1], brkLen)
+chaseLong = close > ema and ta.crossover(close, brkHi)
+chaseShort = close < ema and ta.crossunder(close, brkLo)
+
+useFilter = valMode == "比較(フィルタ切替)" and filterOn
+useWaitEntry = valMode == "WAITエントリー試験"
+noTrades = valMode == "STOPのみ(トレードなし)"
+
+blockL = useFilter and (stopLong or (blockRevenge and revengeLong))
+blockS = useFilter and (stopShort or (blockRevenge and revengeShort))
+
+longSig = noTrades ? false : useWaitEntry ? waitLong : chaseLong and not blockL
+shortSig = noTrades ? false : useWaitEntry ? waitShort : chaseShort and not blockS
+
+inWindow = not useDates or (time >= startDate and time <= endDate)
+
+var float entryPx = na
+if inWindow and longSig and strategy.position_size <= 0
+    strategy.entry("L", strategy.long)
+    entryPx := close
+if inWindow and shortSig and strategy.position_size >= 0
+    strategy.entry("S", strategy.short)
+    entryPx := close
+
+avgPx = na(entryPx) ? strategy.position_avg_price : entryPx
+if strategy.position_size > 0 and not na(avgPx)
+    strategy.exit("LX", "L", stop=avgPx - atr * slAtr, limit=avgPx + atr * tpAtr)
+if strategy.position_size < 0 and not na(avgPx)
+    strategy.exit("SX", "S", stop=avgPx + atr * slAtr, limit=avgPx - atr * tpAtr)
+if strategy.position_size == 0
+    entryPx := na
+
+// --- 参考帯（受講生・薄表示）---
+if barstate.islast and showRef and syminfo.basecurrency == "GBP"
+    for i = 0 to array.size(refLo) - 1
+        box.new(array.get(refT1, i), array.get(refHi, i), array.get(refT2, i), array.get(refLo, i), xloc=xloc.bar_time, bgcolor=color.new(color.gray, 92), border_color=color.new(color.gray, 70), border_style=line.style_dashed)
+
+plotshape(showStopMark and stopLong, title="STOP買", style=shape.xcross, location=location.abovebar, color=color.red, size=size.tiny, text="S")
+plotshape(showStopMark and stopShort, title="STOP売", style=shape.xcross, location=location.belowbar, color=color.red, size=size.tiny, text="S")
+plotshape(showWaitMark and waitLong, title="WAIT買", style=shape.circle, location=location.belowbar, color=color.teal, size=size.tiny, text="W")
+plotshape(showWaitMark and waitShort, title="WAIT売", style=shape.circle, location=location.abovebar, color=color.teal, size=size.tiny, text="W")
+plotshape(showBlockMark and blockL and chaseLong, title="Blocked L", style=shape.xcross, location=location.belowbar, color=color.orange, size=size.tiny, text="×")
+plotshape(showBlockMark and blockS and chaseShort, title="Blocked S", style=shape.xcross, location=location.abovebar, color=color.orange, size=size.tiny, text="×")
+
+var int stopCnt = 0
+var int blockCnt = 0
+if stopLong or stopShort
+    stopCnt += 1
+if (blockL and chaseLong) or (blockS and chaseShort)
+    blockCnt += 1
+
+var table t = table.new(position.top_right, 2, 6, bgcolor=color.new(color.black, 15), border_width=1)
+if barstate.islast
+    table.cell(t, 0, 0, "Live検証", text_color=color.white, text_size=size.small)
+    table.cell(t, 1, 0, valMode, text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 0, 1, "Filter", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 1, useFilter ? "ON" : "OFF", text_color=useFilter ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 2, "Trades", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 2, str.tostring(strategy.closedtrades), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 3, "PF", text_color=color.white, text_size=size.tiny)
+    pf = strategy.grossloss != 0 ? strategy.grossprofit / math.abs(strategy.grossloss) : na
+    table.cell(t, 1, 3, na(pf) ? "-" : str.tostring(pf, "#.##"), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 4, "STOP累計", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, str.tostring(stopCnt), text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 0, 5, "ブロック", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 5, str.tostring(blockCnt), text_color=color.orange, text_size=size.tiny)

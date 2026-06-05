@@ -110,7 +110,7 @@
 
 | 段階 | 内容 |
 |---|---|
-| 1. Event scanner | エントリーせず、該当イベントだけ記録。12 / 24 / 48 / 72 本後の MFE / MAE を測る |
+| 1. Event scanner | エントリーせず、該当イベントだけ記録。12 / 24 / 48 / 72 本後の MFE / MAE を測る（実装: `backtests/elliott_fibo/run_loser_cohort_event_scanner.py`） |
 | 2. Trigger study | イベント後の押し目、棚ブレイク、再ブレイクだけを検証 |
 | 3. Strategy | 期待値が残ったものだけ売買ルール化 |
 | 4. Pine parity | Python のイベント時刻と TradingView のラベル時刻を一致 |

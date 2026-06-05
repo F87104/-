@@ -1,0 +1,237 @@
+//@version=5
+indicator("Psychology Map Live v1.0.4", overlay=true, max_boxes_count=50, max_labels_count=80, max_bars_back=2000)
+
+// =====================================================================
+// 未来の相場用 — 受講生データに依存しないルールベース
+// 根拠: つまずき研究 F1/F2/F3 + Crowd Psychology Simple v0.3
+//   STOP = 節目×高安追い / 伸び切り直後 / 節目抜け直後
+//   WAIT = 抜け後の押し戻り帯
+//   ◇    = STOP直後の同方向再追い（どテン候補）
+// 過去の赤帯は psychology_map_simple_* （参考）と併用可
+// =====================================================================
+
+grpPreset = "実践プリセット"
+presetMode = input.string("Default", "通貨プリセット", options=["Default", "GBPJPY", "XAUUSD", "USDJPY"], group=grpPreset, tooltip="docs/research/psychology_practical_presets_2026-06-01.json")
+
+grpCore = "基本"
+atrLen     = input.int(14, "ATR", minval=1, group=grpCore)
+emaLen     = input.int(50, "EMA", minval=2, group=grpCore)
+swingLenIn = input.int(48, "節目 lookback", minval=12, group=grpCore)
+extLen     = input.int(20, "高安 lookback", minval=5, group=grpCore)
+extAtrIn   = input.float(0.85, "高安端 ×ATR", minval=0.2, step=0.05, group=grpCore)
+useBarClose = input.bool(true, "確定足のみ", group=grpCore)
+stagAtrMax  = input.float(2.5, "CHECK 停滞 ≤ATR", minval=1.0, step=0.1, group=grpCore, tooltip="直前6本レンジ/ATR。TBは停滞時STOPをCHECKへ")
+
+grpRound = "F1 節目追い"
+useF1      = input.bool(true, "F1 節目×高安追い", group=grpRound)
+proxJpy    = input.float(0.25, "JPYペア: 整数±", minval=0.05, step=0.05, group=grpRound)
+proxHalf   = input.float(0.15, "JPYペア: 50銭±", minval=0.05, step=0.05, group=grpRound)
+proxXau    = input.float(12.0, "XAU: 10/50ドル±", minval=1.0, step=1.0, group=grpRound)
+strictF1     = input.bool(true, "F1=節目初タッチのみ", group=grpRound)
+
+swingLen = presetMode == "GBPJPY" ? 48 : presetMode == "XAUUSD" ? 48 : presetMode == "USDJPY" ? 48 : swingLenIn
+extAtr   = presetMode == "GBPJPY" ? 0.60 : presetMode == "XAUUSD" ? 0.85 : presetMode == "USDJPY" ? 0.60 : extAtrIn
+proxJpyEff  = presetMode == "GBPJPY" or presetMode == "USDJPY" ? 0.25 : proxJpy
+proxHalfEff = presetMode == "GBPJPY" or presetMode == "USDJPY" ? 0.15 : proxHalf
+strictF1Eff = presetMode == "XAUUSD" ? false : strictF1
+
+grpImp = "F2 伸び切り"
+useF2       = input.bool(true, "F2 大足直後", group=grpImp)
+bigBodyAtr  = input.float(1.05, "大足 ×ATR", minval=0.3, step=0.05, group=grpImp)
+impulseLag  = input.int(2, "大足後 N 本", minval=1, maxval=5, group=grpImp)
+
+grpBrk = "節目抜け"
+useFreshBreak = input.bool(true, "節目抜け直後STOP", group=grpBrk)
+breakBufAtr   = input.float(0.08, "抜け余白 ×ATR", minval=0.0, step=0.01, group=grpBrk)
+minBodyRatio  = input.float(0.45, "抜け足 実体比", minval=0.2, maxval=1.0, step=0.05, group=grpBrk)
+
+grpZone = "ゾーン表示"
+zoneBars    = input.int(24, "STOP/WAIT 表示本数", minval=4, maxval=96, group=grpZone)
+waitPullback = input.float(1.0, "WAIT 押し ×ATR", minval=0.3, step=0.1, group=grpZone)
+waitBandAtr  = input.float(0.35, "WAIT 帯の厚み ×ATR", minval=0.1, step=0.05, group=grpZone)
+revengeBars  = input.int(72, "どテン監視(本数)", minval=12, maxval=200, group=grpZone)
+cooldownBars = input.int(48, "同種ゾーン間隔", minval=12, maxval=200, group=grpZone)
+
+grpView = "表示"
+showCheck = input.bool(true, "CHECK C（停滞×STOP）", group=grpView)
+showStop  = input.bool(true, "STOP 赤帯", group=grpView)
+showWait  = input.bool(true, "WAIT 青緑帯", group=grpView)
+showRev   = input.bool(true, "どテン ◇", group=grpView)
+showMarks = input.bool(true, "STOPマーク S", group=grpView)
+showLegend = input.bool(true, "凡例", group=grpView)
+
+atr = ta.atr(atrLen)
+ema = ta.ema(close, emaLen)
+barOk = not useBarClose or barstate.isconfirmed
+body = math.abs(close - open)
+barRange = high - low
+bodyRatio = barRange > 0 ? body / barRange : 0.0
+
+isGold = str.contains(syminfo.ticker, "XAU") or str.contains(syminfo.ticker, "GOLD")
+isJpy  = syminfo.currency == "JPY"
+
+nearestYen  = math.round(close)
+nearestHalf = math.round(close * 2.0) / 2.0
+nearest10   = math.round(close / 10.0) * 10.0
+nearest50   = math.round(close / 50.0) * 50.0
+nearRound = isGold ? (math.min(math.abs(close - nearest10), math.abs(close - nearest50)) <= proxXau) : (math.abs(close - nearestYen) <= proxJpyEff or math.abs(close - nearestHalf) <= proxHalfEff)
+stagRange6 = ta.highest(high[1], 6) - ta.lowest(low[1], 6)
+stagnation = stagRange6 <= atr * stagAtrMax
+
+keyHigh = ta.highest(high[1], swingLen)
+keyLow  = ta.lowest(low[1], swingLen)
+breakBuf = atr * breakBufAtr
+
+hiExt = ta.highest(high, extLen)
+loExt = ta.lowest(low, extLen)
+nearHigh = hiExt - close <= atr * extAtr
+nearLow  = close - loExt <= atr * extAtr
+
+bigBull = close > open and body >= atr * bigBodyAtr
+bigBear = close < open and body >= atr * bigBodyAtr
+impulseBull = false
+impulseBear = false
+for i = 1 to impulseLag
+    impulseBull := impulseBull or bigBull[i]
+    impulseBear := impulseBear or bigBear[i]
+
+breakoutUp   = ta.crossover(close, keyHigh + breakBuf)
+breakoutDown = ta.crossunder(close, keyLow - breakBuf)
+strongUp   = close > open and bodyRatio >= minBodyRatio
+strongDown = close < open and bodyRatio >= minBodyRatio
+
+roundCrossUp = isGold ? ta.crossover(close, nearest10) or ta.crossover(close, nearest50) : ta.crossover(close, nearestYen) or ta.crossover(close, nearestHalf)
+roundCrossDn = isGold ? ta.crossunder(close, nearest10) or ta.crossunder(close, nearest50) : ta.crossunder(close, nearestYen) or ta.crossunder(close, nearestHalf)
+// --- STOP 条件（研究 F1/F2 + 抜け直後）---
+f1StopLong  = useF1 and nearHigh and close > open and (strictF1Eff ? roundCrossUp : nearRound)
+f1StopShort = useF1 and nearLow and close < open and (strictF1Eff ? roundCrossDn : nearRound)
+// F2: 大足の直後1本だけ（毎足発火させない）
+f2StopLong  = useF2 and impulseBull and not impulseBull[1] and close > open
+f2StopShort = useF2 and impulseBear and not impulseBear[1] and close < open
+brkStopLong  = useFreshBreak and breakoutUp and strongUp
+brkStopShort = useFreshBreak and breakoutDown and strongDown
+
+stopLongRaw  = barOk and (f1StopLong or f2StopLong or brkStopLong)
+stopShortRaw = barOk and (f1StopShort or f2StopShort or brkStopShort)
+stopEdgeLong = stopLongRaw and not stopLongRaw[1]
+stopEdgeShort = stopShortRaw and not stopShortRaw[1]
+
+// --- どテン候補: STOP後 同方向の再追い ---
+var int lastStopBar = na
+var int lastStopDir = 0  // 1=買い抑制  -1=売り抑制
+
+if stopLongRaw
+    lastStopBar := bar_index
+    lastStopDir := 1
+if stopShortRaw
+    lastStopBar := bar_index
+    lastStopDir := -1
+
+revengeLong  = showRev and barOk and not na(lastStopBar) and lastStopDir == 1 and bar_index - lastStopBar <= revengeBars and bar_index > lastStopBar and (f1StopLong or f2StopLong)
+revengeShort = showRev and barOk and not na(lastStopBar) and lastStopDir == -1 and bar_index - lastStopBar <= revengeBars and bar_index > lastStopBar and (f1StopShort or f2StopShort)
+
+// --- WAIT: STOP後 節目への押し戻り ---
+var float waitAnchor = na
+var int waitDir = 0
+var int waitStartBar = na
+
+if stopLongRaw
+    waitAnchor := keyHigh
+    waitDir := 1
+    waitStartBar := bar_index
+if stopShortRaw
+    waitAnchor := keyLow
+    waitDir := -1
+    waitStartBar := bar_index
+
+waitActive = not na(waitStartBar) and bar_index - waitStartBar <= zoneBars
+waitLongRaw  = showWait and waitActive and waitDir == 1 and low <= waitAnchor - atr * waitPullback and close >= waitAnchor - atr * (waitPullback + waitBandAtr)
+waitShortRaw = showWait and waitActive and waitDir == -1 and high >= waitAnchor + atr * waitPullback and close <= waitAnchor + atr * (waitPullback + waitBandAtr)
+
+if waitLongRaw or waitShortRaw or (waitActive and bar_index - waitStartBar > zoneBars)
+    if bar_index - waitStartBar > zoneBars
+        waitStartBar := na
+        waitDir := 0
+
+canFire(int lastIx) =>
+    na(lastIx) or bar_index - lastIx >= cooldownBars
+
+var int lastStopDraw = na
+var int lastWaitDraw = na
+stopDraw = (stopEdgeLong or stopEdgeShort) and canFire(lastStopDraw)
+waitDraw = (waitLongRaw or waitShortRaw) and canFire(lastWaitDraw)
+
+if stopDraw
+    lastStopDraw := bar_index
+if waitDraw
+    lastWaitDraw := bar_index
+
+// --- 描画（最新ゾーンのみ保持してスッキリ）---
+var box stopBox = na
+var box waitBox = na
+var label stopLbl = na
+var label waitLbl = na
+
+if stopDraw and showStop and not stagnation
+    if not na(stopBox)
+        box.delete(stopBox)
+    if not na(stopLbl)
+        label.delete(stopLbl)
+    bool isL = stopEdgeLong
+    float zHi = isL ? high + atr * 0.15 : keyLow + breakBuf
+    float zLo = isL ? math.min(close, keyHigh - breakBuf) : low - atr * 0.15
+    if zHi < zLo
+        float tmp = zHi
+        zHi := zLo
+        zLo := tmp
+    int midBar = bar_index + int(zoneBars / 2)
+    stopBox := box.new(bar_index, zHi, bar_index + zoneBars, zLo, xloc=xloc.bar_index, bgcolor=color.new(color.red, 88), border_color=color.new(color.red, 45))
+    string side = isL ? "買" : "売"
+    stopLbl := label.new(midBar, (zHi + zLo) / 2, "STOP " + side, xloc=xloc.bar_index, style=label.style_label_center, color=color.new(color.red, 0), textcolor=color.white, size=size.small)
+
+if waitDraw and showWait
+    if not na(waitBox)
+        box.delete(waitBox)
+    if not na(waitLbl)
+        label.delete(waitLbl)
+    float wHi = na
+    float wLo = na
+    string wTxt = ""
+    if waitDir == 1
+        wHi := waitAnchor - atr * waitPullback
+        wLo := wHi - atr * waitBandAtr
+        wTxt := "WAIT 買"
+    else
+        wLo := waitAnchor + atr * waitPullback
+        wHi := wLo + atr * waitBandAtr
+        wTxt := "WAIT 売"
+    int waitHalf = int(zoneBars / 2)
+    waitBox := box.new(bar_index, wHi, bar_index + waitHalf, wLo, xloc=xloc.bar_index, bgcolor=color.new(color.teal, 90), border_color=color.new(color.teal, 40))
+    waitLbl := label.new(bar_index + int(waitHalf / 2), (wHi + wLo) / 2, wTxt, xloc=xloc.bar_index, style=label.style_label_center, color=color.new(color.teal, 0), textcolor=color.white, size=size.tiny)
+
+plotchar(showMarks and stopDraw and stopEdgeLong and not stagnation, title="STOP買", char="S", location=location.abovebar, color=color.red, size=size.tiny)
+plotchar(showMarks and stopDraw and stopEdgeShort and not stagnation, title="STOP売", char="S", location=location.belowbar, color=color.red, size=size.tiny)
+plotchar(showCheck and stopDraw and stopEdgeLong and stagnation, title="CHECK買", char="C", location=location.abovebar, color=color.yellow, size=size.tiny)
+plotchar(showCheck and stopDraw and stopEdgeShort and stagnation, title="CHECK売", char="C", location=location.belowbar, color=color.yellow, size=size.tiny)
+plotchar(showRev and revengeLong, title="どテン買", char="◇", location=location.abovebar, color=color.orange, size=size.tiny)
+plotchar(showRev and revengeShort, title="どテン売", char="◇", location=location.belowbar, color=color.orange, size=size.tiny)
+
+var table leg = table.new(position.top_left, 2, 6, border_width=1)
+if barstate.islast and showLegend
+    table.cell(leg, 0, 0, "Live", bgcolor=color.black, text_color=color.white, text_size=size.small)
+    table.cell(leg, 1, 0, "ルールベース", bgcolor=color.black, text_color=color.silver, text_size=size.small)
+    table.cell(leg, 0, 1, "STOP", bgcolor=color.red, text_color=color.white, text_size=size.small)
+    table.cell(leg, 1, 1, "節目追い/伸び切り/抜け直後", bgcolor=color.new(color.red, 70), text_color=color.white, text_size=size.tiny)
+    table.cell(leg, 0, 2, "WAIT", bgcolor=color.teal, text_color=color.white, text_size=size.small)
+    table.cell(leg, 1, 2, "STOP後の押し帯", bgcolor=color.new(color.teal, 70), text_color=color.white, text_size=size.tiny)
+    table.cell(leg, 0, 3, "CHECK", bgcolor=color.yellow, text_color=color.black, text_size=size.small)
+    table.cell(leg, 1, 3, "STOP+6本停滞(TB可)", bgcolor=color.new(color.yellow, 70), text_color=color.black, text_size=size.tiny)
+    table.cell(leg, 0, 4, "◇", bgcolor=color.orange, text_color=color.white, text_size=size.small)
+    table.cell(leg, 1, 4, "STOP後の再追い", bgcolor=color.new(color.orange, 70), text_color=color.white, text_size=size.tiny)
+    fTxt = (useF1 ? "F1 " : "") + (useF2 ? "F2 " : "") + (useFreshBreak ? "Brk" : "")
+    table.cell(leg, 0, 5, "ON", bgcolor=color.gray, text_color=color.white, text_size=size.tiny)
+    table.cell(leg, 1, 5, fTxt, bgcolor=color.new(color.gray, 50), text_color=color.white, text_size=size.tiny)
+
+alertcondition(stopLongRaw or stopShortRaw, "Psychology STOP", "{{ticker}} STOP: 入るな")
+alertcondition(revengeLong or revengeShort, "Psychology REVENGE", "{{ticker}} どテン候補")
+alertcondition(waitLongRaw or waitShortRaw, "Psychology WAIT", "{{ticker}} WAIT: 押し待ち")

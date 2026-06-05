@@ -1,0 +1,228 @@
+//@version=5
+strategy("Psychology Map Live Validation v0.2.2 [Research]",
+     overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
+     pyramiding=0,
+     process_orders_on_close=true,
+     calc_on_every_tick=false,
+     max_bars_back=5000,
+     max_labels_count=80)
+
+// =====================================================================
+// 検証 v0.2.2 — F1厳格化（節目初タッチのみ）S過多を抑制
+// v0.2.1 — ラベルずれ修正（xloc.bar_index / plotchar）
+// ※ Psychology Map Live v1.0 と同時表示しない（二重＋ずれの原因）
+// - デフォルト: STOPのみ（トレード矢印なし）
+// - F2 は大足直後1本のみ（v0.1は毎足STOPで画面が埋まっていた）
+// - フィルタは STOP後 N 本ブロック（追い1本だけでなくゾーン単位）
+//
+// PF<1 は想定内（わざと負けやすい追いブレイクの実験台）
+// 見たいのは: フィルタONで Trades↓ Block↑ かどうか
+// =====================================================================
+
+plot(na, title="Anchor", display=display.none)
+
+grpMode = "検証"
+valMode = input.string("STOPのみ(推奨)", "モード", options=["STOPのみ(推奨)", "比較(追いブレイク)", "WAITエントリー試験"], group=grpMode)
+filterOn = input.bool(true, "STOPゾーン中は追い禁止", group=grpMode)
+blockBars = input.int(24, "STOPゾーン本数", minval=4, maxval=96, group=grpMode)
+blockRevenge = input.bool(true, "どテン形も禁止", group=grpMode)
+firstBreakOnly = input.bool(true, "初回ブレイクのみ追う", group=grpMode)
+
+grpCore = "ルール"
+atrLen = input.int(14, "ATR", group=grpCore)
+emaLen = input.int(50, "EMA", group=grpCore)
+brkLen = input.int(12, "ブレイク lookback", minval=3, group=grpCore)
+swingLen = input.int(48, "節目 lookback", minval=12, group=grpCore)
+extLen = input.int(20, "高安 lookback", minval=5, group=grpCore)
+extAtr = input.float(0.85, "高安×ATR", minval=0.2, step=0.05, group=grpCore)
+useF1 = input.bool(true, "F1 節目×高安", group=grpCore)
+useF2 = input.bool(true, "F2 大足直後1本", group=grpCore)
+useBrk = input.bool(true, "節目抜け直後", group=grpCore)
+proxJpy = input.float(0.25, "JPY±", minval=0.05, step=0.05, group=grpCore)
+proxHalf = input.float(0.15, "50銭±", minval=0.05, step=0.05, group=grpCore)
+proxXau = input.float(12.0, "XAU±", minval=1.0, step=1.0, group=grpCore)
+bigBodyAtr = input.float(1.05, "大足×ATR", minval=0.3, step=0.05, group=grpCore)
+impulseLag = input.int(2, "大足後", minval=1, maxval=5, group=grpCore)
+breakBufAtr = input.float(0.08, "抜け×ATR", minval=0.0, step=0.01, group=grpCore)
+minBodyRatio = input.float(0.45, "抜け実体", minval=0.2, maxval=1.0, step=0.05, group=grpCore)
+revengeBars = input.int(72, "どテン監視", minval=12, maxval=200, group=grpCore)
+markCooldown = input.int(48, "マーク間隔(本)", minval=12, maxval=200, group=grpCore)
+strictF1 = input.bool(true, "F1=節目初タッチのみ", group=grpCore)
+
+grpExit = "出口(比較モードのみ)"
+slAtr = input.float(1.5, "SL×ATR", group=grpExit)
+tpAtr = input.float(2.5, "TP×ATR", group=grpExit)
+
+grpRef = "受講生参考"
+showRef = input.bool(false, "灰破線(全敗帯)", group=grpRef)
+refLo = array.from(195.351, 188.016, 205.87)
+refHi = array.from(195.691, 188.430, 206.60)
+refT1 = array.from(timestamp("GMT+9",2024,10,14,0,0), timestamp("GMT+9",2025,2,6,0,0), timestamp("GMT+9",2025,11,26,0,0))
+refT2 = array.from(timestamp("GMT+9",2024,10,15,23,59), timestamp("GMT+9",2025,2,7,23,59), timestamp("GMT+9",2025,11,27,23,59))
+
+grpVis = "表示"
+showStopEdge = input.bool(true, "STOP発火 S", group=grpVis)
+showBlockOnly = input.bool(true, "ブロック×のみ", group=grpVis)
+showZoneBox = input.bool(true, "STOPゾーン枠", group=grpVis)
+showWait = input.bool(false, "WAIT W", group=grpVis)
+
+atr = ta.atr(atrLen)
+ema = ta.ema(close, emaLen)
+body = math.abs(close - open)
+bodyRatio = (high - low) > 0 ? body / (high - low) : 0.0
+isGold = str.contains(syminfo.ticker, "XAU") or str.contains(syminfo.ticker, "GOLD")
+nearestYen = math.round(close)
+nearestHalf = math.round(close * 2.0) / 2.0
+nearest10 = math.round(close / 10.0) * 10.0
+nearest50 = math.round(close / 50.0) * 50.0
+nearRound = isGold ? (math.min(math.abs(close - nearest10), math.abs(close - nearest50)) <= proxXau) : (math.abs(close - nearestYen) <= proxJpy or math.abs(close - nearestHalf) <= proxHalf)
+
+keyHigh = ta.highest(high[1], swingLen)
+keyLow = ta.lowest(low[1], swingLen)
+breakBuf = atr * breakBufAtr
+hiExt = ta.highest(high, extLen)
+loExt = ta.lowest(low, extLen)
+nearHigh = hiExt - close <= atr * extAtr
+nearLow = close - loExt <= atr * extAtr
+
+bigBull = close > open and body >= atr * bigBodyAtr
+bigBear = close < open and body >= atr * bigBodyAtr
+impulseBull = false
+impulseBear = false
+for i = 1 to impulseLag
+    impulseBull := impulseBull or bigBull[i]
+    impulseBear := impulseBear or bigBear[i]
+
+breakoutUp = ta.crossover(close, keyHigh + breakBuf)
+breakoutDown = ta.crossunder(close, keyLow - breakBuf)
+strongUp = close > open and bodyRatio >= minBodyRatio
+strongDown = close < open and bodyRatio >= minBodyRatio
+
+roundCrossUp = isGold ? ta.crossover(close, nearest10) or ta.crossover(close, nearest50) : ta.crossover(close, nearestYen) or ta.crossover(close, nearestHalf)
+roundCrossDn = isGold ? ta.crossunder(close, nearest10) or ta.crossunder(close, nearest50) : ta.crossunder(close, nearestYen) or ta.crossunder(close, nearestHalf)
+f1L = useF1 and nearHigh and close > open and (strictF1 ? roundCrossUp : nearRound)
+f1S = useF1 and nearLow and close < open and (strictF1 ? roundCrossDn : nearRound)
+f2L = useF2 and impulseBull and not impulseBull[1] and close > open
+f2S = useF2 and impulseBear and not impulseBear[1] and close < open
+brkL = useBrk and breakoutUp and strongUp
+brkS = useBrk and breakoutDown and strongDown
+
+stopLong = f1L or f2L or brkL
+stopShort = f1S or f2S or brkS
+stopEdge = (stopLong and not stopLong[1]) or (stopShort and not stopShort[1])
+
+var int blockUntilLong = na
+var int blockUntilShort = na
+if stopLong
+    blockUntilLong := bar_index + blockBars
+if stopShort
+    blockUntilShort := bar_index + blockBars
+
+inBlockLong = not na(blockUntilLong) and bar_index <= blockUntilLong
+inBlockShort = not na(blockUntilShort) and bar_index <= blockUntilShort
+
+var int lastStopBar = na
+var int lastStopDir = 0
+if stopLong
+    lastStopBar := bar_index
+    lastStopDir := 1
+if stopShort
+    lastStopBar := bar_index
+    lastStopDir := -1
+
+revengeLong = not na(lastStopBar) and lastStopDir == 1 and bar_index - lastStopBar <= revengeBars and bar_index > lastStopBar and (f1L or f2L)
+revengeShort = not na(lastStopBar) and lastStopDir == -1 and bar_index - lastStopBar <= revengeBars and bar_index > lastStopBar and (f1S or f2S)
+
+brkHi = ta.highest(high[1], brkLen)
+brkLo = ta.lowest(low[1], brkLen)
+chaseLong = close > ema and ta.crossover(close, brkHi)
+chaseShort = close < ema and ta.crossunder(close, brkLo)
+if firstBreakOnly
+    chaseLong := chaseLong and close[1] <= brkHi
+    chaseShort := chaseShort and close[1] >= brkLo
+
+compareMode = valMode == "比較(追いブレイク)"
+waitMode = valMode == "WAITエントリー試験"
+noTrades = valMode == "STOPのみ(推奨)"
+
+blockL = filterOn and (inBlockLong or (blockRevenge and revengeLong))
+blockS = filterOn and (inBlockShort or (blockRevenge and revengeShort))
+blockedLong = compareMode and chaseLong and blockL
+blockedShort = compareMode and chaseShort and blockS
+
+longSig = noTrades ? false : waitMode ? false : compareMode and chaseLong and not blockL
+shortSig = noTrades ? false : waitMode ? false : compareMode and chaseShort and not blockS
+
+var float entryPx = na
+if longSig and strategy.position_size <= 0
+    strategy.entry("L", strategy.long)
+    entryPx := close
+if shortSig and strategy.position_size >= 0
+    strategy.entry("S", strategy.short)
+    entryPx := close
+avgPx = na(entryPx) ? strategy.position_avg_price : entryPx
+if strategy.position_size > 0 and not na(avgPx)
+    strategy.exit("LX", "L", stop=avgPx - atr * slAtr, limit=avgPx + atr * tpAtr)
+if strategy.position_size < 0 and not na(avgPx)
+    strategy.exit("SX", "S", stop=avgPx + atr * slAtr, limit=avgPx - atr * tpAtr)
+if strategy.position_size == 0
+    entryPx := na
+
+var int lastMark = na
+markOk = na(lastMark) or bar_index - lastMark >= markCooldown
+bool markStopLong = showStopEdge and markOk and stopEdge and stopLong
+bool markStopShort = showStopEdge and markOk and stopEdge and stopShort
+if markStopLong or markStopShort
+    lastMark := bar_index
+
+// ゾーン枠は bar_index 固定（縮小表示でもローソクに追従）
+var box zoneBox = na
+if showZoneBox and stopEdge
+    if not na(zoneBox)
+        box.delete(zoneBox)
+    bool isL = stopLong
+    float zHi = isL ? high + atr * 0.12 : keyLow + breakBuf
+    float zLo = isL ? math.min(close, keyHigh - breakBuf) : low - atr * 0.12
+    if zHi < zLo
+        float tmp = zHi
+        zHi := zLo
+        zLo := tmp
+    zoneBox := box.new(bar_index, zHi, bar_index + blockBars, zLo, xloc=xloc.bar_index, bgcolor=color.new(color.red, 90), border_color=color.new(color.red, 50))
+
+if barstate.islast and showRef and syminfo.basecurrency == "GBP"
+    for i = 0 to array.size(refLo) - 1
+        box.new(array.get(refT1, i), array.get(refHi, i), array.get(refT2, i), array.get(refLo, i), xloc=xloc.bar_time, bgcolor=color.new(color.gray, 94), border_color=color.new(color.gray, 75), border_style=line.style_dashed)
+
+// plotchar = 足インデックス固定（plotshape+text は縮小時にずれることがある）
+plotchar(markStopLong, title="STOP買", char="S", location=location.abovebar, color=color.red, size=size.tiny)
+plotchar(markStopShort, title="STOP売", char="S", location=location.belowbar, color=color.red, size=size.tiny)
+plotchar(showBlockOnly and blockedLong, title="×L", char="×", location=location.belowbar, color=color.orange, size=size.tiny)
+plotchar(showBlockOnly and blockedShort, title="×S", char="×", location=location.abovebar, color=color.orange, size=size.tiny)
+
+var int stopCnt = 0
+var int blockCnt = 0
+if stopEdge
+    stopCnt += 1
+if blockedLong or blockedShort
+    blockCnt += 1
+
+var table t = table.new(position.top_right, 2, 7, bgcolor=color.new(color.black, 10), border_width=1)
+if barstate.islast
+    table.cell(t, 0, 0, "検証v0.2.2", text_color=color.white, text_size=size.small)
+    table.cell(t, 1, 0, valMode, text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 0, 1, "Filter", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 1, filterOn ? "ON" : "OFF", text_color=filterOn ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 2, "Trades", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 2, str.tostring(strategy.closedtrades), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 3, "PF", text_color=color.white, text_size=size.tiny)
+    pf = strategy.grossloss != 0 ? strategy.grossprofit / math.abs(strategy.grossloss) : na
+    table.cell(t, 1, 3, na(pf) ? "—" : str.tostring(pf, "#.##"), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 4, "STOP回", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, str.tostring(stopCnt), text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 0, 5, "×ブロック", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 5, str.tostring(blockCnt), text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 0, 6, "注", text_color=color.gray, text_size=size.tiny)
+    table.cell(t, 1, 6, "PF<1想定内", text_color=color.gray, text_size=size.tiny)

@@ -1,0 +1,33 @@
+# 投げ切り・踏み上げ 本番導入検証
+
+Pine visual scanner（ユーザー提示デフォルト）と同義の Python 検証。
+
+## 出口
+- SL: 棚安値 or 投げ切り足安値 − 0.25 ATR
+- TP: 固定 R（2.0 / 2.5）
+- エントリー: シグナル次足始値
+- 最大保有: 120 H4本
+
+## サマリー
+
+- **SQZ_PINE_2R_ALL**: 135件 WR 43.7% PF 1.48 +36.4R DD 12.0R
+- **SQZ_PINE_2R_exGBPJPY**: 107件 WR 46.7% PF 1.69 +39.6R DD 5.1R
+- **SQZ_PINE_2R_exGBP_AUD_research**: 83件 WR 48.2% PF 1.80 +34.6R DD 4.3R
+- **SQZ_PINE_2.5R_ALL**: 135件 WR 40.7% PF 1.56 +44.8R DD 12.0R
+- **SQZ_PINE_2.5R_exGBPJPY**: 107件 WR 43.0% PF 1.72 +44.5R DD 5.2R
+- **SQZ_PINE_2.5R_exGBP_AUD_research**: 83件 WR 44.6% PF 1.87 +40.5R DD 4.3R
+- **SQZ_STRICT_2R_ALL**: 51件 WR 47.1% PF 1.65 +18.1R DD 11.8R
+- **SQZ_STRICT_2R_exGBPJPY**: 43件 WR 53.5% PF 2.21 +24.7R DD 5.1R
+- **SQZ_STRICT_2R_exGBP_AUD_research**: 35件 WR 57.1% PF 2.55 +23.8R DD 3.1R
+- **CAP_PINE_2R_ALL**: 205件 WR 36.6% PF 1.01 +0.7R DD 17.8R
+- **CAP_PINE_2R_exGBPJPY**: 175件 WR 38.3% PF 1.06 +6.5R DD 13.9R
+- **CAP_PINE_2R_exGBP_AUD_research**: 139件 WR 38.1% PF 1.04 +3.6R DD 13.5R
+- **CAP_PINE_2.5R_ALL**: 204件 WR 33.3% PF 1.05 +6.3R DD 13.9R
+- **CAP_PINE_2.5R_exGBPJPY**: 174件 WR 35.1% PF 1.10 +11.6R DD 13.9R
+- **CAP_PINE_2.5R_exGBP_AUD_research**: 138件 WR 34.8% PF 1.08 +7.9R DD 12.5R
+- **BOTH_PINE_2R_ALL**: 330件 WR 40.0% PF 1.20 +40.7R DD 17.2R
+- **BOTH_PINE_2R_exGBPJPY**: 273件 WR 42.1% PF 1.30 +48.6R DD 14.8R
+- **BOTH_PINE_2R_exGBP_AUD_research**: 215件 WR 42.8% PF 1.32 +41.9R DD 14.8R
+- **BOTH_PINE_2.5R_ALL**: 329件 WR 36.8% PF 1.25 +53.8R DD 16.0R
+- **BOTH_PINE_2.5R_exGBPJPY**: 272件 WR 38.6% PF 1.33 +57.7R DD 16.0R
+- **BOTH_PINE_2.5R_exGBP_AUD_research**: 214件 WR 39.3% PF 1.38 +51.5R DD 13.3R

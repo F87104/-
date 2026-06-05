@@ -1,0 +1,224 @@
+//@version=5
+// =====================================================================
+// 踏み上げ投げ切り
+// 再現用: pine/lib/price_anchored_labels_v1.pine
+//         docs/pine/PRICE_ANCHORED_LABELS_RECIPE.md
+// ---------------------------------------------------------------------
+// ラベルずれの原因（切り分け結果）:
+//   × bar_index + N  と  yloc.belowbar  の併用
+//     → N本後の「別ローソク」の下に吸着 → 価格帯が飛ぶ（主因）
+//   × request.security の close をラベルYに使う（H4では不要）
+//   ○ 正: シグナル足の close/open を yloc.price で固定し、横だけ bar_index + N
+// ---------------------------------------------------------------------
+indicator("踏み上げ投げ切り", overlay=true, max_labels_count=500, max_lines_count=500)
+
+plot(na, title="Anchor", display=display.none)
+
+string analysisTf = "240"
+bool chartIsH4 = timeframe.in_seconds(timeframe.period) == timeframe.in_seconds(analysisTf)
+
+fmtPrice(float v) =>
+    na(v) ? "N/A" : str.tostring(v, format.mintick)
+
+atrLen = input.int(14, "ATR period", group="共通")
+atr = ta.atr(atrLen)
+
+grpC = "① 投げ切り"
+showCap = input.bool(true, "表示", group=grpC)
+declineBars = input.int(24, "窓", group=grpC)
+dropAtrCap = input.float(4.0, "下落ATR", group=grpC)
+spikeAtr = input.float(1.8, "大足ATR", group=grpC)
+wickThr = input.float(0.5, "下ヒゲ", group=grpC)
+closeLocC = input.float(0.5, "終値位置", group=grpC)
+useDownD1 = input.bool(true, "日足下降", group=grpC)
+
+rng = high - low
+rngOk = rng > 0
+priorHighC = ta.highest(high, declineBars)
+d1ema = request.security(syminfo.tickerid, "D", ta.ema(close, 50), lookahead=barmerge.lookahead_off)
+capLong = showCap and low <= ta.lowest(low, declineBars) and (priorHighC - low) >= dropAtrCap * atr and
+     rng >= spikeAtr * atr and rngOk and ((math.min(open, close) - low) / rng) >= wickThr and
+     ((close - low) / rng) >= closeLocC and ((not useDownD1) or close < d1ema)
+
+plotshape(capLong, title="投げ切り", style=shape.triangleup, location=location.belowbar,
+     color=color.aqua, size=size.tiny, text="")
+
+grpS = "② 踏み上げ H4"
+shelfBars = input.int(6, "棚", group=grpS)
+dropWin = input.int(6, "急変窓", group=grpS)
+shelfAtr = input.float(2.5, "棚ATR", group=grpS)
+moveAtr = input.float(3.0, "急落ATR", group=grpS)
+stopBuf = input.float(0.25, "SL余白", step=0.05, group=grpS)
+rr = input.float(2.0, "TP R", step=0.1, group=grpS)
+maxHold = input.int(120, "最大保有", minval=1, group=grpS)
+overlapMode = input.string("Python同等(保有中スキップ)", "重複",
+     options=["Python同等(保有中スキップ)", "新▲で前ポジ決済"], group=grpS)
+bool closeOnNewSqz = overlapMode == "新▲で前ポジ決済"
+
+grpVis = "③ ラベル（価格固定＋横ずらし）"
+showTradeLabels = input.bool(true, "SIG/約定ラベル", group=grpVis)
+showConnectors = input.bool(true, "足の価格→ラベル 水平点線", group=grpVis)
+labelOffsetBars = input.int(6, "ラベル右ずらし(本)", minval=0, maxval=40, group=grpVis,
+     tooltip="横だけずらす。Yはシグナル足の終値/約定足の始値を固定（別足のbelowbarにしない）")
+fillLabelExtraBars = input.int(3, "約定ラベル追加ずらし", minval=0, maxval=20, group=grpVis)
+labelPadAtr = input.float(0.35, "ラベルを終値の下へ(ATR)", minval=0.0, step=0.05, group=grpVis)
+showLines = input.bool(true, "黄Entry/赤SL/緑TP", group=grpVis)
+lineExtend = input.int(24, "ライン延長本数", minval=4, maxval=120, group=grpVis)
+
+f_sqz() =>
+    float a = ta.atr(atrLen)
+    float sh = ta.highest(high, shelfBars)[1]
+    float sl = ta.lowest(low, shelfBars)[1]
+    float ph = ta.highest(high, dropWin)[1 + shelfBars]
+    bool ok = (sh - sl) <= shelfAtr * a and (ph - sh) >= moveAtr * a and close[1] <= sh and close > sh
+    [ok, sl, a]
+
+// H4: チャート足で直計算（security と表示価格のズレを防ぐ）
+[sqzLoc, shelfLoc, atrLoc] = f_sqz()
+[sqzSec, shelfSec, atrSec] = request.security(syminfo.tickerid, analysisTf, f_sqz(), barmerge.gaps_off, barmerge.lookahead_off)
+
+bool sqzOk = chartIsH4 ? sqzLoc : sqzSec
+float shelfLo = chartIsH4 ? shelfLoc : shelfSec
+float sqzAtr = chartIsH4 ? atrLoc : atrSec
+float sigStop = shelfLo - sqzAtr * stopBuf
+
+bool sigEvent = chartIsH4 and sqzOk and barstate.isconfirmed and close > sigStop
+
+var bool inPos = false
+var float ent = na
+var float slPx = na
+var float tpPx = na
+var int entBar = na
+var int barsHeld = 0
+var bool pend = false
+var float pendSl = na
+var line lE = na
+var line lS = na
+var line lT = na
+var int nSig = 0
+var int nTrd = 0
+
+bool newSig = false
+bool newFill = false
+bool newExit = false
+
+if inPos
+    barsHeld += 1
+    if low <= slPx or high >= tpPx or barsHeld >= maxHold
+        inPos := false
+        newExit := true
+        ent := na
+        slPx := na
+        tpPx := na
+        entBar := na
+        barsHeld := 0
+
+if sigEvent
+    nSig += 1
+    if inPos and closeOnNewSqz
+        inPos := false
+        newExit := true
+        ent := na
+        slPx := na
+        tpPx := na
+        entBar := na
+        barsHeld := 0
+        if not na(lE)
+            line.delete(lE)
+        if not na(lS)
+            line.delete(lS)
+        if not na(lT)
+            line.delete(lT)
+        lE := na
+        lS := na
+        lT := na
+    if not inPos
+        pend := true
+        pendSl := sigStop
+        newSig := true
+
+if pend[1] and barstate.isconfirmed
+    float e = open
+    float st = nz(pendSl[1], sigStop)
+    pend := false
+    if e - st > 0
+        inPos := true
+        ent := e
+        slPx := st
+        tpPx := e + (e - st) * rr
+        entBar := bar_index
+        barsHeld := 0
+        nTrd += 1
+        newFill := true
+
+// ▲ はシグナル足の下（ここは belowbar でOK＝同じ足）
+plotshape(newSig, title="踏み上げ SIG", style=shape.triangleup, location=location.belowbar,
+     color=color.lime, size=size.small, text="")
+
+// SIGラベル: シグナル足の close を Y に固定、X だけ右へ（yloc.price + bar_index）
+if newSig and showTradeLabels
+    float anchorClose = close
+    float pad = sqzAtr * labelPadAtr
+    float labelY = anchorClose - pad
+    int labelX = bar_index + labelOffsetBars
+    float estTp = anchorClose + (anchorClose - sigStop) * rr
+    label.new(labelX, labelY, "▲SIG\nS " + fmtPrice(anchorClose) + "\nSL " + fmtPrice(sigStop) + "\nTP " + fmtPrice(estTp),
+         xloc=xloc.bar_index, yloc=yloc.price, style=label.style_label_up,
+         color=color.new(color.lime, 12), textcolor=color.black, size=size.small)
+    if showConnectors
+        line.new(bar_index, anchorClose, labelX, anchorClose, xloc=xloc.bar_index,
+             color=color.new(color.lime, 50), width=1, style=line.style_dotted)
+
+// 約定ラベル: 約定足の open を Y に固定、X だけ右へ
+if newFill and showTradeLabels
+    float anchorOpen = open
+    float padF = sqzAtr * labelPadAtr
+    float labelYF = anchorOpen - padF
+    int labelXF = bar_index + labelOffsetBars + fillLabelExtraBars
+    label.new(labelXF, labelYF, "約定\nE " + fmtPrice(ent) + "\nSL " + fmtPrice(slPx) + "\nTP " + fmtPrice(tpPx),
+         xloc=xloc.bar_index, yloc=yloc.price, style=label.style_label_up,
+         color=color.new(color.yellow, 0), textcolor=color.black, size=size.small)
+    if showConnectors
+        line.new(bar_index, anchorOpen, labelXF, anchorOpen, xloc=xloc.bar_index,
+             color=color.new(color.yellow, 40), width=1, style=line.style_dotted)
+
+if newFill and showLines
+    if not na(lE)
+        line.delete(lE)
+    if not na(lS)
+        line.delete(lS)
+    if not na(lT)
+        line.delete(lT)
+    int x2 = entBar + lineExtend
+    lE := line.new(entBar, ent, x2, ent, xloc=xloc.bar_index, color=color.yellow, width=2)
+    lS := line.new(entBar, slPx, x2, slPx, xloc=xloc.bar_index, color=color.red, width=2, style=line.style_dashed)
+    lT := line.new(entBar, tpPx, x2, tpPx, xloc=xloc.bar_index, color=color.lime, width=2, style=line.style_dashed)
+
+if newExit
+    if not na(lE)
+        line.delete(lE)
+    if not na(lS)
+        line.delete(lS)
+    if not na(lT)
+        line.delete(lT)
+    lE := na
+    lS := na
+    lT := na
+
+bgcolor(not chartIsH4 ? color.new(color.orange, 90) : na)
+
+var table t = table.new(position.top_right, 2, 5, bgcolor=color.new(color.black, 85))
+if barstate.islast
+    table.cell(t, 0, 0, "ラベル錨", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 0, "price固定", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 1, "データ", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 1, chartIsH4 ? "H4直" : "sec", text_color=chartIsH4 ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 2, "▲/約", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 2, str.tostring(nSig) + "/" + str.tostring(nTrd), text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 3, "右ずらし", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 3, str.tostring(labelOffsetBars) + "本", text_color=color.gray, text_size=size.tiny)
+    table.cell(t, 0, 4, "約定", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, "▲次足始値", text_color=color.aqua, text_size=size.tiny)
+
+alertcondition(newSig, "SIG", "踏み上げ SIG {{ticker}}")
+alertcondition(newFill, "IN", "踏み上げ 約定 {{ticker}}")

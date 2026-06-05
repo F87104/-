@@ -1,0 +1,16 @@
+period,event_type,events,median_mfe_48_atr,median_mae_48_atr,median_fwd_48_atr,pct_mfe48_ge_3,pct_hit_1atr_first_24,pct_mae48_ge_2
+Research_2015_2024,E3_break_fail_long_trap,745,3.01,3.37,-0.44,50.1,47.1,67.2
+Research_2015_2024,RANDOM_H4_BAR,450,3.2,2.94,0.33,52.9,48.7,66.7
+Research_2015_2024,E4_range_break_up,440,3.57,2.77,0.52,55.9,50.2,61.6
+Research_2015_2024,E4_range_break_down,377,3.03,3.12,-0.25,51.2,48.5,60.5
+Research_2015_2024,E2_v_reaccel,251,3.41,2.9,0.31,53.0,54.6,62.2
+Research_2015_2024,E3b_d1_break_fail_long,162,3.34,3.12,-0.5,54.3,52.5,64.8
+Research_2015_2024,E1_short_squeeze_cascade,155,3.29,2.37,1.11,52.3,53.5,57.4
+OOS_2025_2026,E3_break_fail_long_trap,98,3.41,3.18,-0.64,53.1,58.2,69.4
+OOS_2025_2026,E4_range_break_up,75,2.74,3.09,0.42,48.0,56.0,66.7
+OOS_2025_2026,E4_range_break_down,45,3.03,3.68,-0.63,53.3,44.4,75.6
+OOS_2025_2026,RANDOM_H4_BAR,37,4.84,1.67,2.8,73.0,40.5,37.8
+OOS_2025_2026,E2_v_reaccel,36,2.01,3.63,-0.69,36.1,41.7,77.8
+OOS_2025_2026,E3b_d1_break_fail_long,35,2.02,4.42,-2.32,25.7,51.4,80.0
+Research_2015_2024,E1_chain_second_shelf,20,2.88,3.25,0.42,45.0,55.0,60.0
+OOS_2025_2026,E1_short_squeeze_cascade,10,3.9,3.57,1.96,60.0,10.0,90.0

@@ -1,0 +1,37 @@
+//@version=5
+indicator("Fear Psychology Zones - GBPJPY v0.2 [Research]", overlay=true, max_boxes_count=30, max_labels_count=80)
+
+// マゼンタ=損切出口の集中（研究用・通常OFF） / 橙◇=どテン候補
+// ★ 見やすさ優先 → psychology_map_simple_gbpjpy.pine 1本推奨
+
+pairOk = syminfo.basecurrency == "GBP" and syminfo.currency == "JPY"
+showStop = input.bool(false, "FEAR_STOP マゼンタ帯（重なるので初期OFF）")
+showRev  = input.bool(true,  "どテン候補 ◇")
+onlyVisible = input.bool(true, "画面内だけ")
+
+SLo = array.from(191.23, 193.12, 192.4, 198.703, 194.6, 185.46, 189.219, 190.9)
+SHi = array.from(191.569, 193.41, 192.73, 198.85, 194.6, 185.8, 189.39, 191.0)
+ST1 = array.from(timestamp("GMT+9",2024,9,2,17,33), timestamp("GMT+9",2024,9,26,16,40), timestamp("GMT+9",2024,9,26,23,0), timestamp("GMT+9",2024,10,29,10,0), timestamp("GMT+9",2024,10,7,8,14), timestamp("GMT+9",2024,9,14,3,0), timestamp("GMT+9",2025,2,7,8,9), timestamp("GMT+9",2024,10,1,9,0))
+ST2 = array.from(timestamp("GMT+9",2024,9,7,17,33), timestamp("GMT+9",2024,10,1,16,40), timestamp("GMT+9",2024,10,1,23,0), timestamp("GMT+9",2024,11,3,10,0), timestamp("GMT+9",2024,10,12,8,14), timestamp("GMT+9",2024,9,17,0,0), timestamp("GMT+9",2025,2,12,4,0), timestamp("GMT+9",2024,10,6,9,0))
+SN  = array.from(6, 6, 5, 5, 4, 3, 3, 3)
+
+RTs = array.from(timestamp("GMT+9",2024,9,21,3,16), timestamp("GMT+9",2024,9,26,16,40), timestamp("GMT+9",2024,9,27,7,29), timestamp("GMT+9",2024,10,4,21,0), timestamp("GMT+9",2024,9,25,21,25), timestamp("GMT+9",2024,10,30,5,24), timestamp("GMT+9",2024,12,12,6,42), timestamp("GMT+9",2025,10,29,19,50), timestamp("GMT+9",2025,10,31,20,13), timestamp("GMT+9",2025,10,27,23,0))
+RPx = array.from(191.659, 193.744, 194.393, 193.1, 193.281, 199.565, 194.431, 201.0, 202.07, 204.17)
+
+inView(t1, t2) =>
+    not onlyVisible or (t2 >= chart.left_visible_bar_time and t1 <= chart.right_visible_bar_time)
+
+if barstate.islast and pairOk
+    if showStop
+        for i = 0 to array.size(SLo) - 1
+            t1 = array.get(ST1, i)
+            t2 = array.get(ST2, i)
+            if not inView(t1, t2)
+                continue
+            box.new(t1, array.get(SHi, i), t2, array.get(SLo, i), xloc=xloc.bar_time, bgcolor=color.new(color.fuchsia, 92), border_color=color.new(color.fuchsia, 60))
+    if showRev
+        for j = 0 to array.size(RTs) - 1
+            ts = array.get(RTs, j)
+            if onlyVisible and (ts < chart.left_visible_bar_time or ts > chart.right_visible_bar_time)
+                continue
+            label.new(ts, array.get(RPx, j), "◇", xloc=xloc.bar_time, style=label.style_circle, color=color.new(color.orange, 0), textcolor=color.white, size=size.tiny, tooltip="どテン候補")

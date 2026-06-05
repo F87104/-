@@ -1,5 +1,5 @@
 //@version=5
-indicator("Student Stumble Zones - GBPJPY v0.5.1 [Research]", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=100)
+indicator("Student Stumble Zones - GBPJPY v0.5.2 [Research]", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=100)
 
 // =====================================================================
 // Student Stumble Zones - GBPJPY v0.5.1 [Research]
@@ -10,11 +10,16 @@ indicator("Student Stumble Zones - GBPJPY v0.5.1 [Research]", overlay=true, max_
 // =====================================================================
 
 pairOk = syminfo.basecurrency == "GBP" and syminfo.currency == "JPY"
-showEntries = input.bool(true,  "エントリー表示(緑=勝/赤=負)")
-showStumble = input.bool(true,  "全敗クラスタ(赤帯)を表示")
-showWait    = input.bool(true,  "待つ場所(青帯)を表示")
-showZoneLbl = input.bool(true,  "ゾーン内ラベル(人数/待つ)を表示")
-onlyLoss    = input.bool(false, "負けエントリーのみ")
+showEntries = input.bool(false, "エントリー三角(145件・うるさいので初期OFF)")
+showStumble = input.bool(true,  "全敗クラスタ(赤帯)")
+showWait    = input.bool(true,  "待つ場所(青帯)")
+showZoneLbl = input.bool(true,  "ゾーンラベル")
+onlyLoss    = input.bool(true,  "三角は負けのみ", inline="tri")
+onlyVisible = input.bool(true,  "画面内の期間だけ", group="表示")
+minStopN    = input.int(2, "赤帯: 最低人数", minval=2, maxval=5, group="表示")
+
+inView(t1, t2) =>
+    not onlyVisible or (t2 >= chart.left_visible_bar_time and t1 <= chart.right_visible_bar_time)
 
 // --- (A) 145エントリー ---
 TS = array.from(timestamp("GMT+9",2024,9,2,17,33), timestamp("GMT+9",2024,9,6,14,31), timestamp("GMT+9",2024,9,14,3,0), timestamp("GMT+9",2024,9,14,3,0), timestamp("GMT+9",2024,9,16,12,33), timestamp("GMT+9",2024,9,17,10,0), timestamp("GMT+9",2024,9,18,4,39), timestamp("GMT+9",2024,9,18,16,3), timestamp("GMT+9",2024,9,18,16,7), timestamp("GMT+9",2024,9,18,18,30), timestamp("GMT+9",2024,9,18,21,0), timestamp("GMT+9",2024,9,18,22,0), timestamp("GMT+9",2024,9,19,0,10), timestamp("GMT+9",2024,9,19,5,19), timestamp("GMT+9",2024,9,19,7,50), timestamp("GMT+9",2024,9,19,19,3), timestamp("GMT+9",2024,9,20,11,25), timestamp("GMT+9",2024,9,20,17,18), timestamp("GMT+9",2024,9,21,3,16), timestamp("GMT+9",2024,9,23,7,40), timestamp("GMT+9",2024,9,23,17,8), timestamp("GMT+9",2024,9,23,23,0), timestamp("GMT+9",2024,9,23,23,3), timestamp("GMT+9",2024,9,24,13,13), timestamp("GMT+9",2024,9,24,15,4), timestamp("GMT+9",2024,9,25,21,25), timestamp("GMT+9",2024,9,26,14,55), timestamp("GMT+9",2024,9,26,16,40), timestamp("GMT+9",2024,9,26,23,0), timestamp("GMT+9",2024,9,26,23,0), timestamp("GMT+9",2024,9,26,23,54), timestamp("GMT+9",2024,9,27,7,29), timestamp("GMT+9",2024,9,27,8,8), timestamp("GMT+9",2024,9,27,8,29), timestamp("GMT+9",2024,9,27,9,12), timestamp("GMT+9",2024,9,27,10,12), timestamp("GMT+9",2024,10,1,9,0), timestamp("GMT+9",2024,10,1,13,44), timestamp("GMT+9",2024,10,1,19,21), timestamp("GMT+9",2024,10,2,19,0), timestamp("GMT+9",2024,10,2,23,8), timestamp("GMT+9",2024,10,3,5,34), timestamp("GMT+9",2024,10,3,9,32), timestamp("GMT+9",2024,10,3,10,0), timestamp("GMT+9",2024,10,4,13,24), timestamp("GMT+9",2024,10,4,21,0), timestamp("GMT+9",2024,10,7,8,14), timestamp("GMT+9",2024,10,7,14,40), timestamp("GMT+9",2024,10,7,19,46), timestamp("GMT+9",2024,10,8,21,30), timestamp("GMT+9",2024,10,10,12,16), timestamp("GMT+9",2024,10,14,20,0), timestamp("GMT+9",2024,10,14,22,45), timestamp("GMT+9",2024,10,15,5,14), timestamp("GMT+9",2024,10,15,7,56), timestamp("GMT+9",2024,10,15,8,5), timestamp("GMT+9",2024,10,18,21,12), timestamp("GMT+9",2024,10,22,11,22), timestamp("GMT+9",2024,10,22,12,27), timestamp("GMT+9",2024,10,23,4,18), timestamp("GMT+9",2024,10,23,9,48), timestamp("GMT+9",2024,10,23,10,0), timestamp("GMT+9",2024,10,23,12,30), timestamp("GMT+9",2024,10,23,17,0), timestamp("GMT+9",2024,10,28,7,26), timestamp("GMT+9",2024,10,28,10,7), timestamp("GMT+9",2024,10,28,17,0), timestamp("GMT+9",2024,10,29,10,0), timestamp("GMT+9",2024,10,29,17,50), timestamp("GMT+9",2024,10,29,20,47), timestamp("GMT+9",2024,10,30,5,24), timestamp("GMT+9",2024,10,30,6,27), timestamp("GMT+9",2024,11,1,15,23), timestamp("GMT+9",2024,11,19,18,24), timestamp("GMT+9",2024,11,22,8,4), timestamp("GMT+9",2024,11,22,18,11), timestamp("GMT+9",2024,11,26,17,5), timestamp("GMT+9",2024,11,29,20,45), timestamp("GMT+9",2024,12,11,8,14), timestamp("GMT+9",2024,12,12,6,42), timestamp("GMT+9",2025,1,2,21,52), timestamp("GMT+9",2025,1,6,15,23), timestamp("GMT+9",2025,1,9,13,2), timestamp("GMT+9",2025,1,15,7,17), timestamp("GMT+9",2025,1,16,19,3), timestamp("GMT+9",2025,1,24,9,58), timestamp("GMT+9",2025,2,6,21,41), timestamp("GMT+9",2025,2,7,8,9), timestamp("GMT+9",2025,2,7,8,16), timestamp("GMT+9",2025,2,7,8,58), timestamp("GMT+9",2025,2,11,9,0), timestamp("GMT+9",2025,2,11,15,51), timestamp("GMT+9",2025,2,12,8,0), timestamp("GMT+9",2025,2,12,23,47), timestamp("GMT+9",2025,2,13,13,6), timestamp("GMT+9",2025,2,20,7,0), timestamp("GMT+9",2025,2,20,8,19), timestamp("GMT+9",2025,2,20,8,21), timestamp("GMT+9",2025,9,18,21,47), timestamp("GMT+9",2025,9,30,21,14), timestamp("GMT+9",2025,10,2,23,17), timestamp("GMT+9",2025,10,6,0,59), timestamp("GMT+9",2025,10,6,9,18), timestamp("GMT+9",2025,10,6,23,45), timestamp("GMT+9",2025,10,7,2,0), timestamp("GMT+9",2025,10,7,21,3), timestamp("GMT+9",2025,10,9,17,30), timestamp("GMT+9",2025,10,9,21,47), timestamp("GMT+9",2025,10,10,6,29), timestamp("GMT+9",2025,10,10,12,57), timestamp("GMT+9",2025,10,14,21,0), timestamp("GMT+9",2025,10,17,19,26), timestamp("GMT+9",2025,10,23,20,35), timestamp("GMT+9",2025,10,24,14,0), timestamp("GMT+9",2025,10,27,8,6), timestamp("GMT+9",2025,10,27,23,0), timestamp("GMT+9",2025,10,29,8,57), timestamp("GMT+9",2025,10,29,18,7), timestamp("GMT+9",2025,10,29,19,50), timestamp("GMT+9",2025,10,31,20,13), timestamp("GMT+9",2025,11,4,14,10), timestamp("GMT+9",2025,11,5,4,0), timestamp("GMT+9",2025,11,6,10,26), timestamp("GMT+9",2025,11,6,22,45), timestamp("GMT+9",2025,11,19,20,20), timestamp("GMT+9",2025,11,20,13,0), timestamp("GMT+9",2025,11,26,3,12), timestamp("GMT+9",2025,11,26,21,57), timestamp("GMT+9",2025,11,27,16,33), timestamp("GMT+9",2025,12,5,13,21), timestamp("GMT+9",2025,12,8,18,1), timestamp("GMT+9",2025,12,9,13,30), timestamp("GMT+9",2025,12,18,5,27), timestamp("GMT+9",2025,12,20,22,0), timestamp("GMT+9",2026,1,6,15,0), timestamp("GMT+9",2026,1,6,17,30), timestamp("GMT+9",2026,1,12,12,0), timestamp("GMT+9",2026,1,12,12,0), timestamp("GMT+9",2026,1,12,13,50), timestamp("GMT+9",2026,1,12,18,18), timestamp("GMT+9",2026,1,13,8,5), timestamp("GMT+9",2026,2,4,21,9), timestamp("GMT+9",2026,2,12,11,33), timestamp("GMT+9",2026,2,17,22,14), timestamp("GMT+9",2026,2,25,0,19))
@@ -46,36 +51,47 @@ if barstate.islast
                 res  = array.get(RS, i)
                 if onlyLoss and res == 1
                     continue
+                ts   = array.get(TS, i)
+                if onlyVisible and (ts < chart.left_visible_bar_time or ts > chart.right_visible_bar_time)
+                    continue
                 side = array.get(SD, i)
                 px   = array.get(PX, i)
-                ts   = array.get(TS, i)
                 col  = res == 1 ? color.new(color.lime, 0) : color.new(color.red, 0)
                 sty  = side == 1 ? label.style_triangleup : label.style_triangledown
                 label.new(x=ts, y=px, xloc=xloc.bar_time, yloc=yloc.price, style=sty, color=col, size=size.tiny, text="")
+        stopN = 0
         if showStumble
             for k = 0 to array.size(ZLo) - 1
+                n  = array.get(ZN, k)
+                if n < minStopN
+                    continue
                 lo = array.get(ZLo, k)
                 hi = array.get(ZHi, k)
                 t1 = array.get(ZT1, k)
                 t2 = array.get(ZT2, k)
-                n  = array.get(ZN, k)
+                if not inView(t1, t2)
+                    continue
                 b  = array.get(ZB, k)
                 mid = (lo + hi) / 2.0
                 tMid = t1 + int((t2 - t1) / 2)
-                box.new(left=t1, top=hi, right=t2, bottom=lo, xloc=xloc.bar_time, bgcolor=color.new(color.red, 80), border_color=color.new(color.red, 40), border_width=1)
+                yOff = mid + (stopN - 1) * syminfo.mintick * 100
+                box.new(left=t1, top=hi, right=t2, bottom=lo, xloc=xloc.bar_time, bgcolor=color.new(color.red, 88), border_color=color.new(color.red, 50), border_width=1)
                 if showZoneLbl
-                    dir = b == 1 ? "買い" : "売り"
-                    label.new(x=tMid, y=mid, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_center, color=color.new(color.red, 0), textcolor=color.white, size=size.small, text=str.tostring(n) + "人全敗 " + dir)
+                    dir = b == 1 ? "買" : "売"
+                    label.new(x=tMid, y=yOff, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_center, color=color.new(color.red, 0), textcolor=color.white, size=size.small, text="STOP " + str.tostring(n) + dir)
+                stopN += 1
         if showWait
             for j = 0 to array.size(WLo) - 1
                 lo = array.get(WLo, j)
                 hi = array.get(WHi, j)
                 t1 = array.get(WT1, j)
                 t2 = array.get(WT2, j)
+                if not inView(t1, t2)
+                    continue
                 b  = array.get(WS, j)
                 mid = (lo + hi) / 2.0
                 tMid = t1 + int((t2 - t1) / 2)
-                box.new(left=t1, top=hi, right=t2, bottom=lo, xloc=xloc.bar_time, bgcolor=color.new(color.blue, 85), border_color=color.new(color.blue, 30), border_width=1)
+                box.new(left=t1, top=hi, right=t2, bottom=lo, xloc=xloc.bar_time, bgcolor=color.new(color.teal, 90), border_color=color.new(color.teal, 40), border_width=1)
                 if showZoneLbl
                     dir = b == 1 ? "買" : "売"
-                    label.new(x=tMid, y=mid, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_center, color=color.new(color.blue, 0), textcolor=color.white, size=size.tiny, text="待つ " + dir)
+                    label.new(x=tMid, y=mid, xloc=xloc.bar_time, yloc=yloc.price, style=label.style_label_center, color=color.new(color.teal, 0), textcolor=color.white, size=size.tiny, text="WAIT " + dir)

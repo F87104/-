@@ -1,0 +1,5 @@
+sqz_variant,period,events,median_mfe_48_atr,median_mae_48_atr,median_fwd_48_atr,pct_mfe48_ge_3,pct_hit_1atr_first_24,pct_mae48_ge_2
+E1_SQZ_DEFAULT,Research_2015_2024,129,3.0,2.5,0.71,49.6,54.3,58.1
+E1_SQZ_STRICT,Research_2015_2024,46,3.6,2.19,1.42,56.5,52.2,56.5
+E1_SQZ_DEFAULT,OOS_2025_2026,7,3.9,3.19,0.92,57.1,14.3,85.7
+E1_SQZ_STRICT,OOS_2025_2026,3,3.9,3.95,3.0,66.7,0.0,100.0

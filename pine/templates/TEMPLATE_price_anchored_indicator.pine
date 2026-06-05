@@ -1,0 +1,59 @@
+//@version=5
+// =====================================================================
+// テンプレート: 価格固定ラベル + 横オフセット（再現用）
+// ---------------------------------------------------------------------
+// 手順:
+//   1) pine/lib/price_anchored_labels_v1.pine を TV で「ライブラリ」保存
+//   2) 下の YOUR_USERNAME を自分の TV ユーザー名に変更
+//   3) このファイルをインジとして保存
+// ---------------------------------------------------------------------
+// import YOUR_USERNAME/PriceAnchoredLabels_v1/1 as pal
+
+indicator("TEMPLATE 価格固定ラベル", overlay=true, max_labels_count=500, max_lines_count=500)
+
+// plot(na, title="Anchor", display=display.none)
+
+// --- 例: シグナル条件（置き換え） ---
+bool mySig = ta.crossover(close, ta.sma(close, 20)) and barstate.isconfirmed
+
+// --- 表示設定（踏み上げ投げ切りと同型） ---
+int labelOffsetBars = input.int(6, "ラベル右ずらし")
+int fillExtraBars = input.int(3, "約定ラベル追加ずらし")
+float labelPadAtr = input.float(0.35, "ラベル下余白ATR")
+bool showLabels = input.bool(true, "ラベル")
+bool showConn = input.bool(true, "水平点線")
+
+var bool pend = false
+
+bool sig = false
+bool fill = false
+
+if mySig
+    pend := true
+    sig := true
+
+if pend[1] and barstate.isconfirmed
+    pend := false
+    fill := true
+
+plotshape(sig, "SIG▲", shape.triangleup, location.belowbar, color.lime, size=size.small, text="")
+
+// ===== ライブラリ未公開時: 以下をコピー（pal. を外して使う） =====
+// if sig and showLabels
+//     float ac = close
+//     float pad = ta.atr(14) * labelPadAtr
+//     int lx = bar_index + labelOffsetBars
+//     label.new(lx, ac - pad, "SIG\nS " + str.tostring(ac, format.mintick),
+//          xloc=xloc.bar_index, yloc=yloc.price, style=label.style_label_up, ...)
+//     line.new(bar_index, ac, lx, ac, xloc=xloc.bar_index, style=line.style_dotted)
+// ===== /コピー =====
+
+// --- ライブラリ利用時（公開後にコメント解除） ---
+// if sig and showLabels
+//     [_, _] = pal.drawAnchoredLabel(bar_index, close, ta.atr(14), labelPadAtr, labelOffsetBars,
+//          "SIG\nS " + pal.fmtPrice(close), color.new(color.lime, 12), color.new(color.lime, 50),
+//          showConn, false)
+// if fill and showLabels
+//     [_, _] = pal.drawAnchoredLabel(bar_index, open, ta.atr(14), labelPadAtr, labelOffsetBars + fillExtraBars,
+//          "IN\nE " + pal.fmtPrice(open), color.new(color.yellow, 0), color.new(color.yellow, 40),
+//          showConn, false)

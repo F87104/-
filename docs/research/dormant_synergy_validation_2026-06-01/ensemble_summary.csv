@@ -1,0 +1,7 @@
+ensemble,period,trades,win_rate,total_r,avg_r,pf,max_dd_r
+TB+T5_baseline,all,179,39.1,77.74,0.434,1.68,12.44
+TB+T5_baseline,Research_2015_2024,179,39.1,77.74,0.434,1.68,12.44
+TB+T5_recent_dormant_48,all,107,45.8,79.0,0.738,2.28,4.8
+TB+T5_recent_dormant_48,Research_2015_2024,107,45.8,79.0,0.738,2.28,4.8
+TB+T5_dormant_C_signal,all,8,62.5,11.43,1.429,4.62,2.13
+TB+T5_dormant_C_signal,Research_2015_2024,8,62.5,11.43,1.429,4.62,2.13

@@ -1,0 +1,33 @@
+//@version=5
+// 踏み上げ — 本番アラート（投げ切りインジ②と同一シグナル）
+indicator("踏み上げ Live", overlay=true, max_labels_count=200)
+
+bool isH4 = timeframe.in_seconds(timeframe.period) == timeframe.in_seconds("240")
+
+atrLen = input.int(14, "ATR", group="踏み上げ②同一")
+shelfBars = input.int(6, "棚の本数", group="踏み上げ②同一")
+dropWin = input.int(6, "急変窓", group="踏み上げ②同一")
+shelfAtr = input.float(2.5, "棚<=ATR", step=0.1, group="踏み上げ②同一")
+moveAtr = input.float(3.0, "急落>=ATR", step=0.1, group="踏み上げ②同一")
+stopBuf = input.float(0.25, "SL余白ATR", step=0.05, group="出口")
+rr = input.float(2.0, "TP R", step=0.1, group="出口")
+
+float atrV = ta.atr(atrLen)
+float sh = ta.highest(high, shelfBars)[1]
+float sl = ta.lowest(low, shelfBars)[1]
+float ph = ta.highest(high, dropWin)[1 + shelfBars]
+bool sqz = isH4 and not na(atrV) and atrV > 0 and (sh - sl) <= shelfAtr * atrV and
+     (ph - sh) >= moveAtr * atrV and close[1] <= sh and close > sh
+
+float sigStop = sl - atrV * stopBuf
+float risk = close - sigStop
+
+plotshape(sqz, "踏み上げ", shape.triangleup, location.belowbar, color.lime, size=size.small, text="踏み上げ")
+
+if sqz and risk > 0
+    label.new(bar_index, low, "踏み上げ\nSL " + str.tostring(sigStop, format.mintick) +
+         "\nTP " + str.tostring(close + risk * rr, format.mintick),
+         style=label.style_label_up, color=color.new(color.yellow, 10), textcolor=color.black, size=size.tiny)
+
+alertcondition(sqz, "踏み上げ H4", "踏み上げ(H4) {{ticker}} @ {{close}}")
+bgcolor(not isH4 ? color.new(color.orange, 92) : na)

@@ -1,0 +1,9 @@
+event_type,cascade_direction,events,median_mfe_48_atr,median_mae_48_atr,median_fwd_48_atr,pct_mfe48_ge_3,pct_hit_1atr_first_24,pct_mae48_ge_2
+E3_break_fail_long_trap,down,843,3.03,3.33,-0.44,50.4,48.4,67.5
+E4_range_break_up,up,515,3.48,2.83,0.52,54.8,51.1,62.3
+RANDOM_H4_BAR,up,487,3.33,2.86,0.47,54.4,48.0,64.5
+E4_range_break_down,down,422,3.03,3.18,-0.33,51.4,48.1,62.1
+E2_v_reaccel,up,287,3.09,3.08,0.19,50.9,53.0,64.1
+E3b_d1_break_fail_long,down,197,2.99,3.22,-0.79,49.2,52.3,67.5
+E1_short_squeeze_cascade,up,165,3.47,2.41,1.11,52.7,50.9,59.4
+E1_chain_second_shelf,up,20,2.88,3.25,0.42,45.0,55.0,60.0

@@ -95,12 +95,15 @@ pine/research/          ← TradingView 用 Pine（ここ）
 ### 重要メモ: Market Psychology Squeeze / TradingView XAGUSD照合
 
 - 研究メモ: [docs/research/market_psychology_squeeze_strict_2026-05-30.md](docs/research/market_psychology_squeeze_strict_2026-05-30.md)
+- TradingView確認用Pine: [pine/research/market_psychology_squeeze_strict_strategy.pine](pine/research/market_psychology_squeeze_strict_strategy.pine)
 - TradingView/OANDA XAGUSD再検証: [backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/report_ja.md](backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/report_ja.md)
 - TradingView H4 OHLC再検証: [backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/report_ja.md](backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/report_ja.md)
 - 狙い: 急落後の安値棚が崩れず、棚高値を抜けるところを **売り方の買い戻し連鎖** として捉える。
+- 一言: **売り方が勝っているように見えた後、下がらなくなり、損切りの買い戻しが始まる瞬間を狙う研究**。
 - 重要な扱い: **XAGUSD/OANDA はTradingView H4 OHLCを正として別管理**。ローカルPythonの `SILVER` 結果とは混ぜない。
 - TradingViewトレード一覧照合: **15 trades / 勝率60.00% / PF 2.896 / Net +124,981.04 USD**。
 - TradingView H4 OHLC基準の再検証: `SQZ_DEFAULT_RR2` が **TV一覧15件と日付15/15一致**。同期間R建てでは **15 trades / +12.00R / PF 3.00 / DD 4.00R**。
+- 照合注意: TradingView確認用Pineの初期値は `SQZ_DEFAULT_RR2` に合わせる。`SQZ_STRICT_RR2` 条件のまま比較すると件数が減り、TradingView一覧とは一致しない。
 
 ### 終了研究: Short Covering Psychology Flow
 

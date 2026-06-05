@@ -15,8 +15,9 @@ strategy("D1 Trap H4 Shelf Strict [Research]",
      max_lines_count=500,
      max_labels_count=500)
 
+// RETIRED 2026-06-01 — 本番は B06 棚抜のみ（H4重複のため）。docs/operations/system_b/lane_exclusions.md
 // =====================================================================
-// D1 Trap -> H4 Shelf Strict [Research]
+// D1 Trap -> H4 Shelf Strict [Research — archive]
 // ---------------------------------------------------------------------
 // Python reference:
 //   selected_CURRENT_A30_180_SIGADX30

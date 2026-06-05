@@ -13,7 +13,7 @@
 
 ```text
 系統A  V1(H1) + T5(H4) + 踏み上げ投げ切り(H4)  … 本番（H4は3本セット）
-系統B  棚抜け + トラップ待ち棚                 … TV照合済み〜照合中（JPY4）
+系統B  棚抜け（B06）                          … JPY4・TV37件OK
 ```
 
 ---
@@ -65,17 +65,16 @@
 
 ---
 
-### 系統B — 棚ブレイク系（TV照合・フォワード）
+### 系統B — 棚抜け（B06・JPY4）
 
 | タグ | ネーム | 一言 | 監視通貨 | Pine | 実装 | リスク |
 |------|--------|------|----------|------|------|--------|
 | **棚抜** | 棚抜け買い | 急落V→棚→抜け買い | **USDJPY・EURJPY・GBPJPY・AUDJPY** | [h4_v_initial_shelf_breakout_strategy.pine](pine/research/h4_v_initial_shelf_breakout_strategy.pine) | ✅ TV37件OK | 0.25R |
-| **ﾄﾗ棚** | トラップ待ち棚抜け | 日足トラップ後に棚抜け | 同上4通貨 | [d1_trap_h4_shelf_strict_strategy.pine](pine/research/d1_trap_h4_shelf_strict_strategy.pine) | ⏳ 12件照合中 | 0.25R |
 
-**入口:** [系統B 運用](docs/operations/system_b/README.md) ／ [10レーン判定](docs/research/system_b_lanes_validation_2026-06-01/DECISION.md)  
-**B06 TV照合:** [37件確定](docs/research/system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md) ／ **B07:** [12件チェックリスト](docs/research/system_b_pine_parity_2026-06-01/B07_TV_PARITY_CHECKLIST_ja.md)
+**入口:** [系統B 運用](docs/operations/system_b/README.md) ／ [B06 37件確定](docs/research/system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md)  
+**B07 ﾄﾗ棚:** 退役（B06とH4重複のため本番から外した）→ [lane_exclusions](docs/operations/system_b/lane_exclusions.md#b07-dts-trap-shelf-retired)
 
-**重複ルール（全系統）:** 同日・同銘柄は `踏金→踏円→踏銀→棚抜→ﾄﾗ棚` で **1件のみ**（棚抜とﾄﾗ棚が重なれば **棚抜優先**）
+**重複ルール（全系統）:** 同日・同銘柄は `踏金→踏円→踏銀→棚抜` で **1件のみ**
 
 ---
 
@@ -90,7 +89,7 @@
 | **CHFJPY** | 同上 | T5 + インジ（踏瑞・strategy OFF） |
 | **XAGUSD** | 同上 | T5 + インジ + 踏み上げ（踏銀） |
 
-**系統B（JPY4）を足す場合:** USDJPY/EURJPY/GBPJPY/AUDJPY H4 に [棚抜](pine/research/h4_v_initial_shelf_breakout_strategy.pine)・[ﾄﾗ棚](pine/research/d1_trap_h4_shelf_strict_strategy.pine) を追加 → [系統B 運用](docs/operations/system_b/README.md)
+**系統B（JPY4）を足す場合:** 上記4通貨 H4 に [棚抜 B06](pine/research/h4_v_initial_shelf_breakout_strategy.pine) を追加 → [系統B 運用](docs/operations/system_b/README.md)
 
 ---
 
@@ -188,11 +187,10 @@ pine/research/          ← TradingView 用 Pine（ここ）
 |---:|---|---|---|
 | 1 | **系統A 本番（V1+T5+踏み上げ）** | **運用確定** | [系統A 運用](docs/operations/system_a/README.md) |
 | 2 | **踏み上げ SQZ 研究** | 徹底検証・準本番判定 | [cap_sqz DECISION](docs/research/cap_sqz_thorough_validation_2026-06-01/DECISION.md) |
-| 3 | **系統B — 棚抜（B06）** | **TV照合37件OK** | [DECISION_b06](docs/research/system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md) |
-| 4 | **系統B — ﾄﾗ棚（B07）** | Pine最終確認中 | [B07 チェックリスト](docs/research/system_b_pine_parity_2026-06-01/B07_TV_PARITY_CHECKLIST_ja.md) |
-| 5 | **H4 T5 深掘り** | 記録済み | [t5_method_deep_research](docs/research/t5_method_deep_research_2026-06-01.md) |
-| 6 | 受講生つまずき（教材） | アーカイブ | 下の [つまずき研究](#-参考--受講生つまずきクラスタ研究教材アーカイブ) |
-| 7 | **トレード実践記録** | 記録中 | [trade_practice_records/](docs/trade_practice_records/) |
+| 3 | **系統B — 棚抜（B06）** | **TV照合37件OK・本番** | [DECISION_b06](docs/research/system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md) |
+| 4 | **H4 T5 深掘り** | 記録済み | [t5_method_deep_research](docs/research/t5_method_deep_research_2026-06-01.md) |
+| 5 | 受講生つまずき（教材） | アーカイブ | 下の [つまずき研究](#-参考--受講生つまずきクラスタ研究教材アーカイブ) |
+| 6 | **トレード実践記録** | 記録中 | [trade_practice_records/](docs/trade_practice_records/) |
 
 ---
 

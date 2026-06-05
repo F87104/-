@@ -1,5 +1,7 @@
 # B07 DTS — TV OANDA parity サマリ
 
+> **退役（2026-06-01）:** 本番・研究ラインから外した。B06（棚抜）と H4 シグナル重複のため [lane_exclusions.md](../../operations/system_b/lane_exclusions.md#b07-dts-trap-shelf-retired)。以下は照合記録のアーカイブ。
+
 更新: 2026-05-31
 
 ## 結論（現時点）

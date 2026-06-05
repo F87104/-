@@ -28,7 +28,6 @@ overlap_resolution:
     - B04_SQZ_CHFJPY
     - B05_SQZ_SILVER
     - B06_VIS_PRECALM
-    - B07_DTS_TRAP_SHELF
     - B08_LSS_SHORT_CORE4
     - B09_IGNITION_STRICT
 
@@ -139,7 +138,7 @@ lanes:
       GBPJPY: yes
       EURJPY: yes
       AUDJPY: yes
-    watch: "TV OANDA 4通貨37件照合OK(2026-06-05)。執行の正=python_expected_b06_tv_oanda_*.csv。B07重複9件はoverlap優先。"
+    watch: "TV OANDA 4通貨37件照合OK(2026-06-05)。執行の正=python_expected_b06_tv_oanda_*.csv。JPY4棚抜けは本レーンのみ。"
 
   - lane_id: B07_DTS_TRAP_SHELF
     tag: ﾄﾗ棚
@@ -151,13 +150,12 @@ lanes:
     strategy_key: selected_CURRENT_A30_180_SIGADX30
     pine_script: pine/research/d1_trap_h4_shelf_strict_strategy.pine
     pine_ready: partial
-    enabled: true
-    status: FORWARD_0.25R
-    risk_r_default: 0.25
-    max_trades_per_year: 3
-    parity_export: docs/research/system_b_pine_parity_2026-06-01/python_expected_b07_tv_oanda_all.csv
-    watch: "先ほどのtv_*_h4.csvで12件。H4日時= B06照合済み(12/12)。D1Trap+EntryTPのPine最終確認のみ。B06重複はB06優先。"
-    tv_oanda_parity: partial
+    enabled: false
+    status: RETIRED
+    exclusion_doc: docs/operations/system_b/lane_exclusions.md#b07-dts-trap-shelf-retired
+    exclusion_reason: "B06とH4シグナル重複(9/12件)。本番はB06棚抜で十分。追加価値なし。"
+    risk_r_default: 0.0
+    note: "研究アーカイブ。Pine/CSVは docs/research/system_b_pine_parity_2026-06-01/ に残置。"
 
   - lane_id: B08_LSS_SHORT_CORE4
     label_ja: "月次安値停滞ショート"

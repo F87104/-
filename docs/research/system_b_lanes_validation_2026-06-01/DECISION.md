@@ -9,7 +9,7 @@
 - **0.25Rフォワード（Pine ready・要OOS監視）:** B02 USDJPY SQZ — Research良好だがOOS 2敗。
 - **0.25Rのみ / レーン縮小:** B03 EURJPY SQZ — Research **マイナス**（-3.09R）。本番から外すかシンボル停止を推奨。
 - **観測継続:** B04 CHFJPY SQZ — 10年1件。統計として未成立。
-- **Pine照合後フォワード:** B06 VIS PRECALM、B07 DTS — 品質は良いが样本・B06↔B07重複9件あり。
+- **Pine照合後フォワード:** B06 VIS PRECALM — TV37件OK。**B07 DTS は退役**（B06とH4重複・追加価値なし）。
 - **保留:** B08 LSS、B09 IGNITION — Pine未整備。Researchは良好だが年1件未満。
 
 ## ポートフォリオ（重複排除・SQZ優先）
@@ -22,7 +22,7 @@
 1. レーンあたり Research trades≥5、PF≥1.5、maxDD≤6R
 2. 年あたり≤3件/レーン（B06は4銘柄合算のため別枠で監視）
 3. Pine `yes` のみフルサイズ候補。`partial` は0.25Rまで。
-4. 同一 H4 バー・同一銘柄は SQZ > VIS > DTS > LSS > IGNITION で1件のみ
+4. 同一 H4 バー・同一銘柄は SQZ > VIS(B06) > LSS > IGNITION で1件のみ（B07退役）
 
 ## 次アクション
 

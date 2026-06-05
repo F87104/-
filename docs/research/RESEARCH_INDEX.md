@@ -24,7 +24,7 @@
 | **第3候補（SQZ等）** | [near_main_validation_roadmap_2026-06-01.md](near_main_validation_roadmap_2026-06-01.md) |
 | **系統B（10レーン）** | [system_b_lanes_validation_2026-06-01/DECISION.md](system_b_lanes_validation_2026-06-01/DECISION.md) |
 | **系統B 本番運用** | [operations/system_b/README.md](../operations/system_b/README.md) |
-| **系統B B06/B07 Pine照合** | [system_b_pine_parity_2026-06-01/tradingview_parity_checklist.md](system_b_pine_parity_2026-06-01/tradingview_parity_checklist.md) |
+| **系統B B06 Pine照合** | [DECISION_b06_tv_oanda_parity.md](system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md) |
 | **旧心理スプリント（参照のみ）** | [ARCHIVE_psychology_sprint_2026-05_06.md](ARCHIVE_psychology_sprint_2026-05_06.md) |
 
 ## 次にやること

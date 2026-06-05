@@ -54,10 +54,35 @@
 
 ---
 
-## 有効レーンとの重複
+## B07 DTS ﾄﾗ棚 — 研究・本番から退役（RETIRED）
 
-- B06 VIS と B07 DTS は同一 H4・銘柄で **9ペア** 重複（検証CSV `overlap_matrix.csv`）
-- 本番では `overlap_resolution.priority` により **SQZ > VIS > DTS**。B06とB07が競合したら **B06を優先**（B07は `overlap_suppressed=yes` でログ）
+| 項目 | 値 |
+|------|-----|
+| レーンID | `B07_DTS_TRAP_SHELF` |
+| 退役日 | 2026-06-01 |
+| 理由 | B06（棚抜）と **H4シグナル時刻が9〜12件すべて重複**。B06優先運用では B07 は執行上の追加価値なし |
+| 参照データ | [DECISION_b07_tv_oanda_parity.md](../../research/system_b_pine_parity_2026-06-01/DECISION_b07_tv_oanda_parity.md)（照合記録は残置） |
+
+### 運用上の扱い
+
+1. `portfolio_slots.yaml` で `enabled: false`、`status: RETIRED`
+2. `overlap_resolution.priority` から B07 を削除
+3. JPY4 H4 の棚抜けは **B06（棚抜）のみ** — [h4_v_initial_shelf_breakout_strategy.pine](../../../pine/research/h4_v_initial_shelf_breakout_strategy.pine)
+4. `d1_trap_h4_shelf_strict_strategy.pine` はチャートに載せない（研究用にリポジトリ内に残すのみ）
+5. `system_b_forward_trade_log.csv` に B07 は記録しない
+
+除外理由コード: `SYSB_RETIRED_B06_SUPERSET`
+
+```
+2026-06-01 判定: B07⊆B06(H4) → 系統B本番は B06 のみ継続
+```
+
+---
+
+## 有効レーンとの重複（現行）
+
+- 本番優先: **SQZ > B06棚抜**（B07は退役のため対象外）
+- B06 は SQZ・系統A T5 との重複は別ルール（[portfolio_slots.yaml](portfolio_slots.yaml)）
 
 ---
 
@@ -65,4 +90,5 @@
 
 | 日付 | 変更 |
 |------|------|
+| 2026-06-01 | B07 退役（B06のみ継続） |
 | 2026-06-01 | B03 除外、B04 観測のみを文書化 |

@@ -1,4 +1,6 @@
-# B07 DTS — TV照合チェックリスト（先ほどの4 CSV 基準）
+# B07 DTS — TV照合チェックリスト（アーカイブ）
+
+> **退役 2026-06-01** — 本番は B06（棚抜）のみ。[lane_exclusions.md](../../operations/system_b/lane_exclusions.md#b07-dts-trap-shelf-retired)
 
 データ: `tv_usdjpy_h4.csv` 他3本（B06と同じOANDA H4エクスポート）
 

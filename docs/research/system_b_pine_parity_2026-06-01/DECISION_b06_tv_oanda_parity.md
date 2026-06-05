@@ -26,4 +26,4 @@
 
 ## 次フェーズ
 
-**B07 DTS** — TV-OHLC **12件** baseline 済み（`DECISION_b07_tv_oanda_parity.md`）。Pine 照合中。B06重複は **B06優先**。
+**B07 DTS** — **退役**（2026-06-01）。B06とH4重複のため本番から外した。記録は `DECISION_b07_tv_oanda_parity.md` に残置。

@@ -10,16 +10,17 @@
 |----------|------|
 | [portfolio_slots.yaml](portfolio_slots.yaml) | レーン定義・有効/無効・リスクR・Pineパス・重複優先順 |
 | [system_b_forward_trade_log.csv](system_b_forward_trade_log.csv) | フォワード／実弾の1行1トレード台帳（テンプレ付き） |
-| [lane_exclusions.md](lane_exclusions.md) | B03除外・B04観測のみの運用固定 |
+| [lane_exclusions.md](lane_exclusions.md) | B03除外・B04観測・**B07退役**の運用固定 |
 
 ## 使い方
 
 1. 新規シグナル前に `portfolio_slots.yaml` で `enabled` と `risk_r_default` を確認
 2. 執行したら `system_b_forward_trade_log.csv` に1行追加（`record_id` は `FW-B06-20260601-001` 形式を推奨）
 3. B06: **4通貨37件** TV OANDA 照合OK（2026-06-05）→ `0.25R` フォワード可。期待値は `python_expected_b06_tv_oanda_*.csv`
-4. B03/B04 はログに載せない（除外テンプレ行は参照のみ）
+4. B03/B04/B07 はログに載せない（除外・退役テンプレ行は参照のみ）
+5. **JPY4 棚抜けは B06 のみ**（B07 ﾄﾗ棚は退役）
 
-## Pine 照合（B06/B07）
+## Pine 照合（B06）
 
 ```bash
 python3 scripts/export_system_b_pine_parity.py

@@ -1,5 +1,7 @@
 //@version=5
-// 踏み上げ — 本番アラート（投げ切りインジ②と同一シグナル）
+// 軽量アラート専用。メイン戦略は pine/production/h4_sqz_tv_validation.pine
+// 表示は pine/visual/market_psychology_cap_sqz_visual.pine（踏み上げ投げ切り）
+// 踏み上げ — アラートのみ（投げ切りインジ②と同一シグナル）
 indicator("踏み上げ Live", overlay=true, max_labels_count=200)
 
 bool isH4 = timeframe.in_seconds(timeframe.period) == timeframe.in_seconds("240")

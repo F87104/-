@@ -1,0 +1,84 @@
+# 系統A — V1 + H4T5 本番チャート構成
+# 作成日: 2026-06-01
+# 運用: docs/operations/system_a/README.md
+
+version: "2026-06-01"
+system_id: system_a
+system_name_ja: "TrendBreak V1 + H4 T5 + 踏み上げ投げ切り"
+
+symbols_core:
+  - XAUUSD
+  - USDJPY
+  - EURJPY
+  - GBPJPY
+  - CHFJPY
+  - SILVER   # TV: XAGUSD
+
+excluded_symbols:
+  - AUDJPY
+
+overlap_rules:
+  tb_vs_t5: "T5優先（同一通貨・保有重複時はTB新規を見送り）"
+  t5_vs_sqz: "重複≈0%想定。同日・同銘柄で両方出たら T5優先 → SQZは空きスロット"
+  cap_entry: "投げ切り①はエントリーしない（表示のみ）"
+
+h1_charts:
+  pine: pine/production/TrendBreakV1_Final.pine
+  preset: Auto
+  symbols: [XAUUSD, USDJPY, EURJPY, GBPJPY, CHFJPY, SILVER]
+
+h4_charts:
+  # 各通貨の H4 タブにこの順で Add to chart（下→上の重ね順推奨）
+  stack:
+    - id: t5
+      role: 本番エントリー
+      pine: pine/production/h4_t5_macd_bb_live_ready.pine
+      type: strategy
+      all_symbols: true
+      params:
+        analysisTf: "240"
+        requireTfMatch: true
+        filterPreset: "Strict 0.75-1.00 + width<=7"
+        vShapePreset: "Balanced REC1.2"
+        useGuardFilters: true
+
+    - id: cap_sqz_visual
+      role: 観測（投げ切り+踏み上げ▲）
+      pine: pine/visual/market_psychology_cap_sqz_visual.pine
+      type: indicator
+      all_symbols: true
+      note: "発注なし。心理構造の目視確認用"
+
+    - id: sqz_tv
+      role: 踏み上げエントリー（準本番）
+      pine: pine/production/h4_sqz_tv_validation.pine
+      type: strategy
+      all_symbols: false
+      params:
+        overlapMode: "Python同等(保有中スキップ)"
+        showSqzOnStrategy: false
+        showLbl: false
+        riskPct: 1.0
+      symbols:
+        XAUUSD:
+          enabled: true
+          tag: 踏金
+          risk_r: 1.0
+        USDJPY:
+          enabled: true
+          tag: 踏円
+          risk_r: 0.25
+        EURJPY:
+          enabled: false
+          reason: "SQZ Research マイナス・本番除外"
+        GBPJPY:
+          enabled: false
+          reason: "SQZ 常時禁止"
+        CHFJPY:
+          enabled: false
+          tag: 踏瑞
+          reason: "統計未成立・観測のみ（visual は ON）"
+        SILVER:
+          enabled: true
+          tag: 踏銀
+          risk_r: 1.0

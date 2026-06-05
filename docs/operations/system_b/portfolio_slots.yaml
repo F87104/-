@@ -42,12 +42,14 @@ promotion_gates:
 
 lanes:
   - lane_id: B01_SQZ_XAUUSD
+    tag: 踏金
     label_ja: "踏み上げ STRICT・XAU"
     direction: long
     timeframe: H4
     symbols: [XAUUSD]
     loader: sqz_strict
-    pine_script: pine/production/h4_sqz_strict_live_ready.pine
+    pine_script: pine/production/h4_sqz_tv_validation.pine
+    pine_visual: pine/visual/market_psychology_cap_sqz_visual.pine
     pine_ready: yes
     enabled: true
     status: LIVE_CANDIDATE
@@ -55,12 +57,14 @@ lanes:
     max_trades_per_year: 3
 
   - lane_id: B02_SQZ_USDJPY
+    tag: 踏円
     label_ja: "踏み上げ STRICT・USDJPY"
     direction: long
     timeframe: H4
     symbols: [USDJPY]
     loader: sqz_strict
-    pine_script: pine/production/h4_sqz_strict_live_ready.pine
+    pine_script: pine/production/h4_sqz_tv_validation.pine
+    pine_visual: pine/visual/market_psychology_cap_sqz_visual.pine
     pine_ready: yes
     enabled: true
     status: FORWARD_0.25R
@@ -74,7 +78,8 @@ lanes:
     timeframe: H4
     symbols: [EURJPY]
     loader: sqz_strict
-    pine_script: pine/production/h4_sqz_strict_live_ready.pine
+    pine_script: pine/production/h4_sqz_tv_validation.pine
+    pine_visual: pine/visual/market_psychology_cap_sqz_visual.pine
     pine_ready: yes
     enabled: false
     status: EXCLUDED
@@ -83,12 +88,14 @@ lanes:
     risk_r_default: 0.0
 
   - lane_id: B04_SQZ_CHFJPY
+    tag: 踏瑞
     label_ja: "踏み上げ STRICT・CHFJPY"
     direction: long
     timeframe: H4
     symbols: [CHFJPY]
     loader: sqz_strict
-    pine_script: pine/production/h4_sqz_strict_live_ready.pine
+    pine_script: pine/production/h4_sqz_tv_validation.pine
+    pine_visual: pine/visual/market_psychology_cap_sqz_visual.pine
     pine_ready: yes
     enabled: false
     status: OBSERVE_ONLY
@@ -97,12 +104,14 @@ lanes:
     risk_r_default: 0.0
 
   - lane_id: B05_SQZ_SILVER
+    tag: 踏銀
     label_ja: "踏み上げ STRICT・SILVER"
     direction: long
     timeframe: H4
     symbols: [SILVER]
     loader: sqz_strict
-    pine_script: pine/production/h4_sqz_strict_live_ready.pine
+    pine_script: pine/production/h4_sqz_tv_validation.pine
+    pine_visual: pine/visual/market_psychology_cap_sqz_visual.pine
     pine_ready: yes
     enabled: true
     status: LIVE_CANDIDATE
@@ -110,6 +119,7 @@ lanes:
     max_trades_per_year: 3
 
   - lane_id: B06_VIS_PRECALM
+    tag: 棚抜
     label_ja: "V初動棚 PRECALM"
     direction: long
     timeframe: H4
@@ -132,6 +142,7 @@ lanes:
     watch: "TV OANDA 4通貨37件照合OK(2026-06-05)。執行の正=python_expected_b06_tv_oanda_*.csv。B07重複9件はoverlap優先。"
 
   - lane_id: B07_DTS_TRAP_SHELF
+    tag: ﾄﾗ棚
     label_ja: "D1トラップ遅延 H4棚"
     direction: long
     timeframe: H4

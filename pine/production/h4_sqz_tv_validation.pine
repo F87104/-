@@ -1,5 +1,4 @@
 //@version=5
-// 本番と同一。正本: pine/production/h4_sqz_tv_validation.pine
 // 【重要】strategy のみ。indicator() は書かない。
 // 表示: pine/visual/market_psychology_cap_sqz_visual.pine（踏み上げ投げ切り）
 // =====================================================================

@@ -7,7 +7,8 @@
 | ファイル | 用途 |
 |----------|------|
 | `pine/lib/price_anchored_labels_v1.pine` | 共通ライブラリ（TV に1回保存） |
-| `pine/visual/market_psychology_cap_sqz_visual.pine` | 本番インジ（単体でも動く） |
+| `pine/visual/market_psychology_cap_sqz_visual.pine` | **メイン表示**（観測専用・▲印のみ。ラベルずれ対策は不要） |
+| `pine/production/h4_sqz_tv_validation.pine` | **メイン戦略**（インジ②と完全一致） |
 | `pine/templates/TEMPLATE_price_anchored_indicator.pine` | 新規インジ用ひな型 |
 
 ## 原因の切り分け（覚えておく）

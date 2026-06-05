@@ -1,5 +1,6 @@
 OANDA XAGUSD (系統B B05_SQZ_SILVER 用・B06/B07対象外)
 Source: OANDA_XAGUSD, 240_b22c5.csv
 Bars: 2013-01-01 — 2026-06-05 (20742)
-Pine: pine/production/h4_sqz_strict_live_ready.pine
+Pine strategy: pine/production/h4_sqz_tv_validation.pine
+Pine visual: pine/visual/market_psychology_cap_sqz_visual.pine
 Note: B06棚ブレイクとは別レーン。TV照合は B05 用に別途。

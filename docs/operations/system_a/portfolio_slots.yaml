@@ -1,0 +1,101 @@
+# 系統A — V1 + H4 T5 本番ポートフォリオ
+# 作成日: 2026-06-01
+# 判定: docs/research/original_a_path_DECISION_2026-06-01.md
+
+version: "2026-06-01"
+system_id: system_a
+system_name_ja: "系統A（TrendBreak V1 + H4 T5 + 踏み上げ投げ切り）"
+
+overlap_resolution:
+  rule: "t5_priority_same_symbol"
+  note: |
+    同一通貨で H4 T5 が OPEN またはシグナル済みの間は TrendBreak 新規を入れない。
+    T5 終了後にスロットが空いたら TB は通常どおり。
+    AUDJPY は TB も T5 も取引しない。
+  sqz_note: |
+    踏み上げ（SQZ）は TB/T5 と同時保有重複 ≈ 0%。
+    同一 H4 バー・同一銘柄で T5 と踏み上げが重なったら T5 優先。
+    投げ切り（CAP）は観測のみ・単独エントリーしない。
+
+symbols_core:
+  - XAUUSD
+  - USDJPY
+  - EURJPY
+  - GBPJPY
+  - CHFJPY
+  - SILVER   # TV: XAGUSD
+
+charts:
+  h1:
+    pine: pine/production/TrendBreakV1_Final.pine
+    preset: Auto
+    symbols: [XAUUSD, USDJPY, EURJPY, GBPJPY, CHFJPY, SILVER]
+
+  h4:
+    # 1チャートに最大3本（順番推奨）
+    layers:
+      - id: t5
+        tag: V字反転
+        pine: pine/production/h4_t5_macd_bb_live_ready.pine
+        type: strategy
+        required: true
+        symbols: [XAUUSD, USDJPY, EURJPY, GBPJPY, CHFJPY, SILVER]
+        params:
+          analysisTf: "240"
+          requireTfMatch: true
+          filterPreset: "Strict 0.75-1.00 + width<=7"
+          vShapePreset: "Balanced REC1.2"
+          useGuardFilters: true
+
+      - id: cap_sqz_visual
+        tag: 踏み上げ投げ切り
+        pine: pine/visual/market_psychology_cap_sqz_visual.pine
+        type: indicator
+        required: true
+        symbols: [XAUUSD, USDJPY, EURJPY, GBPJPY, CHFJPY, SILVER]
+        note: "観測専用。投げ切り①（水色）+ 踏み上げ②（緑）。"
+
+      - id: sqz_tv
+        tag: 踏み上げ
+        pine: pine/production/h4_sqz_tv_validation.pine
+        type: strategy
+        required: true
+        symbols: [XAUUSD, USDJPY, CHFJPY, SILVER]
+        excluded_symbols: [EURJPY, GBPJPY, AUDJPY]
+        params:
+          overlapMode: "Python同等(保有中スキップ)"
+          showSqzOnStrategy: false
+          showLbl: false
+        risk_r:
+          XAUUSD: 1.0
+          SILVER: 1.0
+          USDJPY: 0.25
+          CHFJPY: 0.0
+        note: "インジ②と同一条件。GBPJPY・AUDJPY・EURJPYは本番除外。"
+
+lanes:
+  - lane_id: A01_TB_H1
+    tag: ブレイク追い
+    pine: pine/production/TrendBreakV1_Final.pine
+    timeframe: H1
+    status: LIVE
+
+  - lane_id: A02_T5_H4
+    tag: V字反転
+    pine: pine/production/h4_t5_macd_bb_live_ready.pine
+    timeframe: H4
+    status: LIVE
+
+  - lane_id: A03_CAP_SQZ_VIS
+    tag: 踏み上げ投げ切り
+    pine: pine/visual/market_psychology_cap_sqz_visual.pine
+    timeframe: H4
+    status: LIVE
+    role: observe_only
+
+  - lane_id: A04_SQZ_TV
+    tag: 踏み上げ
+    pine: pine/production/h4_sqz_tv_validation.pine
+    timeframe: H4
+    status: FORWARD
+    role: strategy

@@ -12,8 +12,9 @@
 
 | ファイル | 役割 |
 |----------|------|
-| `pine/production/h4_sqz_strict_live_ready.pine` | 本番エントリー（踏み上げ STRICT） |
-| `pine/visual/market_psychology_cap_sqz_visual.pine` | 観測用（ユーザー案＝投げ切り+踏み上げデフォルト） |
+| `pine/visual/market_psychology_cap_sqz_visual.pine` | **メイン表示**（観測専用・投げ切り① + 踏み上げ②・▲印のみ） |
+| `pine/production/h4_sqz_tv_validation.pine` | **メイン戦略**（インジと完全一致・TV検証・約定） |
+| `pine/production/h4_sqz_strict_live_ready.pine` | 補助（アラートのみ・軽量） |
 
 ---
 

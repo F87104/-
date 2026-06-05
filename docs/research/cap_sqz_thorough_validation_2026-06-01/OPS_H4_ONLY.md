@@ -15,8 +15,9 @@
 
 ## 本番ファイル
 
-- エントリー: `pine/production/h4_sqz_strict_live_ready.pine`
-- 観測: `pine/visual/market_psychology_cap_sqz_visual.pine`（踏み上げはH4評価）
+- **表示（メイン）:** `pine/visual/market_psychology_cap_sqz_visual.pine`（踏み上げ投げ切り）
+- **戦略（メイン）:** `pine/production/h4_sqz_tv_validation.pine`（インジと完全一致・翌足始値）
+- アラート補助: `pine/production/h4_sqz_strict_live_ready.pine`
 
 ## 通貨
 

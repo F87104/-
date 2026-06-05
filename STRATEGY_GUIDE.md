@@ -193,17 +193,17 @@
 | Tab | シンボル | TF | 戦略 |
 |---|---|---|---|
 | 1 | XAUUSD | H1 | TrendBreakV1 |
-| 2 | XAUUSD | H4 | H4 T5 MACD BB |
+| 2 | XAUUSD | H4 | H4 T5 + 踏み上げ投げ切り + 踏み上げ TV検証 |
 | 3 | USDJPY | H1 | TrendBreakV1 |
-| 4 | USDJPY | H4 | H4 T5 MACD BB |
+| 4 | USDJPY | H4 | H4 T5 + 踏み上げ投げ切り + 踏み上げ TV検証 |
 | 5 | EURJPY | H1 | TrendBreakV1 |
-| 6 | EURJPY | H4 | H4 T5 MACD BB |
+| 6 | EURJPY | H4 | H4 T5 + 踏み上げ投げ切り（strategy OFF） |
 | 7 | GBPJPY | H1 | TrendBreakV1 |
-| 8 | GBPJPY | H4 | H4 T5 MACD BB |
+| 8 | GBPJPY | H4 | H4 T5 + 踏み上げ投げ切り（strategy OFF） |
 | 9 | CHFJPY | H1 | TrendBreakV1 |
-| 10 | CHFJPY | H4 | H4 T5 MACD BB |
+| 10 | CHFJPY | H4 | H4 T5 + 踏み上げ投げ切り（strategy OFF） |
 | 11 | SILVER (XAGUSD) | H1 | TrendBreakV1 |
-| 12 | SILVER (XAGUSD) | H4 | H4 T5 MACD BB |
+| 12 | SILVER (XAGUSD) | H4 | H4 T5 + 踏み上げ投げ切り + 踏み上げ TV検証 |
 
 > Pine v5 の制約上、1チャートに別TFのStrategyを2つ載せるのは推奨しません。
 > 別チャートで管理する方が、検証結果との一致度が高くなります。
@@ -218,18 +218,25 @@
    - `riskPct` = **`1.0`** (1%)
    - `maxDDPctIn` = **`20`** (DD 20%で停止)
 
-#### Step 3: H4チャートに H4 T5 MACD BB を貼る
+#### Step 3: H4チャートに 3本セットを貼る（順番推奨）
 
-1. Pine Editor を開く
-2. [`pine/production/h4_t5_macd_bb_live_ready.pine`](pine/production/h4_t5_macd_bb_live_ready.pine) の中身をコピペ
-3. 「Add to chart」
-4. パラメータ:
-   - `analysisTf` = **`240`** (H4)
-   - `requireTfMatch` = **ON** (推奨)
-   - `filterPreset` = **`Strict 0.75-1.00 + width<=7`**
-   - `vShapePreset` = **`Balanced REC1.2`**
-   - `useGuardFilters` = **ON**
-   - `skipHoliday` = **ON**
+**3a. H4 T5 MACD BB（strategy）**
+
+1. [`pine/production/h4_t5_macd_bb_live_ready.pine`](pine/production/h4_t5_macd_bb_live_ready.pine) をコピペ → Add to chart
+2. パラメータ: `analysisTf=240`, `requireTfMatch=ON`, `filterPreset=Strict 0.75-1.00 + width<=7`, `vShapePreset=Balanced REC1.2`, `useGuardFilters=ON`
+
+**3b. 踏み上げ投げ切り（indicator・観測専用）**
+
+1. [`pine/visual/market_psychology_cap_sqz_visual.pine`](pine/visual/market_psychology_cap_sqz_visual.pine) を Add to chart
+2. 投げ切り①（水色▲）と踏み上げ②（緑▲）が表示される。発注ロジックではない
+
+**3c. 踏み上げ TV検証（strategy・XAU/USDJPY/SILVER のみ推奨）**
+
+1. [`pine/production/h4_sqz_tv_validation.pine`](pine/production/h4_sqz_tv_validation.pine) を Add to chart
+2. パラメータ: `▲をここでも描画=OFF`, `SIG/約定ラベル=OFF`（インジと二重防止）
+3. EURJPY・GBPJPY・CHFJPY では載せないか、参考表示のみ
+
+定義ファイル: [`docs/operations/system_a/chart_bundle.yaml`](docs/operations/system_a/chart_bundle.yaml)
 
 #### Step 4: アラート設定
 

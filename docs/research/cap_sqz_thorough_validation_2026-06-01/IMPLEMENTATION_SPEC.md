@@ -31,7 +31,8 @@
 
 ## TradingView 検証用 Pine
 
-- **表示（踏み上げマーカー）:** `pine/visual/market_psychology_cap_sqz_visual.pine` — 棚 **2.5ATR** / 急落 **3.0ATR**
-- **検証（売買・上記と同一バー）:** `pine/research/h4_sqz_strict_tv_validation.pine` — 「本番通貨フィルタ」はデフォルト **OFF**
-- **本番アラート:** `pine/production/h4_sqz_strict_live_ready.pine` — シグナルは投げ切り②と同一。通貨フィルタはデフォルト ON
+- **表示（メイン）:** `pine/visual/market_psychology_cap_sqz_visual.pine` — 投げ切り① + 踏み上げ②（棚 **2.5ATR** / 急落 **3.0ATR**）
+- **戦略（メイン）:** `pine/production/h4_sqz_tv_validation.pine` — インジ②と完全一致（翌足始値・overlapMode・maxHold）
+- **研究コピー:** `pine/research/h4_sqz_strict_tv_validation.pine` — 本番と同一
+- **アラート補助:** `pine/production/h4_sqz_strict_live_ready.pine` — 軽量シグナルのみ
 - Python 厳密照合は `SQZ_STRICT_RR2`（2.0/3.5）のため、TV ではトレード数が増える点に注意

@@ -20,6 +20,7 @@
 | **オリジナル研究（本線）** | [ORIGINAL_RESEARCH_2026-06.md](ORIGINAL_RESEARCH_2026-06.md) |
 | **A-path 最終判断** | [original_a_path_DECISION_2026-06-01.md](original_a_path_DECISION_2026-06-01.md) |
 | **本番運用・数値** | [ultimate_method_v1_2026-06-01.md](ultimate_method_v1_2026-06-01.md) |
+| **踏み上げ・投げ切り（メイン）** | [cap_sqz_thorough_validation_2026-06-01/DECISION.md](cap_sqz_thorough_validation_2026-06-01/DECISION.md) ／ [ローソク足レポート](market_psychology_capitulation_squeeze_candlestick_2026-06-01.md) |
 | **第3候補（SQZ等）** | [near_main_validation_roadmap_2026-06-01.md](near_main_validation_roadmap_2026-06-01.md) |
 | **系統B（10レーン）** | [system_b_lanes_validation_2026-06-01/DECISION.md](system_b_lanes_validation_2026-06-01/DECISION.md) |
 | **系統B 本番運用** | [operations/system_b/README.md](../operations/system_b/README.md) |

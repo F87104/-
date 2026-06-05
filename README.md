@@ -2,7 +2,7 @@
 
 > H1/H4 ベースの自動売買戦略コレクション。10年バックテスト (2015-2024) + OOS (2025-2026) で検証済みの **2本柱戦略** を運用するためのコード一式。
 
-**最終更新**: 2026-05-31
+**最終更新**: 2026-06-05
 
 ---
 
@@ -92,6 +92,16 @@ pine/research/          ← TradingView 用 Pine（ここ）
 - 表示順: **WATCH = 売り失敗の文脈 / SIGNAL = 損切りライン突破 / SIM FILL = 次足始値約定**。
 - 現時点の扱い: **研究中・本番未採用**。H4T5やH4 V Initial Shelf Breakoutと比較し、目視で納得できる場所にだけ出るか確認する。
 
+### 重要メモ: Market Psychology Squeeze / TradingView XAGUSD照合
+
+- 研究メモ: [docs/research/market_psychology_squeeze_strict_2026-05-30.md](docs/research/market_psychology_squeeze_strict_2026-05-30.md)
+- TradingView/OANDA XAGUSD再検証: [backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/report_ja.md](backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/report_ja.md)
+- TradingView H4 OHLC再検証: [backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/report_ja.md](backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/report_ja.md)
+- 狙い: 急落後の安値棚が崩れず、棚高値を抜けるところを **売り方の買い戻し連鎖** として捉える。
+- 重要な扱い: **XAGUSD/OANDA はTradingView H4 OHLCを正として別管理**。ローカルPythonの `SILVER` 結果とは混ぜない。
+- TradingViewトレード一覧照合: **15 trades / 勝率60.00% / PF 2.896 / Net +124,981.04 USD**。
+- TradingView H4 OHLC基準の再検証: `SQZ_DEFAULT_RR2` が **TV一覧15件と日付15/15一致**。同期間R建てでは **15 trades / +12.00R / PF 3.00 / DD 4.00R**。
+
 ### 終了研究: Short Covering Psychology Flow
 
 - 研究メモ: [docs/research/short_covering_psychology_flow_2026-06-03.md](docs/research/short_covering_psychology_flow_2026-06-03.md)
@@ -110,7 +120,7 @@ pine/research/          ← TradingView 用 Pine（ここ）
 | 4 | **Short Covering Psychology Flow** | **終了・本番不採用** | [研究メモ](docs/research/short_covering_psychology_flow_2026-06-03.md) ／ [Pine可視化](pine/visual/short_covering_psychology_flow_visual.pine) |
 | 5 | 受講生エントリー集中パターン | 進行中 | [student_entry_cluster_research_2026-05-31.md](docs/research/student_entry_cluster_research_2026-05-31.md) |
 | 6 | トレード心理 / 群衆心理 | 進行中 | [RESEARCH_INDEX.md](docs/research/RESEARCH_INDEX.md) ／ [crowd_psychology_simple_visual.pine](pine/visual/crowd_psychology_simple_visual.pine) |
-| 7 | Market Psychology Squeeze | 記録済み | [market_psychology_squeeze_strict_2026-05-30.md](docs/research/market_psychology_squeeze_strict_2026-05-30.md) |
+| 7 | Market Psychology Squeeze | TV OHLC照合済み | [研究メモ](docs/research/market_psychology_squeeze_strict_2026-05-30.md) ／ [XAGUSD TV一覧](backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/report_ja.md) ／ [TV H4 OHLC再検証](backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/report_ja.md) |
 | 8 | **市場心理図鑑** | **Vol.1 + 収集ライブラリ** | [図鑑](docs/research/市場心理図鑑/README.md) ／ [収集90件+](docs/research/市場心理図鑑/collection/index.md) |
 | 9 | Wavebox / Rebreak | 記録済み | [wavebox_operational_preconditions_v1.md](docs/research/wavebox_operational_preconditions_v1.md) |
 

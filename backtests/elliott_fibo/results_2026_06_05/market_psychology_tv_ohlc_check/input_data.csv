@@ -1,0 +1,3 @@
+symbol,source,rows,start,end,columns_used
+XAUUSD,"/Users/asamifujita/Downloads/FX_XAUUSD, 240_297b6.csv",20716,2013-01-02 12:00:00,2026-06-05 11:00:00,"time, open, high, low, close"
+XAGUSD,"/Users/asamifujita/Downloads/OANDA_XAGUSD, 240_b22c5.csv",20742,2013-01-02 07:00:00,2026-06-05 10:00:00,"time, open, high, low, close"

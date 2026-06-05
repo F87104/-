@@ -3,7 +3,7 @@
 > このリポジトリで実施した **全バックテスト** の一覧。
 > 何をやったか・どこに結果があるか・採用/不採用の判定 を一覧化。
 
-**最終更新**: 2026-05-30
+**最終更新**: 2026-06-05
 **対応戦略バージョン**: v2.0 (TrendBreakV1 HYBRID + H4 T5 MACD BB) + H4 V Kickoff Catalyst 研究
 
 ---
@@ -45,6 +45,8 @@
 | 16 | H4 V Kickoff Catalyst | 2015-2026 | 各種 | - | - | - | - | 🔬 研究 | Vを直接買わず、V後の棚ブレイクを検証。Practical候補は90 trades / +33.55R / PF 1.83 |
 | 17 | D1 Trap Delayed H4 Shelf Strict | 2015-2026 | 9 | 100.0% | inf | +13.35R | 0.0R | 🔬 準本命 | D1安値Trapを直接買わず、30-180日後のH4棚ブレイクだけ買う |
 | 18 | Market Psychology Squeeze Strict | 2015-2026 | 43 | 53.5% | 2.21 | +24.72R | 3.09R | 🔬 フォワード候補 | 急落後の安値棚上抜け。GBPJPY除外でDDが大きく改善 |
+| 18' | Market Psychology Squeeze TV/OANDA XAGUSD | TV一覧 2018-2026 | 15 | 60.0% | 2.90 | +124,981 USD | 43,932 USD | 🔬 TV基準で別管理 | TradingView Strategy Tester出力を正規化 |
+| 18'' | Market Psychology Squeeze TV H4 OHLC | TV H4 OHLC 2018-2026 | 15 | 60.0% | 3.00 | +12.00R | 4.00R | 🔬 TV OHLC照合済み | XAGUSD `SQZ_DEFAULT_RR2` がTV一覧15件と日付15/15一致 |
 
 **凡例**:
 - ✅ 採用 = 現在の本番運用に使用中
@@ -192,7 +194,11 @@
 | **研究メモ** | [`docs/research/market_psychology_squeeze_strict_2026-05-30.md`](research/market_psychology_squeeze_strict_2026-05-30.md) | ユーザー提示の Market Psychology Strategy をShort Squeeze/Capitulationに分解 | Squeeze strict はフォワード候補。Capitulation直買いは保留 |
 | **通貨相性分析** | [`docs/research/market_psychology_squeeze_currency_compatibility_2026-05-30.md`](research/market_psychology_squeeze_currency_compatibility_2026-05-30.md) | SQZ strict/defaultを通貨別・組み合わせ別に確認 | XAUUSDが本命。USDJPY/AUDJPYが次点。GBPJPYは除外 |
 | **結果レポート** | [`backtests/elliott_fibo/results_2026_05_30/market_psychology_strategy_tv_check/report_ja.md`](../backtests/elliott_fibo/results_2026_05_30/market_psychology_strategy_tv_check/report_ja.md) | SQZ/CAPのdefault/strict/RR違いを比較 | SQZ_STRICT_RR2 ex GBPJPY が 43 trades / +24.72R / PF 2.21 |
+| **TradingView/OANDA XAGUSD再検証** | [`backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/report_ja.md`](../backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/report_ja.md) | TradingViewエクスポートCSVを正としてXAGUSDを再集計し、Python SILVERと日付照合 | 15 trades / 勝率60.00% / PF 2.896。Pythonとは最大6/15日一致なので別管理 |
+| **TradingView H4 OHLC再検証** | [`backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/report_ja.md`](../backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/report_ja.md) | TradingViewから出したH4 OHLCをPythonに読み込み、XAUUSD/XAGUSDをR建て再検証 | XAGUSD `SQZ_DEFAULT_RR2` はTV一覧15件と日付15/15一致。同期間 +12.00R / PF 3.00 |
 | **検証コード** | [`backtests/elliott_fibo/run_market_psychology_strategy_tv_check.py`](../backtests/elliott_fibo/run_market_psychology_strategy_tv_check.py) | ユーザー提示PineをローカルOHLCでR建て検証 | TradingView照合前の正データ |
+| **TV照合コード** | [`backtests/elliott_fibo/recheck_market_psychology_tv_export.py`](../backtests/elliott_fibo/recheck_market_psychology_tv_export.py) | TradingViewのトレード一覧CSVを正規化し、Python結果と日付比較する | XAGUSD/OANDAの継続フォワード確認用 |
+| **TV OHLC検証コード** | [`backtests/elliott_fibo/run_market_psychology_tv_ohlc_check.py`](../backtests/elliott_fibo/run_market_psychology_tv_ohlc_check.py) | TradingView H4 OHLCを直接使う照合用検証コード | データ差を潰した再検証の基準コード |
 | **Pine Strategy** | [`pine/research/market_psychology_squeeze_strict_strategy.pine`](../pine/research/market_psychology_squeeze_strict_strategy.pine) | H4専用、急落後の6本棚上抜け、GBPJPY除外初期値 | TV確認用 |
 
 主要候補:

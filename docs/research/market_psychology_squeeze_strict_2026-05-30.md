@@ -17,6 +17,61 @@
 | SQZ_STRICT_RR2 | 51 | 47.06% | +18.06R | +0.35R | 1.65 | 4.11R | 4 | +7.87R |
 | **SQZ_STRICT_RR2 ex GBPJPY** | **43** | **53.49%** | **+24.72R** | **+0.57R** | **2.21** | **3.09R** | **3** | **+8.89R** |
 
+## 2026-06-05 TradingView/OANDA XAGUSD 再検証
+
+TradingView の Strategy Tester から出力した `OANDA:XAGUSD` のトレードCSVを正として、別トラックで再集計した。
+
+結果:
+
+| source | trades | winrate | pf | net | max_dd |
+|---|---:|---:|---:|---:|---:|
+| TradingView OANDA:XAGUSD CSV | 15 | 60.00% | 2.896 | +124,981.04 USD | 43,932.04 USD |
+
+照合結果:
+
+- ローカルPythonの `SILVER` 検証とは、最大でも **6日/15日** しかシグナル日付が一致しなかった。
+- これは単なる次足約定・時刻表記のズレではなく、**TradingView/OANDA XAGUSD とローカルSILVER OHLCのデータ差** が大きい可能性が高い。
+- したがって、XAGUSD/OANDAについてはTradingViewエクスポートCSVを正として追跡し、既存Pythonの `SILVER` 結果と同じ成績として混ぜない。
+
+成果物:
+
+- 再検証レポート: [`../../backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/report_ja.md`](../../backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/report_ja.md)
+- 正規化トレードCSV: [`../../backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/tv_trades_normalized.csv`](../../backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/tv_trades_normalized.csv)
+- Python照合CSV: [`../../backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/python_vs_tradingview_date_comparison.csv`](../../backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/python_vs_tradingview_date_comparison.csv)
+
+## 2026-06-05 TradingView H4 OHLC 再検証
+
+TradingViewからエクスポートしたH4 OHLCをそのままPythonに読み込み、`XAUUSD` と `XAGUSD` を再検証した。
+目的は、前回の不一致が「ロジック差」なのか「価格データ差」なのかを切り分けること。
+
+結論:
+
+- `OANDA:XAGUSD` は、TradingView H4 OHLCを使うと `SQZ_DEFAULT_RR2` / `SQZ_DEFAULT_RR15` / `SQZ_WIDE_RR2` が **TradingViewトレード一覧15件とエントリー日15/15一致**。
+- 前回のローカル `SILVER` との不一致は、主に **データソース差・価格フィード差** と見るのが自然。
+- `SQZ_STRICT_RR2` は 6/15件一致で、TV一覧15件を説明するルールではなく、より厳しいサブセットとして扱う。
+- 今後 `XAGUSD/OANDA` を検証する時は、TradingView H4 OHLCエクスポートをPython側の正データとして扱う。
+
+TradingView一覧期間だけのR建て成績:
+
+| rule | trades | winrate | total_r | avg_r | pf | max_dd_r |
+|---|---:|---:|---:|---:|---:|---:|
+| SQZ_DEFAULT_RR2 | 15 | 60.00% | +12.00R | +0.80R | 3.00 | 4.00R |
+| SQZ_DEFAULT_RR15 | 15 | 60.00% | +7.50R | +0.50R | 2.25 | 4.00R |
+| SQZ_STRICT_RR2 | 6 | 83.33% | +9.00R | +1.50R | 10.00 | 1.00R |
+
+全体メモ:
+
+- `XAUUSD + XAGUSD` のTradingView H4 OHLCでは、`SQZ_DEFAULT_RR2` が 43 trades / +20.00R / PF 1.91。
+- `SQZ_STRICT_RR2` は 15 trades / +9.00R / PF 2.29 で件数は少ないがDDは抑えやすい。
+- TradingView Strategy TesterのUSD損益は、複利・数量・通貨換算の影響を含む。Python側はR建てのクリーン計算なので、まずは **エントリー日一致** を照合基準にする。
+
+成果物:
+
+- TV H4 OHLC再検証レポート: [`../../backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/report_ja.md`](../../backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/report_ja.md)
+- R建てトレードCSV: [`../../backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/trades.csv`](../../backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/trades.csv)
+- TV一覧との日付照合CSV: [`../../backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/xagusd_tv_trade_list_date_comparison.csv`](../../backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/xagusd_tv_trade_list_date_comparison.csv)
+- TV OHLC検証コード: [`../../backtests/elliott_fibo/run_market_psychology_tv_ohlc_check.py`](../../backtests/elliott_fibo/run_market_psychology_tv_ohlc_check.py)
+
 ## 手法の意味
 
 これは「底買い」ではなく、**売り方が追加下落を期待したのに、下がらず、棚の上抜けで買い戻しが始まる局面**を狙う。

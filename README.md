@@ -1,12 +1,70 @@
 # FX-AI — 2本柱 自動売買戦略リポジトリ
 
-> H1/H4 ベースの自動売買戦略コレクション。10年バックテスト (2015-2024) + OOS (2025-2026) で検証済みの **2本柱戦略** を運用するためのコード一式。
+> H1/H4 ベースの自動売買戦略コレクション。10年バックテスト (2015-2024) + OOS (2025-2026) で検証済み。
 
 **最終更新**: 2026-06-01
 
 ---
 
-## 🔍 いま見るべき場所 — 受講生つまずきクラスタ研究
+## ⭐ 最重要研究（迷ったらここ）
+
+収益検証が完了した **本番・準本番** だけを載せています。心理マップ・つまずき研究は [アーカイブ](docs/research/ARCHIVE_psychology_sprint_2026-05_06.md)（教材用）。
+
+### 系統A — 本番エンジン（いま動かす）
+
+| ネーム | 一言 | 監視通貨 | Pine | 状態 |
+|--------|------|----------|------|------|
+| **ブレイク追い** | H1 高安ブレイク | XAU・USDJPY・EURJPY・GBPJPY・CHFJPY・銀 | [TrendBreakV1_Final.pine](pine/production/TrendBreakV1_Final.pine) | **本番** |
+| **V字反転買い** | H4 急落V→停滞ブレイク | 同上（**AUDJPY除外**） | [h4_t5_macd_bb_live_ready.pine](pine/production/h4_t5_macd_bb_live_ready.pine) | **本番** |
+
+**運用ルール（確定）:** 重複時は **T5優先** → [A-path 決定](docs/research/original_a_path_DECISION_2026-06-01.md)  
+**数値:** TB+T5 = **+219.9R** / 411件 / PF1.86 → [究極手法 v1.0](docs/research/ultimate_method_v1_2026-06-01.md)
+
+---
+
+### 系統B — 準本命ポートフォリオ（TV照合・フォワード）
+
+| タグ | ネーム | 一言 | 監視通貨 | Pine | 実装 | リスク |
+|------|--------|------|----------|------|------|--------|
+| **棚抜** | 棚抜け買い | 急落V→棚→抜け買い | **USDJPY・EURJPY・GBPJPY・AUDJPY** | [h4_v_initial_shelf_breakout_strategy.pine](pine/research/h4_v_initial_shelf_breakout_strategy.pine) | ✅ TV37件OK | 0.25R |
+| **ﾄﾗ棚** | トラップ待ち棚抜け | 日足トラップ後に棚抜け | 同上4通貨 | [d1_trap_h4_shelf_strict_strategy.pine](pine/research/d1_trap_h4_shelf_strict_strategy.pine) | ⏳ 12件照合中 | 0.25R |
+| **踏金** | 踏み上げ買い・金 | 売り失敗のロング | **XAUUSD** | [h4_sqz_strict_live_ready.pine](pine/production/h4_sqz_strict_live_ready.pine) | Pineあり | 1.0R |
+| **踏銀** | 踏み上げ買い・銀 | 同上 | **XAGUSD** | 同上 | Pineあり | 1.0R |
+| **踏円** | 踏み上げ買い・ドル円 | 同上 | **USDJPY** | 同上 | 0.25R監視 | 0.25R |
+
+**入口:** [系統B 運用](docs/operations/system_b/README.md) ／ [10レーン判定](docs/research/system_b_lanes_validation_2026-06-01/DECISION.md)  
+**B06 TV照合:** [37件確定](docs/research/system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md) ／ **B07:** [12件チェックリスト](docs/research/system_b_pine_parity_2026-06-01/B07_TV_PARITY_CHECKLIST_ja.md)
+
+**重複ルール:** 同日・同銘柄は `踏金→踏円→…→棚抜→ﾄﾗ棚` の順で **1件のみ**（棚抜とﾄﾗ棚が重なれば **棚抜優先**）
+
+---
+
+### 監視チャート最小セット（OANDA）
+
+| 優先 | チャート | 載せる手法 |
+|:---:|----------|------------|
+| 1 | OANDA **USDJPY** H4 | 棚抜・ﾄﾗ棚・踏円 |
+| 2 | OANDA **EURJPY** H4 | 棚抜・ﾄﾗ棚 |
+| 3 | OANDA **GBPJPY** H4 | 棚抜・ﾄﾗ棚 |
+| 4 | OANDA **AUDJPY** H4 | 棚抜・ﾄﾗ棚 |
+| 5 | **XAUUSD** H4 | 踏金 |
+| 6 | **XAGUSD** H4 | 踏銀 |
+| — | 6通貨 **H1+H4** | 系統A（ブレイク追い + V字反転） |
+
+---
+
+### 研究の入口（台帳）
+
+| 用途 | ファイル |
+|------|----------|
+| **全研究の索引** | [RESEARCH_INDEX.md](docs/research/RESEARCH_INDEX.md) |
+| **本線（収益のみ）** | [ORIGINAL_RESEARCH_2026-06.md](docs/research/ORIGINAL_RESEARCH_2026-06.md) |
+| **バックテスト一覧** | [BACKTEST_INDEX.md](docs/BACKTEST_INDEX.md) |
+| **戦略の読み物** | [STRATEGY_GUIDE.md](STRATEGY_GUIDE.md) |
+
+---
+
+## 🔍 参考 — 受講生つまずきクラスタ研究（教材・アーカイブ）
 
 **迷ったらここから。** 複数の受講生が **同じ日時・同じ価格帯** で入って失敗した場所を、TradingView 上に重ねた研究です。
 
@@ -85,18 +143,16 @@ pine/research/          ← TradingView 用 Pine（ここ）
 
 ## 研究ダッシュボード
 
-このリポジトリは、戦略コードだけでなく「何を研究しているか」を忘れないための研究台帳としても使います。
-
 | 優先 | 研究テーマ | 状態 | 入口 |
 |---:|---|---|---|
-| 1 | **受講生つまずきクラスタ** | **データ確定（380件・Pine v0.5）** | 👉 上の **[3ステップ表](#-いま見るべき場所--受講生つまずきクラスタ研究)** ／ 次は v2.x へ F1 移植 |
-| 2 | **2期生トレード心理データ取り込み** | **ローカル統合済み（850行）** | [second_cohort_trade_psychology_import_2026-05-31.md](docs/research/second_cohort_trade_psychology_import_2026-05-31.md) |
-| 3 | 受講生エントリー集中パターン | 進行中 | [student_entry_cluster_research_2026-05-31.md](docs/research/student_entry_cluster_research_2026-05-31.md) |
-| 4 | トレード心理 / 群衆心理 | 進行中 | [RESEARCH_INDEX.md](docs/research/RESEARCH_INDEX.md) ／ [crowd_psychology_simple_visual.pine](pine/visual/crowd_psychology_simple_visual.pine) |
-| 5 | Market Psychology Squeeze / 投げ売り・踏み上げ | 記録済み | [投げ売り・踏み上げ ローソク足レポート](docs/research/market_psychology_capitulation_squeeze_candlestick_2026-06-01.md) ／ [strict研究](docs/research/market_psychology_squeeze_strict_2026-05-30.md) |
-| 6 | **ブログ教材用フォルダ** | **作成済み** | [docs/blog_materials/](docs/blog_materials/) |
-| 7 | **トレード実践記録** | **記録開始** | [docs/trade_practice_records/](docs/trade_practice_records/) |
-| 8 | Wavebox / Rebreak | 記録済み | [wavebox_operational_preconditions_v1.md](docs/research/wavebox_operational_preconditions_v1.md) |
+| 1 | **系統A 本番（TB+T5）** | **運用確定** | [A-path DECISION](docs/research/original_a_path_DECISION_2026-06-01.md) |
+| 2 | **系統B — 棚抜（B06）** | **TV照合37件OK** | [DECISION_b06](docs/research/system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md) |
+| 3 | **系統B — ﾄﾗ棚（B07）** | Pine最終確認中 | [B07 チェックリスト](docs/research/system_b_pine_parity_2026-06-01/B07_TV_PARITY_CHECKLIST_ja.md) |
+| 4 | **踏み上げ SQZ（踏金/踏銀/踏円）** | Pineあり・TV照合待ち | [cap_sqz DECISION](docs/research/cap_sqz_thorough_validation_2026-06-01/DECISION.md) |
+| 5 | **H4 T5 深掘り** | 記録済み | [t5_method_deep_research](docs/research/t5_method_deep_research_2026-06-01.md) |
+| 6 | 受講生つまずき（教材） | アーカイブ | 下の [つまずき研究](#-参考--受講生つまずきクラスタ研究教材アーカイブ) |
+| 7 | **トレード実践記録** | 記録中 | [trade_practice_records/](docs/trade_practice_records/) |
+| 8 | ブログ教材 | 作成済み | [blog_materials/](docs/blog_materials/) |
 
 ---
 

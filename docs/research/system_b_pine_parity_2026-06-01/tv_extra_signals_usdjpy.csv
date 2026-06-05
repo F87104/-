@@ -1,0 +1,4 @@
+symbol,lane_id,tv_approx_date,tv_sl,tv_tp,python_match,notes
+USDJPY,B06_VIS_PRECALM,2020-07-02 10:00,102.833,108.160,EXTRA,Pythonにない。テスターTrade3と一致・id15(11/11)とは別
+USDJPY,B06_VIS_PRECALM,2022-07-xx,,140.726,MISS,Pythonに2022年USDJPYシグナルなし
+USDJPY,B06_VIS_PRECALM,2025-06-xx,,,PENDING,前スクショ:要signal日時。id32は2025-07-07

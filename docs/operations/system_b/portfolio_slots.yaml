@@ -1,0 +1,172 @@
+# 系統B — ポートフォリオスロット定義
+# 作成日: 2026-06-01
+# 検証: docs/research/system_b_lanes_validation_2026-06-01/
+# 再現: python3 scripts/validate_system_b_lanes.py
+
+version: "2026-06-01"
+system_id: system_b
+system_name_ja: "系統B（選別ポートフォリオ）"
+
+# 系統A（TrendBreak V1 + H4 T5）とは別帳簿。V1/T5を系統Bレーンに含めない。
+system_a:
+  name: "TrendBreak V1 + H4 T5"
+  note: "変更なし。重複時は系統A側でT5優先（別ルール）。"
+
+targets:
+  trades_per_year_min: 20
+  trades_per_year_max: 30
+  max_trades_per_lane_per_year: 3
+  b06_vis_note: "B06は4銘柄合算。年3件超の場合は銘柄別で様子見。"
+
+overlap_resolution:
+  # 同一銘柄で保有期間が重なる場合、先に採用した1件のみ（validate_system_b_lanes と同じ）
+  rule: "first_by_entry_time_then_priority"
+  priority:
+    - B01_SQZ_XAUUSD
+    - B02_SQZ_USDJPY
+    - B03_SQZ_EURJPY   # 本番では enabled: false（除外）
+    - B04_SQZ_CHFJPY
+    - B05_SQZ_SILVER
+    - B06_VIS_PRECALM
+    - B07_DTS_TRAP_SHELF
+    - B08_LSS_SHORT_CORE4
+    - B09_IGNITION_STRICT
+
+promotion_gates:
+  research_min_trades: 5
+  research_min_pf: 1.5
+  research_max_dd_r: 6.0
+  pine_yes_max_risk_r: 1.0
+  pine_partial_max_risk_r: 0.25
+  pine_no_live: true
+
+lanes:
+  - lane_id: B01_SQZ_XAUUSD
+    label_ja: "踏み上げ STRICT・XAU"
+    direction: long
+    timeframe: H4
+    symbols: [XAUUSD]
+    loader: sqz_strict
+    pine_script: pine/production/h4_sqz_strict_live_ready.pine
+    pine_ready: yes
+    enabled: true
+    status: LIVE_CANDIDATE
+    risk_r_default: 1.0
+    max_trades_per_year: 3
+
+  - lane_id: B02_SQZ_USDJPY
+    label_ja: "踏み上げ STRICT・USDJPY"
+    direction: long
+    timeframe: H4
+    symbols: [USDJPY]
+    loader: sqz_strict
+    pine_script: pine/production/h4_sqz_strict_live_ready.pine
+    pine_ready: yes
+    enabled: true
+    status: FORWARD_0.25R
+    risk_r_default: 0.25
+    max_trades_per_year: 3
+    watch: "OOS 2025-26 で2敗。フルサイズ前に30件フォワード。"
+
+  - lane_id: B03_SQZ_EURJPY
+    label_ja: "踏み上げ STRICT・EURJPY"
+    direction: long
+    timeframe: H4
+    symbols: [EURJPY]
+    loader: sqz_strict
+    pine_script: pine/production/h4_sqz_strict_live_ready.pine
+    pine_ready: yes
+    enabled: false
+    status: EXCLUDED
+    exclusion_doc: docs/operations/system_b/lane_exclusions.md#b03-eurjpy-sqz
+    exclusion_reason: "Research -3.09R / PF 0.39。系統Bの品質基準不適合。"
+    risk_r_default: 0.0
+
+  - lane_id: B04_SQZ_CHFJPY
+    label_ja: "踏み上げ STRICT・CHFJPY"
+    direction: long
+    timeframe: H4
+    symbols: [CHFJPY]
+    loader: sqz_strict
+    pine_script: pine/production/h4_sqz_strict_live_ready.pine
+    pine_ready: yes
+    enabled: false
+    status: OBSERVE_ONLY
+    exclusion_doc: docs/operations/system_b/lane_exclusions.md#b04-chfjpy-sqz
+    exclusion_reason: "10年1件。統計未成立。"
+    risk_r_default: 0.0
+
+  - lane_id: B05_SQZ_SILVER
+    label_ja: "踏み上げ STRICT・SILVER"
+    direction: long
+    timeframe: H4
+    symbols: [SILVER]
+    loader: sqz_strict
+    pine_script: pine/production/h4_sqz_strict_live_ready.pine
+    pine_ready: yes
+    enabled: true
+    status: LIVE_CANDIDATE
+    risk_r_default: 1.0
+    max_trades_per_year: 3
+
+  - lane_id: B06_VIS_PRECALM
+    label_ja: "V初動棚 PRECALM"
+    direction: long
+    timeframe: H4
+    symbols: [USDJPY, EURJPY, GBPJPY, AUDJPY]
+    loader: vis_precalm
+    strategy_key: CURRENT_PRECALM_SHELF6_RR15
+    pine_script: pine/research/h4_v_initial_shelf_breakout_strategy.pine
+    pine_ready: yes
+    enabled: true
+    status: FORWARD_0.25R
+    risk_r_default: 0.25
+    max_trades_per_year: 3
+    parity_export: docs/research/system_b_pine_parity_2026-06-01/python_expected_b06_vis_precalm_all.csv
+    parity_export_tv_oanda: docs/research/system_b_pine_parity_2026-06-01/python_expected_b06_tv_oanda_{symbol}.csv
+    tv_oanda_parity:
+      USDJPY: yes
+      GBPJPY: yes
+      EURJPY: yes
+      AUDJPY: yes
+    watch: "TV OANDA 4通貨37件照合OK(2026-06-05)。執行の正=python_expected_b06_tv_oanda_*.csv。B07重複9件はoverlap優先。"
+
+  - lane_id: B07_DTS_TRAP_SHELF
+    label_ja: "D1トラップ遅延 H4棚"
+    direction: long
+    timeframe: H4
+    symbols: [USDJPY, EURJPY, GBPJPY, AUDJPY]
+    loader: dts_sigadx30
+    strategy_key: selected_CURRENT_A30_180_SIGADX30
+    pine_script: pine/research/d1_trap_h4_shelf_strict_strategy.pine
+    pine_ready: partial
+    enabled: true
+    status: FORWARD_0.25R
+    risk_r_default: 0.25
+    max_trades_per_year: 3
+    parity_export: docs/research/system_b_pine_parity_2026-06-01/python_expected_b07_tv_oanda_all.csv
+    watch: "先ほどのtv_*_h4.csvで12件。H4日時= B06照合済み(12/12)。D1Trap+EntryTPのPine最終確認のみ。B06重複はB06優先。"
+    tv_oanda_parity: partial
+
+  - lane_id: B08_LSS_SHORT_CORE4
+    label_ja: "月次安値停滞ショート"
+    direction: short
+    timeframe: H4
+    symbols: [XAUUSD, EURJPY, CHFJPY, GBPJPY]
+    loader: lss_core4
+    pine_ready: no
+    enabled: false
+    status: HOLD
+    risk_r_default: 0.0
+    note: "Pine parity未完了。docs/research/pine_parity_issue_h4_low_stag_short_2026-05-29.md"
+
+  - lane_id: B09_IGNITION_STRICT
+    label_ja: "点火 STRICT（XAU除外）"
+    direction: long
+    timeframe: H4
+    symbols: [USDJPY, EURJPY, GBPJPY, AUDJPY, CHFJPY, SILVER]
+    loader: ignition_strict
+    pine_ready: no
+    enabled: false
+    status: HOLD
+    risk_r_default: 0.0

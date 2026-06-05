@@ -1,0 +1,4 @@
+OANDA
+Source file: OANDA_AUDJPY, 240_cc56b.csv
+Bar range: 2013-01-01 22:00 UTC — 2026-06-05 01:00 UTC (20876 bars)
+Replaced: OANDA_AUDJPY 240_7f215 (2021+ only, 3 signals)

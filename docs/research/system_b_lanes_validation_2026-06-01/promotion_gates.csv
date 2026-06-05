@@ -1,0 +1,10 @@
+lane_id,name_ja,pine_ready,max_trades_per_year,status,blockers,passes,res_trades,res_trades_per_year,res_win_rate,res_total_r,res_avg_r,res_pf,res_max_dd_r
+B01_SQZ_XAUUSD,踏み上げ STRICT・XAU,yes,3,LIVE_CANDIDATE,oos_no_trades,sample_ok;research_pf_ok;research_dd_ok;freq_ok;pine_ok,10,1.42,70.0,10.73,1.073,4.45,2.07
+B02_SQZ_USDJPY,踏み上げ STRICT・USDJPY,yes,3,LIVE_CANDIDATE,oos_weak,sample_ok;research_pf_ok;research_dd_ok;freq_ok;pine_ok,11,1.29,54.5,6.88,0.626,2.36,2.02
+B03_SQZ_EURJPY,踏み上げ STRICT・EURJPY,yes,3,FORWARD_0.25R,research_PF<1.5;oos_no_trades,sample_ok;research_dd_ok;freq_ok;pine_ok,6,0.65,16.7,-3.09,-0.514,0.39,3.05
+B04_SQZ_CHFJPY,踏み上げ STRICT・CHFJPY,yes,3,FORWARD_0.25R,trades<5;oos_no_trades,research_pf_ok;research_dd_ok;freq_ok;pine_ok,1,1.0,100.0,1.97,1.965,inf,0.0
+B05_SQZ_SILVER,踏み上げ STRICT・SILVER,yes,3,LIVE_CANDIDATE,oos_no_trades,sample_ok;research_pf_ok;research_dd_ok;freq_ok;pine_ok,7,0.93,71.4,7.33,1.048,4.47,1.03
+B06_VIS_PRECALM,V初動棚 PRECALM,partial,3,FORWARD_0.25R,,sample_ok;research_pf_ok;research_dd_ok;freq_ok;oos_okish;pine_parity_pending,29,3.07,55.2,10.61,0.366,1.8,5.11
+B07_DTS_TRAP_SHELF,D1トラップ遅延 H4棚,partial,3,FORWARD_0.25R,,sample_ok;research_pf_ok;research_dd_ok;freq_ok;oos_okish;pine_parity_pending,6,0.63,100.0,8.9,1.483,inf,0.0
+B08_LSS_SHORT_CORE4,月次安値停滞ショート,no,3,HOLD,pine_not_ready,sample_ok;research_pf_ok;research_dd_ok;freq_ok;oos_okish,10,1.05,70.0,10.57,1.057,4.35,1.08
+B09_IGNITION_STRICT,点火 STRICT（XAU除外）,no,3,HOLD,pine_not_ready,sample_ok;research_pf_ok;research_dd_ok;freq_ok;oos_okish,6,0.77,66.7,3.87,0.644,2.89,1.02

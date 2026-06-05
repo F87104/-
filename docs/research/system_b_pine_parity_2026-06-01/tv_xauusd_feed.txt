@@ -1,0 +1,5 @@
+FX XAUUSD (系統B B01_SQZ_XAUUSD 用・B06/B07対象外)
+Source: FX_XAUUSD, 240_297b6.csv (user path Downloads)
+Bars: 2013-01-02 — 2026-06-05
+Pine: pine/production/h4_sqz_strict_live_ready.pine
+Saved: tv_xauusd_h4.csv

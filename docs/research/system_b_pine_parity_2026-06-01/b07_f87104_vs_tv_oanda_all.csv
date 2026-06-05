@@ -1,0 +1,22 @@
+key,in_f87104_export,in_tv_oanda_py,match
+AUDJPY|2015-11-18 20:00:00,True,False,False
+AUDJPY|2018-11-01 01:00:00,False,True,False
+AUDJPY|2019-07-22 09:00:00,False,True,False
+AUDJPY|2023-07-25 01:00:00,False,True,False
+AUDJPY|2025-03-17 04:00:00,True,False,False
+EURJPY|2015-04-27 12:00:00,True,False,False
+EURJPY|2015-05-29 08:00:00,True,False,False
+EURJPY|2016-08-30 09:00:00,False,True,False
+EURJPY|2016-10-03 20:00:00,True,False,False
+EURJPY|2016-10-03 21:00:00,False,True,False
+EURJPY|2018-05-22 05:00:00,False,True,False
+EURJPY|2018-07-03 05:00:00,False,True,False
+GBPJPY|2016-08-24 08:00:00,True,False,False
+GBPJPY|2016-11-04 13:00:00,False,True,False
+GBPJPY|2018-07-05 05:00:00,False,True,False
+GBPJPY|2024-10-09 08:00:00,True,False,False
+GBPJPY|2024-10-09 09:00:00,False,True,False
+USDJPY|2020-07-02 09:00:00,False,True,False
+USDJPY|2025-05-28 13:00:00,False,True,False
+USDJPY|2025-07-07 00:00:00,True,False,False
+USDJPY|2025-09-24 04:00:00,True,False,False

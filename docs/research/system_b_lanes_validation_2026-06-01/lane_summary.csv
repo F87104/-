@@ -1,0 +1,10 @@
+lane_id,name_ja,direction,tf,pine_ready,all_trades,all_trades_per_year,all_win_rate,all_total_r,all_avg_r,all_pf,all_max_dd_r,res_trades,res_trades_per_year,res_win_rate,res_total_r,res_avg_r,res_pf,res_max_dd_r,oos_trades,oos_trades_per_year,oos_win_rate,oos_total_r,oos_avg_r,oos_pf,oos_max_dd_r
+B01_SQZ_XAUUSD,踏み上げ STRICT・XAU,long,H4,yes,10,1.42,70.0,10.73,1.073,4.45,2.07,10,1.42,70.0,10.73,1.073,4.45,2.07,0,0.0,0.0,0.0,0.0,,0.0
+B02_SQZ_USDJPY,踏み上げ STRICT・USDJPY,long,H4,yes,13,1.32,46.2,4.87,0.375,1.69,2.02,11,1.29,54.5,6.88,0.626,2.36,2.02,2,2.0,0.0,-2.01,-1.007,0.0,1.01
+B03_SQZ_EURJPY,踏み上げ STRICT・EURJPY,long,H4,yes,6,0.65,16.7,-3.09,-0.514,0.39,3.05,6,0.65,16.7,-3.09,-0.514,0.39,3.05,0,0.0,0.0,0.0,0.0,,0.0
+B04_SQZ_CHFJPY,踏み上げ STRICT・CHFJPY,long,H4,yes,1,1.0,100.0,1.97,1.965,inf,0.0,1,1.0,100.0,1.97,1.965,inf,0.0,0,0.0,0.0,0.0,0.0,,0.0
+B05_SQZ_SILVER,踏み上げ STRICT・SILVER,long,H4,yes,7,0.93,71.4,7.33,1.048,4.47,1.03,7,0.93,71.4,7.33,1.048,4.47,1.03,0,0.0,0.0,0.0,0.0,,0.0
+B06_VIS_PRECALM,V初動棚 PRECALM,long,H4,partial,34,3.12,58.8,15.55,0.457,2.09,5.11,29,3.07,55.2,10.61,0.366,1.8,5.11,5,4.91,80.0,4.93,0.986,5.84,1.02
+B07_DTS_TRAP_SHELF,D1トラップ遅延 H4棚,long,H4,partial,9,0.86,100.0,13.35,1.484,inf,0.0,6,0.63,100.0,8.9,1.483,inf,0.0,3,3.0,100.0,4.46,1.485,inf,0.0
+B08_LSS_SHORT_CORE4,月次安値停滞ショート,short,H4,no,11,1.14,72.7,12.55,1.141,4.98,1.08,10,1.05,70.0,10.57,1.057,4.35,1.08,1,1.0,100.0,1.98,1.984,inf,0.0
+B09_IGNITION_STRICT,点火 STRICT（XAU除外）,long,H4,no,7,0.85,71.4,5.36,0.765,3.62,1.02,6,0.77,66.7,3.87,0.644,2.89,1.02,1,1.0,100.0,1.49,1.492,inf,0.0

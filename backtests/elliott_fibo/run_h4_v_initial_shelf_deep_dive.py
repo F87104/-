@@ -105,6 +105,18 @@ def load_h4_data() -> dict[str, pd.DataFrame]:
     return data
 
 
+def load_h4_data_tv_oanda(tv_csv_dir: Path, symbols: Iterable[str]) -> dict[str, pd.DataFrame]:
+    from tv_oanda_h4_loader import default_tv_csv_path, load_tv_oanda_h4_csv
+
+    data: dict[str, pd.DataFrame] = {}
+    for symbol in symbols:
+        path = default_tv_csv_path(symbol, tv_csv_dir)
+        if not path.exists():
+            continue
+        data[symbol] = load_tv_oanda_h4_csv(path)
+    return data
+
+
 def pre_calm_ok(df: pd.DataFrame, start_i: int, spec: DeepSpec) -> bool:
     if start_i < 80:
         return False
@@ -434,8 +446,25 @@ def period_name(ts: pd.Timestamp) -> str:
     return "OOS_2025_2026"
 
 
-def prepare_data() -> tuple[dict[str, pd.DataFrame], dict[str, list]]:
-    data = load_h4_data()
+def prepare_data(
+    data_source: str = "f87104",
+    tv_csv_dir: Path | None = None,
+    symbols: Iterable[str] | None = None,
+) -> tuple[dict[str, pd.DataFrame], dict[str, list]]:
+    sym_list = list(symbols) if symbols is not None else list(SYMBOLS)
+    if data_source == "tv_oanda":
+        if tv_csv_dir is None:
+            raise ValueError("tv_csv_dir required when data_source=tv_oanda")
+        data = load_h4_data_tv_oanda(tv_csv_dir, sym_list)
+        missing = [s for s in sym_list if s not in data]
+        if missing:
+            raise FileNotFoundError(
+                f"Missing TV CSV for: {missing} under {tv_csv_dir} (expected tv_<symbol>_h4.csv)"
+            )
+    else:
+        data = load_h4_data()
+        if symbols is not None:
+            data = {k: v for k, v in data.items() if k in sym_list}
     settings = timeframe_settings(TIMEFRAME)
     pivots = {
         symbol: build_confirmed_pivots(df, settings["pivot_width"], settings["min_swing_atr"])

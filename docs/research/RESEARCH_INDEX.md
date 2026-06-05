@@ -10,16 +10,42 @@
 - 「研究の問い」「途中経過」「次にやること」を必ず残す
 - 新しい発見は、あとから教材・検証・Pine 化のどれに使うか分けて記録する
 
+## いまのアクティブ研究（2026-06〜）
+
+**心理・恐怖ゾーン・受講生マップ一連はフラット化（アーカイブ）。**  
+新規は収益のみ → **[ORIGINAL_RESEARCH_2026-06.md](ORIGINAL_RESEARCH_2026-06.md)**
+
+| 区分 | 入口 |
+|------|------|
+| **オリジナル研究（本線）** | [ORIGINAL_RESEARCH_2026-06.md](ORIGINAL_RESEARCH_2026-06.md) |
+| **A-path 最終判断** | [original_a_path_DECISION_2026-06-01.md](original_a_path_DECISION_2026-06-01.md) |
+| **本番運用・数値** | [ultimate_method_v1_2026-06-01.md](ultimate_method_v1_2026-06-01.md) |
+| **第3候補（SQZ等）** | [near_main_validation_roadmap_2026-06-01.md](near_main_validation_roadmap_2026-06-01.md) |
+| **系統B（10レーン）** | [system_b_lanes_validation_2026-06-01/DECISION.md](system_b_lanes_validation_2026-06-01/DECISION.md) |
+| **系統B 本番運用** | [operations/system_b/README.md](../operations/system_b/README.md) |
+| **系統B B06/B07 Pine照合** | [system_b_pine_parity_2026-06-01/tradingview_parity_checklist.md](system_b_pine_parity_2026-06-01/tradingview_parity_checklist.md) |
+| **旧心理スプリント（参照のみ）** | [ARCHIVE_psychology_sprint_2026-05_06.md](ARCHIVE_psychology_sprint_2026-05_06.md) |
+
 ## 次にやること
 
-1. **究極手法 v1.0** を日次チェックで運用 — [ultimate_method_v1_2026-06-01.md](ultimate_method_v1_2026-06-01.md)
-2. **準本命4手法**の検証続行（SQZ → VIS → LSS parity → DTS）— [near_main_validation_roadmap_2026-06-01.md](near_main_validation_roadmap_2026-06-01.md)
-3. v2.x マトリクス戦略へ **F1 節目追い抑制** だけ移植（380件データで再確認）
+1. **本番** — TB baseline のまま + **T5優先**（重複時はT5）— [DECISION](original_a_path_DECISION_2026-06-01.md)
+2. **TB に追加フィルタを入れない**（検証で総R↓のみ）
+3. **H3** — SQZ フォワード30件
 
-## 進捗ログ
+## 進捗ログ（アクティブ）
 
 | 日付 | 研究テーマ | 進捗 | 次の判断 |
 |---|---|---|---|
+| 2026-06-01 | **A-path 決定** | TBフィルタ追加却下。**T5優先**採用 +212.7R vs TB単体 +194.6R。 | [DECISION](original_a_path_DECISION_2026-06-01.md) を運用に固定 |
+| 2026-06-01 | **フラット化** | 心理スプリントを [ARCHIVE](ARCHIVE_psychology_sprint_2026-05_06.md) へ。 | — |
+
+## 進捗ログ（アーカイブ — 心理スプリント 2026-05〜06）
+
+| 日付 | 研究テーマ | 進捗 | 次の判断 |
+|---|---|---|---|
+| 2026-06-01 | 恐怖ゾーン未来運用 | Live v1.0.4 等 — 詳細は ARCHIVE | 新研究では使わない |
+| 2026-06-01 | 心理マップ実践検証 | TBフィルタは総R↓ — 詳細は ARCHIVE | 同上 |
+| 2026-06-01 | 恐怖・損切・どテン可視化 | 教材・可視化まで完了 | 同上 |
 | 2026-05-31 | トレード心理研究 | 失敗チャートの代表例7ケースをローカルで選び、可視化第一版を作成。公開版には画像・元データは載せない。 | 代表ケースごとに「実際の入口」「本来待つ場所」「損切り位置」を手動でより正確に重ねる |
 | 2026-05-31 | トレード心理研究 | 代表7ケースに、赤=実際の入口、青=本来待つ場所、黄=損切り位置、緑=次回ルールの手動マーキング下書きをローカルで作成。 | 位置を微調整したあと、教材化できるケースと研究保留ケースに分ける |
 | 2026-05-31 | トレード心理研究 | 代表7ケースを仕分けし、優先教材3ケース、教材候補3ケース、研究保留1ケースに分類。優先教材3ケースの1枚教材下書きをローカルで作成。 | 優先教材3ケースの文章を調整し、教材として使える形に整える |
@@ -50,12 +76,22 @@
 | 2026-06-01 | 投げ売り・踏み上げ研究 | 用語の例え、ローソク足の出方、Pine化する条件を公開メモ化。投げ売りは買い手の降参、踏み上げは売り手の降参として整理。 | `CAPITULATION` / `SQUEEZE` の観察ラベルをPineへ入れる |
 | 2026-06-01 | ブログ教材化 | 教材化しやすい公開レポート10本を `docs/blog_materials/reports/` へ複製し、ブログ連載案と記事テンプレートを追加。 | まず1本目「投げ売りと踏み上げをローソク足で読む」を記事化する |
 | 2026-06-01 | 準本命4手法検証 | TrendBreak+T5以外で主要に近い候補4つ（SQZ/VIS/LSS/DTS）を優先順・昇格ゲート・フォワード台帳で整理。 | 第1週: VIS+SQZ Pine照合 |
+| 2026-06-01 | 大トレンドブレイク相性検証 | 休眠レベル（A/B/C）× TB/T5。TBロング+休眠同時ブレイク PF2.37、TB+T5+直近48本 PF2.28。単独エントリーは非採用。踏み上げ研究は終了。 | [dormant_synergy_validation_2026-06-01/DECISION.md](dormant_synergy_validation_2026-06-01/DECISION.md) |
+| 2026-06-01 | 敗者コホート・イベントスキャナー | E1〜E4＋ランダム対照、2936イベント、forward MFE48のみ。E1 SQZはランダムよりMFE/fwd優位。売買なし。 | [loser_cohort_event_scanner_2026-06-01/DECISION.md](loser_cohort_event_scanner_2026-06-01/DECISION.md) |
+| 2026-06-01 | **系統B 10レーン検証** | V1/T5除外。98件→重複排除88件/年7.9。SQZ5本PF2.26。B03 EURJPY Researchマイナス。B06↔B07重複9。 | [system_b_lanes_validation_2026-06-01/DECISION.md](system_b_lanes_validation_2026-06-01/DECISION.md) |
+| 2026-06-01 | **系統B 本番準備** | portfolio_slots.yaml・フォワードログ・B03除外文書化。 | [operations/system_b](../operations/system_b/) |
+| 2026-06-01 | **系統B Pine照合準備** | Python再実行OK。B06 Pine TPデフォルト→Signal基準。 | [usdjpy_b06_smoke.md](system_b_pine_parity_2026-06-01/usdjpy_b06_smoke.md) |
+| 2026-06-05 | **B06 TV OANDA 照合完了** | 4通貨37件 OK。正=`python_expected_b06_tv_oanda_*.csv`。 | `pine_ready: yes` フォワード継続 |
+| 2026-05-31 | **B07 TV-OHLC baseline** | 先ほどの4本 `tv_*_h4.csv` で12件。H4日時=B06照合済み。旧9件exportは不使用。 | [B07_TV_PARITY_CHECKLIST_ja.md](system_b_pine_parity_2026-06-01/B07_TV_PARITY_CHECKLIST_ja.md) → D1Trap Pine最終確認 |
 | 2026-06-01 | ブログ記事作成 | ブログ用の記事5本を作成。「ブレイク直後」「投げ売り/踏み上げ」「失敗の逆利用」「同じ場所での同じ失敗」「STOP/WAIT/CHECK」を教材化。 | 次は各記事にアイキャッチ案とSNS導入文を付ける |
 | 2026-06-01 | ブログ記事作成 | ユーザー指定タイトル20本をすべて記事化し、`docs/blog_materials/articles/` に一覧ページを追加。 | 各記事にアイキャッチ案、リード文、投稿順を付ける |
 | 2026-06-01 | ブログ記事作成 | 「自分のことだと思わせる」追加タイトル25本を記事化し、記事下書きは合計45本に拡張。 | 45本から投稿優先順位を決め、各記事にアイキャッチ案を付ける |
 | 2026-06-01 | ブログ記事作成 | 損切り位置を損失方向へずらす心理をテーマに、46本目の記事を追加。 | 損切り心理シリーズとして並び替える |
 | 2026-06-01 | ブログタイトル改善 | 46本の記事タイトルを、抽象語ではなく「大陽線・大陰線」「抜けた後の戻り」「損切り幅」「次の足」などチャート上で確認できる言葉へリライト。 | 投稿優先順位を決め、上位10本からアイキャッチ案とSNS導入文を付ける |
 | 2026-06-01 | トレード実践記録 | 作成したインジケータの実戦記録場所を `docs/trade_practice_records/` に追加。USDJPY H4 159.674 のエントリーを1件目として記録。 | 決済後に結果、感情、損切り位置、次回ルールを追記する |
+| 2026-06-01 | 究極手法 v1.0 実検証 | 本番2柱+アンサンブル+準本番4手法の Python バックテストを再実行。+219.9R / PF1.86 を再現確認。 | [ultimate_method_validation_results_2026-06-01.md](ultimate_method_validation_results_2026-06-01.md) を参照し、VIS+SQZ の TV parity へ |
+| 2026-06-01 | H4 T5 徹底リサーチ | 13本の検証スクリプト・6フェーズ進化史・通貨別/トリガー別/出口/却下 variant を統合。 | Pine parity → フォワード30件 → T5×VIS 重複 study |
+| 2026-06-01 | H4 T5 Pine parity 期待値 | Python 99件+OOS15件+Practical34件の TV 照合用 CSV/checklist をエクスポート。 | USDJPY スモーク → 全通貨 Phase A/B |
 
 ## 進行中の研究
 
@@ -119,6 +155,7 @@
 |---|---|
 | Market Psychology | [market_psychology_pattern_library_2026-05-30.md](market_psychology_pattern_library_2026-05-30.md) |
 | Market Psychology Squeeze | [market_psychology_squeeze_strict_2026-05-30.md](market_psychology_squeeze_strict_2026-05-30.md) |
+| **踏み上げ・投げ切り 実装前検証** | [cap_sqz_thorough_validation_2026-06-01/DECISION.md](cap_sqz_thorough_validation_2026-06-01/DECISION.md) |
 | 通貨別相性 | [market_psychology_squeeze_currency_compatibility_2026-05-30.md](market_psychology_squeeze_currency_compatibility_2026-05-30.md) |
 | Wavebox 運用条件 | [wavebox_operational_preconditions_v1.md](wavebox_operational_preconditions_v1.md) |
 | Wavebox フォワード検証 | [wavebox_forward_validation_protocol.md](wavebox_forward_validation_protocol.md) |
@@ -135,6 +172,9 @@
 | **850件テキスト失敗理由** | [trade_psychology_failure_reason_research_2026-05-31.md](trade_psychology_failure_reason_research_2026-05-31.md) |
 | **準本命4手法 検証ロードマップ** | [near_main_validation_roadmap_2026-06-01.md](near_main_validation_roadmap_2026-06-01.md) |
 | **究極手法 v1.0（研究統合）** | [ultimate_method_v1_2026-06-01.md](ultimate_method_v1_2026-06-01.md) |
+| **究極手法 v1.0 実検証結果（再実行）** | [ultimate_method_validation_results_2026-06-01.md](ultimate_method_validation_results_2026-06-01.md) |
+| **H4 T5 手法 徹底リサーチ** | [t5_method_deep_research_2026-06-01.md](t5_method_deep_research_2026-06-01.md) |
+| **H4 T5 Pine parity（TV照合用）** | [t5_pine_parity/tradingview_parity_checklist.md](../../backtests/elliott_fibo/results_2026_06_01/t5_pine_parity/tradingview_parity_checklist.md) |
 | 日次チェックリスト | [ultimate_method_daily_checklist.csv](../trade_practice_records/ultimate_method_daily_checklist.csv) |
 | フォワード検証台帳 | [near_main_forward_validation_log.csv](../trade_practice_records/near_main_forward_validation_log.csv) |
 | 全敗18クラスタ失敗カード | [student_stumble_all_loss_failure_cards_v0_1.md](student_stumble_all_loss_failure_cards_v0_1.md) |

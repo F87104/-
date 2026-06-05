@@ -1,0 +1,4 @@
+OANDA
+Source file: OANDA_EURJPY, 240_b8f7b.csv
+Bar range: 2013-01-01 22:00 UTC — 2026-06-05 01:00 UTC
+Replaced: FOREXCOM_EURJPY (2026-06-05)

@@ -1,0 +1,8 @@
+key,in_f87104_export,in_tv_oanda_py,match
+EURJPY|2015-04-27 12:00:00,True,False,False
+EURJPY|2015-05-29 08:00:00,True,False,False
+EURJPY|2016-08-30 09:00:00,False,True,False
+EURJPY|2016-10-03 20:00:00,True,False,False
+EURJPY|2016-10-03 21:00:00,False,True,False
+EURJPY|2018-05-22 05:00:00,False,True,False
+EURJPY|2018-07-03 05:00:00,False,True,False

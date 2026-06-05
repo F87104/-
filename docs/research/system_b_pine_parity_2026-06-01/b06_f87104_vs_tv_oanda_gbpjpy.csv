@@ -1,0 +1,13 @@
+key,in_f87104,in_tv_oanda_py,match
+GBPJPY|2016-08-24 08:00:00,True,False,False
+GBPJPY|2016-11-04 13:00:00,False,True,False
+GBPJPY|2016-11-08 16:00:00,True,False,False
+GBPJPY|2018-07-05 05:00:00,False,True,False
+GBPJPY|2019-02-19 06:00:00,False,True,False
+GBPJPY|2020-05-25 21:00:00,False,True,False
+GBPJPY|2020-10-09 12:00:00,True,False,False
+GBPJPY|2021-07-23 09:00:00,False,True,False
+GBPJPY|2024-10-09 08:00:00,True,False,False
+GBPJPY|2024-10-09 09:00:00,False,True,False
+GBPJPY|2025-03-21 01:00:00,False,True,False
+GBPJPY|2026-03-23 09:00:00,False,True,False

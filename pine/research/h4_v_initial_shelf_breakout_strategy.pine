@@ -74,7 +74,7 @@ rr = input.float(1.5, "TP RR", minval=0.1, step=0.1, group=grpRisk)
 stopBufferAtr = input.float(0.25, "SL余白(ATR)", minval=0.0, step=0.05, group=grpRisk)
 maxRiskAtr = input.float(2.2, "最大リスク幅(ATR)", minval=0.1, step=0.1, group=grpRisk)
 maxHoldBars = input.int(120, "最大保有本数", minval=1, group=grpRisk)
-tpBasis = input.string("Entry基準", "TP計算", options=["Entry基準","Signal基準(36d90e6再現)"], group=grpRisk)
+tpBasis = input.string("Signal基準(36d90e6再現)", "TP計算", options=["Entry基準","Signal基準(36d90e6再現)"], group=grpRisk)
 
 grpView = "表示"
 showCandidates = input.bool(false, "V候補表示", group=grpView)

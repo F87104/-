@@ -1,0 +1,10 @@
+record_id,system,lane_id,lane_label_ja,symbol,timeframe,signal_datetime_utc,entry_datetime_utc,entry_price,side,risk_r,stop_price,target_price,exit_datetime_utc,exit_price,result_r,python_match,pine_match,overlap_suppressed,overlap_winner_lane,overlap_with_system_a,notes,review_status
+FW-B01-TEMPLATE,B,B01_SQZ_XAUUSD,踏み上げ STRICT・XAU,XAUUSD,H4,,,,buy,1.0,,,,,,pending,,,no,,,h4_sqz_strict_live_ready.pine と signal_time 一致後に実弾可
+FW-B02-TEMPLATE,B,B02_SQZ_USDJPY,踏み上げ STRICT・USDJPY,USDJPY,H4,,,,buy,0.25,,,,,,pending,,,no,,,OOS監視中。30件フォワード後に risk_r 見直し
+FW-B05-TEMPLATE,B,B05_SQZ_SILVER,踏み上げ STRICT・SILVER,SILVER,H4,,,,buy,1.0,,,,,,pending,,,no,,,
+FW-B06-TEMPLATE,B,B06_VIS_PRECALM,V初動棚 PRECALM,USDJPY,H4,,,,buy,0.25,,,,,,pending,,,no,,,PRECALM+SHELF6。TV OANDA照合OK銘柄のみ実弾(USDJPY/GBPJPY 2026-06-05)
+FW-B07-TEMPLATE,B,B07_DTS_TRAP_SHELF,D1トラップ遅延 H4棚,EURJPY,H4,,,,buy,0.25,,,,,,pending,,,yes,B06_VIS_PRECALM,,B06と重複時はB06優先で本レーンは見送り
+FW-EXCLUDED-B03,,B03_SQZ_EURJPY,踏み上げ STRICT・EURJPY,EURJPY,H4,,,,buy,0,,,,,,excluded,,,,,lane_exclusions.md 参照・ログに載せない
+FW-EXCLUDED-B04,,B04_SQZ_CHFJPY,踏み上げ STRICT・CHFJPY,CHFJPY,H4,,,,buy,0,,,,,,excluded,,,,,10年1件・観測のみ
+FW-HOLD-B08,,B08_LSS_SHORT_CORE4,月次安値停滞ショート,GBPJPY,H4,,,,sell,0,,,,,,hold,,,,,Pine未整備
+FW-HOLD-B09,,B09_IGNITION_STRICT,点火 STRICT,USDJPY,H4,,,,buy,0,,,,,,hold,,,,,Pine未整備

@@ -1,0 +1,49 @@
+# 2026-06-04 XAUUSD H1 売り — V1ショートシグナル
+
+[← 実践日誌](../README.md) ／ [← トレード日誌トップ](../../README.md)
+
+## サマリー
+
+| 項目 | 内容 |
+|---|---|
+| 日時 | 2026-06-04 07:00（シグナル）／ 約定建値 4368.40 |
+| 銘柄 | XAUUSD（金スポット） |
+| 時間足 | H1 |
+| 方向 | **売り（ショート）** |
+| 数量 | 40.0 |
+| 建値 | 4368.40 |
+| エントリー理由 | **V1ショートシグナル** |
+| インジケータ | TrendBreakV1 [FINAL] |
+| 状態 | 建玉中（記録時 評価損益 -13,715） |
+| 備考 | スクリーンショット 23:04。シグナル時刻 07:00 |
+
+## シグナル値（TradingView）
+
+| 項目 | 価格 |
+|---|---:|
+| Entry (S) | 4365.65 |
+| Stop Loss (SL) | 4408.55 |
+| Take Profit (TP) | 4236.94 |
+| ラベル | -2.3 Short |
+
+## 写真
+
+### 1. TradingView — TrendBreakV1 ショートシグナル
+
+![TrendBreakV1 SHORT SIG — Entry 4365.65](../images/2026-06-04_xauusd_01_trendbreakv1_short_signal.png)
+
+- H1 金/米ドル、連続陰線後の **SHORT SIG**
+- ステータス: `signals 11` / `st action OBS B` / `Block OK`
+
+### 2. 建玉サマリー（約定後）
+
+![金スポット 売り 40.0 @ 4368.40](../images/2026-06-04_xauusd_02_position_short.png)
+
+- 売り 40.0、平均建玉 **4368.40**
+- 記録時点の現在値 4370.54、評価損益 **-13,715**
+
+## メモ
+
+- 主力戦略 **TrendBreakV1 HYBRID** のショートシグナルに従ったエントリー。
+- 関連 Pine: [TrendBreakV1_Final.pine](../../../pine/production/TrendBreakV1_Final.pine)
+- 決済後は [index.csv](../index.csv) の `status` と損益を更新する。

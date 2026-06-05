@@ -14,6 +14,7 @@
 | **リアルタイム心理を記録する** | [psychology/](psychology/) |
 | **受講生トレード記録（137件・研究用）** | [archive/student/](archive/student/) |
 | **トレード心理の研究ノート** | [reference/](reference/) |
+| **早めに損切りパターン研究** | [early_stop_loss_patterns_2026-06-06.md](../research/early_stop_loss_patterns_2026-06-06.md) |
 
 ---
 

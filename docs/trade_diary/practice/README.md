@@ -11,6 +11,7 @@
 | ファイル | 内容 |
 |---|---|
 | [index.csv](index.csv) | 全エントリー一覧（画像パス・Markdown パス付き） |
+| [early_stop_pattern_log.csv](early_stop_pattern_log.csv) | 早切りパターンタグ（E01〜E08） |
 | [entries/](entries/) | 個別エントリー（写真埋め込み） |
 | [images/](images/) | スクリーンショット |
 

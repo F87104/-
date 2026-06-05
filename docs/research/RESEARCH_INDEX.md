@@ -45,15 +45,17 @@
 | 2026-05-31 | 節目飛び乗り抑制フィルタ試験 | GBPJPY 1H で OFF/ON 実測。ON で件数63%減・DD改善、全期間PFは微悪化。**137件データで十分**と確定。v0.1.1 の F1 を v2.x 移植候補に。 | v2.x 本体へ F1 だけ AND 移植 |
 | 2026-05-31 | 通貨別の心理傾向 | 137件の実エントリー抽出データと705件の匿名化済み心理データから、GBPJPYは勢いの罠、XAUUSDは値幅の罠、USDJPYは節目抜けの罠として見る仮説を追加。 | GBPJPY、XAUUSD、USDJPYで `S/W/C` を各20例ずつ記録し、通貨別にC条件を少し変えるか判断する |
 | 2026-06-03 | Short Covering Psychology Flow | 売り優勢、売り失敗、ショートカバー、加速を分けて表示するH4可視化を追加。表示整理と標準感度への再調整まで行ったが、実戦候補としては微妙と判断。 | **研究終了。本番不採用。心理フローの参考アーカイブとして残す** |
+| 2026-06-05 | H4 V Denial Re-Acceleration | 「誰が負けているか」を主語にし、急落後のVを売り失敗の文脈、上側棚をCHECK、売り手の損切りライン突破をSIGNALとして扱うStrategy研究版を追加。 | H4T5 / H4 V Initial Shelf Breakout と同じチャートで比較し、SIGNALが人間の目で売り手の損切り連鎖に見えるか確認する |
 
 ## 進行中の研究
 
 | 優先 | 研究テーマ | 状態 | 目的 | 現在地 | 次の作業 |
 |---:|---|---|---|---|---|
 | 1 | 受講生つまずきクラスタ研究 | **データ確定** | 137件・全敗15・Pine v0.4 + F1試験 v0.1.1 完了 | 追加抽出不要 | v2.x へ F1 移植 |
-| 2 | Market Psychology Squeeze | 記録済み | スクイーズ、投げ売り、踏み上げを戦略化する | 通貨別の相性と厳格条件を整理済み | 実運用に残す条件と除外条件をまとめる |
-| 3 | **市場心理図鑑** | **Vol.1 公開** | チャート形状ではなく参加者心理を分類する辞書 | 基本12パターンを記載 | Vol.2 心理合成、Event scanner 実装 |
-| 4 | Wavebox / Rebreak | 記録済み | 波形、再ブレイク、押し戻りの有効条件を調べる | 運用前提、監査、Pine 実装メモを整理済み | 実運用に使う版と研究保留版を分ける |
+| 2 | H4 V Denial Re-Acceleration | **重要・検証中** | 売り手が負けを認める瞬間を、V文脈 + 上側棚 + 損切りライン突破で検出する | Pine Strategy と研究メモを追加済み | GBPJPY / USDJPY / EURJPY / AUDJPY H4で目視し、勝ち負け各5件を記録 |
+| 3 | Market Psychology Squeeze | 記録済み | スクイーズ、投げ売り、踏み上げを戦略化する | 通貨別の相性と厳格条件を整理済み | 実運用に残す条件と除外条件をまとめる |
+| 4 | **市場心理図鑑** | **Vol.1 公開** | チャート形状ではなく参加者心理を分類する辞書 | 基本12パターンを記載 | Vol.2 心理合成、Event scanner 実装 |
+| 5 | Wavebox / Rebreak | 記録済み | 波形、再ブレイク、押し戻りの有効条件を調べる | 運用前提、監査、Pine 実装メモを整理済み | 実運用に使う版と研究保留版を分ける |
 
 ## 終了した研究
 
@@ -120,6 +122,7 @@
 | Wavebox フォワード検証 | [wavebox_forward_validation_protocol.md](wavebox_forward_validation_protocol.md) |
 | ショート側研究 | [short_side_research_2026-05-28_in_progress.md](short_side_research_2026-05-28_in_progress.md) |
 | H4 V字回復候補 | [h4_v_recovery_strategy_candidates_2026-05-30.md](h4_v_recovery_strategy_candidates_2026-05-30.md) |
+| H4 V Denial Re-Acceleration | [h4_v_denial_reacceleration_2026-06-05.md](h4_v_denial_reacceleration_2026-06-05.md) |
 | トレード心理Pine化 | [trade_psychology_failure_patterns_to_pine_2026-05-31.md](trade_psychology_failure_patterns_to_pine_2026-05-31.md) |
 | トレード心理 最適エントリー研究 | [trade_psychology_optimal_entry_pattern_research_2026-05-31.md](trade_psychology_optimal_entry_pattern_research_2026-05-31.md) |
 | リアルタイム心理記録テンプレート | [realtime_trade_psychology_log_template.csv](realtime_trade_psychology_log_template.csv) |

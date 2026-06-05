@@ -1,0 +1,566 @@
+//@version=5
+strategy("H4 V Denial Re-Acceleration [Research]", overlay=true, initial_capital=10000, default_qty_type=strategy.fixed, default_qty_value=1, pyramiding=0, calc_on_order_fills=true, calc_on_every_tick=false, process_orders_on_close=false, commission_type=strategy.commission.percent, commission_value=0.0, slippage=2, max_bars_back=5000, max_lines_count=500, max_labels_count=500)
+
+// =====================================================================
+// H4 V Denial Re-Acceleration [Research]
+// ---------------------------------------------------------------------
+// Purpose:
+//   Detect the moment when sellers are likely forced to admit defeat.
+//
+// Psychology:
+//   SELL DOMINANCE  : sharp selloff creates short-side confidence.
+//   SELL FAILURE    : price reclaims most of the drop faster than expected.
+//   LOSER STOP ZONE : sellers' stop area sits around the V origin / upper shelf.
+//   RE-ACCELERATION : price holds near the upper side and closes above that zone.
+//
+// Important:
+//   This is not a simple V-bottom strategy.
+//   V only creates context. Entry comes after upper-side shelf/re-acceleration.
+//
+// Semantics:
+//   WATCH    = sellers may be trapped, but no trade yet.
+//   SIGNAL   = confirmed H4 close breaks the loser-stop zone.
+//   SIM FILL = TradingView fills the strategy at the next bar open.
+// =====================================================================
+
+grpMode = "Basic"
+requireH4 = input.bool(true, "H4 chart only", group=grpMode)
+useDateFilter = input.bool(true, "2015-2026 only", group=grpMode)
+skipHoliday = input.bool(true, "No new signals 12/15-1/10", group=grpMode)
+symbolMode = input.string("JPY majors", "Symbol filter", options=["JPY majors", "No XAU/CHF/SILVER", "No filter"], group=grpMode)
+
+grpPivot = "Pivot / V Context"
+pivotWidth = input.int(3, "Pivot width", minval=1, maxval=20, group=grpPivot)
+atrLen = input.int(14, "ATR length", minval=1, group=grpPivot)
+minSwingAtr = input.float(2.0, "Minimum pivot swing ATR", minval=0.1, step=0.1, group=grpPivot)
+minDropAtr = input.float(3.3, "SELL DOMINANCE drop ATR", minval=0.1, step=0.1, group=grpPivot)
+minDropSpeed = input.float(0.30, "Drop speed min ATR/bar", minval=0.0, step=0.05, group=grpPivot)
+minDropBars = input.int(3, "Drop bars min", minval=1, group=grpPivot)
+maxDropBars = input.int(24, "Drop bars max", minval=2, group=grpPivot)
+watchRecoverFib = input.float(0.78, "SELL FAILURE recovery fib", minval=0.1, maxval=1.5, step=0.01, group=grpPivot)
+maxRecoverFib = input.float(1.20, "Recovery fib max", minval=0.1, maxval=2.0, step=0.01, group=grpPivot)
+maxRecoveryBars = input.int(24, "Recovery bars max", minval=1, maxval=200, group=grpPivot)
+maxRecoveryToDrop = input.float(1.20, "Recovery bars / drop bars max", minval=0.1, step=0.1, group=grpPivot)
+minRecoveryVsDrop = input.float(1.00, "Recovery speed / drop speed min", minval=0.1, step=0.05, group=grpPivot)
+lowBreakInvalidAtr = input.float(0.10, "Invalidate below V low ATR", minval=0.0, step=0.05, group=grpPivot)
+scanPairs = input.int(14, "Recent V pairs to scan", minval=1, maxval=40, group=grpPivot)
+
+grpPre = "Before V: No Overheated Trend"
+usePreCalm = input.bool(true, "Require pre-calm", group=grpPre)
+preAdxMax = input.float(26.0, "ADX14 max before V", minval=1.0, step=0.5, group=grpPre)
+preEma50SlopeMax = input.float(1.20, "EMA50 slope max ATR/20", minval=-10.0, step=0.1, group=grpPre)
+preRange60Max = input.float(16.0, "60-bar range max ATR", minval=1.0, step=0.5, group=grpPre)
+
+grpShelf = "Loser Stop / Re-Acceleration"
+shelfBars = input.int(6, "Upper shelf bars", minval=3, maxval=20, group=grpShelf)
+maxWatchBars = input.int(36, "Max bars after WATCH", minval=3, maxval=160, group=grpShelf)
+maxShelfRangeAtr = input.float(1.8, "Shelf range max ATR", minval=0.1, step=0.05, group=grpShelf)
+shelfHoldFib = input.float(0.50, "Shelf low holds V recovery fib", minval=0.0, maxval=1.0, step=0.01, group=grpShelf)
+shelfHoldBufferAtr = input.float(0.05, "Hold-line buffer ATR", minval=0.0, step=0.01, group=grpShelf)
+loserStopMode = input.string("max(V origin, shelf high)", "Loser-stop line", options=["V origin", "shelf high", "max(V origin, shelf high)"], group=grpShelf)
+breakBufferAtr = input.float(0.05, "Break buffer ATR", minval=0.0, step=0.01, group=grpShelf)
+minBodyRatio = input.float(0.45, "Signal body ratio min", minval=0.0, maxval=1.0, step=0.05, group=grpShelf)
+minCloseLocation = input.float(0.60, "Signal close location min", minval=0.0, maxval=1.0, step=0.05, group=grpShelf)
+maxEntryFromLowAtr = input.float(9.0, "Entry distance from V low max ATR", minval=1.0, step=0.5, group=grpShelf)
+
+grpRisk = "Risk Model"
+rr = input.float(1.5, "TP RR", minval=0.1, step=0.1, group=grpRisk)
+stopBasis = input.string("shelf low", "SL basis", options=["shelf low", "V low"], group=grpRisk)
+stopBufferAtr = input.float(0.25, "SL buffer ATR", minval=0.0, step=0.05, group=grpRisk)
+maxRiskAtr = input.float(2.4, "Risk max ATR", minval=0.1, step=0.1, group=grpRisk)
+maxHoldBars = input.int(120, "Max hold bars", minval=1, group=grpRisk)
+tpBasis = input.string("Entry basis", "TP basis", options=["Entry basis", "Signal basis"], group=grpRisk)
+
+grpView = "View"
+showWatch = input.bool(true, "Show WATCH", group=grpView)
+showSignals = input.bool(true, "Show SIGNAL", group=grpView)
+showSkips = input.bool(false, "Show SKIP", group=grpView)
+showLevels = input.bool(true, "Show levels", group=grpView)
+showTable = input.bool(true, "Show state table", group=grpView)
+maxObjects = input.int(100, "Objects to keep", minval=20, maxval=300, group=grpView)
+labelShiftBars = input.int(0, "Label shift bars", minval=0, maxval=80, group=grpView)
+labelOffsetAtr = input.float(3.0, "Label offset ATR", minval=0.5, step=0.5, group=grpView)
+
+fmt(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, format.mintick)
+    out
+
+fmtNum(float v) =>
+    string out = na(v) ? "N/A" : str.tostring(v, "#.##")
+    out
+
+fmtInt(int v) =>
+    string out = na(v) ? "N/A" : str.tostring(v)
+    out
+
+skipText(int code) =>
+    string out = "OK"
+    if code == 1
+        out := "H4 only"
+    else if code == 2
+        out := "Date filter"
+    else if code == 3
+        out := "Holiday filter"
+    else if code == 4
+        out := "Symbol filter"
+    else if code == 5
+        out := "Position/pending"
+    else if code == 6
+        out := "Pre-calm failed"
+    else if code == 7
+        out := "Shelf too wide"
+    else if code == 8
+        out := "Shelf did not hold"
+    else if code == 9
+        out := "Body/close weak"
+    else if code == 10
+        out := "Risk invalid"
+    else if code == 11
+        out := "Too far from V low"
+    else if code == 12
+        out := "WATCH expired"
+    else if code == 13
+        out := "V low broken"
+    out
+
+var label[] labels = array.new_label()
+var line[] lines = array.new_line()
+var string[] usedPairs = array.new_string()
+
+keepLabel(label lb) =>
+    array.push(labels, lb)
+    while array.size(labels) > maxObjects
+        label.delete(array.shift(labels))
+
+keepLine(line ln) =>
+    array.push(lines, ln)
+    while array.size(lines) > maxObjects * 5
+        line.delete(array.shift(lines))
+
+pushUsed(string key) =>
+    array.push(usedPairs, key)
+    while array.size(usedPairs) > 500
+        array.shift(usedPairs)
+
+// ---------------------------------------------------------------------
+// Indicators and filters.
+// ---------------------------------------------------------------------
+atrValue = ta.atr(atrLen)
+ema50 = ta.ema(close, 50)
+ema50Slope20Atr = not na(ema50[20]) and atrValue > 0 ? (ema50 - ema50[20]) / atrValue : na
+range60Atr = atrValue > 0 ? (ta.highest(high, 60) - ta.lowest(low, 60)) / atrValue : na
+[diPlus, diMinus, adx14] = ta.dmi(14, 14)
+
+barRange = high - low
+bodyRatio = barRange > 0 ? math.abs(close - open) / barRange : 0.0
+closeLocation = barRange > 0 ? (close - low) / barRange : 0.5
+chartSec = timeframe.in_seconds(timeframe.period)
+barMs = chartSec * 1000
+
+h4Ok = not requireH4 or chartSec == 240 * 60
+dateOk = not useDateFilter or (year >= 2015 and year <= 2026)
+holidayOk = not skipHoliday or not ((month == 12 and dayofmonth >= 15) or (month == 1 and dayofmonth <= 10))
+tickerText = syminfo.ticker
+isJpyMajor = str.contains(tickerText, "USDJPY") or str.contains(tickerText, "EURJPY") or str.contains(tickerText, "GBPJPY") or str.contains(tickerText, "AUDJPY")
+isExcluded = str.contains(tickerText, "XAU") or str.contains(tickerText, "CHFJPY") or str.contains(tickerText, "XAG") or str.contains(tickerText, "SILVER")
+symbolOk = true
+if symbolMode == "JPY majors"
+    symbolOk := isJpyMajor
+else if symbolMode == "No XAU/CHF/SILVER"
+    symbolOk := not isExcluded
+
+// ---------------------------------------------------------------------
+// Confirmed alternating pivots.
+// Same-type pivots are replaced by the more extreme point.
+// ---------------------------------------------------------------------
+ph = ta.pivothigh(high, pivotWidth, pivotWidth)
+pl = ta.pivotlow(low, pivotWidth, pivotWidth)
+
+var int[] pKinds = array.new_int()
+var float[] pPrices = array.new_float()
+var int[] pBars = array.new_int()
+var int[] pTimes = array.new_int()
+var float[] pAtrs = array.new_float()
+var float[] pAdxs = array.new_float()
+var float[] pSlopes = array.new_float()
+var float[] pRange60s = array.new_float()
+
+int newKind = 0
+float newPrice = na
+int newBar = na
+int newTime = na
+float newAtr = na
+float newAdx = na
+float newSlope = na
+float newRange60 = na
+
+if not na(ph) and na(pl)
+    newKind := 1
+    newPrice := ph
+    newBar := bar_index - pivotWidth
+    newTime := time[pivotWidth]
+    newAtr := atrValue[pivotWidth]
+    newAdx := adx14[pivotWidth]
+    newSlope := ema50Slope20Atr[pivotWidth]
+    newRange60 := range60Atr[pivotWidth]
+else if not na(pl) and na(ph)
+    newKind := -1
+    newPrice := pl
+    newBar := bar_index - pivotWidth
+    newTime := time[pivotWidth]
+    newAtr := atrValue[pivotWidth]
+    newAdx := adx14[pivotWidth]
+    newSlope := ema50Slope20Atr[pivotWidth]
+    newRange60 := range60Atr[pivotWidth]
+
+if newKind != 0 and not na(newAtr) and newAtr > 0
+    int n = array.size(pKinds)
+    if n == 0
+        array.push(pKinds, newKind)
+        array.push(pPrices, newPrice)
+        array.push(pBars, newBar)
+        array.push(pTimes, newTime)
+        array.push(pAtrs, newAtr)
+        array.push(pAdxs, newAdx)
+        array.push(pSlopes, newSlope)
+        array.push(pRange60s, newRange60)
+    else
+        int lastKind = array.get(pKinds, n - 1)
+        float lastPrice = array.get(pPrices, n - 1)
+        if newKind == lastKind
+            bool moreExtreme = (newKind == 1 and newPrice > lastPrice) or (newKind == -1 and newPrice < lastPrice)
+            if moreExtreme
+                array.set(pPrices, n - 1, newPrice)
+                array.set(pBars, n - 1, newBar)
+                array.set(pTimes, n - 1, newTime)
+                array.set(pAtrs, n - 1, newAtr)
+                array.set(pAdxs, n - 1, newAdx)
+                array.set(pSlopes, n - 1, newSlope)
+                array.set(pRange60s, n - 1, newRange60)
+        else
+            float swing = math.abs(newPrice - lastPrice)
+            float lastAtr = array.get(pAtrs, n - 1)
+            float threshold = math.max(newAtr, lastAtr) * minSwingAtr
+            if swing >= threshold
+                array.push(pKinds, newKind)
+                array.push(pPrices, newPrice)
+                array.push(pBars, newBar)
+                array.push(pTimes, newTime)
+                array.push(pAtrs, newAtr)
+                array.push(pAdxs, newAdx)
+                array.push(pSlopes, newSlope)
+                array.push(pRange60s, newRange60)
+
+while array.size(pKinds) > 90
+    array.shift(pKinds)
+    array.shift(pPrices)
+    array.shift(pBars)
+    array.shift(pTimes)
+    array.shift(pAtrs)
+    array.shift(pAdxs)
+    array.shift(pSlopes)
+    array.shift(pRange60s)
+
+// ---------------------------------------------------------------------
+// State machine.
+// ---------------------------------------------------------------------
+var bool watchActive = false
+var string watchKey = ""
+var int watchBar = na
+var int watchTime = na
+var float vOrigin = na
+var float vLow = na
+var int vOriginTime = na
+var int vLowTime = na
+var int vOriginBar = na
+var int vLowBar = na
+var float vDrop = na
+var float vDropAtr = na
+var int vDropBars = na
+var int vRecoveryBars = na
+var float vRecoveryFib = na
+var float vDropSpeed = na
+var float vRecoverySpeed = na
+var float vSpeedRatio = na
+var float vPreAdx = na
+var float vPreSlope = na
+var float vPreRange60 = na
+
+var bool pendingLong = false
+var int pendingSignalBar = na
+var float pendingStop = na
+var float pendingSignalTarget = na
+var int entryBar = na
+var int lastExitBar = na
+var float activeStop = na
+var float activeTarget = na
+
+exitedThisBar = strategy.position_size == 0 and nz(strategy.position_size[1]) != 0
+if exitedThisBar
+    lastExitBar := bar_index
+    entryBar := na
+    activeStop := na
+    activeTarget := na
+
+flatNow = strategy.position_size == 0 and not pendingLong and (na(lastExitBar) or bar_index > lastExitBar)
+baseOk = h4Ok and dateOk and holidayOk and symbolOk and flatNow
+
+bool newWatch = false
+bool rawSignal = false
+bool breakAttempt = false
+int skipCode = 0
+
+float signalStop = na
+float signalTarget = na
+float signalShelfHigh = na
+float signalShelfLow = na
+float signalShelfRangeAtr = na
+float signalHoldLine = na
+float signalLoserStop = na
+float signalBreakAtr = na
+float signalRiskAtr = na
+float signalEntryFromLowAtr = na
+
+// Detect WATCH: sharp selloff has been denied by a strong reclaim.
+if not watchActive and baseOk and array.size(pKinds) >= 2 and not na(atrValue) and atrValue > 0
+    int nP = array.size(pKinds)
+    int maxScan = math.min(scanPairs, nP - 1)
+    for scan = 0 to 39
+        if scan < maxScan and not watchActive
+            int j = nP - 2 - scan
+            int k0 = array.get(pKinds, j)
+            int k1 = array.get(pKinds, j + 1)
+            if k0 == 1 and k1 == -1
+                float origin = array.get(pPrices, j)
+                float lowPoint = array.get(pPrices, j + 1)
+                int originBar = array.get(pBars, j)
+                int lowBar = array.get(pBars, j + 1)
+                int originTime = array.get(pTimes, j)
+                int lowTime = array.get(pTimes, j + 1)
+                string pairKey = str.tostring(originBar) + "-" + str.tostring(lowBar)
+                if not array.includes(usedPairs, pairKey)
+                    float drop = origin - lowPoint
+                    int dropBars = math.max(lowBar - originBar, 1)
+                    int recoveryBars = math.max(bar_index - lowBar, 1)
+                    float recovery = close - lowPoint
+                    float recoveryFib = drop > 0 ? recovery / drop : na
+                    float dropAtr = drop / atrValue
+                    float dropSpeed = drop / dropBars / atrValue
+                    float recoverySpeed = recovery / recoveryBars / atrValue
+                    float speedRatio = dropSpeed > 0 ? recoverySpeed / dropSpeed : na
+                    bool dropOk = drop > 0 and dropAtr >= minDropAtr and dropSpeed >= minDropSpeed
+                    bool barsOk = dropBars >= minDropBars and dropBars <= maxDropBars and recoveryBars <= maxRecoveryBars and recoveryBars <= dropBars * maxRecoveryToDrop
+                    bool recoveryOk = not na(recoveryFib) and recoveryFib >= watchRecoverFib and recoveryFib <= maxRecoverFib
+                    bool speedOk = not na(speedRatio) and speedRatio >= minRecoveryVsDrop
+                    bool lowStillValid = low >= lowPoint - atrValue * lowBreakInvalidAtr
+                    if dropOk and barsOk and recoveryOk and speedOk and lowStillValid
+                        watchActive := true
+                        newWatch := true
+                        watchKey := pairKey
+                        watchBar := bar_index
+                        watchTime := time
+                        vOrigin := origin
+                        vLow := lowPoint
+                        vOriginBar := originBar
+                        vLowBar := lowBar
+                        vOriginTime := originTime
+                        vLowTime := lowTime
+                        vDrop := drop
+                        vDropAtr := dropAtr
+                        vDropBars := dropBars
+                        vRecoveryBars := recoveryBars
+                        vRecoveryFib := recoveryFib
+                        vDropSpeed := dropSpeed
+                        vRecoverySpeed := recoverySpeed
+                        vSpeedRatio := speedRatio
+                        vPreAdx := array.get(pAdxs, j)
+                        vPreSlope := array.get(pSlopes, j)
+                        vPreRange60 := array.get(pRange60s, j)
+
+// SIGNAL: after WATCH, price stays in the upper side and breaks the loser-stop line.
+if watchActive and not na(atrValue) and atrValue > 0
+    int watchAge = bar_index - watchBar
+    bool expired = watchAge > maxWatchBars
+    bool lowBroken = low < vLow - atrValue * lowBreakInvalidAtr
+    bool enoughShelf = watchAge >= shelfBars and bar_index - shelfBars >= watchBar
+    float shelfHigh = ta.highest(high[1], shelfBars)
+    float shelfLow = ta.lowest(low[1], shelfBars)
+    float shelfRangeAtr = (shelfHigh - shelfLow) / atrValue
+    float holdLine = vLow + vDrop * shelfHoldFib
+    float loserStop = vOrigin
+    if loserStopMode == "shelf high"
+        loserStop := shelfHigh
+    else if loserStopMode == "max(V origin, shelf high)"
+        loserStop := math.max(vOrigin, shelfHigh)
+    bool shelfTight = shelfRangeAtr <= maxShelfRangeAtr
+    bool shelfHolds = shelfLow >= holdLine - atrValue * shelfHoldBufferAtr
+    bool brokeLoserStop = enoughShelf and close > loserStop + atrValue * breakBufferAtr
+    bool qualityOk = bodyRatio >= minBodyRatio and closeLocation >= minCloseLocation
+    bool preCalmOk = true
+    if usePreCalm
+        preCalmOk := not na(vPreAdx) and not na(vPreSlope) and not na(vPreRange60) and vPreAdx <= preAdxMax and vPreSlope <= preEma50SlopeMax and vPreRange60 <= preRange60Max
+    float stopPrice = stopBasis == "shelf low" ? shelfLow - atrValue * stopBufferAtr : vLow - atrValue * stopBufferAtr
+    float riskDist = close - stopPrice
+    float riskAtr = riskDist / atrValue
+    float entryFromLowAtr = (close - vLow) / atrValue
+    breakAttempt := enoughShelf and brokeLoserStop
+    if expired
+        skipCode := 12
+        watchActive := false
+        pushUsed(watchKey)
+    else if lowBroken
+        skipCode := 13
+        watchActive := false
+        pushUsed(watchKey)
+    else if breakAttempt
+        skipCode := 0
+        if not h4Ok
+            skipCode := 1
+        else if not dateOk
+            skipCode := 2
+        else if not holidayOk
+            skipCode := 3
+        else if not symbolOk
+            skipCode := 4
+        else if not flatNow
+            skipCode := 5
+        else if not preCalmOk
+            skipCode := 6
+        else if not shelfTight
+            skipCode := 7
+        else if not shelfHolds
+            skipCode := 8
+        else if not qualityOk
+            skipCode := 9
+        else if riskDist <= 0 or riskAtr > maxRiskAtr
+            skipCode := 10
+        else if entryFromLowAtr > maxEntryFromLowAtr
+            skipCode := 11
+        signalStop := stopPrice
+        signalTarget := close + riskDist * rr
+        signalShelfHigh := shelfHigh
+        signalShelfLow := shelfLow
+        signalShelfRangeAtr := shelfRangeAtr
+        signalHoldLine := holdLine
+        signalLoserStop := loserStop
+        signalBreakAtr := (close - loserStop) / atrValue
+        signalRiskAtr := riskAtr
+        signalEntryFromLowAtr := entryFromLowAtr
+        rawSignal := skipCode == 0
+        if rawSignal
+            watchActive := false
+            pushUsed(watchKey)
+
+// ---------------------------------------------------------------------
+// Orders: TradingView fills on next bar open.
+// ---------------------------------------------------------------------
+if rawSignal and not pendingLong and strategy.position_size == 0
+    pendingLong := true
+    pendingSignalBar := bar_index
+    pendingStop := signalStop
+    pendingSignalTarget := signalTarget
+    strategy.entry("Long", strategy.long)
+
+if pendingLong and strategy.position_size > 0
+    pendingLong := false
+    entryBar := bar_index
+    activeStop := pendingStop
+    activeTarget := pendingSignalTarget
+    if tpBasis == "Entry basis"
+        activeTarget := strategy.position_avg_price + (strategy.position_avg_price - activeStop) * rr
+
+if pendingLong and bar_index > pendingSignalBar + 2 and strategy.position_size == 0
+    pendingLong := false
+    pendingStop := na
+    pendingSignalTarget := na
+
+if strategy.position_size > 0 and not na(activeStop) and not na(activeTarget)
+    strategy.exit("L-Exit", from_entry="Long", stop=activeStop, limit=activeTarget)
+    if not na(entryBar) and bar_index - entryBar >= maxHoldBars
+        strategy.close("Long", comment="Time")
+
+// ---------------------------------------------------------------------
+// Visuals.
+// ---------------------------------------------------------------------
+plotshape(showWatch and newWatch, title="WATCH sell failure", style=shape.circle, location=location.belowbar, color=color.new(color.yellow, 0), size=size.tiny, text="WATCH")
+plotshape(showSignals and rawSignal, title="SIGNAL re-acceleration", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="SIGNAL")
+plotshape(showSkips and breakAttempt and not rawSignal, title="SKIP break attempt", style=shape.xcross, location=location.abovebar, color=color.new(color.orange, 0), size=size.tiny, text="SKIP")
+
+plot(showLevels and watchActive ? vOrigin : na, title="V origin loser-stop area", color=color.new(color.aqua, 0), linewidth=2, style=plot.style_linebr)
+plot(showLevels and watchActive ? ta.highest(high[1], shelfBars) : na, title="Upper shelf high", color=color.new(color.yellow, 0), linewidth=1, style=plot.style_linebr)
+plot(showLevels and watchActive ? vLow + vDrop * shelfHoldFib : na, title="Shelf hold line", color=color.new(color.orange, 0), linewidth=1, style=plot.style_linebr)
+plot(showLevels and strategy.position_size > 0 ? activeStop : na, title="SIM FILL SL", color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
+plot(showLevels and strategy.position_size > 0 ? activeTarget : na, title="SIM FILL TP", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
+
+labelAtr = ta.atr(14)
+labelTime = time + barMs * labelShiftBars
+lineEndTime = time + barMs * 36
+
+if showWatch and newWatch
+    string wTxt = "WATCH\nSELL FAILURE\nDrop: " + fmtNum(vDropAtr) + "ATR\nRecover: " + fmtNum(vRecoveryFib * 100.0) + "%\nSpeed R/D: " + fmtNum(vSpeedRatio) + "x\nBars D/R: " + fmtInt(vDropBars) + "/" + fmtInt(vRecoveryBars)
+    keepLabel(label.new(labelTime, low - labelAtr * labelOffsetAtr, wTxt, xloc=xloc.bar_time, style=label.style_label_up, color=color.new(color.yellow, 0), textcolor=color.black, size=size.tiny))
+    if showLevels
+        keepLine(line.new(vOriginTime, vOrigin, vLowTime, vLow, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2))
+        keepLine(line.new(vLowTime, vLow, time, close, xloc=xloc.bar_time, color=color.new(color.aqua, 0), width=2))
+
+if showSkips and breakAttempt and not rawSignal
+    string sTxt = "SKIP\n" + skipText(skipCode)
+    keepLabel(label.new(labelTime, high + labelAtr * labelOffsetAtr, sTxt, xloc=xloc.bar_time, style=label.style_label_down, color=color.new(color.orange, 0), textcolor=color.black, size=size.tiny))
+
+if showSignals and rawSignal
+    string sigTxt = "SIGNAL\nLOSER STOP BROKEN\nLine: " + fmt(signalLoserStop) + "\nBreak: " + fmtNum(signalBreakAtr) + "ATR\nShelf: " + fmtNum(signalShelfRangeAtr) + "ATR\nRisk: " + fmtNum(signalRiskAtr) + "ATR\nSL: " + fmt(signalStop) + "\nTP(sig): " + fmt(signalTarget)
+    keepLabel(label.new(labelTime, low - labelAtr * labelOffsetAtr, sigTxt, xloc=xloc.bar_time, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
+    if showLevels
+        keepLine(line.new(vOriginTime, vOrigin, vLowTime, vLow, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2))
+        keepLine(line.new(vLowTime, vLow, time, close, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2))
+        keepLine(line.new(time[shelfBars], signalShelfHigh, time, signalShelfHigh, xloc=xloc.bar_time, color=color.new(color.yellow, 0), width=2))
+        keepLine(line.new(time, signalLoserStop, lineEndTime, signalLoserStop, xloc=xloc.bar_time, color=color.new(color.aqua, 0), width=2))
+        keepLine(line.new(time, signalStop, lineEndTime, signalStop, xloc=xloc.bar_time, color=color.new(color.red, 0), width=2, style=line.style_dashed))
+        keepLine(line.new(time, signalTarget, lineEndTime, signalTarget, xloc=xloc.bar_time, color=color.new(color.lime, 0), width=2, style=line.style_dashed))
+
+if strategy.position_size > 0 and not na(entryBar) and bar_index == entryBar and showSignals
+    string fillTxt = "SIM FILL\nEntry: " + fmt(strategy.position_avg_price) + "\nSL: " + fmt(activeStop) + "\nTP: " + fmt(activeTarget)
+    keepLabel(label.new(labelTime, strategy.position_avg_price, fillTxt, xloc=xloc.bar_time, style=label.style_label_left, color=color.new(color.aqua, 0), textcolor=color.black, size=size.tiny))
+
+var table t = table.new(position.top_right, 2, 18, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+if showTable and barstate.islast
+    table.cell(t, 0, 0, "Method", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 0, "V denial re-accel", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 1, "Chart", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 1, h4Ok ? "H4 OK" : "H4 only", text_color=h4Ok ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 2, "Stage", text_color=color.white, text_size=size.tiny)
+    string stage = strategy.position_size > 0 ? "SIM FILL" : pendingLong ? "PENDING" : watchActive ? "WATCH" : "FLAT"
+    table.cell(t, 1, 2, stage, text_color=strategy.position_size > 0 ? color.aqua : pendingLong ? color.yellow : watchActive ? color.orange : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 3, "Psychology", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 3, watchActive ? "SELL FAILURE" : "waiting", text_color=watchActive ? color.yellow : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 4, "Drop ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 4, fmtNum(vDropAtr), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 5, "Recover", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 5, fmtNum(vRecoveryFib), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 6, "Speed R/D", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 6, fmtNum(vSpeedRatio), text_color=not na(vSpeedRatio) and vSpeedRatio >= minRecoveryVsDrop ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 7, "Bars D/R", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 7, fmtInt(vDropBars) + " / " + fmtInt(vRecoveryBars), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 8, "Pre ADX", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 8, fmtNum(vPreAdx), text_color=not na(vPreAdx) and vPreAdx <= preAdxMax ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 9, "Pre slope", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 9, fmtNum(vPreSlope), text_color=not na(vPreSlope) and vPreSlope <= preEma50SlopeMax ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 10, "Pre range60", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 10, fmtNum(vPreRange60), text_color=not na(vPreRange60) and vPreRange60 <= preRange60Max ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 11, "Loser stop", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 11, fmt(signalLoserStop), text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 12, "Shelf ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 12, fmtNum(signalShelfRangeAtr), text_color=not na(signalShelfRangeAtr) and signalShelfRangeAtr <= maxShelfRangeAtr ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 13, "Body/Close", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 13, fmtNum(bodyRatio) + " / " + fmtNum(closeLocation), text_color=bodyRatio >= minBodyRatio and closeLocation >= minCloseLocation ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 14, "From low", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 14, fmtNum(signalEntryFromLowAtr), text_color=not na(signalEntryFromLowAtr) and signalEntryFromLowAtr <= maxEntryFromLowAtr ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 15, "Risk ATR", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 15, fmtNum(signalRiskAtr), text_color=not na(signalRiskAtr) and signalRiskAtr <= maxRiskAtr ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(t, 0, 16, "Last skip", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 16, skipCode == 0 ? "OK / none" : skipText(skipCode), text_color=skipCode == 0 ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 17, "Rule", text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 17, "V context -> shelf break", text_color=color.aqua, text_size=size.tiny)
+
+alertcondition(newWatch, title="H4 V Denial WATCH", message="H4 V denial watch on {{ticker}} {{interval}}")
+alertcondition(rawSignal, title="H4 V Denial Re-Acceleration LONG", message="H4 V denial re-acceleration long on {{ticker}} {{interval}}")

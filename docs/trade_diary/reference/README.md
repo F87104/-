@@ -11,6 +11,7 @@
 | テーマ | ファイル |
 |---|---|
 | **エントリー前の売買判断** | [signal_review_protocol.md](signal_review_protocol.md) |
+| **Slack 定期リマインド** | [slack_reminder_setup.md](slack_reminder_setup.md) |
 
 ## トレード心理・行動
 

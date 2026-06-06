@@ -1,0 +1,30 @@
+name: Trade Lesson Slack Reminder
+
+on:
+  schedule:
+    # 08:00 JST — pre-Tokyo session
+    - cron: "0 23 * * *"
+    # 20:00 JST — evening review
+    - cron: "0 11 * * *"
+  workflow_dispatch:
+    inputs:
+      lesson_id:
+        description: "Force lesson id (e.g. R03). Leave empty for auto rotation."
+        required: false
+        type: string
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Send Slack reminder
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.lesson_id }}" ]; then
+            ARGS="--lesson-id ${{ github.event.inputs.lesson_id }}"
+          fi
+          python scripts/slack_trade_reminder.py $ARGS

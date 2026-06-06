@@ -15,6 +15,7 @@
 | **受講生トレード記録（137件・研究用）** | [archive/student/](archive/student/) |
 | **トレード心理の研究ノート** | [reference/](reference/) |
 | **シグナルが出たらここで判断** | 👉 [signal_review_protocol.md](reference/signal_review_protocol.md) |
+| **Slack 反省リマインド** | [slack_reminder_setup.md](reference/slack_reminder_setup.md)（定期通知） |
 | **早めに損切りパターン研究** | [early_stop_loss_patterns_2026-06-06.md](../research/early_stop_loss_patterns_2026-06-06.md) |
 
 ---

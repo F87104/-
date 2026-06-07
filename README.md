@@ -161,6 +161,7 @@ pine/research/          ← TradingView 用 Pine（ここ）
 | 4 | **H4 T5 深掘り** | 記録済み | [t5_method_deep_research](docs/research/t5_method_deep_research_2026-06-01.md) |
 | 5 | 受講生つまずき（教材） | アーカイブ | 下の [つまずき研究](#-参考--受講生つまずきクラスタ研究教材アーカイブ) |
 | 6 | **トレード実践記録** | 記録中 | [trade_practice_records/](docs/trade_practice_records/) |
+| 7 | **Lower High 3 Touch 仮説** | Event scanner v0.1 | [仮説メモ](docs/research/lower_high_three_touch_breakdown_hypothesis_2026-06-08.md) ／ [Pine](pine/research/lower_high_three_touch_breakdown_event_scanner_v0_1.pine) |
 
 ---
 

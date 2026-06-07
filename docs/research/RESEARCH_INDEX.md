@@ -24,7 +24,7 @@
 | **系統B（10レーン）** | [system_b_lanes_validation_2026-06-01/DECISION.md](system_b_lanes_validation_2026-06-01/DECISION.md) |
 | **系統B 本番運用** | [operations/system_b/README.md](../operations/system_b/README.md) |
 | **系統B B06 Pine照合** | [DECISION_b06_tv_oanda_parity.md](system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md) |
-| **Lower High 3 Touch 仮説** | [lower_high_three_touch_breakdown_hypothesis_2026-06-08.md](lower_high_three_touch_breakdown_hypothesis_2026-06-08.md) ／ [勝率PF](lower_high_synapse_reclaim_long_strategy_2026-06-08/REPORT_ja.md) ／ [下抜け実測](lower_high_three_touch_breakdown_2026-06-08/REPORT_ja.md) ／ [上抜けロング実測](lower_high_synapse_reclaim_long_2026-06-08/REPORT_ja.md) ／ [Synapse接続](lower_high_synapse_bridge_2026-06-08.md) |
+| **Lower High 3 Touch 仮説** | [lower_high_three_touch_breakdown_hypothesis_2026-06-08.md](lower_high_three_touch_breakdown_hypothesis_2026-06-08.md) ／ [確認フィルタ勝率PF](lower_high_synapse_confirm_filters_2026-06-08/REPORT_ja.md) ／ [赤LINE勝率PF](lower_high_synapse_reclaim_long_strategy_2026-06-08/REPORT_ja.md) ／ [下抜け実測](lower_high_three_touch_breakdown_2026-06-08/REPORT_ja.md) ／ [上抜けロング実測](lower_high_synapse_reclaim_long_2026-06-08/REPORT_ja.md) ／ [Synapse接続](lower_high_synapse_bridge_2026-06-08.md) |
 | **旧心理スプリント（参照のみ）** | [ARCHIVE_psychology_sprint_2026-05_06.md](ARCHIVE_psychology_sprint_2026-05_06.md) |
 
 ## 次にやること
@@ -32,7 +32,7 @@
 1. **本番** — TB baseline のまま + **T5優先**（重複時はT5）— [DECISION](original_a_path_DECISION_2026-06-01.md)
 2. **TB に追加フィルタを入れない**（検証で総R↓のみ）
 3. ~~SQZ フォワード~~ — 退役（2026-05-31）
-4. Lower High 3 Touch Breakdown を、売り継続側と Synapse転換側に分けて検証する
+4. Lower High 3 Touch は、赤LINE上抜け単体ではなく B水平線上抜けを本命確認としてTradingView照合する
 
 ## 進捗ログ（アクティブ）
 
@@ -45,6 +45,7 @@
 | 2026-06-08 | **Lower High x Synapse 接続** | LH3下降ラインがSynapse手法の初期斜めラインに近いと発見。LINE上抜け、B水平線、A水平線を分けて見る研究用Pineを追加。 | XAUUSD H1/H4で、LINE/B/Aの表示が人間の目に近いか確認 |
 | 2026-06-08 | **LH3赤LINE上抜けロング実測** | 赤いLH3下降LINEを終値で上抜けた足をロング仮エントリーとして2389件実測。H4はMFE48 3.34ATR、MAE48 2.78ATR、fwd48 +0.40ATRでH1より良い。XAUUSD H4とSILVER H4が強い。 | B水平線、A水平線、戻り確認を足して再測定 |
 | 2026-06-08 | **LH3赤LINE上抜け 勝率/PF** | SL/TPを置いて14334シナリオを検証。H4全体RR2/120本は勝率40.21%、PF1.07。XAUUSD H4 RR2/120本は勝率49.53%、PF1.52、+26.70R。SILVER H4 RR1/120本は勝率63.64%、PF1.54。 | XAUUSD H4を中心にB水平線、A水平線、戻り確認で絞る |
+| 2026-06-08 | **LH3 Synapse確認フィルタ 勝率/PF** | 赤LINE後の確認条件を比較。H4 B水平線上抜け RR2/120本は勝率44.72%、PF1.22、+60.14R。H4 B水平線 RR2/48本は勝率48.66%、PF1.23、+48.82R。XAUUSD H4 B水平線 RR2/48本は勝率63.38%、PF2.58、+28.93R。 | 赤LINE上抜け単体は本番化しない。XAUUSD H4 B水平線を本命候補として、A水平線と浅い戻りは補助フィルタ扱いで目視照合する |
 
 ## 進捗ログ（アーカイブ — 心理スプリント 2026-05〜06）
 
@@ -192,6 +193,7 @@
 | Lower High 3 Touch 実測結果 | [lower_high_three_touch_breakdown_2026-06-08/REPORT_ja.md](lower_high_three_touch_breakdown_2026-06-08/REPORT_ja.md) |
 | Lower High 3 Touch 上抜けロング実測 | [lower_high_synapse_reclaim_long_2026-06-08/REPORT_ja.md](lower_high_synapse_reclaim_long_2026-06-08/REPORT_ja.md) |
 | Lower High 3 Touch 上抜けロング勝率PF | [lower_high_synapse_reclaim_long_strategy_2026-06-08/REPORT_ja.md](lower_high_synapse_reclaim_long_strategy_2026-06-08/REPORT_ja.md) |
+| Lower High 3 Touch Synapse確認フィルタ勝率PF | [lower_high_synapse_confirm_filters_2026-06-08/REPORT_ja.md](lower_high_synapse_confirm_filters_2026-06-08/REPORT_ja.md) |
 | Lower High x Synapse 接続 | [lower_high_synapse_bridge_2026-06-08.md](lower_high_synapse_bridge_2026-06-08.md) |
 
 ## 新しい研究を書くとき

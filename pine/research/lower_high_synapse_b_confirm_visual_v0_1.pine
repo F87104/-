@@ -1,5 +1,5 @@
 //@version=5
-indicator("LH3 Synapse B Confirm Visual v0.1 [Research]",
+indicator("LH3 Synapse B Confirm Visual v0.2 [Research]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
@@ -9,7 +9,7 @@ indicator("LH3 Synapse B Confirm Visual v0.1 [Research]",
 // 目的:
 // - 赤いLH3下降LINEを上抜けたあと、B水平線上抜けまで待てているかを目視照合する
 // - 今回の検証で一番良かった XAUUSD H4 B_BREAK をTradingView上で確認する
-// - LINE上抜けだけでは入らず、B確認を主役として見る
+// - LINE上抜けだけでは入らず、B確認足の終値をENTRY候補として大きく表示する
 //
 // 検証メモ:
 // - 赤LINE上抜け H4 RR2/120: 勝率40.21%, PF1.07
@@ -46,6 +46,8 @@ stopBufferAtr = input.float(0.20, "SL余白 ATR", minval=0.0, step=0.05, group=g
 levelExtendBars = input.int(48, "Entry/SL/TPの表示本数", minval=5, maxval=300, group=grpRisk)
 
 grpView = "Visual"
+showEntryMarks = input.bool(true, "ENTRY候補を大きく表示", group=grpView)
+showEntryBackground = input.bool(true, "ENTRY足の背景を薄く表示", group=grpView)
 showTrendLines = input.bool(true, "赤LINE表示", group=grpView)
 showABLines = input.bool(true, "A/B水平線表示", group=grpView)
 showHeadLabel = input.bool(false, "head lowラベル", group=grpView)
@@ -222,15 +224,19 @@ if bBreakNow
     lastEntry := entry
     lastStop := stop
     lastTarget := target
+    if showEntryMarks
+        string entryText = "ENTRY候補\nB上抜け終値\n" + str.tostring(entry, format.mintick)
+        keep_label(label.new(bar_index, low - atr * 0.75, entryText, xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.normal))
     if showBLabels
-        keep_label(label.new(bar_index, high + atr * 0.55, "B CONFIRM\nXAU H4 focus", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.aqua, 0), textcolor=color.black, size=size.small))
+        keep_label(label.new(bar_index, high + atr * 0.55, "B CONFIRM\nここから検証", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.aqua, 0), textcolor=color.black, size=size.small))
     if showValidationLevels and risk > 0 and not na(target)
-        keep_line(line.new(bar_index, entry, bar_index + levelExtendBars, entry, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.white, 20), style=line.style_solid, width=1))
-        keep_line(line.new(bar_index, stop, bar_index + levelExtendBars, stop, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.red, 0), style=line.style_solid, width=1))
-        keep_line(line.new(bar_index, target, bar_index + levelExtendBars, target, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.lime, 0), style=line.style_solid, width=1))
-        keep_label(label.new(bar_index + levelExtendBars, entry, "entry", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(color.white, 70), textcolor=color.white, size=size.tiny))
-        keep_label(label.new(bar_index + levelExtendBars, stop, "SL", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(color.red, 10), textcolor=color.white, size=size.tiny))
-        keep_label(label.new(bar_index + levelExtendBars, target, "TP" + str.tostring(rr, "#.##") + "R", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(color.lime, 10), textcolor=color.black, size=size.tiny))
+        keep_line(line.new(bar_index, entry, bar_index + levelExtendBars, entry, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.white, 0), style=line.style_solid, width=3))
+        keep_line(line.new(bar_index, stop, bar_index + levelExtendBars, stop, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.red, 0), style=line.style_solid, width=2))
+        keep_line(line.new(bar_index, target, bar_index + levelExtendBars, target, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.lime, 0), style=line.style_solid, width=2))
+        keep_line(line.new(bar_index, low - atr * 1.25, bar_index, high + atr * 1.25, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.lime, 15), style=line.style_solid, width=2))
+        keep_label(label.new(bar_index + levelExtendBars, entry, "ENTRY", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(color.white, 10), textcolor=color.black, size=size.small))
+        keep_label(label.new(bar_index + levelExtendBars, stop, "SL", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(color.red, 0), textcolor=color.white, size=size.small))
+        keep_label(label.new(bar_index + levelExtendBars, target, "TP " + str.tostring(rr, "#.##") + "R", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(color.lime, 0), textcolor=color.black, size=size.small))
 
 if aBreakNow
     aConfirmed := true
@@ -241,7 +247,9 @@ if aBreakNow
 plot(activeSeq ? lineNow : na, title="Active LH3 red pressure line", color=color.new(color.red, 65), linewidth=1)
 plotshape(lineBreakNow, title="WAIT LINE reclaim", style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.tiny, text="WAIT")
 plotshape(bBreakNow, title="B CONFIRM candidate", style=shape.triangleup, location=location.belowbar, color=color.aqua, size=size.small, text="B")
+plotshape(showEntryMarks and bBreakNow, title="ENTRY候補", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 0), text="ENTRY", textcolor=color.black, size=size.large)
 plotshape(aBreakNow, title="A confirm", style=shape.triangleup, location=location.belowbar, color=color.orange, size=size.tiny, text="A")
+bgcolor(showEntryBackground and bBreakNow ? color.new(color.lime, 86) : na, title="ENTRY候補背景")
 
 chartIsH4 = timeframe.in_seconds(timeframe.period) == 240 * 60
 stateText = not activeSeq ? "NO SETUP" : bConfirmed ? "B CONFIRMED" : lineReclaimed and not na(bLevel) ? "WAIT B BREAK" : lineReclaimed ? "LINE ONLY" : "WAIT LINE"
@@ -251,7 +259,7 @@ if barstate.islast and showTable
     table.cell(t, 0, 0, "LH3 B Confirm", text_color=color.white, text_size=size.small)
     table.cell(t, 1, 0, timeframe.period, text_color=chartIsH4 ? color.lime : color.orange, text_size=size.tiny)
     table.cell(t, 0, 1, "state", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 1, stateText, text_color=bConfirmed ? color.aqua : lineReclaimed ? color.lime : color.silver, text_size=size.tiny)
+    table.cell(t, 1, 1, stateText, text_color=bConfirmed ? color.lime : lineReclaimed ? color.lime : color.silver, text_size=size.tiny)
     table.cell(t, 0, 2, "setup / LINE / B", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 2, str.tostring(setupCount) + " / " + str.tostring(lineCount) + " / " + str.tostring(bCount), text_color=color.white, text_size=size.tiny)
     table.cell(t, 0, 3, "A confirm", text_color=color.orange, text_size=size.tiny)
@@ -260,8 +268,8 @@ if barstate.islast and showTable
     table.cell(t, 1, 4, f_num(lineNow), text_color=color.red, text_size=size.tiny)
     table.cell(t, 0, 5, "B level", text_color=color.aqua, text_size=size.tiny)
     table.cell(t, 1, 5, f_num(bLevel), text_color=color.aqua, text_size=size.tiny)
-    table.cell(t, 0, 6, "last SL/TP", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 6, f_num(lastStop) + " / " + f_num(lastTarget), text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 0, 6, "ENTRY", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 1, 6, f_num(lastEntry), text_color=color.lime, text_size=size.tiny)
     table.cell(t, 0, 7, "validated", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 7, "XAU H4 B PF2.58", text_color=color.lime, text_size=size.tiny)
     table.cell(t, 0, 8, "rule", text_color=color.silver, text_size=size.tiny)

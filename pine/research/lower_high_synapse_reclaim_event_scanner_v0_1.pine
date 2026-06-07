@@ -1,0 +1,206 @@
+//@version=5
+indicator("Lower High Synapse Reclaim Event Scanner v0.1 [Research]",
+     overlay=true,
+     max_bars_back=5000,
+     max_lines_count=400,
+     max_labels_count=400)
+
+// Research only.
+// 目的:
+// - Lower High 3 Touch の下降ラインを「Synapseの2波圧力線」として見る
+// - 下降ライン上抜けを転換の最低条件として可視化する
+// - B水平線上抜け、A水平線上抜けを別段階で表示する
+//
+// 注意:
+// - 売買サインではない。
+// - Pivotはconfirmedのみ。リアルタイムで未確定の高値/安値は使わない。
+// - LINEだけで入らない。Synapseの読みではB確認が必要。
+
+plot(close, title="Compile Anchor", color=color.new(color.gray, 100))
+
+grpCore = "Lower High line"
+pivotLeft = input.int(5, "Pivot left", minval=1, maxval=30, group=grpCore)
+pivotRight = input.int(5, "Pivot right", minval=1, maxval=30, group=grpCore)
+atrLen = input.int(14, "ATR", minval=1, group=grpCore)
+minLowerAtr = input.float(0.20, "各lower highの最低切り下げ幅 ATR", minval=0.0, step=0.05, group=grpCore)
+lineTouchAtr = input.float(0.55, "H3ラインタッチ許容 ATR", minval=0.0, step=0.05, group=grpCore)
+maxBars12 = input.int(160, "H1-H2 最大本数", minval=5, maxval=1000, group=grpCore)
+maxBars23 = input.int(160, "H2-H3 最大本数", minval=5, maxval=1000, group=grpCore)
+maxActiveBars = input.int(420, "LH3後の監視本数", minval=20, maxval=2000, group=grpCore)
+
+grpConfirm = "Synapse confirm"
+lineBreakBufferAtr = input.float(0.05, "LINE上抜けバッファ ATR", minval=0.0, step=0.01, group=grpConfirm)
+bBreakBufferAtr = input.float(0.03, "B/A上抜けバッファ ATR", minval=0.0, step=0.01, group=grpConfirm)
+cooldownBars = input.int(48, "SYN候補の間隔", minval=1, maxval=500, group=grpConfirm)
+requireLineForB = input.bool(true, "B判定にLINE上抜けを要求", group=grpConfirm)
+
+grpView = "Visual"
+showTrendLines = input.bool(true, "下降ライン表示", group=grpView)
+showABLines = input.bool(true, "A/B水平線表示", group=grpView)
+showLabels = input.bool(true, "ラベル表示", group=grpView)
+showTable = input.bool(true, "状態テーブル", group=grpView)
+tablePosInput = input.string("top_right", "テーブル位置", options=["top_right", "top_left", "bottom_right", "bottom_left"], group=grpView)
+
+f_table_pos(string pos) =>
+    pos == "top_left" ? position.top_left : pos == "bottom_right" ? position.bottom_right : pos == "bottom_left" ? position.bottom_left : position.top_right
+
+f_num(float x) =>
+    na(x) ? "—" : str.tostring(x, "#.##")
+
+atr = ta.atr(atrLen)
+ph = ta.pivothigh(high, pivotLeft, pivotRight)
+pl = ta.pivotlow(low, pivotLeft, pivotRight)
+
+var float h1 = na
+var float h2 = na
+var float h3 = na
+var int h1Bar = na
+var int h2Bar = na
+var int h3Bar = na
+
+var bool activeSeq = false
+var float seqH1 = na
+var float seqH3 = na
+var int seqH1Bar = na
+var int seqH3Bar = na
+var float seqSlope = na
+var float visibleSlope = na
+var bool lineReclaimed = false
+var bool synDone = false
+var bool aDone = false
+var float headLow = na
+var int headLowBar = na
+var float bLevel = na
+var int bBar = na
+var int lastSynBar = na
+var line activeLine = na
+var line aLine = na
+var line bLine = na
+
+var int setupCount = 0
+var int lineCount = 0
+var int bCount = 0
+var int aCount = 0
+
+if activeSeq and not na(seqH3Bar) and bar_index - seqH3Bar > maxActiveBars
+    activeSeq := false
+    lineReclaimed := false
+    synDone := false
+    aDone := false
+    headLow := na
+    headLowBar := na
+    bLevel := na
+    bBar := na
+
+if activeSeq and not na(pl)
+    int lowBar = bar_index - pivotRight
+    float lowPrice = pl
+    if lowBar > seqH3Bar and (na(headLow) or lowPrice < headLow)
+        headLow := lowPrice
+        headLowBar := lowBar
+        bLevel := na
+        bBar := na
+        if showLabels
+            label.new(lowBar, lowPrice, "head", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.gray, 15), textcolor=color.white, size=size.tiny)
+
+if not na(ph)
+    int highBar = bar_index - pivotRight
+    float highPrice = ph
+    float pAtr = atr[pivotRight]
+
+    if activeSeq and not na(headLowBar) and highBar > headLowBar and na(bLevel)
+        bLevel := highPrice
+        bBar := highBar
+        if showABLines
+            bLine := line.new(bBar, bLevel, bBar + maxActiveBars, bLevel, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.aqua, 20), style=line.style_dashed)
+        if showLabels
+            label.new(bBar, bLevel, "B", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.aqua, 0), textcolor=color.black, size=size.tiny)
+
+    h1 := h2
+    h1Bar := h2Bar
+    h2 := h3
+    h2Bar := h3Bar
+    h3 := highPrice
+    h3Bar := highBar
+
+    bool haveThree = not na(h1) and not na(h2) and not na(h3) and not na(h1Bar) and not na(h2Bar) and not na(h3Bar)
+    bool lowerOk = haveThree and h1 > h2 + pAtr * minLowerAtr and h2 > h3 + pAtr * minLowerAtr
+    bool spacingOk = haveThree and h2Bar > h1Bar and h3Bar > h2Bar and (h2Bar - h1Bar <= maxBars12) and (h3Bar - h2Bar <= maxBars23)
+    float slope12 = haveThree and h2Bar != h1Bar ? (h2 - h1) / (h2Bar - h1Bar) : na
+    float expectedH3 = haveThree and not na(slope12) ? h1 + slope12 * (h3Bar - h1Bar) : na
+    bool touchOk = haveThree and not na(expectedH3) and math.abs(h3 - expectedH3) <= pAtr * lineTouchAtr
+    bool newLowerHighSetup = lowerOk and spacingOk and touchOk
+
+    if newLowerHighSetup
+        activeSeq := true
+        setupCount += 1
+        seqH1 := h1
+        seqH3 := h3
+        seqH1Bar := h1Bar
+        seqH3Bar := h3Bar
+        seqSlope := slope12
+        visibleSlope := h3Bar != h1Bar ? (h3 - h1) / (h3Bar - h1Bar) : na
+        lineReclaimed := false
+        synDone := false
+        aDone := false
+        headLow := na
+        headLowBar := na
+        bLevel := na
+        bBar := na
+        if showTrendLines
+            activeLine := line.new(seqH1Bar, seqH1, seqH3Bar, seqH3, xloc=xloc.bar_index, extend=extend.right, color=color.new(color.red, 0), width=2)
+        if showABLines
+            aLine := line.new(seqH3Bar, seqH3, seqH3Bar + maxActiveBars, seqH3, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.orange, 20), style=line.style_dotted)
+        if showLabels
+            label.new(seqH3Bar, seqH3, "LH3\npressure", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.orange, 0), textcolor=color.white, size=size.tiny)
+
+lineNow = activeSeq and not na(visibleSlope) and not na(seqH1) and not na(seqH1Bar) ? seqH1 + visibleSlope * (bar_index - seqH1Bar) : na
+lineBreakNow = activeSeq and not lineReclaimed and bar_index > seqH3Bar and not na(lineNow) and close > lineNow + atr * lineBreakBufferAtr and barstate.isconfirmed
+
+if lineBreakNow
+    lineReclaimed := true
+    lineCount += 1
+    if showLabels
+        label.new(bar_index, high + atr * 0.25, "LINE\nreclaim", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+
+cooldownOk = na(lastSynBar) or bar_index - lastSynBar >= cooldownBars
+bBaseOk = not requireLineForB or lineReclaimed
+bBreakNow = activeSeq and bBaseOk and not synDone and not na(bLevel) and bar_index > bBar and close > bLevel + atr * bBreakBufferAtr and cooldownOk and barstate.isconfirmed
+aBreakNow = activeSeq and lineReclaimed and not aDone and not na(seqH3) and close > seqH3 + atr * bBreakBufferAtr and barstate.isconfirmed
+
+if bBreakNow
+    synDone := true
+    lastSynBar := bar_index
+    bCount += 1
+    if showLabels
+        label.new(bar_index, high + atr * 0.40, "SYN\nLINE+B", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.aqua, 0), textcolor=color.black, size=size.small)
+
+if aBreakNow
+    aDone := true
+    aCount += 1
+    if showLabels
+        label.new(bar_index, high + atr * 0.65, "A\nstrong", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.orange, 0), textcolor=color.black, size=size.tiny)
+
+plotshape(lineBreakNow, title="LINE Reclaim", style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.tiny, text="LINE")
+plotshape(bBreakNow, title="Synapse LINE+B Candidate", style=shape.triangleup, location=location.belowbar, color=color.aqua, size=size.small, text="SYN")
+plotshape(aBreakNow, title="A Reclaim Strong Confirm", style=shape.triangleup, location=location.belowbar, color=color.orange, size=size.tiny, text="A")
+plot(activeSeq ? lineNow : na, title="Active LH3 pressure line", color=color.new(color.red, 65), linewidth=1)
+
+var table t = table.new(f_table_pos(tablePosInput), 2, 6, bgcolor=color.new(color.black, 10), border_width=1)
+if barstate.islast and showTable
+    table.cell(t, 0, 0, "LH3 Synapse", text_color=color.white, text_size=size.small)
+    table.cell(t, 1, 0, timeframe.period, text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 0, 1, "setup", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 1, str.tostring(setupCount), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 2, "LINE", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 1, 2, str.tostring(lineCount), text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 3, "SYN B", text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 1, 3, str.tostring(bCount), text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 4, "A", text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 1, 4, str.tostring(aCount), text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 0, 5, "line now", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 5, f_num(lineNow), text_color=color.silver, text_size=size.tiny)
+
+alertcondition(lineBreakNow, title="LH3 Synapse LINE Reclaim", message="LH3 pressure line reclaimed on {{ticker}} {{interval}}")
+alertcondition(bBreakNow, title="LH3 Synapse LINE+B Candidate", message="LH3 Synapse LINE+B candidate on {{ticker}} {{interval}}")
+alertcondition(aBreakNow, title="LH3 Synapse A Strong Confirm", message="LH3 Synapse A confirm on {{ticker}} {{interval}}")

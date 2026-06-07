@@ -1,5 +1,5 @@
 //@version=5
-indicator("LH3 Synapse B Confirm Visual v0.2 [Research]",
+indicator("LH3 Synapse B Confirm Visual v0.3 [Research]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
@@ -48,6 +48,7 @@ levelExtendBars = input.int(48, "Entry/SL/TPの表示本数", minval=5, maxval=3
 grpView = "Visual"
 showEntryMarks = input.bool(true, "ENTRY候補を大きく表示", group=grpView)
 showEntryBackground = input.bool(true, "ENTRY足の背景を薄く表示", group=grpView)
+showActiveBGuide = input.bool(true, "現在のENTRY待ちBを太く表示", group=grpView)
 showTrendLines = input.bool(true, "赤LINE表示", group=grpView)
 showABLines = input.bool(true, "A/B水平線表示", group=grpView)
 showHeadLabel = input.bool(false, "head lowラベル", group=grpView)
@@ -210,6 +211,7 @@ if lineBreakNow
 
 cooldownOk = na(lastBConfirmBar) or bar_index - lastBConfirmBar >= cooldownBars
 bWithinWindow = not na(lineReclaimBar) and bar_index - lineReclaimBar <= maxBarsAfterLineForB
+bEntryThreshold = not na(bLevel) and not na(atr) ? bLevel + atr * bBreakBufferAtr : na
 bBreakNow = activeSeq and lineReclaimed and bWithinWindow and not bConfirmed and not na(bLevel) and bar_index > bBar and close > bLevel + atr * bBreakBufferAtr and cooldownOk and barstate.isconfirmed
 aBreakNow = activeSeq and lineReclaimed and not aConfirmed and not na(seqH3) and close > seqH3 + atr * bBreakBufferAtr and barstate.isconfirmed
 
@@ -245,6 +247,8 @@ if aBreakNow
         keep_label(label.new(bar_index, high + atr * 0.80, "A\nlate", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.orange, 0), textcolor=color.black, size=size.tiny))
 
 plot(activeSeq ? lineNow : na, title="Active LH3 red pressure line", color=color.new(color.red, 65), linewidth=1)
+plot(showActiveBGuide and activeSeq and lineReclaimed and not bConfirmed ? bLevel : na, title="ACTIVE B level", color=color.new(color.aqua, 0), linewidth=4, style=plot.style_linebr)
+plot(showActiveBGuide and activeSeq and lineReclaimed and not bConfirmed ? bEntryThreshold : na, title="ENTRY close threshold", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
 plotshape(lineBreakNow, title="WAIT LINE reclaim", style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.tiny, text="WAIT")
 plotshape(bBreakNow, title="B CONFIRM candidate", style=shape.triangleup, location=location.belowbar, color=color.aqua, size=size.small, text="B")
 plotshape(showEntryMarks and bBreakNow, title="ENTRY候補", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 0), text="ENTRY", textcolor=color.black, size=size.large)
@@ -253,8 +257,10 @@ bgcolor(showEntryBackground and bBreakNow ? color.new(color.lime, 86) : na, titl
 
 chartIsH4 = timeframe.in_seconds(timeframe.period) == 240 * 60
 stateText = not activeSeq ? "NO SETUP" : bConfirmed ? "B CONFIRMED" : lineReclaimed and not na(bLevel) ? "WAIT B BREAK" : lineReclaimed ? "LINE ONLY" : "WAIT LINE"
+entryNeedText = bConfirmed ? f_num(lastEntry) : activeSeq and lineReclaimed and not na(bEntryThreshold) ? "close > " + f_num(bEntryThreshold) : "-"
+noEntryReason = not activeSeq ? "no LH3" : not lineReclaimed ? "wait LINE" : na(bLevel) ? "wait B pivot" : na(bEntryThreshold) ? "wait ATR" : not bWithinWindow ? "B window over" : close <= bEntryThreshold ? "close below active B" : "wait confirmed close"
 
-var table t = table.new(f_table_pos(tablePosInput), 2, 9, bgcolor=color.new(color.black, 10), border_width=1)
+var table t = table.new(f_table_pos(tablePosInput), 2, 10, bgcolor=color.new(color.black, 10), border_width=1)
 if barstate.islast and showTable
     table.cell(t, 0, 0, "LH3 B Confirm", text_color=color.white, text_size=size.small)
     table.cell(t, 1, 0, timeframe.period, text_color=chartIsH4 ? color.lime : color.orange, text_size=size.tiny)
@@ -268,12 +274,14 @@ if barstate.islast and showTable
     table.cell(t, 1, 4, f_num(lineNow), text_color=color.red, text_size=size.tiny)
     table.cell(t, 0, 5, "B level", text_color=color.aqua, text_size=size.tiny)
     table.cell(t, 1, 5, f_num(bLevel), text_color=color.aqua, text_size=size.tiny)
-    table.cell(t, 0, 6, "ENTRY", text_color=color.lime, text_size=size.tiny)
-    table.cell(t, 1, 6, f_num(lastEntry), text_color=color.lime, text_size=size.tiny)
-    table.cell(t, 0, 7, "validated", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 7, "XAU H4 B PF2.58", text_color=color.lime, text_size=size.tiny)
-    table.cell(t, 0, 8, "rule", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 8, chartIsH4 ? "H4 OK" : "H4で確認", text_color=chartIsH4 ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 6, "ENTRY条件", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 1, 6, entryNeedText, text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 7, "未ENTRY理由", text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 1, 7, noEntryReason, text_color=bConfirmed ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 8, "validated", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 8, "XAU H4 B PF2.58", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 9, "rule", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 9, chartIsH4 ? "H4 OK" : "H4で確認", text_color=chartIsH4 ? color.lime : color.orange, text_size=size.tiny)
 
 alertcondition(lineBreakNow, title="LH3 WAIT LINE reclaim", message="LH3 red line reclaimed. Wait for B confirmation on {{ticker}} {{interval}}")
 alertcondition(bBreakNow, title="LH3 B CONFIRM candidate", message="LH3 Synapse B confirmation candidate on {{ticker}} {{interval}}")

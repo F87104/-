@@ -170,6 +170,7 @@ Vol.1 のうち、バックテストで相性がよい合成:
 | タイトル | 内容 |
 |---|---|
 | [**ポジションを持っている人が投げ出す瞬間**](position_surrender_moment.md) | 降伏・投げ・清算の3類型、4段階の感情、USDJPY事例 |
+| [**Substack 版（画像付き）**](substack/position_surrender/article.md) | 投稿用本文 + [画像9枚](substack/position_surrender/images/) |
 
 ---
 

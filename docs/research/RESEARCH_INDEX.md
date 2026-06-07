@@ -18,6 +18,8 @@
 
 ## 進捗ログ
 
+| 2026-06-06 | 3段下降→加速下落 | XAUUSD H1 の段階的 lower high 観察を仮説メモ化。操作定義ドラフトと検証4段階を記載。 | 手動20件抽出 → Event scanner |
+
 | 日付 | 研究テーマ | 進捗 | 次の判断 |
 |---|---|---|---|
 | 2026-05-31 | トレード心理研究 | 失敗チャートの代表例7ケースをローカルで選び、可視化第一版を作成。公開版には画像・元データは載せない。 | 代表ケースごとに「実際の入口」「本来待つ場所」「損切り位置」を手動でより正確に重ねる |
@@ -53,7 +55,8 @@
 | 2 | Market Psychology Squeeze | 記録済み | スクイーズ、投げ売り、踏み上げを戦略化する | 通貨別の相性と厳格条件を整理済み | 実運用に残す条件と除外条件をまとめる |
 | 3 | **市場心理図鑑** | **Vol.1 公開** | チャート形状ではなく参加者心理を分類する辞書 | 基本12パターンを記載 | Vol.2 心理合成、Event scanner 実装 |
 | 4 | Wavebox / Rebreak | 記録済み | 波形、再ブレイク、押し戻りの有効条件を調べる | 運用前提、監査、Pine 実装メモを整理済み | 実運用に使う版と研究保留版を分ける |
-| 5 | **早めに損切りパターン** | **進行中** | 予定SLを待たず切るべき局面を分類する | 6/3 XAUUSD をアンカーに E01〜E08 仮説 | 日誌4件にタグ付け、指標前後サンプル5件 |
+| 5 | **早めに損切りパターン** | **進行中** | 予定SLを待たず切るべき局面を分類する | 6/3 XAUUSD をアンカーに E01〜E09 仮説 | 日誌タグ付け継続 |
+| 6 | **3段下降→加速下落** | **仮説** | 段階的 lower high 後の leg 加速を検証 | XAUUSD H1 目視観察をメモ化 | 手動20件 → Event scanner |
 
 ## トレード心理研究の中間整理
 
@@ -117,6 +120,7 @@
 | トレード心理 最適エントリー研究 | [trade_psychology_optimal_entry_pattern_research_2026-05-31.md](trade_psychology_optimal_entry_pattern_research_2026-05-31.md) |
 | **トレード日誌（トップ）** | **[trade_diary/README.md](../trade_diary/README.md)** |
 | **早めに損切りパターン研究** | [early_stop_loss_patterns_2026-06-06.md](early_stop_loss_patterns_2026-06-06.md) ／ [タグ付けCSV](../trade_diary/practice/early_stop_pattern_log.csv) |
+| **3段下降→加速下落（仮説）** | [stair_step_decline_hypothesis_2026-06-06.md](stair_step_decline_hypothesis_2026-06-06.md) |
 | リアルタイム心理記録テンプレート | [realtime_trade_psychology_log_template.csv](realtime_trade_psychology_log_template.csv) |
 | 受講生エントリー集中パターン研究 | [student_entry_cluster_research_2026-05-31.md](student_entry_cluster_research_2026-05-31.md) |
 | 受講生つまずきクラスタ研究 | [student_stumble_clusters_research_2026-05-31.md](student_stumble_clusters_research_2026-05-31.md) |

@@ -194,6 +194,7 @@
 | Lower High 3 Touch 上抜けロング実測 | [lower_high_synapse_reclaim_long_2026-06-08/REPORT_ja.md](lower_high_synapse_reclaim_long_2026-06-08/REPORT_ja.md) |
 | Lower High 3 Touch 上抜けロング勝率PF | [lower_high_synapse_reclaim_long_strategy_2026-06-08/REPORT_ja.md](lower_high_synapse_reclaim_long_strategy_2026-06-08/REPORT_ja.md) |
 | Lower High 3 Touch Synapse確認フィルタ勝率PF | [lower_high_synapse_confirm_filters_2026-06-08/REPORT_ja.md](lower_high_synapse_confirm_filters_2026-06-08/REPORT_ja.md) |
+| Lower High 3 Touch B確認 目視照合Pine | [../../pine/research/lower_high_synapse_b_confirm_visual_v0_1.pine](../../pine/research/lower_high_synapse_b_confirm_visual_v0_1.pine) |
 | Lower High x Synapse 接続 | [lower_high_synapse_bridge_2026-06-08.md](lower_high_synapse_bridge_2026-06-08.md) |
 
 ## 新しい研究を書くとき

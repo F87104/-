@@ -57,6 +57,7 @@ Synapseの読みでは、この下降ラインを上抜けることが転換の�
 
 Synapse確認用Pine:
 
+- [lower_high_synapse_b_confirm_visual_v0_1.pine](../../pine/research/lower_high_synapse_b_confirm_visual_v0_1.pine)（B水平線確認の目視照合用）
 - [lower_high_synapse_reclaim_event_scanner_v0_1.pine](../../pine/research/lower_high_synapse_reclaim_event_scanner_v0_1.pine)
 
 ## 赤LINE上抜けロング実測 v0.1

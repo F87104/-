@@ -1,0 +1,272 @@
+//@version=5
+indicator("LH3 Synapse B Confirm Visual v0.1 [Research]",
+     overlay=true,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500)
+
+// Research only.
+// 目的:
+// - 赤いLH3下降LINEを上抜けたあと、B水平線上抜けまで待てているかを目視照合する
+// - 今回の検証で一番良かった XAUUSD H4 B_BREAK をTradingView上で確認する
+// - LINE上抜けだけでは入らず、B確認を主役として見る
+//
+// 検証メモ:
+// - 赤LINE上抜け H4 RR2/120: 勝率40.21%, PF1.07
+// - B水平線上抜け H4 RR2/120: 勝率44.72%, PF1.22
+// - XAUUSD H4 B水平線 RR2/48: 勝率63.38%, PF2.58
+//
+// 注意:
+// - 売買サインではない。目視照合用。
+// - Pivotはconfirmedのみ。未確定足の高値/安値は使わない。
+// - TradingViewとPythonはデータ配信元・同一足SL/TP処理が異なるため、まず位置の一致を見る。
+
+plot(close, title="Compile Anchor", color=color.new(color.gray, 100))
+
+grpCore = "LH3 definition"
+pivotLeft = input.int(5, "Pivot left", minval=1, maxval=30, group=grpCore)
+pivotRight = input.int(5, "Pivot right", minval=1, maxval=30, group=grpCore)
+atrLen = input.int(14, "ATR", minval=1, group=grpCore)
+minLowerAtr = input.float(0.20, "各lower highの最低切り下げ幅 ATR", minval=0.0, step=0.05, group=grpCore)
+lineTouchAtr = input.float(0.55, "H3ラインタッチ許容 ATR", minval=0.0, step=0.05, group=grpCore)
+maxBars12 = input.int(160, "H1-H2 最大本数", minval=5, maxval=1000, group=grpCore)
+maxBars23 = input.int(160, "H2-H3 最大本数", minval=5, maxval=1000, group=grpCore)
+maxActiveBars = input.int(420, "LH3後の監視本数", minval=20, maxval=2000, group=grpCore)
+
+grpConfirm = "Confirm filter"
+lineBreakBufferAtr = input.float(0.05, "赤LINE上抜けバッファ ATR", minval=0.0, step=0.01, group=grpConfirm)
+bBreakBufferAtr = input.float(0.03, "B/A上抜けバッファ ATR", minval=0.0, step=0.01, group=grpConfirm)
+maxBarsAfterLineForB = input.int(48, "LINE上抜け後B確認の最大本数", minval=1, maxval=300, group=grpConfirm)
+cooldownBars = input.int(48, "B候補の間隔", minval=1, maxval=500, group=grpConfirm)
+
+grpRisk = "Validation levels"
+showValidationLevels = input.bool(true, "B確認時のEntry/SL/TP表示", group=grpRisk)
+rr = input.float(2.0, "表示TP RR", minval=0.25, step=0.25, group=grpRisk)
+stopBufferAtr = input.float(0.20, "SL余白 ATR", minval=0.0, step=0.05, group=grpRisk)
+levelExtendBars = input.int(48, "Entry/SL/TPの表示本数", minval=5, maxval=300, group=grpRisk)
+
+grpView = "Visual"
+showTrendLines = input.bool(true, "赤LINE表示", group=grpView)
+showABLines = input.bool(true, "A/B水平線表示", group=grpView)
+showHeadLabel = input.bool(false, "head lowラベル", group=grpView)
+showSetupLabels = input.bool(true, "LH3ラベル", group=grpView)
+showLineLabels = input.bool(true, "LINE上抜けラベル", group=grpView)
+showBLabels = input.bool(true, "B確認ラベル", group=grpView)
+showALabels = input.bool(false, "A確認ラベル", group=grpView)
+showTable = input.bool(true, "状態テーブル", group=grpView)
+tablePosInput = input.string("top_right", "テーブル位置", options=["top_right", "top_left", "bottom_right", "bottom_left"], group=grpView)
+keepObjects = input.int(180, "残すラベル/ライン数", minval=30, maxval=450, group=grpView)
+
+f_table_pos(string pos) =>
+    pos == "top_left" ? position.top_left : pos == "bottom_right" ? position.bottom_right : pos == "bottom_left" ? position.bottom_left : position.top_right
+
+f_num(float x) =>
+    na(x) ? "-" : str.tostring(x, "#.###")
+
+var label[] keptLabels = array.new_label()
+var line[] keptLines = array.new_line()
+
+keep_label(label lb) =>
+    array.push(keptLabels, lb)
+    while array.size(keptLabels) > keepObjects
+        label.delete(array.shift(keptLabels))
+
+keep_line(line ln) =>
+    array.push(keptLines, ln)
+    while array.size(keptLines) > keepObjects
+        line.delete(array.shift(keptLines))
+
+atr = ta.atr(atrLen)
+ph = ta.pivothigh(high, pivotLeft, pivotRight)
+pl = ta.pivotlow(low, pivotLeft, pivotRight)
+
+var float h1 = na
+var float h2 = na
+var float h3 = na
+var int h1Bar = na
+var int h2Bar = na
+var int h3Bar = na
+
+var bool activeSeq = false
+var float seqH1 = na
+var float seqH2 = na
+var float seqH3 = na
+var int seqH1Bar = na
+var int seqH2Bar = na
+var int seqH3Bar = na
+var float visibleSlope = na
+var bool lineReclaimed = false
+var int lineReclaimBar = na
+var bool bConfirmed = false
+var bool aConfirmed = false
+var float headLow = na
+var int headLowBar = na
+var float bLevel = na
+var int bBar = na
+var float structureLow = na
+var int lastBConfirmBar = na
+
+var int setupCount = 0
+var int lineCount = 0
+var int bCount = 0
+var int aCount = 0
+var float lastEntry = na
+var float lastStop = na
+var float lastTarget = na
+
+if activeSeq and not na(seqH3Bar) and bar_index - seqH3Bar > maxActiveBars
+    activeSeq := false
+    lineReclaimed := false
+    bConfirmed := false
+    aConfirmed := false
+    lineReclaimBar := na
+    headLow := na
+    headLowBar := na
+    bLevel := na
+    bBar := na
+    structureLow := na
+
+if activeSeq and not na(seqH3Bar) and bar_index >= seqH3Bar
+    structureLow := na(structureLow) ? low : math.min(structureLow, low)
+
+if activeSeq and not na(pl)
+    int lowBar = bar_index - pivotRight
+    float lowPrice = pl
+    if lowBar > seqH3Bar and (na(headLow) or lowPrice < headLow)
+        headLow := lowPrice
+        headLowBar := lowBar
+        bLevel := na
+        bBar := na
+        if showHeadLabel
+            keep_label(label.new(lowBar, lowPrice, "head", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.gray, 15), textcolor=color.white, size=size.tiny))
+
+if not na(ph)
+    int highBar = bar_index - pivotRight
+    float highPrice = ph
+    float pAtr = atr[pivotRight]
+
+    if activeSeq and not na(headLowBar) and highBar > headLowBar and na(bLevel)
+        bLevel := highPrice
+        bBar := highBar
+        if showABLines
+            keep_line(line.new(bBar, bLevel, bBar + maxActiveBars, bLevel, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.aqua, 15), style=line.style_dashed, width=2))
+        if showSetupLabels
+            keep_label(label.new(bBar, bLevel, "B", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.aqua, 0), textcolor=color.black, size=size.tiny))
+
+    h1 := h2
+    h1Bar := h2Bar
+    h2 := h3
+    h2Bar := h3Bar
+    h3 := highPrice
+    h3Bar := highBar
+
+    bool haveThree = not na(h1) and not na(h2) and not na(h3) and not na(h1Bar) and not na(h2Bar) and not na(h3Bar)
+    bool lowerOk = haveThree and h1 > h2 + pAtr * minLowerAtr and h2 > h3 + pAtr * minLowerAtr
+    bool spacingOk = haveThree and h2Bar > h1Bar and h3Bar > h2Bar and (h2Bar - h1Bar <= maxBars12) and (h3Bar - h2Bar <= maxBars23)
+    float slope12 = haveThree and h2Bar != h1Bar ? (h2 - h1) / (h2Bar - h1Bar) : na
+    float expectedH3 = haveThree and not na(slope12) ? h1 + slope12 * (h3Bar - h1Bar) : na
+    bool touchOk = haveThree and not na(expectedH3) and math.abs(h3 - expectedH3) <= pAtr * lineTouchAtr
+    bool newLowerHighSetup = lowerOk and spacingOk and touchOk
+
+    if newLowerHighSetup
+        activeSeq := true
+        setupCount += 1
+        seqH1 := h1
+        seqH2 := h2
+        seqH3 := h3
+        seqH1Bar := h1Bar
+        seqH2Bar := h2Bar
+        seqH3Bar := h3Bar
+        visibleSlope := h3Bar != h1Bar ? (h3 - h1) / (h3Bar - h1Bar) : na
+        lineReclaimed := false
+        bConfirmed := false
+        aConfirmed := false
+        lineReclaimBar := na
+        headLow := na
+        headLowBar := na
+        bLevel := na
+        bBar := na
+        structureLow := low
+        for k = 0 to pivotRight
+            structureLow := math.min(structureLow, low[k])
+        if showTrendLines
+            keep_line(line.new(seqH1Bar, seqH1, seqH3Bar, seqH3, xloc=xloc.bar_index, extend=extend.right, color=color.new(color.red, 0), width=2))
+        if showABLines
+            keep_line(line.new(seqH3Bar, seqH3, seqH3Bar + maxActiveBars, seqH3, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.orange, 20), style=line.style_dotted, width=1))
+        if showSetupLabels
+            keep_label(label.new(seqH3Bar, seqH3, "LH3\nred line", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.orange, 0), textcolor=color.white, size=size.tiny))
+
+lineNow = activeSeq and not na(visibleSlope) and not na(seqH1) and not na(seqH1Bar) ? seqH1 + visibleSlope * (bar_index - seqH1Bar) : na
+lineBreakNow = activeSeq and not lineReclaimed and bar_index > seqH3Bar and not na(lineNow) and close > lineNow + atr * lineBreakBufferAtr and barstate.isconfirmed
+
+if lineBreakNow
+    lineReclaimed := true
+    lineReclaimBar := bar_index
+    lineCount += 1
+    if showLineLabels
+        keep_label(label.new(bar_index, high + atr * 0.30, "WAIT\nLINE", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
+
+cooldownOk = na(lastBConfirmBar) or bar_index - lastBConfirmBar >= cooldownBars
+bWithinWindow = not na(lineReclaimBar) and bar_index - lineReclaimBar <= maxBarsAfterLineForB
+bBreakNow = activeSeq and lineReclaimed and bWithinWindow and not bConfirmed and not na(bLevel) and bar_index > bBar and close > bLevel + atr * bBreakBufferAtr and cooldownOk and barstate.isconfirmed
+aBreakNow = activeSeq and lineReclaimed and not aConfirmed and not na(seqH3) and close > seqH3 + atr * bBreakBufferAtr and barstate.isconfirmed
+
+if bBreakNow
+    bConfirmed := true
+    lastBConfirmBar := bar_index
+    bCount += 1
+    float entry = close
+    float stop = structureLow - atr * stopBufferAtr
+    float risk = entry - stop
+    float target = risk > 0 ? entry + risk * rr : na
+    lastEntry := entry
+    lastStop := stop
+    lastTarget := target
+    if showBLabels
+        keep_label(label.new(bar_index, high + atr * 0.55, "B CONFIRM\nXAU H4 focus", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.aqua, 0), textcolor=color.black, size=size.small))
+    if showValidationLevels and risk > 0 and not na(target)
+        keep_line(line.new(bar_index, entry, bar_index + levelExtendBars, entry, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.white, 20), style=line.style_solid, width=1))
+        keep_line(line.new(bar_index, stop, bar_index + levelExtendBars, stop, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.red, 0), style=line.style_solid, width=1))
+        keep_line(line.new(bar_index, target, bar_index + levelExtendBars, target, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.lime, 0), style=line.style_solid, width=1))
+        keep_label(label.new(bar_index + levelExtendBars, entry, "entry", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(color.white, 70), textcolor=color.white, size=size.tiny))
+        keep_label(label.new(bar_index + levelExtendBars, stop, "SL", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(color.red, 10), textcolor=color.white, size=size.tiny))
+        keep_label(label.new(bar_index + levelExtendBars, target, "TP" + str.tostring(rr, "#.##") + "R", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(color.lime, 10), textcolor=color.black, size=size.tiny))
+
+if aBreakNow
+    aConfirmed := true
+    aCount += 1
+    if showALabels
+        keep_label(label.new(bar_index, high + atr * 0.80, "A\nlate", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.orange, 0), textcolor=color.black, size=size.tiny))
+
+plot(activeSeq ? lineNow : na, title="Active LH3 red pressure line", color=color.new(color.red, 65), linewidth=1)
+plotshape(lineBreakNow, title="WAIT LINE reclaim", style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.tiny, text="WAIT")
+plotshape(bBreakNow, title="B CONFIRM candidate", style=shape.triangleup, location=location.belowbar, color=color.aqua, size=size.small, text="B")
+plotshape(aBreakNow, title="A confirm", style=shape.triangleup, location=location.belowbar, color=color.orange, size=size.tiny, text="A")
+
+chartIsH4 = timeframe.in_seconds(timeframe.period) == 240 * 60
+stateText = not activeSeq ? "NO SETUP" : bConfirmed ? "B CONFIRMED" : lineReclaimed and not na(bLevel) ? "WAIT B BREAK" : lineReclaimed ? "LINE ONLY" : "WAIT LINE"
+
+var table t = table.new(f_table_pos(tablePosInput), 2, 9, bgcolor=color.new(color.black, 10), border_width=1)
+if barstate.islast and showTable
+    table.cell(t, 0, 0, "LH3 B Confirm", text_color=color.white, text_size=size.small)
+    table.cell(t, 1, 0, timeframe.period, text_color=chartIsH4 ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 1, "state", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 1, stateText, text_color=bConfirmed ? color.aqua : lineReclaimed ? color.lime : color.silver, text_size=size.tiny)
+    table.cell(t, 0, 2, "setup / LINE / B", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 2, str.tostring(setupCount) + " / " + str.tostring(lineCount) + " / " + str.tostring(bCount), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 3, "A confirm", text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 1, 3, str.tostring(aCount), text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 0, 4, "line", text_color=color.red, text_size=size.tiny)
+    table.cell(t, 1, 4, f_num(lineNow), text_color=color.red, text_size=size.tiny)
+    table.cell(t, 0, 5, "B level", text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 1, 5, f_num(bLevel), text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 6, "last SL/TP", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 6, f_num(lastStop) + " / " + f_num(lastTarget), text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 0, 7, "validated", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 7, "XAU H4 B PF2.58", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 8, "rule", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 8, chartIsH4 ? "H4 OK" : "H4で確認", text_color=chartIsH4 ? color.lime : color.orange, text_size=size.tiny)
+
+alertcondition(lineBreakNow, title="LH3 WAIT LINE reclaim", message="LH3 red line reclaimed. Wait for B confirmation on {{ticker}} {{interval}}")
+alertcondition(bBreakNow, title="LH3 B CONFIRM candidate", message="LH3 Synapse B confirmation candidate on {{ticker}} {{interval}}")
+alertcondition(aBreakNow, title="LH3 A confirm", message="LH3 A horizontal confirmation on {{ticker}} {{interval}}")

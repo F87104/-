@@ -68,6 +68,7 @@ Synapseの考え方では、斜めラインだけでなく、水平線A/Bを使�
 
 研究用Pine:
 
+- [lower_high_synapse_b_confirm_visual_v0_1.pine](../../pine/research/lower_high_synapse_b_confirm_visual_v0_1.pine)（B水平線確認の目視照合用）
 - [lower_high_synapse_reclaim_event_scanner_v0_1.pine](../../pine/research/lower_high_synapse_reclaim_event_scanner_v0_1.pine)
 
 表示の意味:

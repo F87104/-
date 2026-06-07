@@ -24,7 +24,7 @@
 | **系統B（10レーン）** | [system_b_lanes_validation_2026-06-01/DECISION.md](system_b_lanes_validation_2026-06-01/DECISION.md) |
 | **系統B 本番運用** | [operations/system_b/README.md](../operations/system_b/README.md) |
 | **系統B B06 Pine照合** | [DECISION_b06_tv_oanda_parity.md](system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md) |
-| **Lower High 3 Touch 仮説** | [lower_high_three_touch_breakdown_hypothesis_2026-06-08.md](lower_high_three_touch_breakdown_hypothesis_2026-06-08.md) ／ [下抜け実測](lower_high_three_touch_breakdown_2026-06-08/REPORT_ja.md) ／ [上抜けロング実測](lower_high_synapse_reclaim_long_2026-06-08/REPORT_ja.md) ／ [Synapse接続](lower_high_synapse_bridge_2026-06-08.md) |
+| **Lower High 3 Touch 仮説** | [lower_high_three_touch_breakdown_hypothesis_2026-06-08.md](lower_high_three_touch_breakdown_hypothesis_2026-06-08.md) ／ [勝率PF](lower_high_synapse_reclaim_long_strategy_2026-06-08/REPORT_ja.md) ／ [下抜け実測](lower_high_three_touch_breakdown_2026-06-08/REPORT_ja.md) ／ [上抜けロング実測](lower_high_synapse_reclaim_long_2026-06-08/REPORT_ja.md) ／ [Synapse接続](lower_high_synapse_bridge_2026-06-08.md) |
 | **旧心理スプリント（参照のみ）** | [ARCHIVE_psychology_sprint_2026-05_06.md](ARCHIVE_psychology_sprint_2026-05_06.md) |
 
 ## 次にやること
@@ -44,6 +44,7 @@
 | 2026-06-08 | **Lower High 3 Touch 実測** | 1578イベントを実測。H1 MFE48中央値3.18ATR、H4 MFE48中央値2.93ATR。ただしMFE48/前2leg平均はH1 0.77倍、H4 0.88倍で、広い条件の売り継続仮説は未支持。 | ラインを上抜けない売り継続と、ライン上抜け+水平線BのSynapse転換を分けて測る |
 | 2026-06-08 | **Lower High x Synapse 接続** | LH3下降ラインがSynapse手法の初期斜めラインに近いと発見。LINE上抜け、B水平線、A水平線を分けて見る研究用Pineを追加。 | XAUUSD H1/H4で、LINE/B/Aの表示が人間の目に近いか確認 |
 | 2026-06-08 | **LH3赤LINE上抜けロング実測** | 赤いLH3下降LINEを終値で上抜けた足をロング仮エントリーとして2389件実測。H4はMFE48 3.34ATR、MAE48 2.78ATR、fwd48 +0.40ATRでH1より良い。XAUUSD H4とSILVER H4が強い。 | B水平線、A水平線、戻り確認を足して再測定 |
+| 2026-06-08 | **LH3赤LINE上抜け 勝率/PF** | SL/TPを置いて14334シナリオを検証。H4全体RR2/120本は勝率40.21%、PF1.07。XAUUSD H4 RR2/120本は勝率49.53%、PF1.52、+26.70R。SILVER H4 RR1/120本は勝率63.64%、PF1.54。 | XAUUSD H4を中心にB水平線、A水平線、戻り確認で絞る |
 
 ## 進捗ログ（アーカイブ — 心理スプリント 2026-05〜06）
 
@@ -107,7 +108,7 @@
 | 2 | 受講生つまずきクラスタ研究 | **データ確定** | 380件・全敗18・Pine v0.5 + F1試験 v0.1.1 完了 | 1期+2期座標抽出完了 | v2.x へ F1 移植 / 新規全敗期間で A/B |
 | 3 | Market Psychology Squeeze | 記録済み | スクイーズ、投げ売り、踏み上げを戦略化する | 通貨別の相性、厳格条件、ローソク足の例えを整理済み | `CAPITULATION` / `SQUEEZE` の観察ラベルをPineへ入れる |
 | 4 | トレード実践記録 | 記録開始 | 作成したインジケータを実戦で使った結果を残す | USDJPY H4 159.674 を1件目として記録 | 決済後レビューを追記 |
-| 5 | Lower High 3 Touch Breakdown | 上抜けロング実測v0.1 | 3回高値切り下げ後の売り継続と転換候補を分ける | 下抜け1578件、上抜けロング2389件を実測 | LINE+B/A/戻り確認で再測定 |
+| 5 | Lower High 3 Touch Breakdown | 勝率/PF検証v0.1 | 3回高値切り下げ後の売り継続と転換候補を分ける | 下抜け1578件、上抜け2389件、勝率PF14334シナリオを実測 | XAUUSD H4をB/A/戻り確認で絞る |
 | 6 | Wavebox / Rebreak | 記録済み | 波形、再ブレイク、押し戻りの有効条件を調べる | 運用前提、監査、Pine 実装メモを整理済み | 実運用に使う版と研究保留版を分ける |
 
 ## トレード心理研究の中間整理
@@ -190,6 +191,7 @@
 | Lower High 3 Touch Breakdown | [lower_high_three_touch_breakdown_hypothesis_2026-06-08.md](lower_high_three_touch_breakdown_hypothesis_2026-06-08.md) |
 | Lower High 3 Touch 実測結果 | [lower_high_three_touch_breakdown_2026-06-08/REPORT_ja.md](lower_high_three_touch_breakdown_2026-06-08/REPORT_ja.md) |
 | Lower High 3 Touch 上抜けロング実測 | [lower_high_synapse_reclaim_long_2026-06-08/REPORT_ja.md](lower_high_synapse_reclaim_long_2026-06-08/REPORT_ja.md) |
+| Lower High 3 Touch 上抜けロング勝率PF | [lower_high_synapse_reclaim_long_strategy_2026-06-08/REPORT_ja.md](lower_high_synapse_reclaim_long_strategy_2026-06-08/REPORT_ja.md) |
 | Lower High x Synapse 接続 | [lower_high_synapse_bridge_2026-06-08.md](lower_high_synapse_bridge_2026-06-08.md) |
 
 ## 新しい研究を書くとき

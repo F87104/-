@@ -81,6 +81,32 @@ Synapse確認用Pine:
 
 次は、LINE上抜け単体ではなく、B水平線、A水平線、戻り確認を足して比較する。
 
+## 赤LINE上抜けロング 勝率/PF検証 v0.1
+
+赤LINE上抜け足の終値でロングし、SL/TPを置いて勝率とPFを出した。
+
+結果:
+
+- [lower_high_synapse_reclaim_long_strategy_2026-06-08/REPORT_ja.md](lower_high_synapse_reclaim_long_strategy_2026-06-08/REPORT_ja.md)
+
+全体:
+
+- H4 RR2.0 / 120本: 勝率 40.21%、PF 1.07、総R +33.83R。
+- H4 RR1.5 / 120本: 勝率 44.87%、PF 1.06、総R +28.70R。
+- H1 RR2.0 / 120本: 勝率 38.36%、PF 0.92、総R -70.59R。
+
+通貨別:
+
+- XAUUSD H4 RR2.0 / 120本: 勝率 49.53%、PF 1.52、総R +26.70R。
+- SILVER H4 RR1.0 / 120本: 勝率 63.64%、PF 1.54、総R +24.16R。
+
+暫定判断:
+
+- 赤LINE上抜けロングは H1 では弱い。
+- H4では全体プラスだが、PF1.07で薄い。
+- XAUUSD H4 は本命候補。赤LINE上抜けに B/A/戻り確認を重ねる価値が高い。
+- SILVER H4 は勝率型だが、OOSが弱いので保留寄り。
+
 ## 市場心理図鑑の4段階に沿った進め方
 
 ### 1. Pattern definition

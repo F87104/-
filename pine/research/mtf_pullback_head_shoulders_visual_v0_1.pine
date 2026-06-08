@@ -1,5 +1,5 @@
 //@version=5
-indicator("MTF Pullback Head & Shoulders Visual v0.2 [Research]",
+indicator("MTF Pullback Head & Shoulders Visual v0.3 [Research]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
@@ -11,6 +11,7 @@ indicator("MTF Pullback Head & Shoulders Visual v0.2 [Research]",
 // - その戻しの中で、下位足のヘッドアンドショルダー/逆ヘッドアンドショルダーを視覚化する
 // - ネックライン割れ/抜けを、エントリーではなく「検証候補」として表示する
 // - v0.2: 形成途中のLSだけが見えて誤解しやすいため、初期状態では完成形だけを描く
+// - v0.3: まず見つけることを優先し、上位足フィルタは候補の絞り込み用に変更
 //
 // 読み方:
 // - SHORT候補: 上位足が下降トレンド、戻し中、下位足でH&S、ネックライン割れ
@@ -27,19 +28,19 @@ htf = input.timeframe("D", "上位足", group=grpContext)
 htfFastLen = input.int(20, "上位足 EMA fast", minval=1, group=grpContext)
 htfSlowLen = input.int(50, "上位足 EMA slow", minval=2, group=grpContext)
 htfAtrLen = input.int(14, "上位足 ATR", minval=1, group=grpContext)
-pullbackPadAtr = input.float(1.00, "戻し許容 ATR", minval=0.0, step=0.10, group=grpContext)
-requireHtfContext = input.bool(true, "上位足の戻し中だけ検出", group=grpContext)
+pullbackPadAtr = input.float(1.50, "戻し許容 ATR", minval=0.0, step=0.10, group=grpContext)
+requireHtfContext = input.bool(false, "上位足の戻し中だけ候補にする", group=grpContext)
 directionInput = input.string("Both", "検出方向", options=["Both", "Short only", "Long only"], group=grpContext)
 
 grpPattern = "H&S pattern"
-pivotLeft = input.int(5, "Pivot left", minval=1, maxval=30, group=grpPattern)
-pivotRight = input.int(5, "Pivot right", minval=1, maxval=30, group=grpPattern)
+pivotLeft = input.int(3, "Pivot left", minval=1, maxval=30, group=grpPattern)
+pivotRight = input.int(3, "Pivot right", minval=1, maxval=30, group=grpPattern)
 atrLen = input.int(14, "下位足 ATR", minval=1, group=grpPattern)
-minHeadAtr = input.float(0.80, "頭が肩より高い/低い最低差 ATR", minval=0.0, step=0.10, group=grpPattern)
-shoulderToleranceAtr = input.float(1.20, "左右肩の許容差 ATR", minval=0.0, step=0.10, group=grpPattern)
+minHeadAtr = input.float(0.35, "頭が肩より高い/低い最低差 ATR", minval=0.0, step=0.10, group=grpPattern)
+shoulderToleranceAtr = input.float(2.00, "左右肩の許容差 ATR", minval=0.0, step=0.10, group=grpPattern)
 neckBreakBufferAtr = input.float(0.05, "ネックライン抜けバッファ ATR", minval=0.0, step=0.01, group=grpPattern)
-maxPatternBars = input.int(180, "パターン最大本数", minval=20, maxval=1000, group=grpPattern)
-cooldownBars = input.int(40, "候補表示の間隔", minval=1, maxval=500, group=grpPattern)
+maxPatternBars = input.int(260, "パターン最大本数", minval=20, maxval=1000, group=grpPattern)
+cooldownBars = input.int(24, "候補表示の間隔", minval=1, maxval=500, group=grpPattern)
 
 grpVisual = "Visual"
 showHtfEma = input.bool(true, "上位足EMAを表示", group=grpVisual)
@@ -47,6 +48,7 @@ showPullbackBg = input.bool(false, "戻し背景を表示", group=grpVisual)
 showStructure = input.bool(true, "LS/H/RSを表示", group=grpVisual)
 showFormingStructure = input.bool(false, "形成途中のLS/Hを表示", group=grpVisual)
 showNeckline = input.bool(true, "ネックラインを表示", group=grpVisual)
+showSetupLabel = input.bool(true, "H&S形成ラベルを表示", group=grpVisual)
 showCandidate = input.bool(true, "候補ラベルを表示", group=grpVisual)
 showTable = input.bool(true, "状態テーブル", group=grpVisual)
 extendBars = input.int(80, "ネックライン延長本数", minval=10, maxval=300, group=grpVisual)
@@ -92,8 +94,10 @@ htfUp = htfClose > htfEmaFast and htfEmaFast > htfEmaSlow
 shortPullback = htfDown and close > htfEmaFast and close <= htfEmaSlow + htfAtr * pullbackPadAtr
 longPullback = htfUp and close < htfEmaFast and close >= htfEmaSlow - htfAtr * pullbackPadAtr
 
-allowShort = directionInput != "Long only" and (not requireHtfContext or shortPullback)
-allowLong = directionInput != "Short only" and (not requireHtfContext or longPullback)
+allowShort = directionInput != "Long only"
+allowLong = directionInput != "Short only"
+shortContextOk = not requireHtfContext or shortPullback
+longContextOk = not requireHtfContext or longPullback
 
 plot(showHtfEma ? htfEmaFast : na, title="HTF EMA fast", color=color.new(color.blue, 0), linewidth=1)
 plot(showHtfEma ? htfEmaSlow : na, title="HTF EMA slow", color=color.new(color.orange, 0), linewidth=1)
@@ -197,6 +201,8 @@ if newPH
                     keep_label(label.new(hb, hp, "RS", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.red, 10), textcolor=color.white, size=size.tiny))
                     keep_line(line.new(bLSBar, bLS, bHeadBar, bHead, xloc=xloc.bar_index, color=color.new(color.red, 20), width=2))
                     keep_line(line.new(bHeadBar, bHead, bRSBar, bRS, xloc=xloc.bar_index, color=color.new(color.red, 20), width=2))
+                if showSetupLabel
+                    keep_label(label.new(hb, hp + atrAtPivot * 0.50, "H&S形成\nNL待ち", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.red, 0), textcolor=color.white, size=size.small))
                 if showNeckline
                     int nx2 = bN2Bar + extendBars
                     float ny2 = f_project(bN1Bar, bN1, bN2Bar, bN2, nx2)
@@ -260,6 +266,8 @@ if newPL
                     keep_label(label.new(lb, lp, "RS", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.green, 10), textcolor=color.white, size=size.tiny))
                     keep_line(line.new(iLSBar, iLS, iHeadBar, iHead, xloc=xloc.bar_index, color=color.new(color.green, 20), width=2))
                     keep_line(line.new(iHeadBar, iHead, iRSBar, iRS, xloc=xloc.bar_index, color=color.new(color.green, 20), width=2))
+                if showSetupLabel
+                    keep_label(label.new(lb, lp - atrAtPivot * 0.50, "逆H&S形成\nNL待ち", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.small))
                 if showNeckline
                     int ix2 = iN2Bar + extendBars
                     float iy2 = f_project(iN1Bar, iN1, iN2Bar, iN2, ix2)
@@ -274,12 +282,12 @@ if newPL
 
 bearReady = not na(bRS) and not na(bN1) and not na(bN2) and bar_index > bRSBar
 bearNeckNow = bearReady ? f_project(bN1Bar, bN1, bN2Bar, bN2, bar_index) : na
-bearBreak = bearReady and close < bearNeckNow - atr * neckBreakBufferAtr and barstate.isconfirmed
+bearBreak = bearReady and shortContextOk and close < bearNeckNow - atr * neckBreakBufferAtr and barstate.isconfirmed
 bearCooldownOk = na(lastBearCandidateBar) or bar_index - lastBearCandidateBar >= cooldownBars
 
 bullReady = not na(iRS) and not na(iN1) and not na(iN2) and bar_index > iRSBar
 bullNeckNow = bullReady ? f_project(iN1Bar, iN1, iN2Bar, iN2, bar_index) : na
-bullBreak = bullReady and close > bullNeckNow + atr * neckBreakBufferAtr and barstate.isconfirmed
+bullBreak = bullReady and longContextOk and close > bullNeckNow + atr * neckBreakBufferAtr and barstate.isconfirmed
 bullCooldownOk = na(lastBullCandidateBar) or bar_index - lastBullCandidateBar >= cooldownBars
 
 plot(showNeckline and bearReady ? bearNeckNow : na, title="Bear H&S neckline now", color=color.new(color.aqua, 0), linewidth=2, style=plot.style_linebr)

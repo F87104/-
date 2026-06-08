@@ -1,5 +1,5 @@
 //@version=5
-strategy("LH3 Synapse B Symbol Presets Strategy v0.6 [Research]",
+strategy("LH3 Synapse B Symbol Presets Strategy v0.7 [Research]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
@@ -17,6 +17,7 @@ strategy("LH3 Synapse B Symbol Presets Strategy v0.6 [Research]",
 // - LH3赤LINE上抜け後のB水平線上抜けを CHECK として表示する
 // - CHECKのうち、A水平線まで0.5R以上の余白があるものだけを ENTRY候補 として強調する
 // - D1 EMA20上は STRONG、B抜け足の終値位置60%以上は QUALITY として補助表示する
+// - 精度モードで、A余白・終値位置・SL幅・B抜け後の飛び乗りを絞る
 // - ゴールドのSL幅に対して、実測の円損益感度から現在ロットの想定損失と推奨ロットを表示する
 // - 1回の損失を20万円に固定して、SL幅から推奨ロットを逆算する
 // - 通貨別プリセットを使い、TradingViewのストラテジーテスターで勝率/PFを見る
@@ -25,7 +26,7 @@ strategy("LH3 Synapse B Symbol Presets Strategy v0.6 [Research]",
 // 検証メモ:
 // - XAUUSD H4 B抜け即 RR2/48: 71件, 勝率63.38%, PF2.58, +28.93R, 最大DD5.55R
 // - XAUUSD H4 A余白0.5R RR2/48: 58件, 勝率67.24%, PF2.98, +26.45R, 最大DD2.50R
-// - D1 EMA20上はPFが高いが件数が減るため、ENTRY条件ではなく追い風ラベル扱い
+// - D1 EMA20上はPFが高いが件数が減るため、Strict以外では追い風ラベル扱い
 //
 // 注意:
 // - 売買サインではない。目視照合用。
@@ -75,12 +76,17 @@ manualMaxBarsAfterLineForB = input.int(48, "LINE上抜け後B確認の最大本�
 manualCooldownBars = input.int(48, "候補の間隔（Manual）", minval=1, maxval=500, group=grpConfirm)
 
 grpDanger = "Danger filter"
+precisionMode = input.string("Precision", "精度モード", options=["Balanced", "Precision", "Strict"], group=grpDanger)
 manualUseARoomForEntry = input.bool(true, "ENTRY候補にA余白を要求（Manual）", group=grpDanger)
 manualMinARoomR = input.float(0.50, "Aまでの最低余白 R（Manual）", minval=0.0, step=0.10, group=grpDanger)
 manualQualityCloseLoc = input.float(0.60, "QUALITY終値位置（Manual）", minval=0.0, maxval=1.0, step=0.05, group=grpDanger)
 d1EmaLen = input.int(20, "D1 EMA", minval=1, group=grpDanger)
 manualUseD1StrongForEntry = input.bool(false, "ENTRY候補にD1 EMA上も要求（Manual）", group=grpDanger)
 manualUseQualityForEntry = input.bool(false, "ENTRY候補にQUALITYも要求（Manual）", group=grpDanger)
+manualUseRiskAtrForEntry = input.bool(false, "ENTRY候補にSL幅上限を要求（Manual）", group=grpDanger)
+manualMaxRiskAtr = input.float(3.00, "SL幅上限 ATR（Manual）", minval=0.25, step=0.25, group=grpDanger)
+manualUseBreakExtForEntry = input.bool(false, "ENTRY候補にB抜け伸びすぎ除外（Manual）", group=grpDanger)
+manualMaxBreakExtAtr = input.float(1.20, "Bからの最大伸び ATR（Manual）", minval=0.10, step=0.10, group=grpDanger)
 
 grpRisk = "Validation levels"
 enableStrategyOrders = input.bool(false, "検証注文を出す（勝率/PFを見る時だけON）", group=grpRisk)
@@ -90,15 +96,25 @@ manualMaxHoldBars = input.int(48, "最大保有本数（Manual）", minval=1, ma
 manualStopBufferAtr = input.float(0.20, "SL余白 ATR（Manual）", minval=0.0, step=0.05, group=grpRisk)
 levelExtendBars = input.int(48, "Entry/SL/TPの表示本数", minval=5, maxval=300, group=grpRisk)
 
+bool precisionOn = precisionMode == "Precision" or precisionMode == "Strict"
+bool strictOn = precisionMode == "Strict"
 float presetRr = activePreset == "GBPJPY H1" ? 2.0 : activePreset == "USDJPY H1" ? 2.0 : activePreset == "EURJPY H4" ? 2.0 : activePreset == "CHFJPY H4" ? 1.0 : activePreset == "AUDJPY H4" ? 2.0 : activePreset == "SILVER H4" ? 2.0 : 2.0
 int presetMaxHoldBars = activePreset == "XAUUSD H4" ? 48 : activePreset == "GBPJPY H1" ? 120 : activePreset == "USDJPY H1" ? 48 : activePreset == "EURJPY H4" ? 48 : activePreset == "CHFJPY H4" ? 48 : activePreset == "AUDJPY H4" ? 48 : activePreset == "SILVER H4" ? 48 : 120
 int presetBWindow = activePreset == "XAUUSD H4" ? 48 : activePreset == "GBPJPY H1" ? 72 : activePreset == "USDJPY H1" ? 48 : activePreset == "EURJPY H4" ? 48 : activePreset == "CHFJPY H4" ? 72 : activePreset == "AUDJPY H4" ? 48 : activePreset == "SILVER H4" ? 48 : 48
 int presetCooldown = activePreset == "GBPJPY H1" or activePreset == "USDJPY H1" ? 72 : 48
-float presetMinARoomR = activePreset == "XAUUSD H4" ? 0.50 : activePreset == "SILVER H4" ? 0.50 : activePreset == "ALL H4 Balanced" ? 0.50 : 0.00
-bool presetUseARoom = activePreset == "XAUUSD H4" or activePreset == "SILVER H4" or activePreset == "ALL H4 Balanced"
+float basePresetMinARoomR = activePreset == "XAUUSD H4" ? 0.50 : activePreset == "SILVER H4" ? 0.50 : activePreset == "ALL H4 Balanced" ? 0.50 : 0.00
+float precisionPresetMinARoomR = activePreset == "GBPJPY H1" or activePreset == "USDJPY H1" ? 0.25 : 0.50
+float strictPresetMinARoomR = activePreset == "XAUUSD H4" or activePreset == "SILVER H4" or activePreset == "ALL H4 Balanced" ? 1.00 : 0.50
+float presetMinARoomR = strictOn ? strictPresetMinARoomR : precisionOn ? math.max(basePresetMinARoomR, precisionPresetMinARoomR) : basePresetMinARoomR
+bool basePresetUseARoom = activePreset == "XAUUSD H4" or activePreset == "SILVER H4" or activePreset == "ALL H4 Balanced"
+bool presetUseARoom = basePresetUseARoom or precisionOn
 float presetQualityCloseLoc = activePreset == "XAUUSD H4" ? 0.60 : activePreset == "GBPJPY H1" ? 0.55 : activePreset == "USDJPY H1" ? 0.55 : 0.60
-bool presetUseQuality = false
-bool presetUseD1Strong = false
+bool presetUseQuality = precisionOn
+bool presetUseD1Strong = strictOn
+bool presetUseRiskAtr = precisionOn
+float presetMaxRiskAtr = 3.00
+bool presetUseBreakExt = precisionOn
+float presetMaxBreakExtAtr = strictOn ? 0.80 : 1.20
 float presetStopBufferAtr = activePreset == "XAUUSD H4" ? 0.20 : activePreset == "SILVER H4" ? 0.20 : activePreset == "GBPJPY H1" ? 0.15 : activePreset == "USDJPY H1" ? 0.15 : 0.20
 float presetBBreakBufferAtr = activePreset == "GBPJPY H1" or activePreset == "USDJPY H1" ? 0.02 : 0.03
 
@@ -113,6 +129,10 @@ float minARoomR = presetActive ? presetMinARoomR : manualMinARoomR
 float qualityCloseLoc = presetActive ? presetQualityCloseLoc : manualQualityCloseLoc
 bool useD1StrongForEntry = presetActive ? presetUseD1Strong : manualUseD1StrongForEntry
 bool useQualityForEntry = presetActive ? presetUseQuality : manualUseQualityForEntry
+bool useRiskAtrForEntry = presetActive ? presetUseRiskAtr : manualUseRiskAtrForEntry
+float maxRiskAtr = presetActive ? presetMaxRiskAtr : manualMaxRiskAtr
+bool useBreakExtForEntry = presetActive ? presetUseBreakExt : manualUseBreakExtForEntry
+float maxBreakExtAtr = presetActive ? presetMaxBreakExtAtr : manualMaxBreakExtAtr
 string recommendedTf = f_tf_for_preset(activePreset)
 bool timeframeOk = timeframe.in_seconds(timeframe.period) == f_seconds_for_tf(recommendedTf)
 
@@ -225,6 +245,8 @@ var float lastStop = na
 var float lastTarget = na
 var float lastARoomR = na
 var float lastRiskWidth = na
+var float lastRiskAtr = na
+var float lastBreakExtAtr = na
 var float lastJpyPerPricePerLot = na
 var float lastRiskJpyCurrent = na
 var float lastSuggestedLots = na
@@ -351,10 +373,14 @@ aBreakNow = activeSeq and lineReclaimed and not aConfirmed and not na(seqH3) and
 hypotheticalStop = activeSeq and not na(structureLow) ? structureLow - atr * stopBufferAtr : na
 hypotheticalRisk = not na(hypotheticalStop) ? close - hypotheticalStop : na
 currentARoomR = activeSeq and not na(seqH3) and not na(hypotheticalRisk) and hypotheticalRisk > 0 ? (close >= seqH3 ? 999.0 : (seqH3 - close) / hypotheticalRisk) : na
+currentRiskAtr = not na(hypotheticalRisk) and not na(atr) and atr > 0 ? hypotheticalRisk / atr : na
+currentBreakExtAtr = activeSeq and not na(bLevel) and not na(atr) and atr > 0 ? math.max(close - bLevel, 0.0) / atr : na
 currentRiskOk = not na(hypotheticalRisk) and hypotheticalRisk > 0
 currentARoomOk = not useARoomForEntry or (not na(currentARoomR) and currentARoomR >= minARoomR)
 currentD1Ok = not useD1StrongForEntry or d1Strong
 currentQualityOk = not useQualityForEntry or qualityOk
+currentRiskAtrOk = not useRiskAtrForEntry or (not na(currentRiskAtr) and currentRiskAtr <= maxRiskAtr)
+currentBreakExtOk = not useBreakExtForEntry or (not na(currentBreakExtAtr) and currentBreakExtAtr <= maxBreakExtAtr)
 currentFlatOk = strategy.position_size <= 0
 
 if checkNow
@@ -367,6 +393,8 @@ if checkNow
     float risk = entry - stop
     float target = risk > 0 ? entry + risk * rr : na
     float aRoomR = risk > 0 and not na(seqH3) ? (entry >= seqH3 ? 999.0 : (seqH3 - entry) / risk) : na
+    float riskAtr = risk > 0 and not na(atr) and atr > 0 ? risk / atr : na
+    float breakExtAtr = not na(bLevel) and not na(atr) and atr > 0 ? math.max(entry - bLevel, 0.0) / atr : na
     float jpyPerPricePerLot = currentLots > 0 ? jpyPerPriceAtCurrentLots / currentLots : na
     float riskJpyCurrent = risk > 0 ? risk * jpyPerPriceAtCurrentLots : na
     float riskJpyPerLot = risk > 0 and not na(jpyPerPricePerLot) ? risk * jpyPerPricePerLot : na
@@ -375,14 +403,18 @@ if checkNow
     bool aRoomOk = not useARoomForEntry or (not na(aRoomR) and aRoomR >= minARoomR)
     bool d1Ok = not useD1StrongForEntry or d1Strong
     bool qOk = not useQualityForEntry or qualityOk
+    bool riskAtrOk = not useRiskAtrForEntry or (not na(riskAtr) and riskAtr <= maxRiskAtr)
+    bool breakExtOk = not useBreakExtForEntry or (not na(breakExtAtr) and breakExtAtr <= maxBreakExtAtr)
     bool flatOk = strategy.position_size <= 0
-    bool entryCandidate = risk > 0 and aRoomOk and d1Ok and qOk and lotOk and flatOk
+    bool entryCandidate = risk > 0 and aRoomOk and d1Ok and qOk and riskAtrOk and breakExtOk and lotOk and flatOk
 
     lastEntry := entry
     lastStop := stop
     lastTarget := target
     lastARoomR := aRoomR
     lastRiskWidth := risk
+    lastRiskAtr := riskAtr
+    lastBreakExtAtr := breakExtAtr
     lastJpyPerPricePerLot := jpyPerPricePerLot
     lastRiskJpyCurrent := riskJpyCurrent
     lastSuggestedLots := suggestedLots
@@ -418,7 +450,7 @@ if checkNow
             keep_label(label.new(bar_index + levelExtendBars, target, "TP " + str.tostring(rr, "#.##") + "R", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(color.lime, 0), textcolor=color.black, size=size.small))
     else
         rejectCount += 1
-        string reason = risk <= 0 ? "SL不正" : not aRoomOk ? "A近い" : not d1Ok ? "D1弱い" : not qOk ? "終値弱い" : not lotOk ? "ロット過大" : not flatOk ? "保有中" : "条件不足"
+        string reason = risk <= 0 ? "SL不正" : not aRoomOk ? "A近い" : not d1Ok ? "D1弱い" : not qOk ? "終値弱い" : not riskAtrOk ? "SL幅大" : not breakExtOk ? "飛び乗り" : not lotOk ? "ロット過大" : not flatOk ? "保有中" : "条件不足"
         if showRejectMarks and not cleanView
             keep_label(label.new(bar_index, low - atr * 0.55, "NO ENTRY\n" + reason, xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.red, 0), textcolor=color.white, size=size.small))
 
@@ -451,15 +483,17 @@ plot(showActiveGuides and activeSeq and lineReclaimed and not checkDone ? seqH3 
 
 plotshape(showEventMarkers and lineBreakNow, title="WAIT LINE reclaim", style=shape.triangleup, location=location.belowbar, color=color.orange, size=size.tiny, text="WAIT")
 plotshape(showEventMarkers and checkNow, title="CHECK B break", style=shape.triangleup, location=location.belowbar, color=color.aqua, size=size.small, text="CHECK")
-plotshape(showEventMarkers and checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk and currentFlatOk, title="ENTRY candidate small", style=shape.circle, location=location.belowbar, color=color.new(color.lime, 0), text="GO", textcolor=color.black, size=size.tiny)
+plotshape(showEventMarkers and checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk and currentRiskAtrOk and currentBreakExtOk and currentFlatOk, title="ENTRY candidate small", style=shape.circle, location=location.belowbar, color=color.new(color.lime, 0), text="GO", textcolor=color.black, size=size.tiny)
 plotshape(showEventMarkers and aBreakNow, title="A confirm", style=shape.triangleup, location=location.belowbar, color=color.orange, size=size.tiny, text="A")
-bgcolor(not cleanView and showEntryBackground and checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk and currentFlatOk ? color.new(color.lime, 86) : na, title="ENTRY候補背景")
+bgcolor(not cleanView and showEntryBackground and checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk and currentRiskAtrOk and currentBreakExtOk and currentFlatOk ? color.new(color.lime, 86) : na, title="ENTRY候補背景")
 
 chartIsH4 = timeframe.in_seconds(timeframe.period) == 240 * 60
 stateText = not activeSeq ? "NO SETUP" : entryDone ? "ENTRY" : checkDone ? "CHECKED" : lineReclaimed and not na(bLevel) ? "WAIT B BREAK" : lineReclaimed ? "LINE ONLY" : "WAIT LINE"
 entryNeedText = entryDone ? f_num(lastEntry) : activeSeq and lineReclaimed and not na(bEntryThreshold) ? "close > " + f_num(bEntryThreshold) : "-"
 roomText = na(currentARoomR) ? "-" : currentARoomR >= 900 ? "A cleared" : str.tostring(currentARoomR, "#.##") + "R"
-rejectReason = not activeSeq ? "no LH3" : not lineReclaimed ? "wait LINE" : na(bLevel) ? "wait B pivot" : na(bEntryThreshold) ? "wait ATR" : not bWithinWindow ? "B window over" : close <= bEntryThreshold ? "close below B" : not currentRiskOk ? "risk invalid" : not currentARoomOk ? "A room < " + str.tostring(minARoomR, "#.##") + "R" : not currentD1Ok ? "D1 EMA weak" : not currentQualityOk ? "close location weak" : not currentFlatOk ? "in trade" : "ENTRY候補"
+riskAtrText = na(currentRiskAtr) ? "-" : str.tostring(currentRiskAtr, "#.##") + "ATR"
+breakExtText = na(currentBreakExtAtr) ? "-" : str.tostring(currentBreakExtAtr, "#.##") + "ATR"
+rejectReason = not activeSeq ? "no LH3" : not lineReclaimed ? "wait LINE" : na(bLevel) ? "wait B pivot" : na(bEntryThreshold) ? "wait ATR" : not bWithinWindow ? "B window over" : close <= bEntryThreshold ? "close below B" : not currentRiskOk ? "risk invalid" : not currentARoomOk ? "A room < " + str.tostring(minARoomR, "#.##") + "R" : not currentD1Ok ? "D1 EMA weak" : not currentQualityOk ? "close location weak" : not currentRiskAtrOk ? "SL > " + str.tostring(maxRiskAtr, "#.##") + "ATR" : not currentBreakExtOk ? "B ext > " + str.tostring(maxBreakExtAtr, "#.##") + "ATR" : not currentFlatOk ? "in trade" : "ENTRY候補"
 
 plotshape(showStatusMarker and barstate.islast, title="LH3 STATUS marker", style=shape.labeldown, location=location.top, color=color.new(color.blue, 0), text="LH3\nSTATUS", textcolor=color.white, size=size.small)
 
@@ -467,8 +501,9 @@ if barstate.islast
     label.delete(statusInfoLabel)
     if showStatusLabel
         float statusY = high + nz(atr, 0.0) * statusLabelAtr
-        string statusText = "LH3 STATUS v0.6"
+        string statusText = "LH3 STATUS v0.7"
         statusText := statusText + "\n" + activePreset + " / TF " + recommendedTf + (timeframeOk ? " OK" : " 確認")
+        statusText := statusText + "\nmode: " + precisionMode
         statusText := statusText + "\nstate: " + stateText
         statusText := statusText + "\n次: " + rejectReason
         statusText := statusText + "\nENTRY: " + entryNeedText
@@ -483,50 +518,56 @@ if barstate.islast and showPresetLabel
     string presetText = activePreset + "\nTF " + recommendedTf + (timeframeOk ? " OK" : " 確認") + "\nRR " + str.tostring(rr, "#.##") + " / hold " + str.tostring(maxHoldBars)
     presetInfoLabel := label.new(bar_index, high + atr * 1.75, presetText, xloc=xloc.bar_index, style=label.style_label_down, color=timeframeOk ? color.new(color.black, 0) : color.new(color.orange, 0), textcolor=color.white, size=size.small)
 
-var table t = table.new(f_table_pos(tablePosInput), 2, 20, bgcolor=color.new(color.black, 8), frame_color=color.new(color.white, 40), frame_width=1, border_color=color.new(color.gray, 40), border_width=1)
+var table t = table.new(f_table_pos(tablePosInput), 2, 23, bgcolor=color.new(color.black, 8), frame_color=color.new(color.white, 40), frame_width=1, border_color=color.new(color.gray, 40), border_width=1)
 if barstate.islast and showTable
-    table.cell(t, 0, 0, "LH3 B Combo v0.6", text_color=color.white, text_size=size.small)
+    table.cell(t, 0, 0, "LH3 B Combo v0.7", text_color=color.white, text_size=size.small)
     table.cell(t, 1, 0, timeframe.period, text_color=timeframeOk ? color.lime : color.orange, text_size=size.tiny)
     table.cell(t, 0, 1, "preset / TF", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 1, activePreset + " / " + recommendedTf + (timeframeOk ? " OK" : " 確認"), text_color=timeframeOk ? color.lime : color.orange, text_size=size.tiny)
     table.cell(t, 0, 2, "state", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 2, stateText, text_color=entryDone ? color.lime : checkDone ? color.aqua : lineReclaimed ? color.lime : color.silver, text_size=size.tiny)
-    table.cell(t, 0, 3, "setup / LINE", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 3, str.tostring(setupCount) + " / " + str.tostring(lineCount), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 4, "CHECK / ENTRY", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 4, str.tostring(checkCount) + " / " + str.tostring(entryCount), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 5, "rejected", text_color=color.red, text_size=size.tiny)
-    table.cell(t, 1, 5, str.tostring(rejectCount), text_color=color.red, text_size=size.tiny)
-    table.cell(t, 0, 6, "B level", text_color=color.aqua, text_size=size.tiny)
-    table.cell(t, 1, 6, f_num(bLevel), text_color=color.aqua, text_size=size.tiny)
-    table.cell(t, 0, 7, "A level", text_color=color.orange, text_size=size.tiny)
-    table.cell(t, 1, 7, f_num(seqH3), text_color=color.orange, text_size=size.tiny)
-    table.cell(t, 0, 8, "A room now", text_color=color.lime, text_size=size.tiny)
-    table.cell(t, 1, 8, roomText, text_color=currentARoomOk ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 9, "D1 > EMA" + str.tostring(d1EmaLen), text_color=color.green, text_size=size.tiny)
-    table.cell(t, 1, 9, f_yes(d1Strong), text_color=d1Strong ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 10, "QUALITY", text_color=color.yellow, text_size=size.tiny)
-    table.cell(t, 1, 10, f_yes(qualityOk) + " / " + f_num(closeLocation), text_color=qualityOk ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 11, "ENTRY条件", text_color=color.lime, text_size=size.tiny)
-    table.cell(t, 1, 11, entryNeedText, text_color=color.lime, text_size=size.tiny)
-    table.cell(t, 0, 12, "未ENTRY理由", text_color=color.orange, text_size=size.tiny)
-    table.cell(t, 1, 12, rejectReason, text_color=rejectReason == "ENTRY候補" ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 13, "RR / hold", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 13, str.tostring(rr, "#.##") + " / " + str.tostring(maxHoldBars), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 14, "現在lot", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 14, str.tostring(currentLots, "#.##"), text_color=lastLotOk ? color.lime : color.red, text_size=size.tiny)
-    table.cell(t, 0, 15, "固定損失", text_color=color.yellow, text_size=size.tiny)
-    table.cell(t, 1, 15, f_jpy(maxRiskJpy), text_color=color.yellow, text_size=size.tiny)
-    table.cell(t, 0, 16, "SL幅", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 16, f_num(lastRiskWidth), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 17, "今のlot損失", text_color=lastLotOk ? color.silver : color.red, text_size=size.tiny)
-    table.cell(t, 1, 17, f_jpy(lastRiskJpyCurrent), text_color=lastLotOk ? color.lime : color.red, text_size=size.tiny)
-    table.cell(t, 0, 18, "推奨lot", text_color=color.lime, text_size=size.tiny)
-    table.cell(t, 1, 18, f_num(lastSuggestedLots), text_color=color.lime, text_size=size.tiny)
-    table.cell(t, 0, 19, "orders", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 19, enableStrategyOrders ? "ON" : "OFF visual", text_color=enableStrategyOrders ? color.yellow : color.lime, text_size=size.tiny)
+    table.cell(t, 0, 3, "precision", text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 1, 3, precisionMode, text_color=precisionOn ? color.yellow : color.silver, text_size=size.tiny)
+    table.cell(t, 0, 4, "setup / LINE", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 4, str.tostring(setupCount) + " / " + str.tostring(lineCount), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 5, "CHECK / ENTRY", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 5, str.tostring(checkCount) + " / " + str.tostring(entryCount), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 6, "rejected", text_color=color.red, text_size=size.tiny)
+    table.cell(t, 1, 6, str.tostring(rejectCount), text_color=color.red, text_size=size.tiny)
+    table.cell(t, 0, 7, "B level", text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 1, 7, f_num(bLevel), text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 8, "A level", text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 1, 8, f_num(seqH3), text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 0, 9, "A room now", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 1, 9, roomText, text_color=currentARoomOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 10, "D1 > EMA" + str.tostring(d1EmaLen), text_color=color.green, text_size=size.tiny)
+    table.cell(t, 1, 10, f_yes(d1Strong), text_color=d1Strong ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 11, "QUALITY", text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 1, 11, f_yes(qualityOk) + " / " + f_num(closeLocation), text_color=qualityOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 12, "SL ATR", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 12, riskAtrText + " / max " + str.tostring(maxRiskAtr, "#.##"), text_color=currentRiskAtrOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 13, "B伸び", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 13, breakExtText + " / max " + str.tostring(maxBreakExtAtr, "#.##"), text_color=currentBreakExtOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 14, "ENTRY条件", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 1, 14, entryNeedText, text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 15, "未ENTRY理由", text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 1, 15, rejectReason, text_color=rejectReason == "ENTRY候補" ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 16, "RR / hold", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 16, str.tostring(rr, "#.##") + " / " + str.tostring(maxHoldBars), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 17, "現在lot", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 17, str.tostring(currentLots, "#.##"), text_color=lastLotOk ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 18, "固定損失", text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 1, 18, f_jpy(maxRiskJpy), text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 19, "SL幅", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 19, f_num(lastRiskWidth), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 20, "今のlot損失", text_color=lastLotOk ? color.silver : color.red, text_size=size.tiny)
+    table.cell(t, 1, 20, f_jpy(lastRiskJpyCurrent), text_color=lastLotOk ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 21, "推奨lot", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 1, 21, f_num(lastSuggestedLots), text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 22, "orders", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 22, enableStrategyOrders ? "ON" : "OFF visual", text_color=enableStrategyOrders ? color.yellow : color.lime, text_size=size.tiny)
 
 alertcondition(lineBreakNow, title="LH3 WAIT LINE reclaim", message="LH3 red line reclaimed. Wait for B confirmation on {{ticker}} {{interval}}")
 alertcondition(checkNow, title="LH3 CHECK B break", message="LH3 CHECK: LINE+B break on {{ticker}} {{interval}}")
-alertcondition(checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk and currentFlatOk, title="LH3 ENTRY candidate", message="LH3 ENTRY candidate: LINE+B with A room filter on {{ticker}} {{interval}}")
+alertcondition(checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk and currentRiskAtrOk and currentBreakExtOk and currentFlatOk, title="LH3 ENTRY candidate", message="LH3 ENTRY candidate: LINE+B precision filter on {{ticker}} {{interval}}")
 alertcondition(checkNow and not currentARoomOk, title="LH3 NO ENTRY A too close", message="LH3 B break rejected because A room is too small on {{ticker}} {{interval}}")

@@ -63,15 +63,34 @@ v0.5では、見やすい表示モードで消えていた赤LINEを改善した
 
 v0.6では、赤LINE履歴を `見やすい表示モード` から独立させた。`赤LINE履歴表示（手動ON/OFF）` をONにすると、過去の赤LINEも薄い赤で表示できる。
 
+v0.7では、精度を上げるために `精度モード` を追加した。初期値は `Precision`。
+
+| モード | 使い方 | ENTRY条件に追加されるもの |
+|---|---|---|
+| Balanced | 今までの標準検証 | 通貨別プリセットの基本条件 |
+| Precision | 実運用寄りに絞る | A余白、終値位置、SL幅3ATR以内、B抜け後の伸び1.2ATR以内 |
+| Strict | さらに絞る | Precision条件 + D1 EMA20上、A余白強化、B抜け後の伸び0.8ATR以内 |
+
+今の研究では、まず `XAUUSD H4 / Precision` を本命として見る。
+
+理由は、過去検証でXAUUSD H4は `A余白0.5R以上` に絞ると、勝率とPFが上がり、最大DDが小さくなったため。
+
+- B抜け即 RR2/48: 71件 / 勝率63.38% / PF2.58 / +28.93R / 最大DD5.55R
+- A余白0.5R RR2/48: 58件 / 勝率67.24% / PF2.98 / +26.45R / 最大DD2.50R
+- D1 EMA20上はPFが高いが件数が減るため、StrictでだけENTRY条件にする
+
 右上テーブルには次を表示する。
 
 - 通貨別プリセットと推奨時間足
+- 精度モード
 - 現在有効なLH3赤LINE
 - `WAIT LINE` / `WAIT B BREAK` / `CHECKED` / `ENTRY`
 - `B level` と `A level`
 - `A room now`
 - `D1 > EMA20`
 - `QUALITY`
+- `SL ATR`
+- `B伸び`
 - `ENTRY条件`
 - `未ENTRY理由`
 - 現在lot、固定損失、SL幅、今のlot損失、推奨lot

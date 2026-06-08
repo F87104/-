@@ -1,5 +1,5 @@
 //@version=5
-strategy("LH3 Synapse B Symbol Presets Strategy v0.2 [Research]",
+strategy("LH3 Synapse B Symbol Presets Strategy v0.3 [Research]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
@@ -20,7 +20,7 @@ strategy("LH3 Synapse B Symbol Presets Strategy v0.2 [Research]",
 // - ゴールドのSL幅に対して、実測の円損益感度から現在ロットの想定損失と推奨ロットを表示する
 // - 1回の損失を20万円に固定して、SL幅から推奨ロットを逆算する
 // - 通貨別プリセットを使い、TradingViewのストラテジーテスターで勝率/PFを見る
-// - SL/ENTRY/TPを優先して見せるため、状態はテーブルではなく固定ラベル中心に表示する
+// - 初期表示は目視用に整理し、勝率/PFを見る時だけストラテジー注文をONにする
 //
 // 検証メモ:
 // - XAUUSD H4 B抜け即 RR2/48: 71件, 勝率63.38%, PF2.58, +28.93R, 最大DD5.55R
@@ -83,6 +83,7 @@ manualUseD1StrongForEntry = input.bool(false, "ENTRY候補にD1 EMA上も要求�
 manualUseQualityForEntry = input.bool(false, "ENTRY候補にQUALITYも要求（Manual）", group=grpDanger)
 
 grpRisk = "Validation levels"
+enableStrategyOrders = input.bool(false, "検証注文を出す（勝率/PFを見る時だけON）", group=grpRisk)
 showValidationLevels = input.bool(true, "Entry/SL/TP表示", group=grpRisk)
 manualRr = input.float(2.0, "TP RR（Manual）", minval=0.25, step=0.25, group=grpRisk)
 manualMaxHoldBars = input.int(48, "最大保有本数（Manual）", minval=1, maxval=500, group=grpRisk)
@@ -125,19 +126,19 @@ riskLabelRightBars = input.int(10, "損失ラベル右ずらし本数", minval=0
 riskLabelBelowAtr = input.float(1.80, "損失ラベル下ずらし ATR", minval=0.20, step=0.10, group=grpLot)
 
 grpView = "Visual"
-showCheckMarks = input.bool(true, "CHECKを表示", group=grpView)
-showEntryMarks = input.bool(true, "ENTRY候補を大きく表示", group=grpView)
-showRejectMarks = input.bool(true, "B抜けたがENTRYでない理由を表示", group=grpView)
-showStrongQuality = input.bool(true, "STRONG/QUALITY補助ラベル", group=grpView)
+cleanView = input.bool(true, "見やすい表示モード（最新中心）", group=grpView)
+showCheckMarks = input.bool(false, "CHECKを表示", group=grpView)
+showEntryMarks = input.bool(false, "ENTRY候補を大きく表示", group=grpView)
+showRejectMarks = input.bool(false, "B抜けたがENTRYでない理由を表示", group=grpView)
+showStrongQuality = input.bool(false, "STRONG/QUALITY補助ラベル", group=grpView)
 showEntryBackground = input.bool(true, "ENTRY背景を薄く表示", group=grpView)
 showActiveGuides = input.bool(true, "現在のB/Aガイド表示", group=grpView)
-showTrendLines = input.bool(true, "赤LINE表示", group=grpView)
-showABLines = input.bool(true, "A/B水平線表示", group=grpView)
-showSetupLabels = input.bool(true, "LH3/Bラベル", group=grpView)
-showLineLabels = input.bool(true, "LINE上抜けラベル", group=grpView)
+showTrendLines = input.bool(false, "赤LINE履歴表示", group=grpView)
+showABLines = input.bool(false, "A/B水平線履歴表示", group=grpView)
+showSetupLabels = input.bool(false, "LH3/B履歴ラベル", group=grpView)
+showLineLabels = input.bool(false, "LINE上抜け履歴ラベル", group=grpView)
 showStatusLabel = input.bool(true, "固定ステータスラベル", group=grpView)
 showStatusMarker = input.bool(true, "上部ステータスマーカー", group=grpView)
-statusLabelRightBars = input.int(8, "ステータス右ずらし本数", minval=0, maxval=80, group=grpView)
 statusLabelAtr = input.float(1.20, "ステータス上ずらし ATR", minval=-5.0, maxval=5.0, step=0.10, group=grpView)
 showTable = input.bool(false, "ミニ状態テーブル（予備）", group=grpView)
 tablePosInput = input.string("top_left", "テーブル位置", options=["top_left", "top_right", "bottom_left", "bottom_right"], group=grpView)
@@ -266,9 +267,9 @@ if not na(ph)
         bBar := highBar
         if lineReclaimed
             bFrozen := true
-        if showABLines
+        if showABLines and not cleanView
             keep_line(line.new(bBar, bLevel, bBar + maxActiveBars, bLevel, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.aqua, 15), style=line.style_dashed, width=2))
-        if showSetupLabels
+        if showSetupLabels and not cleanView
             keep_label(label.new(bBar, bLevel, "B", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.aqua, 0), textcolor=color.black, size=size.tiny))
 
     h1 := h2
@@ -311,11 +312,11 @@ if not na(ph)
         structureLow := low
         for k = 0 to pivotRight
             structureLow := math.min(structureLow, low[k])
-        if showTrendLines
+        if showTrendLines and not cleanView
             keep_line(line.new(seqH1Bar, seqH1, seqH3Bar, seqH3, xloc=xloc.bar_index, extend=extend.right, color=color.new(color.red, 0), width=2))
-        if showABLines
+        if showABLines and not cleanView
             keep_line(line.new(seqH3Bar, seqH3, seqH3Bar + maxActiveBars, seqH3, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.orange, 20), style=line.style_dotted, width=1))
-        if showSetupLabels
+        if showSetupLabels and not cleanView
             keep_label(label.new(seqH3Bar, seqH3, "LH3\nA", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.orange, 0), textcolor=color.white, size=size.tiny))
 
 lineNow = activeSeq and not na(visibleSlope) and not na(seqH1) and not na(seqH1Bar) ? seqH1 + visibleSlope * (bar_index - seqH1Bar) : na
@@ -327,7 +328,7 @@ if lineBreakNow
     if not na(bLevel)
         bFrozen := true
     lineCount += 1
-    if showLineLabels
+    if showLineLabels and not cleanView
         keep_label(label.new(bar_index, high + atr * 0.30, "WAIT\nLINE", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
 
 cooldownOk = na(lastCheckBar) or bar_index - lastCheckBar >= cooldownBars
@@ -376,10 +377,10 @@ if checkNow
     lastSuggestedLots := suggestedLots
     lastLotOk := not na(suggestedLots) and currentLots <= suggestedLots
 
-    if showCheckMarks
+    if showCheckMarks and not cleanView
         keep_label(label.new(bar_index, high + atr * 0.55, "CHECK\nB抜け", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.aqua, 0), textcolor=color.black, size=size.small))
 
-    if showLotRisk
+    if showLotRisk and not cleanView
         string riskText = "RISK " + f_jpy(riskJpyCurrent) + "\n固定 " + f_jpy(maxRiskJpy) + "\n推奨 " + f_num(suggestedLots) + "lot"
         color riskColor = not na(suggestedLots) and currentLots <= suggestedLots ? color.new(color.gray, 5) : color.new(color.red, 0)
         keep_label(label.new(bar_index + riskLabelRightBars, stop - atr * riskLabelBelowAtr, riskText, xloc=xloc.bar_index, style=label.style_label_left, color=riskColor, textcolor=color.white, size=size.tiny))
@@ -390,12 +391,13 @@ if checkNow
         strategyEntryBar := bar_index
         strategyStop := stop
         strategyTarget := target
-        strategy.entry("LH3-B Long", strategy.long, comment=activePreset)
-        strategy.exit("LH3-B Exit", "LH3-B Long", stop=strategyStop, limit=strategyTarget)
-        if showEntryMarks
+        if enableStrategyOrders
+            strategy.entry("LH3-B Long", strategy.long, comment=activePreset)
+            strategy.exit("LH3-B Exit", "LH3-B Long", stop=strategyStop, limit=strategyTarget)
+        if showEntryMarks and not cleanView
             string entryText = "ENTRY候補\nB + A余白\n" + str.tostring(entry, format.mintick)
             keep_label(label.new(bar_index, low - atr * 0.85, entryText, xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.normal))
-        if showValidationLevels and not na(target)
+        if showValidationLevels and not cleanView and not na(target)
             keep_line(line.new(bar_index, entry, bar_index + levelExtendBars, entry, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.white, 0), style=line.style_solid, width=3))
             keep_line(line.new(bar_index, stop, bar_index + levelExtendBars, stop, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.red, 0), style=line.style_solid, width=2))
             keep_line(line.new(bar_index, target, bar_index + levelExtendBars, target, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.lime, 0), style=line.style_solid, width=2))
@@ -406,22 +408,22 @@ if checkNow
     else
         rejectCount += 1
         string reason = risk <= 0 ? "SL不正" : not aRoomOk ? "A近い" : not d1Ok ? "D1弱い" : not qOk ? "終値弱い" : not lotOk ? "ロット過大" : not flatOk ? "保有中" : "条件不足"
-        if showRejectMarks
+        if showRejectMarks and not cleanView
             keep_label(label.new(bar_index, low - atr * 0.55, "NO ENTRY\n" + reason, xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.red, 0), textcolor=color.white, size=size.small))
 
-    if showStrongQuality and d1Strong
+    if showStrongQuality and not cleanView and d1Strong
         strongCount += 1
         keep_label(label.new(bar_index, high + atr * 0.95, "STRONG\nD1 EMA", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.green, 0), textcolor=color.white, size=size.tiny))
-    if showStrongQuality and qualityOk
+    if showStrongQuality and not cleanView and qualityOk
         qualityCount += 1
         keep_label(label.new(bar_index, high + atr * 1.25, "QUALITY\nclose", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.yellow, 0), textcolor=color.black, size=size.tiny))
 
 if aBreakNow
     aConfirmed := true
-    if showSetupLabels
+    if showSetupLabels and not cleanView
         keep_label(label.new(bar_index, high + atr * 0.80, "A\ncleared", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.orange, 0), textcolor=color.black, size=size.tiny))
 
-if strategy.position_size > 0 and not na(strategyEntryBar)
+if enableStrategyOrders and strategy.position_size > 0 and not na(strategyEntryBar)
     strategy.exit("LH3-B Exit", "LH3-B Long", stop=strategyStop, limit=strategyTarget)
     if bar_index - strategyEntryBar >= maxHoldBars
         strategy.close("LH3-B Long", comment="TIME")
@@ -436,11 +438,11 @@ plot(showActiveGuides and activeSeq and lineReclaimed and not checkDone ? bLevel
 plot(showActiveGuides and activeSeq and lineReclaimed and not checkDone ? bEntryThreshold : na, title="B close threshold", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
 plot(showActiveGuides and activeSeq and lineReclaimed and not checkDone ? seqH3 : na, title="A level", color=color.new(color.orange, 0), linewidth=2, style=plot.style_linebr)
 
-plotshape(lineBreakNow, title="WAIT LINE reclaim", style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.tiny, text="WAIT")
-plotshape(checkNow, title="CHECK B break", style=shape.triangleup, location=location.belowbar, color=color.aqua, size=size.small, text="CHECK")
-plotshape(showEntryMarks and checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk and currentFlatOk, title="ENTRY candidate", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 0), text="ENTRY", textcolor=color.black, size=size.large)
-plotshape(aBreakNow, title="A confirm", style=shape.triangleup, location=location.belowbar, color=color.orange, size=size.tiny, text="A")
-bgcolor(showEntryBackground and checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk and currentFlatOk ? color.new(color.lime, 86) : na, title="ENTRY候補背景")
+plotshape(not cleanView and lineBreakNow, title="WAIT LINE reclaim", style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.tiny, text="WAIT")
+plotshape(not cleanView and checkNow, title="CHECK B break", style=shape.triangleup, location=location.belowbar, color=color.aqua, size=size.small, text="CHECK")
+plotshape(not cleanView and showEntryMarks and checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk and currentFlatOk, title="ENTRY candidate", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 0), text="ENTRY", textcolor=color.black, size=size.large)
+plotshape(not cleanView and aBreakNow, title="A confirm", style=shape.triangleup, location=location.belowbar, color=color.orange, size=size.tiny, text="A")
+bgcolor(not cleanView and showEntryBackground and checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk and currentFlatOk ? color.new(color.lime, 86) : na, title="ENTRY候補背景")
 
 chartIsH4 = timeframe.in_seconds(timeframe.period) == 240 * 60
 stateText = not activeSeq ? "NO SETUP" : entryDone ? "ENTRY" : checkDone ? "CHECKED" : lineReclaimed and not na(bLevel) ? "WAIT B BREAK" : lineReclaimed ? "LINE ONLY" : "WAIT LINE"
@@ -453,8 +455,8 @@ plotshape(showStatusMarker and barstate.islast, title="LH3 STATUS marker", style
 if barstate.islast
     label.delete(statusInfoLabel)
     if showStatusLabel
-        float statusY = close + nz(atr, 0.0) * statusLabelAtr
-        string statusText = "LH3 STATUS v0.2"
+        float statusY = high + nz(atr, 0.0) * statusLabelAtr
+        string statusText = "LH3 STATUS v0.3"
         statusText := statusText + "\n" + activePreset + " / TF " + recommendedTf + (timeframeOk ? " OK" : " 確認")
         statusText := statusText + "\nstate: " + stateText
         statusText := statusText + "\n次: " + rejectReason
@@ -463,7 +465,7 @@ if barstate.islast
         statusText := statusText + "\nCHECK/ENTRY: " + str.tostring(checkCount) + " / " + str.tostring(entryCount)
         statusText := statusText + "\n推奨lot: " + f_num(lastSuggestedLots)
         color statusColor = rejectReason == "ENTRY候補" ? color.new(color.lime, 0) : stateText == "WAIT B BREAK" ? color.new(color.aqua, 0) : stateText == "LINE ONLY" ? color.new(color.orange, 0) : color.new(color.black, 0)
-        statusInfoLabel := label.new(bar_index + statusLabelRightBars, statusY, statusText, xloc=xloc.bar_index, style=label.style_label_left, color=statusColor, textcolor=rejectReason == "ENTRY候補" ? color.black : color.white, size=size.normal)
+        statusInfoLabel := label.new(bar_index, statusY, statusText, xloc=xloc.bar_index, style=label.style_label_down, color=statusColor, textcolor=rejectReason == "ENTRY候補" ? color.black : color.white, size=size.normal)
 
 if barstate.islast and showPresetLabel
     label.delete(presetInfoLabel)

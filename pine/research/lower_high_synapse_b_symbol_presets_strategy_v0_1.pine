@@ -1,5 +1,5 @@
 //@version=5
-strategy("LH3 Synapse B Symbol Presets Strategy v0.1 [Research]",
+strategy("LH3 Synapse B Symbol Presets Strategy v0.2 [Research]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
@@ -20,7 +20,7 @@ strategy("LH3 Synapse B Symbol Presets Strategy v0.1 [Research]",
 // - ゴールドのSL幅に対して、実測の円損益感度から現在ロットの想定損失と推奨ロットを表示する
 // - 1回の損失を20万円に固定して、SL幅から推奨ロットを逆算する
 // - 通貨別プリセットを使い、TradingViewのストラテジーテスターで勝率/PFを見る
-// - SL/ENTRY/TPを優先して見せるため、ロット損失の詳細はテーブル中心に表示する
+// - SL/ENTRY/TPを優先して見せるため、状態はテーブルではなく固定ラベル中心に表示する
 //
 // 検証メモ:
 // - XAUUSD H4 B抜け即 RR2/48: 71件, 勝率63.38%, PF2.58, +28.93R, 最大DD5.55R
@@ -135,7 +135,11 @@ showTrendLines = input.bool(true, "赤LINE表示", group=grpView)
 showABLines = input.bool(true, "A/B水平線表示", group=grpView)
 showSetupLabels = input.bool(true, "LH3/Bラベル", group=grpView)
 showLineLabels = input.bool(true, "LINE上抜けラベル", group=grpView)
-showTable = input.bool(true, "ミニ状態テーブル", group=grpView)
+showStatusLabel = input.bool(true, "固定ステータスラベル", group=grpView)
+showStatusMarker = input.bool(true, "上部ステータスマーカー", group=grpView)
+statusLabelRightBars = input.int(8, "ステータス右ずらし本数", minval=0, maxval=80, group=grpView)
+statusLabelAtr = input.float(1.20, "ステータス上ずらし ATR", minval=-5.0, maxval=5.0, step=0.10, group=grpView)
+showTable = input.bool(false, "ミニ状態テーブル（予備）", group=grpView)
 tablePosInput = input.string("top_left", "テーブル位置", options=["top_left", "top_right", "bottom_left", "bottom_right"], group=grpView)
 keepObjects = input.int(180, "残すラベル/ライン数", minval=30, maxval=450, group=grpView)
 
@@ -154,6 +158,7 @@ f_yes(bool x) =>
 var label[] keptLabels = array.new_label()
 var line[] keptLines = array.new_line()
 var label presetInfoLabel = na
+var label statusInfoLabel = na
 
 keep_label(label lb) =>
     array.push(keptLabels, lb)
@@ -442,6 +447,23 @@ stateText = not activeSeq ? "NO SETUP" : entryDone ? "ENTRY" : checkDone ? "CHEC
 entryNeedText = entryDone ? f_num(lastEntry) : activeSeq and lineReclaimed and not na(bEntryThreshold) ? "close > " + f_num(bEntryThreshold) : "-"
 roomText = na(currentARoomR) ? "-" : currentARoomR >= 900 ? "A cleared" : str.tostring(currentARoomR, "#.##") + "R"
 rejectReason = not activeSeq ? "no LH3" : not lineReclaimed ? "wait LINE" : na(bLevel) ? "wait B pivot" : na(bEntryThreshold) ? "wait ATR" : not bWithinWindow ? "B window over" : close <= bEntryThreshold ? "close below B" : not currentRiskOk ? "risk invalid" : not currentARoomOk ? "A room < " + str.tostring(minARoomR, "#.##") + "R" : not currentD1Ok ? "D1 EMA weak" : not currentQualityOk ? "close location weak" : not currentFlatOk ? "in trade" : "ENTRY候補"
+
+plotshape(showStatusMarker and barstate.islast, title="LH3 STATUS marker", style=shape.labeldown, location=location.top, color=color.new(color.blue, 0), text="LH3\nSTATUS", textcolor=color.white, size=size.small)
+
+if barstate.islast
+    label.delete(statusInfoLabel)
+    if showStatusLabel
+        float statusY = close + nz(atr, 0.0) * statusLabelAtr
+        string statusText = "LH3 STATUS v0.2"
+        statusText := statusText + "\n" + activePreset + " / TF " + recommendedTf + (timeframeOk ? " OK" : " 確認")
+        statusText := statusText + "\nstate: " + stateText
+        statusText := statusText + "\n次: " + rejectReason
+        statusText := statusText + "\nENTRY: " + entryNeedText
+        statusText := statusText + "\nA余白: " + roomText
+        statusText := statusText + "\nCHECK/ENTRY: " + str.tostring(checkCount) + " / " + str.tostring(entryCount)
+        statusText := statusText + "\n推奨lot: " + f_num(lastSuggestedLots)
+        color statusColor = rejectReason == "ENTRY候補" ? color.new(color.lime, 0) : stateText == "WAIT B BREAK" ? color.new(color.aqua, 0) : stateText == "LINE ONLY" ? color.new(color.orange, 0) : color.new(color.black, 0)
+        statusInfoLabel := label.new(bar_index + statusLabelRightBars, statusY, statusText, xloc=xloc.bar_index, style=label.style_label_left, color=statusColor, textcolor=rejectReason == "ENTRY候補" ? color.black : color.white, size=size.normal)
 
 if barstate.islast and showPresetLabel
     label.delete(presetInfoLabel)

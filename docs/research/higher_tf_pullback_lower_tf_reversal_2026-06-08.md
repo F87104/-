@@ -4,8 +4,8 @@
 更新: 2026-06-08（USDJPY 事例・チャート画像追加）  
 状態: **気づき・仮説**（バックテスト未実施）
 
-> **画像について:** 2026-06-08 に AI 生成の再現画像を誤って保存していたため削除済み。  
-> **TradingView 実スクショ6枚** を [images/mtf_pullback_reversal/](images/mtf_pullback_reversal/README.md) に配置待ち。
+> **画像について:** AI 生成の再現画像は削除済み。  
+> **TradingView 実スクショ** は [images/mtf_pullback_reversal/incoming/](images/mtf_pullback_reversal/README.md) へ配置 → `bash scripts/install_mtf_screenshots.sh`
 
 ## 研究の問い
 
@@ -165,6 +165,7 @@
 | [2026-06-08_gbpjpy_d1_pullback_context.png](images/mtf_pullback_reversal/2026-06-08_gbpjpy_d1_pullback_context.png) | GBPJPY | D1 |
 | [2026-06-08_gbpjpy_h4_pullback_context.png](images/mtf_pullback_reversal/2026-06-08_gbpjpy_h4_pullback_context.png) | GBPJPY | H4 |
 | [2026-06-08_gbpjpy_h1_reversal_detail.png](images/mtf_pullback_reversal/2026-06-08_gbpjpy_h1_reversal_detail.png) | GBPJPY | H1 |
+| [2026-06-08_usdjpy_d1_pullback_context.png](images/mtf_pullback_reversal/2026-06-08_usdjpy_d1_pullback_context.png) | USDJPY | D1 |
 | [2026-06-08_usdjpy_h4_pullback_context.png](images/mtf_pullback_reversal/2026-06-08_usdjpy_h4_pullback_context.png) | USDJPY | H4 |
 | [2026-06-08_usdjpy_h1_reversal_detail.png](images/mtf_pullback_reversal/2026-06-08_usdjpy_h1_reversal_detail.png) | USDJPY | H1 |
 | [2026-06-08_usdjpy_m5_reversal_entry.png](images/mtf_pullback_reversal/2026-06-08_usdjpy_m5_reversal_entry.png) | USDJPY | M5 |

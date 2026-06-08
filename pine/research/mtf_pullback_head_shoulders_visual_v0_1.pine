@@ -1,5 +1,5 @@
 //@version=5
-indicator("MTF Pullback Head & Shoulders Visual v0.1 [Research]",
+indicator("MTF Pullback Head & Shoulders Visual v0.2 [Research]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
@@ -10,6 +10,7 @@ indicator("MTF Pullback Head & Shoulders Visual v0.1 [Research]",
 // - 上位足では「戻し」に見える場所を背景で表示する
 // - その戻しの中で、下位足のヘッドアンドショルダー/逆ヘッドアンドショルダーを視覚化する
 // - ネックライン割れ/抜けを、エントリーではなく「検証候補」として表示する
+// - v0.2: 形成途中のLSだけが見えて誤解しやすいため、初期状態では完成形だけを描く
 //
 // 読み方:
 // - SHORT候補: 上位足が下降トレンド、戻し中、下位足でH&S、ネックライン割れ
@@ -42,8 +43,9 @@ cooldownBars = input.int(40, "候補表示の間隔", minval=1, maxval=500, grou
 
 grpVisual = "Visual"
 showHtfEma = input.bool(true, "上位足EMAを表示", group=grpVisual)
-showPullbackBg = input.bool(true, "戻し背景を表示", group=grpVisual)
+showPullbackBg = input.bool(false, "戻し背景を表示", group=grpVisual)
 showStructure = input.bool(true, "LS/H/RSを表示", group=grpVisual)
+showFormingStructure = input.bool(false, "形成途中のLS/Hを表示", group=grpVisual)
 showNeckline = input.bool(true, "ネックラインを表示", group=grpVisual)
 showCandidate = input.bool(true, "候補ラベルを表示", group=grpVisual)
 showTable = input.bool(true, "状態テーブル", group=grpVisual)
@@ -174,12 +176,12 @@ if newPH
             bHeadBar := na
             bN2Bar := na
             bRSBar := na
-            if showStructure
+            if showStructure and showFormingStructure
                 keep_label(label.new(hb, hp, "LS", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.red, 10), textcolor=color.white, size=size.tiny))
         else if not na(bLS) and not na(bN1) and na(bHead) and hp > bLS + atrAtPivot * minHeadAtr
             bHead := hp
             bHeadBar := hb
-            if showStructure
+            if showStructure and showFormingStructure
                 keep_label(label.new(hb, hp, "HEAD", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.red, 0), textcolor=color.white, size=size.small))
                 keep_line(line.new(bLSBar, bLS, bHeadBar, bHead, xloc=xloc.bar_index, color=color.new(color.red, 20), width=2))
         else if not na(bHead) and not na(bN2) and na(bRS)
@@ -190,7 +192,10 @@ if newPH
                 bRSBar := hb
                 bearSetupCount += 1
                 if showStructure
+                    keep_label(label.new(bLSBar, bLS, "LS", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.red, 10), textcolor=color.white, size=size.tiny))
+                    keep_label(label.new(bHeadBar, bHead, "HEAD", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.red, 0), textcolor=color.white, size=size.small))
                     keep_label(label.new(hb, hp, "RS", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.red, 10), textcolor=color.white, size=size.tiny))
+                    keep_line(line.new(bLSBar, bLS, bHeadBar, bHead, xloc=xloc.bar_index, color=color.new(color.red, 20), width=2))
                     keep_line(line.new(bHeadBar, bHead, bRSBar, bRS, xloc=xloc.bar_index, color=color.new(color.red, 20), width=2))
                 if showNeckline
                     int nx2 = bN2Bar + extendBars
@@ -234,12 +239,12 @@ if newPL
             iHeadBar := na
             iN2Bar := na
             iRSBar := na
-            if showStructure
+            if showStructure and showFormingStructure
                 keep_label(label.new(lb, lp, "LS", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.green, 10), textcolor=color.white, size=size.tiny))
         else if not na(iLS) and not na(iN1) and na(iHead) and lp < iLS - atrAtPivot * minHeadAtr
             iHead := lp
             iHeadBar := lb
-            if showStructure
+            if showStructure and showFormingStructure
                 keep_label(label.new(lb, lp, "HEAD", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.green, 0), textcolor=color.white, size=size.small))
                 keep_line(line.new(iLSBar, iLS, iHeadBar, iHead, xloc=xloc.bar_index, color=color.new(color.green, 20), width=2))
         else if not na(iHead) and not na(iN2) and na(iRS)
@@ -250,7 +255,10 @@ if newPL
                 iRSBar := lb
                 bullSetupCount += 1
                 if showStructure
+                    keep_label(label.new(iLSBar, iLS, "LS", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.green, 10), textcolor=color.white, size=size.tiny))
+                    keep_label(label.new(iHeadBar, iHead, "HEAD", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.green, 0), textcolor=color.white, size=size.small))
                     keep_label(label.new(lb, lp, "RS", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.green, 10), textcolor=color.white, size=size.tiny))
+                    keep_line(line.new(iLSBar, iLS, iHeadBar, iHead, xloc=xloc.bar_index, color=color.new(color.green, 20), width=2))
                     keep_line(line.new(iHeadBar, iHead, iRSBar, iRS, xloc=xloc.bar_index, color=color.new(color.green, 20), width=2))
                 if showNeckline
                     int ix2 = iN2Bar + extendBars

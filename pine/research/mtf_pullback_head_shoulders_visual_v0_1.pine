@@ -1,5 +1,5 @@
 //@version=5
-indicator("MTF Pullback Head & Shoulders Visual v0.5 [Research]",
+indicator("MTF Pullback Head & Shoulders Visual v0.6 [Research]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
@@ -13,7 +13,7 @@ indicator("MTF Pullback Head & Shoulders Visual v0.5 [Research]",
 // - v0.2: 形成途中のLSだけが見えて誤解しやすいため、初期状態では完成形だけを描く
 // - v0.3: まず見つけることを優先し、上位足フィルタは候補の絞り込み用に変更
 // - v0.4: 初期表示を「上位足の戻し部分だけ」に変更。H&S関連は必要な時だけON。
-// - v0.5: 上位足EMA20-EMA50の戻し帯を常時fill表示し、価格が帯に触れた足だけ背景表示する
+// - v0.6: EMAではなく、上位足ダウ理論の直近推進波から戻し帯を出す
 //
 // 読み方:
 // - SHORT候補: 上位足が下降トレンド、戻し中、下位足でH&S、ネックライン割れ
@@ -27,9 +27,11 @@ plot(close, title="Compile Anchor", color=color.new(color.gray, 100))
 
 grpContext = "HTF context"
 htf = input.timeframe("D", "上位足", group=grpContext)
-htfFastLen = input.int(20, "上位足 EMA fast", minval=1, group=grpContext)
-htfSlowLen = input.int(50, "上位足 EMA slow", minval=2, group=grpContext)
+htfPivotLeft = input.int(3, "上位足 Pivot left", minval=1, maxval=20, group=grpContext)
+htfPivotRight = input.int(3, "上位足 Pivot right", minval=1, maxval=20, group=grpContext)
 htfAtrLen = input.int(14, "上位足 ATR", minval=1, group=grpContext)
+retraceLow = input.float(0.382, "戻し帯 下限", minval=0.0, maxval=1.0, step=0.001, group=grpContext)
+retraceHigh = input.float(0.618, "戻し帯 上限", minval=0.0, maxval=1.0, step=0.001, group=grpContext)
 bandPadAtr = input.float(0.10, "戻し帯の上下余白 ATR", minval=0.0, step=0.05, group=grpContext)
 touchPadAtr = input.float(0.20, "戻し帯タッチ許容 ATR", minval=0.0, step=0.05, group=grpContext)
 requireHtfContext = input.bool(false, "上位足の戻し中だけ候補にする", group=grpContext)
@@ -46,7 +48,7 @@ maxPatternBars = input.int(260, "パターン最大本数", minval=20, maxval=10
 cooldownBars = input.int(24, "候補表示の間隔", minval=1, maxval=500, group=grpPattern)
 
 grpVisual = "Visual"
-showHtfEma = input.bool(true, "上位足EMAを表示", group=grpVisual)
+showDowSwingLevels = input.bool(true, "上位足ダウ高値/安値を表示", group=grpVisual)
 showPullbackBand = input.bool(true, "上位足戻し帯を表示", group=grpVisual)
 showPullbackBg = input.bool(true, "戻し背景を表示", group=grpVisual)
 showStructure = input.bool(false, "LS/H/RSを表示", group=grpVisual)
@@ -84,19 +86,34 @@ keep_line(line ln) =>
     while array.size(keptLines) > keepObjects
         line.delete(array.shift(keptLines))
 
-htfClose = request.security(syminfo.tickerid, htf, close, lookahead=barmerge.lookahead_off)
-htfEmaFast = request.security(syminfo.tickerid, htf, ta.ema(close, htfFastLen), lookahead=barmerge.lookahead_off)
-htfEmaSlow = request.security(syminfo.tickerid, htf, ta.ema(close, htfSlowLen), lookahead=barmerge.lookahead_off)
 htfAtr = request.security(syminfo.tickerid, htf, ta.atr(htfAtrLen), lookahead=barmerge.lookahead_off)
+htfPH = request.security(syminfo.tickerid, htf, ta.pivothigh(high, htfPivotLeft, htfPivotRight), gaps=barmerge.gaps_on, lookahead=barmerge.lookahead_off)
+htfPL = request.security(syminfo.tickerid, htf, ta.pivotlow(low, htfPivotLeft, htfPivotRight), gaps=barmerge.gaps_on, lookahead=barmerge.lookahead_off)
 
 atr = ta.atr(atrLen)
 ph = ta.pivothigh(high, pivotLeft, pivotRight)
 pl = ta.pivotlow(low, pivotLeft, pivotRight)
 
-htfDown = htfClose < htfEmaFast and htfEmaFast < htfEmaSlow
-htfUp = htfClose > htfEmaFast and htfEmaFast > htfEmaSlow
-pullbackRawTop = math.max(htfEmaFast, htfEmaSlow)
-pullbackRawBottom = math.min(htfEmaFast, htfEmaSlow)
+var float prevHtfSwingHigh = na
+var float lastHtfSwingHigh = na
+var float prevHtfSwingLow = na
+var float lastHtfSwingLow = na
+
+if not na(htfPH) and (na(lastHtfSwingHigh) or htfPH != lastHtfSwingHigh)
+    prevHtfSwingHigh := lastHtfSwingHigh
+    lastHtfSwingHigh := htfPH
+
+if not na(htfPL) and (na(lastHtfSwingLow) or htfPL != lastHtfSwingLow)
+    prevHtfSwingLow := lastHtfSwingLow
+    lastHtfSwingLow := htfPL
+
+htfDown = not na(prevHtfSwingHigh) and not na(prevHtfSwingLow) and lastHtfSwingHigh < prevHtfSwingHigh and lastHtfSwingLow < prevHtfSwingLow
+htfUp = not na(prevHtfSwingHigh) and not na(prevHtfSwingLow) and lastHtfSwingHigh > prevHtfSwingHigh and lastHtfSwingLow > prevHtfSwingLow
+swingRange = not na(lastHtfSwingHigh) and not na(lastHtfSwingLow) ? math.abs(lastHtfSwingHigh - lastHtfSwingLow) : na
+rLow = math.min(retraceLow, retraceHigh)
+rHigh = math.max(retraceLow, retraceHigh)
+pullbackRawTop = htfDown and not na(swingRange) ? lastHtfSwingLow + swingRange * rHigh : htfUp and not na(swingRange) ? lastHtfSwingHigh - swingRange * rLow : na
+pullbackRawBottom = htfDown and not na(swingRange) ? lastHtfSwingLow + swingRange * rLow : htfUp and not na(swingRange) ? lastHtfSwingHigh - swingRange * rHigh : na
 pullbackTop = pullbackRawTop + htfAtr * bandPadAtr
 pullbackBottom = pullbackRawBottom - htfAtr * bandPadAtr
 touchTop = pullbackTop + htfAtr * touchPadAtr
@@ -110,8 +127,8 @@ allowLong = directionInput != "Short only"
 shortContextOk = not requireHtfContext or shortPullback
 longContextOk = not requireHtfContext or longPullback
 
-pFast = plot(showHtfEma ? htfEmaFast : na, title="HTF EMA fast", color=color.new(color.blue, 0), linewidth=1)
-pSlow = plot(showHtfEma ? htfEmaSlow : na, title="HTF EMA slow", color=color.new(color.orange, 0), linewidth=1)
+pFast = plot(showDowSwingLevels ? lastHtfSwingHigh : na, title="HTF Dow last swing high", color=color.new(color.red, 0), linewidth=1, style=plot.style_linebr)
+pSlow = plot(showDowSwingLevels ? lastHtfSwingLow : na, title="HTF Dow last swing low", color=color.new(color.lime, 0), linewidth=1, style=plot.style_linebr)
 bandEdgeColor = htfDown ? color.new(color.red, 35) : htfUp ? color.new(color.green, 35) : color.new(color.gray, 100)
 pBandTop = plot(showPullbackBand ? pullbackTop : na, title="HTF pullback band top", color=bandEdgeColor, linewidth=1)
 pBandBottom = plot(showPullbackBand ? pullbackBottom : na, title="HTF pullback band bottom", color=bandEdgeColor, linewidth=1)
@@ -351,11 +368,11 @@ bullState = bullReady ? "wait NL break" : not na(iHead) ? "wait RS" : not na(iLS
 
 var table t = table.new(f_table_pos(tablePosInput), 2, 10, bgcolor=color.new(color.black, 10), border_width=1)
 if barstate.islast and showTable
-    table.cell(t, 0, 0, "HTF Pullback", text_color=color.white, text_size=size.small)
+    table.cell(t, 0, 0, "Dow Pullback", text_color=color.white, text_size=size.small)
     table.cell(t, 1, 0, timeframe.period + " / " + htf, text_color=color.white, text_size=size.tiny)
     table.cell(t, 0, 1, "HTF state", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 1, stateText, text_color=shortPullback ? color.red : longPullback ? color.lime : color.silver, text_size=size.tiny)
-    table.cell(t, 0, 2, "HTF down/up", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 0, 2, "Dow down/up", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 2, f_yes(htfDown) + " / " + f_yes(htfUp), text_color=color.white, text_size=size.tiny)
     table.cell(t, 0, 3, "band top", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 3, f_num(pullbackTop), text_color=color.white, text_size=size.tiny)

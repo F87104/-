@@ -1,5 +1,5 @@
 //@version=5
-strategy("LH3 Synapse B Symbol Presets Strategy v0.4 [Research]",
+strategy("LH3 Synapse B Symbol Presets Strategy v0.5 [Research]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
@@ -128,6 +128,7 @@ riskLabelBelowAtr = input.float(1.80, "損失ラベル下ずらし ATR", minval=
 grpView = "Visual"
 cleanView = input.bool(true, "見やすい表示モード（最新中心）", group=grpView)
 showEventMarkers = input.bool(true, "WAIT/CHECK小マーカー", group=grpView)
+showCurrentTrendLine = input.bool(true, "現在の赤LINEを太く表示", group=grpView)
 showCheckMarks = input.bool(false, "CHECKを表示", group=grpView)
 showEntryMarks = input.bool(false, "ENTRY候補を大きく表示", group=grpView)
 showRejectMarks = input.bool(false, "B抜けたがENTRYでない理由を表示", group=grpView)
@@ -231,6 +232,7 @@ var bool lastLotOk = true
 var int strategyEntryBar = na
 var float strategyStop = na
 var float strategyTarget = na
+var line currentTrendLine = na
 
 if activeSeq and not na(seqH3Bar) and bar_index - seqH3Bar > maxActiveBars
     activeSeq := false
@@ -245,6 +247,9 @@ if activeSeq and not na(seqH3Bar) and bar_index - seqH3Bar > maxActiveBars
     bBar := na
     bFrozen := false
     structureLow := na
+    if not na(currentTrendLine)
+        line.delete(currentTrendLine)
+    currentTrendLine := na
 
 if activeSeq and not na(seqH3Bar) and bar_index >= seqH3Bar
     structureLow := na(structureLow) ? low : math.min(structureLow, low)
@@ -313,6 +318,11 @@ if not na(ph)
         structureLow := low
         for k = 0 to pivotRight
             structureLow := math.min(structureLow, low[k])
+        if not na(currentTrendLine)
+            line.delete(currentTrendLine)
+        currentTrendLine := na
+        if showCurrentTrendLine
+            currentTrendLine := line.new(seqH1Bar, seqH1, seqH3Bar, seqH3, xloc=xloc.bar_index, extend=extend.right, color=color.new(color.red, 0), width=3)
         if showTrendLines and not cleanView
             keep_line(line.new(seqH1Bar, seqH1, seqH3Bar, seqH3, xloc=xloc.bar_index, extend=extend.right, color=color.new(color.red, 0), width=2))
         if showABLines and not cleanView
@@ -457,7 +467,7 @@ if barstate.islast
     label.delete(statusInfoLabel)
     if showStatusLabel
         float statusY = high + nz(atr, 0.0) * statusLabelAtr
-        string statusText = "LH3 STATUS v0.4"
+        string statusText = "LH3 STATUS v0.5"
         statusText := statusText + "\n" + activePreset + " / TF " + recommendedTf + (timeframeOk ? " OK" : " 確認")
         statusText := statusText + "\nstate: " + stateText
         statusText := statusText + "\n次: " + rejectReason
@@ -475,7 +485,7 @@ if barstate.islast and showPresetLabel
 
 var table t = table.new(f_table_pos(tablePosInput), 2, 20, bgcolor=color.new(color.black, 8), frame_color=color.new(color.white, 40), frame_width=1, border_color=color.new(color.gray, 40), border_width=1)
 if barstate.islast and showTable
-    table.cell(t, 0, 0, "LH3 B Combo v0.4", text_color=color.white, text_size=size.small)
+    table.cell(t, 0, 0, "LH3 B Combo v0.5", text_color=color.white, text_size=size.small)
     table.cell(t, 1, 0, timeframe.period, text_color=timeframeOk ? color.lime : color.orange, text_size=size.tiny)
     table.cell(t, 0, 1, "preset / TF", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 1, activePreset + " / " + recommendedTf + (timeframeOk ? " OK" : " 確認"), text_color=timeframeOk ? color.lime : color.orange, text_size=size.tiny)

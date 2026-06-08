@@ -1,0 +1,345 @@
+//@version=5
+indicator("MTF Pullback Head & Shoulders Visual v0.1 [Research]",
+     overlay=true,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500)
+
+// Research only.
+// 目的:
+// - 上位足では「戻し」に見える場所を背景で表示する
+// - その戻しの中で、下位足のヘッドアンドショルダー/逆ヘッドアンドショルダーを視覚化する
+// - ネックライン割れ/抜けを、エントリーではなく「検証候補」として表示する
+//
+// 読み方:
+// - SHORT候補: 上位足が下降トレンド、戻し中、下位足でH&S、ネックライン割れ
+// - LONG候補: 上位足が上昇トレンド、押し目中、下位足で逆H&S、ネックライン上抜け
+//
+// 注意:
+// - Pivot確定後に描くため、リアルタイムでは遅れて表示される
+// - 売買サインではない。目視照合と研究用。
+
+plot(close, title="Compile Anchor", color=color.new(color.gray, 100))
+
+grpContext = "HTF context"
+htf = input.timeframe("D", "上位足", group=grpContext)
+htfFastLen = input.int(20, "上位足 EMA fast", minval=1, group=grpContext)
+htfSlowLen = input.int(50, "上位足 EMA slow", minval=2, group=grpContext)
+htfAtrLen = input.int(14, "上位足 ATR", minval=1, group=grpContext)
+pullbackPadAtr = input.float(1.00, "戻し許容 ATR", minval=0.0, step=0.10, group=grpContext)
+requireHtfContext = input.bool(true, "上位足の戻し中だけ検出", group=grpContext)
+directionInput = input.string("Both", "検出方向", options=["Both", "Short only", "Long only"], group=grpContext)
+
+grpPattern = "H&S pattern"
+pivotLeft = input.int(5, "Pivot left", minval=1, maxval=30, group=grpPattern)
+pivotRight = input.int(5, "Pivot right", minval=1, maxval=30, group=grpPattern)
+atrLen = input.int(14, "下位足 ATR", minval=1, group=grpPattern)
+minHeadAtr = input.float(0.80, "頭が肩より高い/低い最低差 ATR", minval=0.0, step=0.10, group=grpPattern)
+shoulderToleranceAtr = input.float(1.20, "左右肩の許容差 ATR", minval=0.0, step=0.10, group=grpPattern)
+neckBreakBufferAtr = input.float(0.05, "ネックライン抜けバッファ ATR", minval=0.0, step=0.01, group=grpPattern)
+maxPatternBars = input.int(180, "パターン最大本数", minval=20, maxval=1000, group=grpPattern)
+cooldownBars = input.int(40, "候補表示の間隔", minval=1, maxval=500, group=grpPattern)
+
+grpVisual = "Visual"
+showHtfEma = input.bool(true, "上位足EMAを表示", group=grpVisual)
+showPullbackBg = input.bool(true, "戻し背景を表示", group=grpVisual)
+showStructure = input.bool(true, "LS/H/RSを表示", group=grpVisual)
+showNeckline = input.bool(true, "ネックラインを表示", group=grpVisual)
+showCandidate = input.bool(true, "候補ラベルを表示", group=grpVisual)
+showTable = input.bool(true, "状態テーブル", group=grpVisual)
+extendBars = input.int(80, "ネックライン延長本数", minval=10, maxval=300, group=grpVisual)
+keepObjects = input.int(220, "残すラベル/ライン数", minval=50, maxval=450, group=grpVisual)
+tablePosInput = input.string("top_right", "テーブル位置", options=["top_right", "top_left", "bottom_right", "bottom_left"], group=grpVisual)
+
+f_table_pos(string pos) =>
+    pos == "top_left" ? position.top_left : pos == "bottom_right" ? position.bottom_right : pos == "bottom_left" ? position.bottom_left : position.top_right
+
+f_num(float x) =>
+    na(x) ? "-" : str.tostring(x, "#.###")
+
+f_yes(bool x) =>
+    x ? "yes" : "no"
+
+f_project(int x1, float y1, int x2, float y2, int x) =>
+    x2 == x1 ? y2 : y1 + (y2 - y1) * (x - x1) / (x2 - x1)
+
+var label[] keptLabels = array.new_label()
+var line[] keptLines = array.new_line()
+
+keep_label(label lb) =>
+    array.push(keptLabels, lb)
+    while array.size(keptLabels) > keepObjects
+        label.delete(array.shift(keptLabels))
+
+keep_line(line ln) =>
+    array.push(keptLines, ln)
+    while array.size(keptLines) > keepObjects
+        line.delete(array.shift(keptLines))
+
+htfClose = request.security(syminfo.tickerid, htf, close, lookahead=barmerge.lookahead_off)
+htfEmaFast = request.security(syminfo.tickerid, htf, ta.ema(close, htfFastLen), lookahead=barmerge.lookahead_off)
+htfEmaSlow = request.security(syminfo.tickerid, htf, ta.ema(close, htfSlowLen), lookahead=barmerge.lookahead_off)
+htfAtr = request.security(syminfo.tickerid, htf, ta.atr(htfAtrLen), lookahead=barmerge.lookahead_off)
+
+atr = ta.atr(atrLen)
+ph = ta.pivothigh(high, pivotLeft, pivotRight)
+pl = ta.pivotlow(low, pivotLeft, pivotRight)
+
+htfDown = htfClose < htfEmaFast and htfEmaFast < htfEmaSlow
+htfUp = htfClose > htfEmaFast and htfEmaFast > htfEmaSlow
+shortPullback = htfDown and close > htfEmaFast and close <= htfEmaSlow + htfAtr * pullbackPadAtr
+longPullback = htfUp and close < htfEmaFast and close >= htfEmaSlow - htfAtr * pullbackPadAtr
+
+allowShort = directionInput != "Long only" and (not requireHtfContext or shortPullback)
+allowLong = directionInput != "Short only" and (not requireHtfContext or longPullback)
+
+plot(showHtfEma ? htfEmaFast : na, title="HTF EMA fast", color=color.new(color.blue, 0), linewidth=1)
+plot(showHtfEma ? htfEmaSlow : na, title="HTF EMA slow", color=color.new(color.orange, 0), linewidth=1)
+bgcolor(showPullbackBg and shortPullback ? color.new(color.red, 88) : na, title="HTF short pullback")
+bgcolor(showPullbackBg and longPullback ? color.new(color.green, 88) : na, title="HTF long pullback")
+
+var float bLS = na
+var float bN1 = na
+var float bHead = na
+var float bN2 = na
+var float bRS = na
+var int bLSBar = na
+var int bN1Bar = na
+var int bHeadBar = na
+var int bN2Bar = na
+var int bRSBar = na
+var int lastBearCandidateBar = na
+var int bearSetupCount = 0
+var int bearCandidateCount = 0
+
+var float iLS = na
+var float iN1 = na
+var float iHead = na
+var float iN2 = na
+var float iRS = na
+var int iLSBar = na
+var int iN1Bar = na
+var int iHeadBar = na
+var int iN2Bar = na
+var int iRSBar = na
+var int lastBullCandidateBar = na
+var int bullSetupCount = 0
+var int bullCandidateCount = 0
+
+newPH = not na(ph)
+newPL = not na(pl)
+pivotBar = bar_index - pivotRight
+atrAtPivot = nz(atr[pivotRight], atr)
+
+bearExpired = not na(bLSBar) and bar_index - bLSBar > maxPatternBars
+bullExpired = not na(iLSBar) and bar_index - iLSBar > maxPatternBars
+
+if bearExpired
+    bLS := na
+    bN1 := na
+    bHead := na
+    bN2 := na
+    bRS := na
+    bLSBar := na
+    bN1Bar := na
+    bHeadBar := na
+    bN2Bar := na
+    bRSBar := na
+
+if bullExpired
+    iLS := na
+    iN1 := na
+    iHead := na
+    iN2 := na
+    iRS := na
+    iLSBar := na
+    iN1Bar := na
+    iHeadBar := na
+    iN2Bar := na
+    iRSBar := na
+
+if newPH
+    float hp = ph
+    int hb = pivotBar
+
+    if allowShort
+        if na(bLS) or (na(bHead) and na(bN1) and hp >= bLS)
+            bLS := hp
+            bLSBar := hb
+            bN1 := na
+            bHead := na
+            bN2 := na
+            bRS := na
+            bN1Bar := na
+            bHeadBar := na
+            bN2Bar := na
+            bRSBar := na
+            if showStructure
+                keep_label(label.new(hb, hp, "LS", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.red, 10), textcolor=color.white, size=size.tiny))
+        else if not na(bLS) and not na(bN1) and na(bHead) and hp > bLS + atrAtPivot * minHeadAtr
+            bHead := hp
+            bHeadBar := hb
+            if showStructure
+                keep_label(label.new(hb, hp, "HEAD", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.red, 0), textcolor=color.white, size=size.small))
+                keep_line(line.new(bLSBar, bLS, bHeadBar, bHead, xloc=xloc.bar_index, color=color.new(color.red, 20), width=2))
+        else if not na(bHead) and not na(bN2) and na(bRS)
+            bool shoulderOk = math.abs(hp - bLS) <= atrAtPivot * shoulderToleranceAtr
+            bool belowHead = hp < bHead - atrAtPivot * minHeadAtr * 0.25
+            if shoulderOk and belowHead
+                bRS := hp
+                bRSBar := hb
+                bearSetupCount += 1
+                if showStructure
+                    keep_label(label.new(hb, hp, "RS", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.red, 10), textcolor=color.white, size=size.tiny))
+                    keep_line(line.new(bHeadBar, bHead, bRSBar, bRS, xloc=xloc.bar_index, color=color.new(color.red, 20), width=2))
+                if showNeckline
+                    int nx2 = bN2Bar + extendBars
+                    float ny2 = f_project(bN1Bar, bN1, bN2Bar, bN2, nx2)
+                    keep_line(line.new(bN1Bar, bN1, nx2, ny2, xloc=xloc.bar_index, color=color.new(color.aqua, 0), style=line.style_dashed, width=2))
+            else if hp > bHead
+                bHead := hp
+                bHeadBar := hb
+                bN2 := na
+                bRS := na
+                bN2Bar := na
+                bRSBar := na
+
+    if not na(iLS) and na(iN1) and hb > iLSBar
+        iN1 := hp
+        iN1Bar := hb
+    else if not na(iHead) and not na(iN1) and na(iN2) and hb > iHeadBar
+        iN2 := hp
+        iN2Bar := hb
+
+if newPL
+    float lp = pl
+    int lb = pivotBar
+
+    if not na(bLS) and na(bN1) and lb > bLSBar
+        bN1 := lp
+        bN1Bar := lb
+    else if not na(bHead) and na(bN2) and lb > bHeadBar
+        bN2 := lp
+        bN2Bar := lb
+
+    if allowLong
+        if na(iLS) or (na(iHead) and na(iN1) and lp <= iLS)
+            iLS := lp
+            iLSBar := lb
+            iN1 := na
+            iHead := na
+            iN2 := na
+            iRS := na
+            iN1Bar := na
+            iHeadBar := na
+            iN2Bar := na
+            iRSBar := na
+            if showStructure
+                keep_label(label.new(lb, lp, "LS", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.green, 10), textcolor=color.white, size=size.tiny))
+        else if not na(iLS) and not na(iN1) and na(iHead) and lp < iLS - atrAtPivot * minHeadAtr
+            iHead := lp
+            iHeadBar := lb
+            if showStructure
+                keep_label(label.new(lb, lp, "HEAD", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.green, 0), textcolor=color.white, size=size.small))
+                keep_line(line.new(iLSBar, iLS, iHeadBar, iHead, xloc=xloc.bar_index, color=color.new(color.green, 20), width=2))
+        else if not na(iHead) and not na(iN2) and na(iRS)
+            bool invShoulderOk = math.abs(lp - iLS) <= atrAtPivot * shoulderToleranceAtr
+            bool aboveHead = lp > iHead + atrAtPivot * minHeadAtr * 0.25
+            if invShoulderOk and aboveHead
+                iRS := lp
+                iRSBar := lb
+                bullSetupCount += 1
+                if showStructure
+                    keep_label(label.new(lb, lp, "RS", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.green, 10), textcolor=color.white, size=size.tiny))
+                    keep_line(line.new(iHeadBar, iHead, iRSBar, iRS, xloc=xloc.bar_index, color=color.new(color.green, 20), width=2))
+                if showNeckline
+                    int ix2 = iN2Bar + extendBars
+                    float iy2 = f_project(iN1Bar, iN1, iN2Bar, iN2, ix2)
+                    keep_line(line.new(iN1Bar, iN1, ix2, iy2, xloc=xloc.bar_index, color=color.new(color.yellow, 0), style=line.style_dashed, width=2))
+            else if lp < iHead
+                iHead := lp
+                iHeadBar := lb
+                iN2 := na
+                iRS := na
+                iN2Bar := na
+                iRSBar := na
+
+bearReady = not na(bRS) and not na(bN1) and not na(bN2) and bar_index > bRSBar
+bearNeckNow = bearReady ? f_project(bN1Bar, bN1, bN2Bar, bN2, bar_index) : na
+bearBreak = bearReady and close < bearNeckNow - atr * neckBreakBufferAtr and barstate.isconfirmed
+bearCooldownOk = na(lastBearCandidateBar) or bar_index - lastBearCandidateBar >= cooldownBars
+
+bullReady = not na(iRS) and not na(iN1) and not na(iN2) and bar_index > iRSBar
+bullNeckNow = bullReady ? f_project(iN1Bar, iN1, iN2Bar, iN2, bar_index) : na
+bullBreak = bullReady and close > bullNeckNow + atr * neckBreakBufferAtr and barstate.isconfirmed
+bullCooldownOk = na(lastBullCandidateBar) or bar_index - lastBullCandidateBar >= cooldownBars
+
+plot(showNeckline and bearReady ? bearNeckNow : na, title="Bear H&S neckline now", color=color.new(color.aqua, 0), linewidth=2, style=plot.style_linebr)
+plot(showNeckline and bullReady ? bullNeckNow : na, title="Inverse H&S neckline now", color=color.new(color.yellow, 0), linewidth=2, style=plot.style_linebr)
+
+if bearBreak and bearCooldownOk
+    lastBearCandidateBar := bar_index
+    bearCandidateCount += 1
+    if showCandidate
+        keep_label(label.new(bar_index, low - atr * 0.80, "SHORT候補\nHTF戻し + H&S\nNL割れ", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.red, 0), textcolor=color.white, size=size.normal))
+        keep_line(line.new(bar_index, close, bar_index + 18, close, xloc=xloc.bar_index, color=color.new(color.red, 0), width=3))
+    bLS := na
+    bN1 := na
+    bHead := na
+    bN2 := na
+    bRS := na
+    bLSBar := na
+    bN1Bar := na
+    bHeadBar := na
+    bN2Bar := na
+    bRSBar := na
+
+if bullBreak and bullCooldownOk
+    lastBullCandidateBar := bar_index
+    bullCandidateCount += 1
+    if showCandidate
+        keep_label(label.new(bar_index, high + atr * 0.80, "LONG候補\nHTF押し + 逆H&S\nNL上抜け", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.lime, 0), textcolor=color.black, size=size.normal))
+        keep_line(line.new(bar_index, close, bar_index + 18, close, xloc=xloc.bar_index, color=color.new(color.lime, 0), width=3))
+    iLS := na
+    iN1 := na
+    iHead := na
+    iN2 := na
+    iRS := na
+    iLSBar := na
+    iN1Bar := na
+    iHeadBar := na
+    iN2Bar := na
+    iRSBar := na
+
+plotshape(showCandidate and bearBreak and bearCooldownOk, title="SHORT candidate", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), text="H&S", textcolor=color.white, size=size.small)
+plotshape(showCandidate and bullBreak and bullCooldownOk, title="LONG candidate", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), text="iH&S", textcolor=color.black, size=size.small)
+
+stateText = shortPullback ? "SHORT pullback" : longPullback ? "LONG pullback" : htfDown ? "HTF down" : htfUp ? "HTF up" : "HTF range"
+bearState = bearReady ? "wait NL break" : not na(bHead) ? "wait RS" : not na(bLS) ? "forming" : "-"
+bullState = bullReady ? "wait NL break" : not na(iHead) ? "wait RS" : not na(iLS) ? "forming" : "-"
+
+var table t = table.new(f_table_pos(tablePosInput), 2, 10, bgcolor=color.new(color.black, 10), border_width=1)
+if barstate.islast and showTable
+    table.cell(t, 0, 0, "MTF H&S", text_color=color.white, text_size=size.small)
+    table.cell(t, 1, 0, timeframe.period + " / " + htf, text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 1, "HTF state", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 1, stateText, text_color=shortPullback ? color.red : longPullback ? color.lime : color.silver, text_size=size.tiny)
+    table.cell(t, 0, 2, "HTF down/up", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 2, f_yes(htfDown) + " / " + f_yes(htfUp), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 3, "short H&S", text_color=color.red, text_size=size.tiny)
+    table.cell(t, 1, 3, bearState, text_color=bearReady ? color.aqua : color.white, text_size=size.tiny)
+    table.cell(t, 0, 4, "short NL", text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 1, 4, f_num(bearNeckNow), text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 5, "long iH&S", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 1, 5, bullState, text_color=bullReady ? color.yellow : color.white, text_size=size.tiny)
+    table.cell(t, 0, 6, "long NL", text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 1, 6, f_num(bullNeckNow), text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 7, "setups S/L", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 7, str.tostring(bearSetupCount) + " / " + str.tostring(bullSetupCount), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 8, "candidates S/L", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 8, str.tostring(bearCandidateCount) + " / " + str.tostring(bullCandidateCount), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 9, "rule", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 9, requireHtfContext ? "context only" : "all chart", text_color=requireHtfContext ? color.lime : color.orange, text_size=size.tiny)
+
+alertcondition(bearBreak and bearCooldownOk, title="MTF H&S SHORT candidate", message="MTF pullback H&S neckline break on {{ticker}} {{interval}}")
+alertcondition(bullBreak and bullCooldownOk, title="MTF inverse H&S LONG candidate", message="MTF pullback inverse H&S neckline break on {{ticker}} {{interval}}")

@@ -25,6 +25,7 @@
 | **系統B 本番運用** | [operations/system_b/README.md](../operations/system_b/README.md) |
 | **系統B B06 Pine照合** | [DECISION_b06_tv_oanda_parity.md](system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md) |
 | **Lower High 3 Touch 仮説** | [lower_high_three_touch_breakdown_hypothesis_2026-06-08.md](lower_high_three_touch_breakdown_hypothesis_2026-06-08.md) ／ [B抜け危険除外](lower_high_b_break_danger_filters_2026-06-08/REPORT_ja.md) ／ [B床化確認](lower_high_b_support_confirmation_2026-06-08/REPORT_ja.md) ／ [確認フィルタ勝率PF](lower_high_synapse_confirm_filters_2026-06-08/REPORT_ja.md) ／ [赤LINE勝率PF](lower_high_synapse_reclaim_long_strategy_2026-06-08/REPORT_ja.md) ／ [下抜け実測](lower_high_three_touch_breakdown_2026-06-08/REPORT_ja.md) ／ [上抜けロング実測](lower_high_synapse_reclaim_long_2026-06-08/REPORT_ja.md) ／ [Synapse接続](lower_high_synapse_bridge_2026-06-08.md) |
+| **上位足戻し x 下位足H&S 仮説** | [MTF Pullback H&S 可視化Pine](../../pine/research/mtf_pullback_head_shoulders_visual_v0_1.pine) |
 | **旧心理スプリント（参照のみ）** | [ARCHIVE_psychology_sprint_2026-05_06.md](ARCHIVE_psychology_sprint_2026-05_06.md) |
 
 ## 次にやること
@@ -33,6 +34,7 @@
 2. **TB に追加フィルタを入れない**（検証で総R↓のみ）
 3. ~~SQZ フォワード~~ — 退役（2026-05-31）
 4. Lower High 3 Touch は、XAUUSD H4で `LINE上抜け + B抜け + Aまで0.5R以上` をENTRY候補にし、D1 EMA20上を強い追い風ラベル、終値位置60%以上を軽い品質ラベルとしてTradingViewで目視照合する
+5. 上位足戻し x 下位足H&S は、H4/D1の戻し背景と下位足H&Sのネックライン候補が、人間の目で見た「戻しの終わり」に近いかをTradingViewで目視照合する
 
 ## 進捗ログ（アクティブ）
 
@@ -48,6 +50,7 @@
 | 2026-06-08 | **LH3 Synapse確認フィルタ 勝率/PF** | 赤LINE後の確認条件を比較。H4 B水平線上抜け RR2/120本は勝率44.72%、PF1.22、+60.14R。H4 B水平線 RR2/48本は勝率48.66%、PF1.23、+48.82R。XAUUSD H4 B水平線 RR2/48本は勝率63.38%、PF2.58、+28.93R。 | 赤LINE上抜け単体は本番化しない。XAUUSD H4 B水平線を本命候補として、A水平線と浅い戻りは補助フィルタ扱いで目視照合する |
 | 2026-06-08 | **LH3 B床化確認 勝率/PF** | B抜け即、B床化後再上昇、A/H3上抜けを比較。H4 B抜け即 RR2/120本は勝率44.72%、PF1.22、+60.14R。H4 B床化 RR2/120本は勝率46.70%、PF1.20、+20.58R、最大DDは34.84Rから14.88Rへ低下。H1 B床化 RR1.5/120本はPF1.16、最大DD13.49R。 | H4はB抜け即を本線、B床化はDD低減補助。次はXAUUSD H4で、巨大足・Aまで距離不足・D1抵抗直下などの除外条件を見る |
 | 2026-06-08 | **LH3 B抜け即 危険除外** | XAUUSD H4 RR2/48で、baselineは71件・勝率63.38%・PF2.58・+28.93R・最大DD5.55R。A余白0.5Rは58件・勝率67.24%・PF2.98・+26.45R・最大DD2.50R。D1 EMA20上はPF3.52だが32件。 | [ENTRY候補Pine](../../pine/research/lower_high_synapse_b_danger_filter_visual_v0_1.pine) で、A余白0.5R・D1 EMA20・終値位置60%以上を目視照合 |
+| 2026-06-08 | **上位足戻し x 下位足H&S** | 新規仮説。上位足では戻しに見える場所を背景で出し、その中の下位足H&S/逆H&Sとネックライン割れ/抜けを可視化するPine v0.1を追加。 | まずXAUUSDとUSDJPYで、上位足D1・表示足H4/H1の印が人間の目に近いか確認する |
 
 ## 進捗ログ（アーカイブ — 心理スプリント 2026-05〜06）
 

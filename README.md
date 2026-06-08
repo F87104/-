@@ -162,6 +162,7 @@ pine/research/          ← TradingView 用 Pine（ここ）
 | 5 | 受講生つまずき（教材） | アーカイブ | 下の [つまずき研究](#-参考--受講生つまずきクラスタ研究教材アーカイブ) |
 | 6 | **トレード実践記録** | 記録中 | [trade_practice_records/](docs/trade_practice_records/) |
 | 7 | **Lower High 3 Touch 仮説** | B水平線確認でPF改善、XAUUSD H4はA余白0.5Rが実用候補 | [ENTRY候補Pine](pine/research/lower_high_synapse_b_danger_filter_visual_v0_1.pine) ／ [目視照合Pine](pine/research/lower_high_synapse_b_confirm_visual_v0_1.pine) ／ [危険除外](docs/research/lower_high_b_break_danger_filters_2026-06-08/REPORT_ja.md) ／ [B床化確認](docs/research/lower_high_b_support_confirmation_2026-06-08/REPORT_ja.md) ／ [確認フィルタ勝率PF](docs/research/lower_high_synapse_confirm_filters_2026-06-08/REPORT_ja.md) ／ [赤LINE勝率PF](docs/research/lower_high_synapse_reclaim_long_strategy_2026-06-08/REPORT_ja.md) ／ [上抜け観察](docs/research/lower_high_synapse_reclaim_long_2026-06-08/REPORT_ja.md) ／ [下抜け結果](docs/research/lower_high_three_touch_breakdown_2026-06-08/REPORT_ja.md) ／ [仮説](docs/research/lower_high_three_touch_breakdown_hypothesis_2026-06-08.md) ／ [接続メモ](docs/research/lower_high_synapse_bridge_2026-06-08.md) ／ [Pine](pine/research/lower_high_three_touch_breakdown_event_scanner_v0_1.pine) ／ [Synapse Pine](pine/research/lower_high_synapse_reclaim_event_scanner_v0_1.pine) |
+| 8 | **上位足戻し x 下位足H&S** | 新規仮説。上位足の戻し中に、下位足ヘッドアンドショルダー/逆H&Sを探す | [MTF H&S 可視化Pine](pine/research/mtf_pullback_head_shoulders_visual_v0_1.pine) |
 
 ---
 

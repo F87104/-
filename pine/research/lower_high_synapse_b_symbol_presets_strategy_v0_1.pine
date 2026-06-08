@@ -1,5 +1,5 @@
 //@version=5
-strategy("LH3 Synapse B Symbol Presets Strategy v0.5 [Research]",
+strategy("LH3 Synapse B Symbol Presets Strategy v0.6 [Research]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
@@ -135,7 +135,7 @@ showRejectMarks = input.bool(false, "B抜けたがENTRYでない理由を表示"
 showStrongQuality = input.bool(false, "STRONG/QUALITY補助ラベル", group=grpView)
 showEntryBackground = input.bool(true, "ENTRY背景を薄く表示", group=grpView)
 showActiveGuides = input.bool(true, "現在のB/Aガイド表示", group=grpView)
-showTrendLines = input.bool(false, "赤LINE履歴表示", group=grpView)
+showTrendLines = input.bool(false, "赤LINE履歴表示（手動ON/OFF）", group=grpView)
 showABLines = input.bool(false, "A/B水平線履歴表示", group=grpView)
 showSetupLabels = input.bool(false, "LH3/B履歴ラベル", group=grpView)
 showLineLabels = input.bool(false, "LINE上抜け履歴ラベル", group=grpView)
@@ -323,8 +323,8 @@ if not na(ph)
         currentTrendLine := na
         if showCurrentTrendLine
             currentTrendLine := line.new(seqH1Bar, seqH1, seqH3Bar, seqH3, xloc=xloc.bar_index, extend=extend.right, color=color.new(color.red, 0), width=3)
-        if showTrendLines and not cleanView
-            keep_line(line.new(seqH1Bar, seqH1, seqH3Bar, seqH3, xloc=xloc.bar_index, extend=extend.right, color=color.new(color.red, 0), width=2))
+        if showTrendLines
+            keep_line(line.new(seqH1Bar, seqH1, seqH3Bar, seqH3, xloc=xloc.bar_index, extend=extend.right, color=color.new(color.red, 35), width=2))
         if showABLines and not cleanView
             keep_line(line.new(seqH3Bar, seqH3, seqH3Bar + maxActiveBars, seqH3, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.orange, 20), style=line.style_dotted, width=1))
         if showSetupLabels and not cleanView
@@ -467,7 +467,7 @@ if barstate.islast
     label.delete(statusInfoLabel)
     if showStatusLabel
         float statusY = high + nz(atr, 0.0) * statusLabelAtr
-        string statusText = "LH3 STATUS v0.5"
+        string statusText = "LH3 STATUS v0.6"
         statusText := statusText + "\n" + activePreset + " / TF " + recommendedTf + (timeframeOk ? " OK" : " 確認")
         statusText := statusText + "\nstate: " + stateText
         statusText := statusText + "\n次: " + rejectReason
@@ -485,7 +485,7 @@ if barstate.islast and showPresetLabel
 
 var table t = table.new(f_table_pos(tablePosInput), 2, 20, bgcolor=color.new(color.black, 8), frame_color=color.new(color.white, 40), frame_width=1, border_color=color.new(color.gray, 40), border_width=1)
 if barstate.islast and showTable
-    table.cell(t, 0, 0, "LH3 B Combo v0.5", text_color=color.white, text_size=size.small)
+    table.cell(t, 0, 0, "LH3 B Combo v0.6", text_color=color.white, text_size=size.small)
     table.cell(t, 1, 0, timeframe.period, text_color=timeframeOk ? color.lime : color.orange, text_size=size.tiny)
     table.cell(t, 0, 1, "preset / TF", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 1, activePreset + " / " + recommendedTf + (timeframeOk ? " OK" : " 確認"), text_color=timeframeOk ? color.lime : color.orange, text_size=size.tiny)

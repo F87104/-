@@ -18,6 +18,7 @@
 
 ## 進捗ログ
 
+| 2026-06-08 | 上位足押し目＝下位足転換 | GBPJPY D1/H4/H1 で押し目内部に下位足 zigzag→転換を確認。気づきメモ化。 | 同型10件、signal_review MTF追記 |
 | 2026-06-06 | 3段下降→加速下落 | XAUUSD H1 の段階的 lower high 観察を仮説メモ化。操作定義ドラフトと検証4段階を記載。 | 手動20件抽出 → Event scanner |
 
 | 日付 | 研究テーマ | 進捗 | 次の判断 |
@@ -57,6 +58,7 @@
 | 4 | Wavebox / Rebreak | 記録済み | 波形、再ブレイク、押し戻りの有効条件を調べる | 運用前提、監査、Pine 実装メモを整理済み | 実運用に使う版と研究保留版を分ける |
 | 5 | **早めに損切りパターン** | **進行中** | 予定SLを待たず切るべき局面を分類する | 6/3 XAUUSD をアンカーに E01〜E09 仮説 | 日誌タグ付け継続 |
 | 6 | **3段下降→加速下落** | **仮説** | 段階的 lower high 後の leg 加速を検証 | XAUUSD H1 目視観察をメモ化 | 手動20件 → Event scanner |
+| 7 | **上位足押し目＝下位足転換** | **気づき** | MTF で押し目と転換の重なりを検証 | GBPJPY D1/H4/H1 観察 | 同型10件 → MTF CHECK 追記 |
 
 ## トレード心理研究の中間整理
 
@@ -121,6 +123,7 @@
 | **トレード日誌（トップ）** | **[trade_diary/README.md](../trade_diary/README.md)** |
 | **早めに損切りパターン研究** | [early_stop_loss_patterns_2026-06-06.md](early_stop_loss_patterns_2026-06-06.md) ／ [タグ付けCSV](../trade_diary/practice/early_stop_pattern_log.csv) |
 | **3段下降→加速下落（仮説）** | [stair_step_decline_hypothesis_2026-06-06.md](stair_step_decline_hypothesis_2026-06-06.md) |
+| **上位足押し目＝下位足転換** | [higher_tf_pullback_lower_tf_reversal_2026-06-08.md](higher_tf_pullback_lower_tf_reversal_2026-06-08.md) |
 | リアルタイム心理記録テンプレート | [realtime_trade_psychology_log_template.csv](realtime_trade_psychology_log_template.csv) |
 | 受講生エントリー集中パターン研究 | [student_entry_cluster_research_2026-05-31.md](student_entry_cluster_research_2026-05-31.md) |
 | 受講生つまずきクラスタ研究 | [student_stumble_clusters_research_2026-05-31.md](student_stumble_clusters_research_2026-05-31.md) |

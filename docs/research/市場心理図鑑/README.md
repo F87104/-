@@ -39,6 +39,7 @@
 | 仮説 | ファイル | 状態 |
 |---|---|---|
 | 3段下降 → 加速下落 | [stair_step_decline_hypothesis_2026-06-06.md](../stair_step_decline_hypothesis_2026-06-06.md) | 仮説のみ |
+| 上位足押し目＝下位足転換 | [higher_tf_pullback_lower_tf_reversal_2026-06-08.md](../higher_tf_pullback_lower_tf_reversal_2026-06-08.md) | 気づき |
 
 ## 巻一覧
 

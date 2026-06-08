@@ -1,0 +1,4 @@
+event_id,symbol,direction,htf,ltf,group,event_date_htf,pullback_start_price,pullback_extreme_price,reversal_trigger_date_ltf,entry_price,sl_price,tp_price,mfe_24h_pips,mae_24h_pips,mfe_48h_pips,mae_48h_pips,mfe_120h_pips,mae_120h_pips,outcome,notes,image_path
+MTF-001,GBPJPY,long,D1,H1,GO,2024-02-15,214.0,208.0,2024-02-20,,,,,,,,,,,参考: images/mtf_pullback_reversal/2026-06-08_gbpjpy_h4_pullback_context.png
+MTF-002,USDJPY,long,H4,M5,GO,2024-06-04,157.8,156.6,2024-06-04,,,,,,,,,,,参考: images/mtf_pullback_reversal/2026-06-08_usdjpy_m5_reversal_entry.png
+MTF-003,GBPJPY,long,H4,H1,NO-GO,2026-06-04,214.686,214.110,2026-06-04,,,,,,,,,,-1,投げ切り単独 E01 転換未確認 → 逆指損切り,practice/entries/2026-06-04_gbpjpy_nagekiri_signal_buy.md

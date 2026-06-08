@@ -124,6 +124,7 @@
 | **早めに損切りパターン研究** | [early_stop_loss_patterns_2026-06-06.md](early_stop_loss_patterns_2026-06-06.md) ／ [タグ付けCSV](../trade_diary/practice/early_stop_pattern_log.csv) |
 | **3段下降→加速下落（仮説）** | [stair_step_decline_hypothesis_2026-06-06.md](stair_step_decline_hypothesis_2026-06-06.md) |
 | **上位足押し目＝下位足転換** | [higher_tf_pullback_lower_tf_reversal_2026-06-08.md](higher_tf_pullback_lower_tf_reversal_2026-06-08.md) |
+| **MTF仮説 検証プロンプト** | [higher_tf_pullback_lower_tf_reversal_validation_prompt.md](higher_tf_pullback_lower_tf_reversal_validation_prompt.md) |
 | リアルタイム心理記録テンプレート | [realtime_trade_psychology_log_template.csv](realtime_trade_psychology_log_template.csv) |
 | 受講生エントリー集中パターン研究 | [student_entry_cluster_research_2026-05-31.md](student_entry_cluster_research_2026-05-31.md) |
 | 受講生つまずきクラスタ研究 | [student_stumble_clusters_research_2026-05-31.md](student_stumble_clusters_research_2026-05-31.md) |

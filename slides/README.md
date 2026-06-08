@@ -6,8 +6,14 @@
 
 | ファイル | 内容 | 枚数 |
 |----------|------|------|
-| `kate-nai-riyuu-simple.md` | **勝てない理由は驚くほど単純**（序章要点） | 約15枚 |
-| `oku-gachi-fx.md` | 全章サマリー版（別ブランチ `cursor/book-to-slides-27ba`） | 77枚 |
+| `kate-nai-riyuu-simple.md` | **勝てない理由は驚くほど単純**（序章要点・単独テーマ） | 15枚 |
+| `oku-gachi-fx.md` | **全章サマリー版**（はじめに〜34の鉄則） | 77枚 |
+
+## プレビュー
+
+| 序章スライド | 全章サマリー |
+|-------------|-------------|
+| ![kate](preview-kate-nai-title.png) | ![full](preview-title.png) |
 
 ## ビルド方法
 
@@ -15,15 +21,14 @@
 cd slides
 npm install
 
-# HTML
-npx marp kate-nai-riyuu-simple.md --no-stdin -o kate-nai-riyuu-simple.html
-
-# PDF
+# 序章スライド（勝てない理由は驚くほど単純）
 npx marp kate-nai-riyuu-simple.md --no-stdin --pdf --allow-local-files -o kate-nai-riyuu-simple.pdf
 
-# PowerPoint
-npx marp kate-nai-riyuu-simple.md --no-stdin --pptx --allow-local-files -o kate-nai-riyuu-simple.pptx
+# 全章サマリー
+npx marp oku-gachi-fx.md --no-stdin --pdf --allow-local-files -o oku-gachi-fx.pdf
 ```
+
+HTML / PPTX も同様に `--pdf` を `-o xxx.html` または `--pptx` に変えて生成できます。
 
 ## 原著 PDF
 

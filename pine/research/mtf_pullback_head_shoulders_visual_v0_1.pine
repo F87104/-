@@ -1,11 +1,16 @@
 //@version=5
-indicator("MTF Pullback Head & Shoulders Visual v0.7 [Research]",
+indicator("MTF Pullback Head & Shoulders Visual v0.7 [RETIRED]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
      max_labels_count=500,
      max_boxes_count=50)
 
+// RETIRED research prototype.
+// 2026-06-08 終了判断:
+// - TradingView上で人間が直感的に使える見え方にならなかったため、本線から外す
+// - このPineは削除せず、同じ方向を深追いしないための記録として残す
+//
 // Research only.
 // 目的:
 // - 上位足では「戻し」に見える場所を背景で表示する

@@ -1,5 +1,5 @@
 //@version=5
-strategy("LH3 Synapse B Symbol Presets Strategy v0.7 [Research]",
+strategy("LH3 Synapse B Symbol Presets Strategy v0.8 [Research]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
@@ -139,11 +139,15 @@ bool timeframeOk = timeframe.in_seconds(timeframe.period) == f_seconds_for_tf(re
 grpLot = "Lot risk"
 showLotRisk = input.bool(false, "ロット損失ラベルを表示", group=grpLot)
 currentLots = input.float(50.0, "現在ロット", minval=0.0, step=0.01, group=grpLot)
-jpyPerPriceAtCurrentLots = input.float(5000.0, "価格1.00あたり損益円（現在ロット）", minval=0.0, step=100.0, group=grpLot)
+lotValueMode = input.string("Auto", "円換算モード", options=["Auto", "Manual"], group=grpLot)
+manualJpyPerPriceAtCurrentLots = input.float(5000.0, "価格1.00あたり損益円（Manual）", minval=0.0, step=100.0, group=grpLot)
 maxRiskJpy = input.float(200000.0, "1回の固定損失 円", minval=0.0, step=10000.0, group=grpLot)
 useLotCapForEntry = input.bool(false, "許容損失超過ならENTRY非表示", group=grpLot)
 riskLabelRightBars = input.int(10, "損失ラベル右ずらし本数", minval=0, maxval=80, group=grpLot)
 riskLabelBelowAtr = input.float(1.80, "損失ラベル下ずらし ATR", minval=0.20, step=0.10, group=grpLot)
+bool isJpyPair = str.contains(ticker, "JPY")
+float autoJpyPerPricePerLot = isJpyPair ? 10000.0 : 100.0
+float jpyPerPriceAtCurrentLots = lotValueMode == "Auto" ? currentLots * autoJpyPerPricePerLot : manualJpyPerPriceAtCurrentLots
 
 grpView = "Visual"
 cleanView = input.bool(true, "見やすい表示モード（最新中心）", group=grpView)
@@ -501,7 +505,7 @@ if barstate.islast
     label.delete(statusInfoLabel)
     if showStatusLabel
         float statusY = high + nz(atr, 0.0) * statusLabelAtr
-        string statusText = "LH3 STATUS v0.7"
+        string statusText = "LH3 STATUS v0.8"
         statusText := statusText + "\n" + activePreset + " / TF " + recommendedTf + (timeframeOk ? " OK" : " 確認")
         statusText := statusText + "\nmode: " + precisionMode
         statusText := statusText + "\nstate: " + stateText
@@ -518,9 +522,9 @@ if barstate.islast and showPresetLabel
     string presetText = activePreset + "\nTF " + recommendedTf + (timeframeOk ? " OK" : " 確認") + "\nRR " + str.tostring(rr, "#.##") + " / hold " + str.tostring(maxHoldBars)
     presetInfoLabel := label.new(bar_index, high + atr * 1.75, presetText, xloc=xloc.bar_index, style=label.style_label_down, color=timeframeOk ? color.new(color.black, 0) : color.new(color.orange, 0), textcolor=color.white, size=size.small)
 
-var table t = table.new(f_table_pos(tablePosInput), 2, 23, bgcolor=color.new(color.black, 8), frame_color=color.new(color.white, 40), frame_width=1, border_color=color.new(color.gray, 40), border_width=1)
+var table t = table.new(f_table_pos(tablePosInput), 2, 24, bgcolor=color.new(color.black, 8), frame_color=color.new(color.white, 40), frame_width=1, border_color=color.new(color.gray, 40), border_width=1)
 if barstate.islast and showTable
-    table.cell(t, 0, 0, "LH3 B Combo v0.7", text_color=color.white, text_size=size.small)
+    table.cell(t, 0, 0, "LH3 B Combo v0.8", text_color=color.white, text_size=size.small)
     table.cell(t, 1, 0, timeframe.period, text_color=timeframeOk ? color.lime : color.orange, text_size=size.tiny)
     table.cell(t, 0, 1, "preset / TF", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 1, activePreset + " / " + recommendedTf + (timeframeOk ? " OK" : " 確認"), text_color=timeframeOk ? color.lime : color.orange, text_size=size.tiny)
@@ -556,16 +560,18 @@ if barstate.islast and showTable
     table.cell(t, 1, 16, str.tostring(rr, "#.##") + " / " + str.tostring(maxHoldBars), text_color=color.white, text_size=size.tiny)
     table.cell(t, 0, 17, "現在lot", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 17, str.tostring(currentLots, "#.##"), text_color=lastLotOk ? color.lime : color.red, text_size=size.tiny)
-    table.cell(t, 0, 18, "固定損失", text_color=color.yellow, text_size=size.tiny)
-    table.cell(t, 1, 18, f_jpy(maxRiskJpy), text_color=color.yellow, text_size=size.tiny)
-    table.cell(t, 0, 19, "SL幅", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 19, f_num(lastRiskWidth), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 20, "今のlot損失", text_color=lastLotOk ? color.silver : color.red, text_size=size.tiny)
-    table.cell(t, 1, 20, f_jpy(lastRiskJpyCurrent), text_color=lastLotOk ? color.lime : color.red, text_size=size.tiny)
-    table.cell(t, 0, 21, "推奨lot", text_color=color.lime, text_size=size.tiny)
-    table.cell(t, 1, 21, f_num(lastSuggestedLots), text_color=color.lime, text_size=size.tiny)
-    table.cell(t, 0, 22, "orders", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 22, enableStrategyOrders ? "ON" : "OFF visual", text_color=enableStrategyOrders ? color.yellow : color.lime, text_size=size.tiny)
+    table.cell(t, 0, 18, "1.00損益", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 18, f_jpy(jpyPerPriceAtCurrentLots) + " / " + lotValueMode, text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 19, "固定損失", text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 1, 19, f_jpy(maxRiskJpy), text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 20, "SL幅", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 20, f_num(lastRiskWidth), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 21, "今のlot損失", text_color=lastLotOk ? color.silver : color.red, text_size=size.tiny)
+    table.cell(t, 1, 21, f_jpy(lastRiskJpyCurrent), text_color=lastLotOk ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 22, "推奨lot", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 1, 22, f_num(lastSuggestedLots), text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 23, "orders", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 23, enableStrategyOrders ? "ON" : "OFF visual", text_color=enableStrategyOrders ? color.yellow : color.lime, text_size=size.tiny)
 
 alertcondition(lineBreakNow, title="LH3 WAIT LINE reclaim", message="LH3 red line reclaimed. Wait for B confirmation on {{ticker}} {{interval}}")
 alertcondition(checkNow, title="LH3 CHECK B break", message="LH3 CHECK: LINE+B break on {{ticker}} {{interval}}")

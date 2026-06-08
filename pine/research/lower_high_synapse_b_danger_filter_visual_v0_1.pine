@@ -1,5 +1,5 @@
 //@version=5
-indicator("LH3 Synapse B Danger Filter Visual v0.3 [Research]",
+indicator("LH3 Synapse B Danger Filter Visual v0.4 [Research]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
@@ -11,6 +11,7 @@ indicator("LH3 Synapse B Danger Filter Visual v0.3 [Research]",
 // - CHECKのうち、A水平線まで0.5R以上の余白があるものだけを ENTRY候補 として強調する
 // - D1 EMA20上は STRONG、B抜け足の終値位置60%以上は QUALITY として補助表示する
 // - ゴールドのSL幅に対して、実測の円損益感度から現在ロットの想定損失と推奨ロットを表示する
+// - 1回の損失を20万円に固定して、SL幅から推奨ロットを逆算する
 //
 // 検証メモ:
 // - XAUUSD H4 B抜け即 RR2/48: 71件, 勝率63.38%, PF2.58, +28.93R, 最大DD5.55R
@@ -58,7 +59,7 @@ grpLot = "Lot risk"
 showLotRisk = input.bool(true, "ロット損失を表示", group=grpLot)
 currentLots = input.float(50.0, "現在ロット", minval=0.0, step=0.01, group=grpLot)
 jpyPerPriceAtCurrentLots = input.float(5000.0, "価格1.00あたり損益円（現在ロット）", minval=0.0, step=100.0, group=grpLot)
-maxRiskJpy = input.float(50000.0, "1回の許容損失 円", minval=0.0, step=5000.0, group=grpLot)
+maxRiskJpy = input.float(200000.0, "1回の固定損失 円", minval=0.0, step=10000.0, group=grpLot)
 useLotCapForEntry = input.bool(false, "許容損失超過ならENTRY非表示", group=grpLot)
 
 grpView = "Visual"
@@ -306,7 +307,7 @@ if checkNow
         keep_label(label.new(bar_index, high + atr * 0.55, "CHECK\nB抜け", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.aqua, 0), textcolor=color.black, size=size.small))
 
     if showLotRisk
-        string riskText = "LOT RISK\nSL幅 " + f_num(risk) + "\n" + str.tostring(currentLots, "#.##") + "lot " + f_jpy(riskJpyCurrent) + "\n推奨 " + f_num(suggestedLots) + "lot"
+        string riskText = "LOT RISK\n固定 " + f_jpy(maxRiskJpy) + "\nSL幅 " + f_num(risk) + "\n" + str.tostring(currentLots, "#.##") + "lot " + f_jpy(riskJpyCurrent) + "\n推奨 " + f_num(suggestedLots) + "lot"
         color riskColor = not na(suggestedLots) and currentLots <= suggestedLots ? color.new(color.gray, 5) : color.new(color.red, 0)
         keep_label(label.new(bar_index, low - atr * 1.35, riskText, xloc=xloc.bar_index, style=label.style_label_up, color=riskColor, textcolor=color.white, size=size.small))
 
@@ -359,7 +360,7 @@ entryNeedText = entryDone ? f_num(lastEntry) : activeSeq and lineReclaimed and n
 roomText = na(currentARoomR) ? "-" : currentARoomR >= 900 ? "A cleared" : str.tostring(currentARoomR, "#.##") + "R"
 rejectReason = not activeSeq ? "no LH3" : not lineReclaimed ? "wait LINE" : na(bLevel) ? "wait B pivot" : na(bEntryThreshold) ? "wait ATR" : not bWithinWindow ? "B window over" : close <= bEntryThreshold ? "close below B" : not currentRiskOk ? "risk invalid" : not currentARoomOk ? "A room < " + str.tostring(minARoomR, "#.##") + "R" : not currentD1Ok ? "D1 EMA weak" : not currentQualityOk ? "close location weak" : "ENTRY候補"
 
-var table t = table.new(f_table_pos(tablePosInput), 2, 17, bgcolor=color.new(color.black, 10), border_width=1)
+var table t = table.new(f_table_pos(tablePosInput), 2, 18, bgcolor=color.new(color.black, 10), border_width=1)
 if barstate.islast and showTable
     table.cell(t, 0, 0, "LH3 B Danger", text_color=color.white, text_size=size.small)
     table.cell(t, 1, 0, timeframe.period, text_color=chartIsH4 ? color.lime : color.orange, text_size=size.tiny)
@@ -387,14 +388,16 @@ if barstate.islast and showTable
     table.cell(t, 1, 11, rejectReason, text_color=rejectReason == "ENTRY候補" ? color.lime : color.orange, text_size=size.tiny)
     table.cell(t, 0, 12, "現在lot", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 12, str.tostring(currentLots, "#.##"), text_color=lastLotOk ? color.lime : color.red, text_size=size.tiny)
-    table.cell(t, 0, 13, "SL幅", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 13, f_num(lastRiskWidth), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 14, "1.00幅/1lot", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 14, f_jpy(lastJpyPerPricePerLot), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 15, "今のlot損失", text_color=lastLotOk ? color.silver : color.red, text_size=size.tiny)
-    table.cell(t, 1, 15, f_jpy(lastRiskJpyCurrent), text_color=lastLotOk ? color.lime : color.red, text_size=size.tiny)
-    table.cell(t, 0, 16, "推奨lot", text_color=color.lime, text_size=size.tiny)
-    table.cell(t, 1, 16, f_num(lastSuggestedLots), text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 13, "固定損失", text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 1, 13, f_jpy(maxRiskJpy), text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 14, "SL幅", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 14, f_num(lastRiskWidth), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 15, "1.00幅/1lot", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 15, f_jpy(lastJpyPerPricePerLot), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 16, "今のlot損失", text_color=lastLotOk ? color.silver : color.red, text_size=size.tiny)
+    table.cell(t, 1, 16, f_jpy(lastRiskJpyCurrent), text_color=lastLotOk ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 17, "推奨lot", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 1, 17, f_num(lastSuggestedLots), text_color=color.lime, text_size=size.tiny)
 
 alertcondition(lineBreakNow, title="LH3 WAIT LINE reclaim", message="LH3 red line reclaimed. Wait for B confirmation on {{ticker}} {{interval}}")
 alertcondition(checkNow, title="LH3 CHECK B break", message="LH3 CHECK: LINE+B break on {{ticker}} {{interval}}")

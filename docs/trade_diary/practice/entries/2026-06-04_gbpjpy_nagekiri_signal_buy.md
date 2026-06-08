@@ -92,4 +92,5 @@
 ## メモ
 
 - 心理パターン **Capitulation（投げ切り）** に基づくロング。関連: [market_psychology_pattern_library](../../research/market_psychology_pattern_library_2026-05-30.md)
+- MTF 気づき: [上位足押し目＝下位足転換](../../research/higher_tf_pullback_lower_tf_reversal_2026-06-08.md) — 本件は下位足転換未確認（E01）
 - 決済後は [index.csv](../index.csv) を更新する。

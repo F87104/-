@@ -47,4 +47,5 @@
 
 - 補助戦略 **H4 T5 + MACD + BB** のシグナル点灯を根拠にエントリー。
 - 関連 Pine: [h4_t5_macd_bb_live_ready.pine](../../../pine/production/h4_t5_macd_bb_live_ready.pine)
+- MTF 参考: [上位足押し目＝下位足転換](../../research/higher_tf_pullback_lower_tf_reversal_2026-06-08.md)（USDJPY 事例2）
 - 決済後は [index.csv](../index.csv) の `status` と損益を更新する。

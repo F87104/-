@@ -1,8 +1,8 @@
 # 仮説メモ: 上位足の押し目 ＝ 下位足の転換
 
 作成日: 2026-06-08  
-状態: **気づき・仮説**（バックテスト未実施）  
-きっかけ: GBPJPY チャート（D1 / H4 / H1）を重ねて観察
+更新: 2026-06-08（USDJPY 事例・チャート画像追加）  
+状態: **気づき・仮説**（バックテスト未実施）
 
 ## 研究の問い
 
@@ -10,23 +10,73 @@
 
 ---
 
-## 気づき（2026-06-08）
+## 核心の気づき
 
-GBPJPY を **日足 → 4時間 → 1時間** で見比べたとき:
+> **上位足から下位足へマルチタイムフレーム（MTF）で見ていくと、転換点がはっきり見える。**
 
-| 時間足 | 見え方 |
+| 見方 | 見え方 |
 |---|---|
-| **D1** | 長期上昇トレンド。緑のサポートライン沿い。大きな押し目の **中ほど** |
-| **H4** | 上昇 leg の **押し目（V字）**。214 付近高値 → 208 付近安値 → 再上昇 |
-| **H1** | 押し目の中身が **オレンジの下降 zigzag**（lower high / lower low）→ **緑の転換**（安値更新停止 → 再上昇） |
+| **上位足だけ** | 「押し目っぽい」— **どこで止まるか不明** |
+| **下位足に降りる** | 押し目の中身 = **小型トレンド → 転換** が構造として見える |
+| **さらに下位足（M5等）** | 転換の **首（neckline）ブレイク** まで追える |
 
-> **上位足の「押し目1本」の中に、下位足の「一連の下落＋転換」が丸ごと入っている。**
+**読み方の順序:** 上位足でゾーン特定 → 下位足で転換待ち → 最下位足でエントリー精度
 
-チャート上のメモ（TradingView）:
+---
 
-> 抵抗線付近まで抜けたけれどダマシになってもどってきた。そのあと上昇すれば長…
+## 事例1: GBPJPY（D1 → H4 → H1）
 
-→ **上位足の節目（抵抗・サポート）** と **下位足の転換** が重なると、だましのあとの leg が読みやすい。
+### D1 — 大局的な押し目ゾーン
+
+![GBPJPY 日足 — 長期上昇トレンド上の押し目](images/mtf_pullback_reversal/2026-06-08_gbpjpy_d1_pullback_context.png)
+
+- 長期上昇（156→213 付近）
+- 緑サポートライン沿い
+- 節目 **189.576**（過去抵抗）
+
+### H4 — 押し目1 leg（V字）
+
+![GBPJPY 4時間 — 214→208 押し目](images/mtf_pullback_reversal/2026-06-08_gbpjpy_h4_pullback_context.png)
+
+- 高値 **214** → 安値 **208** → 再上昇
+- 上位足では **押し目1本**
+
+### H1 — 押し目の中身 = 転換
+
+![GBPJPY 1時間 — zigzag 下降 → 転換](images/mtf_pullback_reversal/2026-06-08_gbpjpy_h1_reversal_detail.png)
+
+- オレンジ zigzag = 小型下降（lower high / lower low）
+- 緑 = **転換**（安値更新停止 → 再上昇）
+- TradingView メモ: *抵抗線付近まで抜けたけれどダマシになってもどってきた。そのあと上昇すれば長…*
+
+---
+
+## 事例2: USDJPY（H4 → H1 → M5）
+
+保有中の **USDJPY 買い50**（4HT5）と同方向の構造例。
+
+### H4 — 急落後の押し目・反転 leg
+
+![USDJPY 4時間 — 152 底から 160 へ](images/mtf_pullback_reversal/2026-06-08_usdjpy_h4_pullback_context.png)
+
+- **159.5 → 152** 急落（緑下降ライン）
+- 底値圏で **オレンジ zigzag**（転換）
+- 3月の **押し目**（156 付近）→ 現在 **160.18** 付近まで回復
+
+### H1 — 押し目内部の転換
+
+![USDJPY 1時間 — 底値圏・3月押し目の転換](images/mtf_pullback_reversal/2026-06-08_usdjpy_h1_reversal_detail.png)
+
+- 152 底: オレンジ zigzag で **転換**
+- 3月押し目: 再びオレンジ zigzag → 上昇再開
+
+### M5 — 転換点の精密視
+
+![USDJPY 5分 — V字転換・首ブレイク](images/mtf_pullback_reversal/2026-06-08_usdjpy_m5_reversal_entry.png)
+
+- 緑下降 **157.8 → 156.6**
+- オレンジ **V字転換** + 首 **157.25** ブレイク
+- → **158.8+** への leg（下位足でエントリー候補が見える）
 
 ---
 
@@ -35,67 +85,53 @@ GBPJPY を **日足 → 4時間 → 1時間** で見比べたとき:
 ### 構造
 
 ```
-D1/H4:  上昇トレンド ──╲  押し目（1 leg 下）
-                        ╲
-H1:       下降 zigzag ──╲  ← 下位足では「小型下降トレンド」
-                          ╲
-                           ● 転換（ここが下位足のエントリー候補）
-                            ╱
-H4/D1:                    ╱  押し目終了 → 上位足の leg 再開
+上位足:  トレンド ──╲  押し目（1 leg）
+                    ╲
+下位足:   逆方向 zigzag ──╲  ← 小型トレンド
+                          ● 転換 ← CHECK
+                           ╱
+上位足:                  ╱  leg 再開
+最下位足:               首ブレイクで GO 候補
 ```
 
 ### 心理
 
-| 時間足 | 参加者の認識 |
-|---|---|
-| **上位足** | 「押し目だから買いたい」だが **どこで止まるか不明** → WAIT |
-| **下位足** | 小型下降中は **売り優位** → 転換確認まで入らない |
-| **重なり** | 上位足サポート/トレンドライン **＋** 下位足転換（高値切り上げ等）→ **CHECK** |
+| 時間足 | 参加者 | 行動 |
+|---|---|---|
+| 上位足 | 「押し目だが場所不明」 | **WAIT** |
+| 下位足 | 小型逆方向トレンド中 | 飛び乗り禁止 |
+| 重なり | サポート + 転換 | **CHECK** |
+| M5/M15 | 首ブレイク | **GO 候補**（SL=転換 low 下） |
 
-### 既存研究との関係
+### GBPJPY 6/4 との対比
 
-| 既存 | 関係 |
-|---|---|
-| [STOP / WAIT / CHECK](../trade_diary/reference/signal_review_protocol.md) | 上位足＝WAIT、下位足転換＝CHECK |
-| [sqz strict](market_psychology_squeeze_strict_2026-05-30.md) | 急落後の **棚上抜け** = 下位足転換の一種 |
-| [3段下降仮説](stair_step_decline_hypothesis_2026-06-06.md) | 逆方向（下降中の戻り＝上位足押し目）の **鏡像** |
-| H4 T5 / V1 | 下位足で **確認後** に上位足方向へ |
+| | 6/4 投げ切り買い | MTF ルール |
+|---|---|---|
+| 上位足 | 押し目候補 | ✅ |
+| 下位足転換 | **未確認** | ❌ WAIT 止まり |
+| 結果 | -11.2万（出口OCOは正解） | — |
+
+---
+
+## MTF 読み方チェックリスト
+
+1. **上位足（D1/H4）**: トレンド方向 + 押し目ゾーンをマーク
+2. **中位足（H1）**: 押し目内部の zigzag / 転換を探す
+3. **下位足（M5/M15）**: 転換の首・SL 位置を決める
+4. **エントリー**: 転換確認後のみ（投げ切り単独禁止 E01）
+5. **出口**: SL=下位足転換点、TP=上位足の次の節目
 
 ---
 
 ## 操作定義（検証用ドラフト）
 
-「上位足押し目 × 下位足転換」の **v0.1**:
-
-| # | 上位足（H4 or D1） | 下位足（H1 or M15） |
+| # | 上位足 | 下位足 |
 |---|---|---|
-| 1 | 主要トレンド方向が明確（例: 20MA 上） | — |
-| 2 | **押し目 leg**: 直近 swing high から -X ATR 以上の調整 | 同期間に **逆方向の zigzag**（2段以上の lower high または higher low） |
-| 3 | 価格が **上位足サポート**（トレンドライン / 節目 / 20MA）±Y ATR 以内 | — |
-| 4 | — | **転換**: 下位足で直近 swing を **終値で更新**（上昇トレンドなら higher low 確定後の high ブレイク） |
-| 5 | **トリガー**: 4成立後、上位足方向へエントリー。SL = 下位足転換 low の下 |
-
-パラメータ候補: 上位 H4、下位 H1、X=1.5 ATR、Y=0.5 ATR
-
----
-
-## 使い方（実運用メモ）
-
-| やること | やらないこと |
-|---|---|
-| 上位足で **押し目ゾーン** を先にマーク | 上位足だけ見て押し目買い |
-| 下位足で **転換が出るまで WAIT** | 下位足下降中に飛び乗り |
-| 転換＋上位足サポート重なりで **CHECK** | 転換なしで投げ切り単独（E01） |
-| SL/TP を **下位足の転換点** 基準で置く | 頭の中 SL |
-
-### GBPJPY との教訓
-
-6/4 の **投げ切り買い（-11.2万）** は:
-
-- 上位足: 押し目 **候補** ではあった可能性
-- 下位足: **転換未確認**（E01）でエントリー → ルール違反
-
-→ この気づきがあれば **WAIT** 止まりだった可能性。
+| 1 | トレンド明確（20MA 等） | — |
+| 2 | 押し目 leg ≥ X ATR | 同期間に逆方向 zigzag |
+| 3 | サポート/トレンドライン ±Y ATR | — |
+| 4 | — | 転換（higher low + high ブレイク） |
+| 5 | — | M5/M15 で首ブレイク（任意・精度向上） |
 
 ---
 
@@ -103,36 +139,37 @@ H4/D1:                    ╱  押し目終了 → 上位足の leg 再開
 
 | 段階 | 内容 | 状態 |
 |---|---|---|
-| 1 | GBPJPY / USDJPY / XAUUSD で **10事例** 手動ピック（D1/H4/H1 スクショセット） | **今回の3枚が第1号** |
-| 2 | 転換あり vs なしで、押し目買いの MAE/MFE 比較 | 未着手 |
-| 3 | Pine: 上位足トレンド + 下位足 swing 転換ラベル | 未着手 |
-| 4 | signal_review_protocol に **MTF CHECK** 項目追加 | 未着手 |
+| 1 | 事例スクショセット | **GBPJPY 3枚 + USDJPY 3枚** ✅ |
+| 2 | 転換あり vs なし MAE/MFE | 未着手 |
+| 3 | Pine MTF ラベル | 未着手 |
+| 4 | signal_review MTF 項目 | ✅ 追記済み |
 
 ---
 
-## 参照チャート（観察記録）
+## チャート画像一覧
 
-| 時間足 | 銘柄 | 観察内容 |
+| ファイル | 銘柄 | TF |
 |---|---|---|
-| D1 | GBPJPY | 長期上昇。緑サポートライン。189.576 節目（過去抵抗） |
-| H4 | GBPJPY | 214→208 押し目 V字。上昇 leg 再開 |
-| H1 | GBPJPY | 押し目内部の zigzag 下降 → 緑転換。2026-04-01 20:00 付近に縦線 |
-
-※ 画像は TradingView ローカル。GitHub には公開しない（RESEARCH_INDEX 運用ルール）。
+| [2026-06-08_gbpjpy_d1_pullback_context.png](images/mtf_pullback_reversal/2026-06-08_gbpjpy_d1_pullback_context.png) | GBPJPY | D1 |
+| [2026-06-08_gbpjpy_h4_pullback_context.png](images/mtf_pullback_reversal/2026-06-08_gbpjpy_h4_pullback_context.png) | GBPJPY | H4 |
+| [2026-06-08_gbpjpy_h1_reversal_detail.png](images/mtf_pullback_reversal/2026-06-08_gbpjpy_h1_reversal_detail.png) | GBPJPY | H1 |
+| [2026-06-08_usdjpy_h4_pullback_context.png](images/mtf_pullback_reversal/2026-06-08_usdjpy_h4_pullback_context.png) | USDJPY | H4 |
+| [2026-06-08_usdjpy_h1_reversal_detail.png](images/mtf_pullback_reversal/2026-06-08_usdjpy_h1_reversal_detail.png) | USDJPY | H1 |
+| [2026-06-08_usdjpy_m5_reversal_entry.png](images/mtf_pullback_reversal/2026-06-08_usdjpy_m5_reversal_entry.png) | USDJPY | M5 |
 
 ---
 
-## 関連ファイル
+## 関連
 
 | 種類 | パス |
 |---|---|
 | シグナル判断 | [signal_review_protocol.md](../trade_diary/reference/signal_review_protocol.md) |
-| 3段下降（逆方向の参考） | [stair_step_decline_hypothesis_2026-06-06.md](stair_step_decline_hypothesis_2026-06-06.md) |
-| 早切り E01 | [early_stop_loss_patterns_2026-06-06.md](early_stop_loss_patterns_2026-06-06.md) |
-| GBPJPY 損切り日誌 | [2026-06-04_gbpjpy_nagekiri_signal_buy.md](../trade_diary/practice/entries/2026-06-04_gbpjpy_nagekiri_signal_buy.md) |
+| 3段下降（逆方向） | [stair_step_decline_hypothesis_2026-06-06.md](stair_step_decline_hypothesis_2026-06-06.md) |
+| GBPJPY 日誌 | [2026-06-04_gbpjpy_nagekiri_signal_buy.md](../trade_diary/practice/entries/2026-06-04_gbpjpy_nagekiri_signal_buy.md) |
+| USDJPY 日誌 | [2026-06-01_usdjpy_h4t5_signal_buy.md](../trade_diary/practice/entries/2026-06-01_usdjpy_h4t5_signal_buy.md) |
 
 ## 次にやること
 
-1. 同型事例を **USDJPY H4/H1** で1件探す
-2. `signal_review_protocol.md` に **MTF: 上位足押し目 → 下位足転換待ち** を追記
-3. 10件そろったら Trigger study
+1. XAUUSD で同型 MTF セット1組
+2. 転換あり/なし各10件で MAE/MFE 比較
+3. Pine MTF 転換ラベル（研究用）

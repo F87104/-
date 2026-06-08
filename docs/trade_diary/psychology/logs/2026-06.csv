@@ -1,2 +1,3 @@
 date_time,pair,timeframe,label,emotion,action,result,note
 2026-06-06 18:00,XAUUSD,H1,WAIT,戻りで不安,入らない/手出さない,OCO維持,「上がってきた」は主観。V1 OCO一本を維持。ルール通りで結果が出る
+2026-06-08 12:00,XAUUSD,H1,CHECK,安心,手出さない,OCO維持正解,戻り後再下落。主観で早期利確しなくて正解。ルール通り

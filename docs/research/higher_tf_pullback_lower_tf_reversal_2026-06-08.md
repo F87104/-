@@ -171,5 +171,6 @@
 ## 次にやること
 
 1. XAUUSD で同型 MTF セット1組
-2. 転換あり/なし各10件で MAE/MFE 比較
-3. Pine MTF 転換ラベル（研究用）
+2. **[検証プロンプト](higher_tf_pullback_lower_tf_reversal_validation_prompt.md) を使って GO/NO-GO 各15件を CSV 化**
+3. 転換あり/なしで MAE/MFE 比較 → レポート
+4. Pine MTF 転換ラベル（研究用）

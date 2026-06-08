@@ -1,5 +1,5 @@
 //@version=5
-indicator("MTF Pullback Head & Shoulders Visual v0.3 [Research]",
+indicator("MTF Pullback Head & Shoulders Visual v0.4 [Research]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
@@ -12,6 +12,7 @@ indicator("MTF Pullback Head & Shoulders Visual v0.3 [Research]",
 // - ネックライン割れ/抜けを、エントリーではなく「検証候補」として表示する
 // - v0.2: 形成途中のLSだけが見えて誤解しやすいため、初期状態では完成形だけを描く
 // - v0.3: まず見つけることを優先し、上位足フィルタは候補の絞り込み用に変更
+// - v0.4: 初期表示を「上位足の戻し部分だけ」に変更。H&S関連は必要な時だけON。
 //
 // 読み方:
 // - SHORT候補: 上位足が下降トレンド、戻し中、下位足でH&S、ネックライン割れ
@@ -44,12 +45,12 @@ cooldownBars = input.int(24, "候補表示の間隔", minval=1, maxval=500, grou
 
 grpVisual = "Visual"
 showHtfEma = input.bool(true, "上位足EMAを表示", group=grpVisual)
-showPullbackBg = input.bool(false, "戻し背景を表示", group=grpVisual)
-showStructure = input.bool(true, "LS/H/RSを表示", group=grpVisual)
+showPullbackBg = input.bool(true, "戻し背景を表示", group=grpVisual)
+showStructure = input.bool(false, "LS/H/RSを表示", group=grpVisual)
 showFormingStructure = input.bool(false, "形成途中のLS/Hを表示", group=grpVisual)
-showNeckline = input.bool(true, "ネックラインを表示", group=grpVisual)
-showSetupLabel = input.bool(true, "H&S形成ラベルを表示", group=grpVisual)
-showCandidate = input.bool(true, "候補ラベルを表示", group=grpVisual)
+showNeckline = input.bool(false, "ネックラインを表示", group=grpVisual)
+showSetupLabel = input.bool(false, "H&S形成ラベルを表示", group=grpVisual)
+showCandidate = input.bool(false, "候補ラベルを表示", group=grpVisual)
 showTable = input.bool(true, "状態テーブル", group=grpVisual)
 extendBars = input.int(80, "ネックライン延長本数", minval=10, maxval=300, group=grpVisual)
 keepObjects = input.int(220, "残すラベル/ライン数", minval=50, maxval=450, group=grpVisual)
@@ -336,7 +337,7 @@ bullState = bullReady ? "wait NL break" : not na(iHead) ? "wait RS" : not na(iLS
 
 var table t = table.new(f_table_pos(tablePosInput), 2, 10, bgcolor=color.new(color.black, 10), border_width=1)
 if barstate.islast and showTable
-    table.cell(t, 0, 0, "MTF H&S", text_color=color.white, text_size=size.small)
+    table.cell(t, 0, 0, "HTF Pullback", text_color=color.white, text_size=size.small)
     table.cell(t, 1, 0, timeframe.period + " / " + htf, text_color=color.white, text_size=size.tiny)
     table.cell(t, 0, 1, "HTF state", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 1, stateText, text_color=shortPullback ? color.red : longPullback ? color.lime : color.silver, text_size=size.tiny)
@@ -354,8 +355,8 @@ if barstate.islast and showTable
     table.cell(t, 1, 7, str.tostring(bearSetupCount) + " / " + str.tostring(bullSetupCount), text_color=color.white, text_size=size.tiny)
     table.cell(t, 0, 8, "candidates S/L", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 8, str.tostring(bearCandidateCount) + " / " + str.tostring(bullCandidateCount), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 9, "rule", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 9, requireHtfContext ? "context only" : "all chart", text_color=requireHtfContext ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 9, "default view", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 9, "pullback only", text_color=color.lime, text_size=size.tiny)
 
 alertcondition(bearBreak and bearCooldownOk, title="MTF H&S SHORT candidate", message="MTF pullback H&S neckline break on {{ticker}} {{interval}}")
 alertcondition(bullBreak and bullCooldownOk, title="MTF inverse H&S LONG candidate", message="MTF pullback inverse H&S neckline break on {{ticker}} {{interval}}")

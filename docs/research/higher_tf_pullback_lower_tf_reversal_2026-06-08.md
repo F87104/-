@@ -4,6 +4,9 @@
 更新: 2026-06-08（USDJPY 事例・チャート画像追加）  
 状態: **気づき・仮説**（バックテスト未実施）
 
+> **画像について:** 2026-06-08 に AI 生成の再現画像を誤って保存していたため削除済み。  
+> **TradingView 実スクショ6枚** を [images/mtf_pullback_reversal/](images/mtf_pullback_reversal/README.md) に配置待ち。
+
 ## 研究の問い
 
 **上位足で「押し目」と見える区間が、下位足では明確な「転換（トレンド反転）」として読める場所は、エントリー精度が高いか？**
@@ -28,7 +31,9 @@
 
 ### D1 — 大局的な押し目ゾーン
 
-![GBPJPY 日足 — 長期上昇トレンド上の押し目](images/mtf_pullback_reversal/2026-06-08_gbpjpy_d1_pullback_context.png)
+<!-- 実スクショ: images/mtf_pullback_reversal/2026-06-08_gbpjpy_d1_pullback_context.png -->
+
+![GBPJPY 日足 — 長期上昇トレンド上の押し目（実スクショ待ち）](images/mtf_pullback_reversal/2026-06-08_gbpjpy_d1_pullback_context.png)
 
 - 長期上昇（156→213 付近）
 - 緑サポートライン沿い
@@ -139,7 +144,7 @@
 
 | 段階 | 内容 | 状態 |
 |---|---|---|
-| 1 | 事例スクショセット | **GBPJPY 3枚 + USDJPY 3枚** ✅ |
+| 1 | 事例スクショセット | **GBPJPY 3枚 + USDJPY 3枚** — ⏳ **実スクショ待ち**（AI生成物は `_archive/generated_placeholder/` へ退避） |
 | 2 | 転換あり vs なし MAE/MFE | 未着手 |
 | 3 | Pine MTF ラベル | 未着手 |
 | 4 | signal_review MTF 項目 | ✅ 追記済み |

@@ -28,7 +28,7 @@
 
 # 参照ドキュメント（リポジトリ内）
 - 仮説メモ: docs/research/higher_tf_pullback_lower_tf_reversal_2026-06-08.md
-- 参考画像: docs/research/images/mtf_pullback_reversal/
+- 参考画像: docs/research/images/mtf_pullback_reversal/（**TradingView 実スクショのみ**。AI 再生成禁止）
 - 反例: docs/trade_diary/practice/entries/2026-06-04_gbpjpy_nagekiri_signal_buy.md（転換未確認で E01 エントリー → -11.2万）
 - シグナル判断: docs/trade_diary/reference/signal_review_protocol.md
 - 市場心理4段階: docs/research/市場心理図鑑/README.md（Event scanner → Trigger study → Strategy）

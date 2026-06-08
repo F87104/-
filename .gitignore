@@ -13,6 +13,8 @@ backtests/sai_h1/test_*/
 
 # 著作物 (リポジトリには含めない)
 *.pdf
+!億勝ちFX*.pdf
+!slides/*.pdf
 
 # Python venv 等
 .venv/

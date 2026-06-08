@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-label="大多数と一握りの勝者">
+  <rect width="1200" height="680" fill="#141824" rx="24"/>
+  <text x="600" y="60" fill="#ffd166" font-size="38" font-family="sans-serif" font-weight="700" text-anchor="middle">勝てない理由は驚くほど単純</text>
+  <text x="600" y="105" fill="#8ecae6" font-size="24" font-family="sans-serif" text-anchor="middle">負け続ける人は、同じことを繰り返している</text>
+  <rect x="80" y="160" width="480" height="420" rx="20" fill="#2a1f1f" stroke="#ef476f" stroke-width="4"/>
+  <text x="320" y="210" fill="#ef476f" font-size="32" font-family="sans-serif" font-weight="700" text-anchor="middle">大多数（95%）</text>
+  <text x="320" y="270" fill="#e6e6e6" font-size="22" font-family="sans-serif" text-anchor="middle">逆張り・根拠なし・損切り遅れ</text>
+  <text x="320" y="310" fill="#e6e6e6" font-size="22" font-family="sans-serif" text-anchor="middle">「自分だけは違う」と思い込む</text>
+  <text x="320" y="350" fill="#e6e6e6" font-size="22" font-family="sans-serif" text-anchor="middle">負け方を変えず手法だけ変える</text>
+  <text x="320" y="390" fill="#e6e6e6" font-size="22" font-family="sans-serif" text-anchor="middle">検証せず感覚でエントリー</text>
+  <circle cx="180" cy="480" r="28" fill="#ef476f" opacity="0.7"/>
+  <circle cx="240" cy="480" r="28" fill="#ef476f" opacity="0.7"/>
+  <circle cx="300" cy="480" r="28" fill="#ef476f" opacity="0.7"/>
+  <circle cx="360" cy="480" r="28" fill="#ef476f" opacity="0.7"/>
+  <circle cx="420" cy="480" r="28" fill="#ef476f" opacity="0.7"/>
+  <circle cx="210" cy="530" r="28" fill="#ef476f" opacity="0.7"/>
+  <circle cx="270" cy="530" r="28" fill="#ef476f" opacity="0.7"/>
+  <circle cx="330" cy="530" r="28" fill="#ef476f" opacity="0.7"/>
+  <circle cx="390" cy="530" r="28" fill="#ef476f" opacity="0.7"/>
+  <line x1="600" y1="180" x2="600" y2="560" stroke="#4a5568" stroke-width="3" stroke-dasharray="8,8"/>
+  <text x="600" y="380" fill="#ffd166" font-size="48" font-family="sans-serif" font-weight="700" text-anchor="middle">VS</text>
+  <rect x="640" y="160" width="480" height="420" rx="20" fill="#1f2a24" stroke="#06d6a0" stroke-width="4"/>
+  <text x="880" y="210" fill="#06d6a0" font-size="32" font-family="sans-serif" font-weight="700" text-anchor="middle">一握り（5%）</text>
+  <text x="880" y="270" fill="#e6e6e6" font-size="22" font-family="sans-serif" text-anchor="middle">順張り・根拠の積み上げ</text>
+  <text x="880" y="310" fill="#e6e6e6" font-size="22" font-family="sans-serif" text-anchor="middle">負けの型を先に潰す</text>
+  <text x="880" y="350" fill="#e6e6e6" font-size="22" font-family="sans-serif" text-anchor="middle">検証・日誌・ルール化</text>
+  <text x="880" y="390" fill="#e6e6e6" font-size="22" font-family="sans-serif" text-anchor="middle">大多数と逆を行く</text>
+  <circle cx="880" cy="490" r="40" fill="#06d6a0"/>
+  <text x="880" y="500" fill="#141824" font-size="28" font-family="sans-serif" font-weight="700" text-anchor="middle">★</text>
+  <text x="600" y="640" fill="#ffd166" font-size="26" font-family="sans-serif" font-weight="700" text-anchor="middle">勝てないなら → 大多数と同じ行動をやめる</text>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-label="負けを削って勝ちが残る">
+  <rect width="1200" height="680" fill="#141824" rx="24"/>
+  <text x="600" y="60" fill="#ffd166" font-size="38" font-family="sans-serif" font-weight="700" text-anchor="middle">勝ちは、負けを削ったあとに残る</text>
+  <text x="600" y="105" fill="#8ecae6" font-size="24" font-family="sans-serif" text-anchor="middle">勝ち方を探す前に「負けの型」を消す</text>
+  <text x="200" y="180" fill="#ef476f" font-size="24" font-family="sans-serif" font-weight="700" text-anchor="middle">Before</text>
+  <rect x="80" y="200" width="1040" height="80" rx="12" fill="#2a1f1f" stroke="#ef476f" stroke-width="3"/>
+  <rect x="80" y="200" width="650" height="80" rx="12" fill="#ef476f" opacity="0.8"/>
+  <rect x="730" y="200" width="390" height="80" rx="12" fill="#06d6a0" opacity="0.8"/>
+  <text x="405" y="250" fill="#ffffff" font-size="22" font-family="sans-serif" font-weight="700" text-anchor="middle">負けの型（62%）</text>
+  <text x="925" y="250" fill="#ffffff" font-size="22" font-family="sans-serif" font-weight="700" text-anchor="middle">勝ち（38%）</text>
+  <path d="M600 310 L600 370" stroke="#ffd166" stroke-width="5"/>
+  <polygon points="600,370 585,350 615,350" fill="#ffd166"/>
+  <text x="600" y="400" fill="#ffd166" font-size="26" font-family="sans-serif" font-weight="700" text-anchor="middle">負けの型を潰す</text>
+  <text x="200" y="450" fill="#06d6a0" font-size="24" font-family="sans-serif" font-weight="700" text-anchor="middle">After</text>
+  <rect x="80" y="470" width="1040" height="80" rx="12" fill="#1f2a24" stroke="#06d6a0" stroke-width="3"/>
+  <rect x="80" y="470" width="200" height="80" rx="12" fill="#ef476f" opacity="0.4"/>
+  <rect x="280" y="470" width="840" height="80" rx="12" fill="#06d6a0" opacity="0.9"/>
+  <text x="180" y="520" fill="#e6e6e6" font-size="20" font-family="sans-serif" text-anchor="middle">残り</text>
+  <text x="700" y="520" fill="#ffffff" font-size="22" font-family="sans-serif" font-weight="700" text-anchor="middle">勝ちが残る（81%）</text>
+  <text x="600" y="620" fill="#8ecae6" font-size="24" font-family="sans-serif" text-anchor="middle">大勝ちより「大負けをしない」が先</text>
+</svg>

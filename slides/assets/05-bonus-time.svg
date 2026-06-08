@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-label="ボーナスタイム理論">
+  <rect width="1200" height="680" fill="#141824" rx="24"/>
+  <text x="600" y="60" fill="#ffd166" font-size="38" font-family="sans-serif" font-weight="700" text-anchor="middle">ボーナスタイム理論</text>
+  <text x="600" y="105" fill="#8ecae6" font-size="24" font-family="sans-serif" text-anchor="middle">エントリー後、約2週間が利益伸びやすい期間</text>
+  <line x1="120" y1="320" x2="1080" y2="320" stroke="#4a5568" stroke-width="4"/>
+  <circle cx="180" cy="320" r="20" fill="#ef476f"/>
+  <text x="180" y="280" fill="#ef476f" font-size="22" font-family="sans-serif" font-weight="700" text-anchor="middle">エントリー</text>
+  <text x="180" y="370" fill="#e6e6e6" font-size="18" font-family="sans-serif" text-anchor="middle">Day 0</text>
+  <rect x="220" y="240" width="480" height="160" rx="16" fill="#2a2418" stroke="#ffd166" stroke-width="4"/>
+  <text x="460" y="300" fill="#ffd166" font-size="32" font-family="sans-serif" font-weight="700" text-anchor="middle">ボーナスタイム</text>
+  <text x="460" y="340" fill="#e6e6e6" font-size="22" font-family="sans-serif" text-anchor="middle">約2週間（10営業日）</text>
+  <text x="460" y="375" fill="#06d6a0" font-size="20" font-family="sans-serif" text-anchor="middle">利益を伸ばしやすい</text>
+  <rect x="720" y="260" width="340" height="120" rx="16" fill="#1b2230" stroke="#4a5568" stroke-width="2"/>
+  <text x="890" y="310" fill="#8ecae6" font-size="24" font-family="sans-serif" font-weight="700" text-anchor="middle">一山越え</text>
+  <text x="890" y="350" fill="#e6e6e6" font-size="18" font-family="sans-serif" text-anchor="middle">利確・建値移動を検討</text>
+  <path d="M180 480 Q400 420 460 400 Q520 380 700 360 Q880 340 1000 380" stroke="#06d6a0" stroke-width="4" fill="none"/>
+  <text x="600" y="520" fill="#06d6a0" font-size="20" font-family="sans-serif" text-anchor="middle">利益カーブ（イメージ）</text>
+  <text x="600" y="620" fill="#ffd166" font-size="24" font-family="sans-serif" font-weight="700" text-anchor="middle">「もっと伸びるかも」より「確実に取る」</text>
+</svg>

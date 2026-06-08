@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-label="勝つべくして勝つ仕組み">
+  <rect width="1200" height="680" fill="#141824" rx="24"/>
+  <text x="600" y="60" fill="#ffd166" font-size="38" font-family="sans-serif" font-weight="700" text-anchor="middle">勝てるトレードは "仕組み" が9割</text>
+  <rect x="120" y="120" width="220" height="120" rx="16" fill="#243447" stroke="#8ecae6" stroke-width="3"/>
+  <text x="230" y="170" fill="#8ecae6" font-size="24" font-family="sans-serif" font-weight="700" text-anchor="middle">1. 検証</text>
+  <text x="230" y="205" fill="#e6e6e6" font-size="18" font-family="sans-serif" text-anchor="middle">過去データ</text>
+  <rect x="380" y="120" width="220" height="120" rx="16" fill="#243447" stroke="#8ecae6" stroke-width="3"/>
+  <text x="490" y="170" fill="#8ecae6" font-size="24" font-family="sans-serif" font-weight="700" text-anchor="middle">2. ルール化</text>
+  <text x="490" y="205" fill="#e6e6e6" font-size="18" font-family="sans-serif" text-anchor="middle">型の固定</text>
+  <rect x="640" y="120" width="220" height="120" rx="16" fill="#243447" stroke="#8ecae6" stroke-width="3"/>
+  <text x="750" y="170" fill="#8ecae6" font-size="24" font-family="sans-serif" font-weight="700" text-anchor="middle">3. 日誌</text>
+  <text x="750" y="205" fill="#e6e6e6" font-size="18" font-family="sans-serif" text-anchor="middle">記録と振返</text>
+  <rect x="900" y="120" width="220" height="120" rx="16" fill="#243447" stroke="#8ecae6" stroke-width="3"/>
+  <text x="1010" y="170" fill="#8ecae6" font-size="24" font-family="sans-serif" font-weight="700" text-anchor="middle">4. 厳選</text>
+  <text x="1010" y="205" fill="#e6e6e6" font-size="18" font-family="sans-serif" text-anchor="middle">5割見送り</text>
+  <path d="M340 180 H380 M600 180 H640 M860 180 H900" stroke="#ffd166" stroke-width="5"/>
+  <polygon points="380,180 365,170 365,190" fill="#ffd166"/>
+  <polygon points="640,180 625,170 625,190" fill="#ffd166"/>
+  <polygon points="900,180 885,170 885,190" fill="#ffd166"/>
+  <rect x="220" y="320" width="760" height="220" rx="20" fill="#2a2418" stroke="#ffd166" stroke-width="4"/>
+  <text x="600" y="380" fill="#ffd166" font-size="34" font-family="sans-serif" font-weight="700" text-anchor="middle">勝つべくして勝つ</text>
+  <text x="600" y="430" fill="#e6e6e6" font-size="24" font-family="sans-serif" text-anchor="middle">運や偶然ではなく、仕組みで再現する</text>
+  <text x="600" y="475" fill="#e6e6e6" font-size="22" font-family="sans-serif" text-anchor="middle">1回の大勝ちより、小さな勝ちの積み重ね</text>
+  <text x="600" y="510" fill="#ef476f" font-size="22" font-family="sans-serif" text-anchor="middle">再現性のない勝ち = 次の大負けの種</text>
+  <text x="600" y="620" fill="#8ecae6" font-size="24" font-family="sans-serif" text-anchor="middle">勝つことより「負け方を潰す」が先</text>
+</svg>

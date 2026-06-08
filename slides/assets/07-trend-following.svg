@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-label="逆張りから順張りへの転換">
+  <rect width="1200" height="680" fill="#141824" rx="24"/>
+  <text x="600" y="60" fill="#ffd166" font-size="38" font-family="sans-serif" font-weight="700" text-anchor="middle">逆張り → 順張りへの転換</text>
+  <text x="600" y="105" fill="#8ecae6" font-size="24" font-family="sans-serif" text-anchor="middle">700万円を失った後、著者が変えた方向性</text>
+  <rect x="60" y="160" width="480" height="400" rx="20" fill="#2a1f1f" stroke="#ef476f" stroke-width="4"/>
+  <text x="300" y="210" fill="#ef476f" font-size="30" font-family="sans-serif" font-weight="700" text-anchor="middle">逆張り（Before）</text>
+  <path d="M120 400 L200 350 L280 400 L360 350 L420 400" stroke="#118ab2" stroke-width="3" fill="none"/>
+  <circle cx="200" cy="350" r="12" fill="#ef476f"/>
+  <circle cx="360" cy="350" r="12" fill="#ef476f"/>
+  <text x="200" y="330" fill="#ef476f" font-size="16" font-family="sans-serif" text-anchor="middle">買い</text>
+  <text x="360" y="330" fill="#ef476f" font-size="16" font-family="sans-serif" text-anchor="middle">買い</text>
+  <text x="300" y="480" fill="#e6e6e6" font-size="20" font-family="sans-serif" text-anchor="middle">「下がりすぎたから買う」</text>
+  <text x="300" y="515" fill="#ef476f" font-size="22" font-family="sans-serif" font-weight="700" text-anchor="middle">→ 下落に飲み込まれる</text>
+  <path d="M560 360 H640" stroke="#ffd166" stroke-width="6"/>
+  <polygon points="640,360 615,345 615,375" fill="#ffd166"/>
+  <text x="600" y="400" fill="#ffd166" font-size="22" font-family="sans-serif" font-weight="700" text-anchor="middle">転換</text>
+  <rect x="660" y="160" width="480" height="400" rx="20" fill="#1f2a24" stroke="#06d6a0" stroke-width="4"/>
+  <text x="900" y="210" fill="#06d6a0" font-size="30" font-family="sans-serif" font-weight="700" text-anchor="middle">順張り（After）</text>
+  <path d="M720 420 L800 370 L880 320 L960 270" stroke="#118ab2" stroke-width="3" fill="none"/>
+  <circle cx="880" cy="320" r="12" fill="#06d6a0"/>
+  <text x="880" y="300" fill="#06d6a0" font-size="16" font-family="sans-serif" text-anchor="middle">買い</text>
+  <text x="900" y="480" fill="#e6e6e6" font-size="20" font-family="sans-serif" text-anchor="middle">「上がり始めたから買う」</text>
+  <text x="900" y="515" fill="#06d6a0" font-size="22" font-family="sans-serif" font-weight="700" text-anchor="middle">→ トレンドに乗る</text>
+  <text x="600" y="620" fill="#ffd166" font-size="24" font-family="sans-serif" font-weight="700" text-anchor="middle">相場の流れに逆らわない</text>
+</svg>

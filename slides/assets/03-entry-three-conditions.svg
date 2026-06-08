@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-label="Sai式エントリー3条件">
+  <rect width="1200" height="680" fill="#141824" rx="24"/>
+  <text x="600" y="70" fill="#ffd166" font-size="42" font-family="sans-serif" font-weight="700" text-anchor="middle">Sai式エントリー 3条件</text>
+  <text x="600" y="115" fill="#8ecae6" font-size="24" font-family="sans-serif" text-anchor="middle">すべて重なったときだけエントリーする</text>
+  <circle cx="320" cy="340" r="130" fill="#1b2230" stroke="#118ab2" stroke-width="5"/>
+  <text x="320" y="320" fill="#118ab2" font-size="30" font-family="sans-serif" font-weight="700" text-anchor="middle">①</text>
+  <text x="320" y="360" fill="#ffffff" font-size="28" font-family="sans-serif" font-weight="700" text-anchor="middle">トレンド</text>
+  <text x="320" y="395" fill="#e6e6e6" font-size="20" font-family="sans-serif" text-anchor="middle">日足・週足</text>
+  <text x="320" y="420" fill="#e6e6e6" font-size="20" font-family="sans-serif" text-anchor="middle">方向の一致</text>
+  <circle cx="600" cy="340" r="130" fill="#1b2230" stroke="#06d6a0" stroke-width="5"/>
+  <text x="600" y="320" fill="#06d6a0" font-size="30" font-family="sans-serif" font-weight="700" text-anchor="middle">②</text>
+  <text x="600" y="360" fill="#ffffff" font-size="28" font-family="sans-serif" font-weight="700" text-anchor="middle">モメンタム</text>
+  <text x="600" y="395" fill="#e6e6e6" font-size="20" font-family="sans-serif" text-anchor="middle">勢いの確認</text>
+  <text x="600" y="420" fill="#e6e6e6" font-size="20" font-family="sans-serif" text-anchor="middle">V字反転</text>
+  <circle cx="880" cy="340" r="130" fill="#1b2230" stroke="#ffd166" stroke-width="5"/>
+  <text x="880" y="320" fill="#ffd166" font-size="30" font-family="sans-serif" font-weight="700" text-anchor="middle">③</text>
+  <text x="880" y="360" fill="#ffffff" font-size="28" font-family="sans-serif" font-weight="700" text-anchor="middle">停滞</text>
+  <text x="880" y="395" fill="#e6e6e6" font-size="20" font-family="sans-serif" text-anchor="middle">7〜8本</text>
+  <text x="880" y="420" fill="#e6e6e6" font-size="20" font-family="sans-serif" text-anchor="middle">小さな足</text>
+  <path d="M450 340 H470 M730 340 H750" stroke="#8ecae6" stroke-width="6"/>
+  <text x="600" y="520" fill="#ffd166" font-size="28" font-family="sans-serif" font-weight="700" text-anchor="middle">3条件が揃う = エントリー判断</text>
+  <rect x="180" y="560" width="840" height="70" rx="16" fill="#243447"/>
+  <text x="600" y="605" fill="#e6e6e6" font-size="24" font-family="sans-serif" text-anchor="middle">順番：トレンド確認 → モメンタム → 停滞 → エントリー</text>
+</svg>

@@ -1,5 +1,5 @@
 //@version=5
-strategy("LH3 Synapse B Symbol Presets Strategy v0.3 [Research]",
+strategy("LH3 Synapse B Symbol Presets Strategy v0.4 [Research]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
@@ -20,7 +20,7 @@ strategy("LH3 Synapse B Symbol Presets Strategy v0.3 [Research]",
 // - ゴールドのSL幅に対して、実測の円損益感度から現在ロットの想定損失と推奨ロットを表示する
 // - 1回の損失を20万円に固定して、SL幅から推奨ロットを逆算する
 // - 通貨別プリセットを使い、TradingViewのストラテジーテスターで勝率/PFを見る
-// - 初期表示は目視用に整理し、勝率/PFを見る時だけストラテジー注文をONにする
+// - Danger Filterの右上テーブルを統合し、普段は目視、必要な時だけストラテジー注文をONにする
 //
 // 検証メモ:
 // - XAUUSD H4 B抜け即 RR2/48: 71件, 勝率63.38%, PF2.58, +28.93R, 最大DD5.55R
@@ -37,7 +37,7 @@ plot(close, title="Compile Anchor", color=color.new(color.gray, 100))
 grpPreset = "Symbol presets"
 presetMode = input.string("Auto", "通貨別プリセット", options=["Auto", "Manual", "XAUUSD H4", "GBPJPY H1", "EURJPY H4", "CHFJPY H4", "USDJPY H1", "AUDJPY H4", "SILVER H4", "ALL H4 Balanced"], group=grpPreset)
 usePresetParams = input.bool(true, "プリセット値を使う", group=grpPreset)
-showPresetLabel = input.bool(true, "プリセット名を表示", group=grpPreset)
+showPresetLabel = input.bool(false, "プリセット名を表示", group=grpPreset)
 
 string ticker = syminfo.ticker
 bool isXau = str.contains(ticker, "XAU")
@@ -127,6 +127,7 @@ riskLabelBelowAtr = input.float(1.80, "損失ラベル下ずらし ATR", minval=
 
 grpView = "Visual"
 cleanView = input.bool(true, "見やすい表示モード（最新中心）", group=grpView)
+showEventMarkers = input.bool(true, "WAIT/CHECK小マーカー", group=grpView)
 showCheckMarks = input.bool(false, "CHECKを表示", group=grpView)
 showEntryMarks = input.bool(false, "ENTRY候補を大きく表示", group=grpView)
 showRejectMarks = input.bool(false, "B抜けたがENTRYでない理由を表示", group=grpView)
@@ -137,11 +138,11 @@ showTrendLines = input.bool(false, "赤LINE履歴表示", group=grpView)
 showABLines = input.bool(false, "A/B水平線履歴表示", group=grpView)
 showSetupLabels = input.bool(false, "LH3/B履歴ラベル", group=grpView)
 showLineLabels = input.bool(false, "LINE上抜け履歴ラベル", group=grpView)
-showStatusLabel = input.bool(true, "固定ステータスラベル", group=grpView)
-showStatusMarker = input.bool(true, "上部ステータスマーカー", group=grpView)
+showStatusLabel = input.bool(false, "固定ステータスラベル", group=grpView)
+showStatusMarker = input.bool(false, "上部ステータスマーカー", group=grpView)
 statusLabelAtr = input.float(1.20, "ステータス上ずらし ATR", minval=-5.0, maxval=5.0, step=0.10, group=grpView)
-showTable = input.bool(false, "ミニ状態テーブル（予備）", group=grpView)
-tablePosInput = input.string("top_left", "テーブル位置", options=["top_left", "top_right", "bottom_left", "bottom_right"], group=grpView)
+showTable = input.bool(true, "Danger統合テーブル", group=grpView)
+tablePosInput = input.string("top_right", "テーブル位置", options=["top_left", "top_right", "bottom_left", "bottom_right"], group=grpView)
 keepObjects = input.int(180, "残すラベル/ライン数", minval=30, maxval=450, group=grpView)
 
 f_table_pos(string pos) =>
@@ -438,10 +439,10 @@ plot(showActiveGuides and activeSeq and lineReclaimed and not checkDone ? bLevel
 plot(showActiveGuides and activeSeq and lineReclaimed and not checkDone ? bEntryThreshold : na, title="B close threshold", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
 plot(showActiveGuides and activeSeq and lineReclaimed and not checkDone ? seqH3 : na, title="A level", color=color.new(color.orange, 0), linewidth=2, style=plot.style_linebr)
 
-plotshape(not cleanView and lineBreakNow, title="WAIT LINE reclaim", style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.tiny, text="WAIT")
-plotshape(not cleanView and checkNow, title="CHECK B break", style=shape.triangleup, location=location.belowbar, color=color.aqua, size=size.small, text="CHECK")
-plotshape(not cleanView and showEntryMarks and checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk and currentFlatOk, title="ENTRY candidate", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 0), text="ENTRY", textcolor=color.black, size=size.large)
-plotshape(not cleanView and aBreakNow, title="A confirm", style=shape.triangleup, location=location.belowbar, color=color.orange, size=size.tiny, text="A")
+plotshape(showEventMarkers and lineBreakNow, title="WAIT LINE reclaim", style=shape.triangleup, location=location.belowbar, color=color.orange, size=size.tiny, text="WAIT")
+plotshape(showEventMarkers and checkNow, title="CHECK B break", style=shape.triangleup, location=location.belowbar, color=color.aqua, size=size.small, text="CHECK")
+plotshape(showEventMarkers and checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk and currentFlatOk, title="ENTRY candidate small", style=shape.circle, location=location.belowbar, color=color.new(color.lime, 0), text="GO", textcolor=color.black, size=size.tiny)
+plotshape(showEventMarkers and aBreakNow, title="A confirm", style=shape.triangleup, location=location.belowbar, color=color.orange, size=size.tiny, text="A")
 bgcolor(not cleanView and showEntryBackground and checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk and currentFlatOk ? color.new(color.lime, 86) : na, title="ENTRY候補背景")
 
 chartIsH4 = timeframe.in_seconds(timeframe.period) == 240 * 60
@@ -456,7 +457,7 @@ if barstate.islast
     label.delete(statusInfoLabel)
     if showStatusLabel
         float statusY = high + nz(atr, 0.0) * statusLabelAtr
-        string statusText = "LH3 STATUS v0.3"
+        string statusText = "LH3 STATUS v0.4"
         statusText := statusText + "\n" + activePreset + " / TF " + recommendedTf + (timeframeOk ? " OK" : " 確認")
         statusText := statusText + "\nstate: " + stateText
         statusText := statusText + "\n次: " + rejectReason
@@ -472,26 +473,48 @@ if barstate.islast and showPresetLabel
     string presetText = activePreset + "\nTF " + recommendedTf + (timeframeOk ? " OK" : " 確認") + "\nRR " + str.tostring(rr, "#.##") + " / hold " + str.tostring(maxHoldBars)
     presetInfoLabel := label.new(bar_index, high + atr * 1.75, presetText, xloc=xloc.bar_index, style=label.style_label_down, color=timeframeOk ? color.new(color.black, 0) : color.new(color.orange, 0), textcolor=color.white, size=size.small)
 
-var table t = table.new(f_table_pos(tablePosInput), 2, 9, bgcolor=color.new(color.black, 0), frame_color=color.new(color.white, 40), frame_width=1, border_color=color.new(color.gray, 40), border_width=1)
+var table t = table.new(f_table_pos(tablePosInput), 2, 20, bgcolor=color.new(color.black, 8), frame_color=color.new(color.white, 40), frame_width=1, border_color=color.new(color.gray, 40), border_width=1)
 if barstate.islast and showTable
-    table.cell(t, 0, 0, "LH3 B Strategy", text_color=color.white, text_size=size.small)
+    table.cell(t, 0, 0, "LH3 B Combo v0.4", text_color=color.white, text_size=size.small)
     table.cell(t, 1, 0, timeframe.period, text_color=timeframeOk ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 1, "preset", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 1, activePreset, text_color=presetActive ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 2, "TF", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 2, recommendedTf + (timeframeOk ? " OK" : " 確認"), text_color=timeframeOk ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 3, "state", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 3, stateText, text_color=entryDone ? color.lime : checkDone ? color.aqua : lineReclaimed ? color.lime : color.silver, text_size=size.tiny)
-    table.cell(t, 0, 4, "RR / hold", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 4, str.tostring(rr, "#.##") + " / " + str.tostring(maxHoldBars), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 5, "CHECK / ENTRY", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 5, str.tostring(checkCount) + " / " + str.tostring(entryCount), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 6, "A room", text_color=color.lime, text_size=size.tiny)
-    table.cell(t, 1, 6, roomText, text_color=currentARoomOk ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 7, "reason", text_color=color.orange, text_size=size.tiny)
-    table.cell(t, 1, 7, rejectReason, text_color=rejectReason == "ENTRY候補" ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 8, "risk lot", text_color=color.yellow, text_size=size.tiny)
-    table.cell(t, 1, 8, "推奨 " + f_num(lastSuggestedLots), text_color=lastLotOk ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 1, "preset / TF", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 1, activePreset + " / " + recommendedTf + (timeframeOk ? " OK" : " 確認"), text_color=timeframeOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 2, "state", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 2, stateText, text_color=entryDone ? color.lime : checkDone ? color.aqua : lineReclaimed ? color.lime : color.silver, text_size=size.tiny)
+    table.cell(t, 0, 3, "setup / LINE", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 3, str.tostring(setupCount) + " / " + str.tostring(lineCount), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 4, "CHECK / ENTRY", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 4, str.tostring(checkCount) + " / " + str.tostring(entryCount), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 5, "rejected", text_color=color.red, text_size=size.tiny)
+    table.cell(t, 1, 5, str.tostring(rejectCount), text_color=color.red, text_size=size.tiny)
+    table.cell(t, 0, 6, "B level", text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 1, 6, f_num(bLevel), text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 7, "A level", text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 1, 7, f_num(seqH3), text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 0, 8, "A room now", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 1, 8, roomText, text_color=currentARoomOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 9, "D1 > EMA" + str.tostring(d1EmaLen), text_color=color.green, text_size=size.tiny)
+    table.cell(t, 1, 9, f_yes(d1Strong), text_color=d1Strong ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 10, "QUALITY", text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 1, 10, f_yes(qualityOk) + " / " + f_num(closeLocation), text_color=qualityOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 11, "ENTRY条件", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 1, 11, entryNeedText, text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 12, "未ENTRY理由", text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 1, 12, rejectReason, text_color=rejectReason == "ENTRY候補" ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 13, "RR / hold", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 13, str.tostring(rr, "#.##") + " / " + str.tostring(maxHoldBars), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 14, "現在lot", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 14, str.tostring(currentLots, "#.##"), text_color=lastLotOk ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 15, "固定損失", text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 1, 15, f_jpy(maxRiskJpy), text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 0, 16, "SL幅", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 16, f_num(lastRiskWidth), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 17, "今のlot損失", text_color=lastLotOk ? color.silver : color.red, text_size=size.tiny)
+    table.cell(t, 1, 17, f_jpy(lastRiskJpyCurrent), text_color=lastLotOk ? color.lime : color.red, text_size=size.tiny)
+    table.cell(t, 0, 18, "推奨lot", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 1, 18, f_num(lastSuggestedLots), text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 19, "orders", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 19, enableStrategyOrders ? "ON" : "OFF visual", text_color=enableStrategyOrders ? color.yellow : color.lime, text_size=size.tiny)
 
 alertcondition(lineBreakNow, title="LH3 WAIT LINE reclaim", message="LH3 red line reclaimed. Wait for B confirmation on {{ticker}} {{interval}}")
 alertcondition(checkNow, title="LH3 CHECK B break", message="LH3 CHECK: LINE+B break on {{ticker}} {{interval}}")

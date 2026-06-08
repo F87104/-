@@ -244,6 +244,8 @@ XAUUSD H4 RR2.0 / 48本の比較:
 
 次のPine表示案:
 
+- [lower_high_synapse_b_danger_filter_visual_v0_1.pine](../../pine/research/lower_high_synapse_b_danger_filter_visual_v0_1.pine)
+
 | 表示 | 条件 | 意味 |
 |---|---|---|
 | CHECK | LINE上抜け + B抜け | 転換候補 |

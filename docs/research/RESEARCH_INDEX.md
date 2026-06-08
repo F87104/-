@@ -47,7 +47,7 @@
 | 2026-06-08 | **LH3赤LINE上抜け 勝率/PF** | SL/TPを置いて14334シナリオを検証。H4全体RR2/120本は勝率40.21%、PF1.07。XAUUSD H4 RR2/120本は勝率49.53%、PF1.52、+26.70R。SILVER H4 RR1/120本は勝率63.64%、PF1.54。 | XAUUSD H4を中心にB水平線、A水平線、戻り確認で絞る |
 | 2026-06-08 | **LH3 Synapse確認フィルタ 勝率/PF** | 赤LINE後の確認条件を比較。H4 B水平線上抜け RR2/120本は勝率44.72%、PF1.22、+60.14R。H4 B水平線 RR2/48本は勝率48.66%、PF1.23、+48.82R。XAUUSD H4 B水平線 RR2/48本は勝率63.38%、PF2.58、+28.93R。 | 赤LINE上抜け単体は本番化しない。XAUUSD H4 B水平線を本命候補として、A水平線と浅い戻りは補助フィルタ扱いで目視照合する |
 | 2026-06-08 | **LH3 B床化確認 勝率/PF** | B抜け即、B床化後再上昇、A/H3上抜けを比較。H4 B抜け即 RR2/120本は勝率44.72%、PF1.22、+60.14R。H4 B床化 RR2/120本は勝率46.70%、PF1.20、+20.58R、最大DDは34.84Rから14.88Rへ低下。H1 B床化 RR1.5/120本はPF1.16、最大DD13.49R。 | H4はB抜け即を本線、B床化はDD低減補助。次はXAUUSD H4で、巨大足・Aまで距離不足・D1抵抗直下などの除外条件を見る |
-| 2026-06-08 | **LH3 B抜け即 危険除外** | XAUUSD H4 RR2/48で、baselineは71件・勝率63.38%・PF2.58・+28.93R・最大DD5.55R。A余白0.5Rは58件・勝率67.24%・PF2.98・+26.45R・最大DD2.50R。D1 EMA20上はPF3.52だが32件。 | A余白0.5Rを実用候補、D1 EMA20上を強い追い風ラベル、終値位置60%以上を軽い品質ラベルとしてPine目視照合 |
+| 2026-06-08 | **LH3 B抜け即 危険除外** | XAUUSD H4 RR2/48で、baselineは71件・勝率63.38%・PF2.58・+28.93R・最大DD5.55R。A余白0.5Rは58件・勝率67.24%・PF2.98・+26.45R・最大DD2.50R。D1 EMA20上はPF3.52だが32件。 | [ENTRY候補Pine](../../pine/research/lower_high_synapse_b_danger_filter_visual_v0_1.pine) で、A余白0.5R・D1 EMA20・終値位置60%以上を目視照合 |
 
 ## 進捗ログ（アーカイブ — 心理スプリント 2026-05〜06）
 
@@ -198,6 +198,7 @@
 | Lower High 3 Touch Synapse確認フィルタ勝率PF | [lower_high_synapse_confirm_filters_2026-06-08/REPORT_ja.md](lower_high_synapse_confirm_filters_2026-06-08/REPORT_ja.md) |
 | Lower High 3 Touch B床化確認勝率PF | [lower_high_b_support_confirmation_2026-06-08/REPORT_ja.md](lower_high_b_support_confirmation_2026-06-08/REPORT_ja.md) |
 | Lower High 3 Touch B抜け即危険除外 | [lower_high_b_break_danger_filters_2026-06-08/REPORT_ja.md](lower_high_b_break_danger_filters_2026-06-08/REPORT_ja.md) |
+| Lower High 3 Touch B抜け危険除外 Pine | [../../pine/research/lower_high_synapse_b_danger_filter_visual_v0_1.pine](../../pine/research/lower_high_synapse_b_danger_filter_visual_v0_1.pine) |
 | Lower High 3 Touch B確認 目視照合Pine | [../../pine/research/lower_high_synapse_b_confirm_visual_v0_1.pine](../../pine/research/lower_high_synapse_b_confirm_visual_v0_1.pine) |
 | Lower High x Synapse 接続 | [lower_high_synapse_bridge_2026-06-08.md](lower_high_synapse_bridge_2026-06-08.md) |
 

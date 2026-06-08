@@ -1,0 +1,361 @@
+//@version=5
+indicator("LH3 Synapse B Danger Filter Visual v0.1 [Research]",
+     overlay=true,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500)
+
+// Research only.
+// 目的:
+// - LH3赤LINE上抜け後のB水平線上抜けを CHECK として表示する
+// - CHECKのうち、A水平線まで0.5R以上の余白があるものだけを ENTRY候補 として強調する
+// - D1 EMA20上は STRONG、B抜け足の終値位置60%以上は QUALITY として補助表示する
+//
+// 検証メモ:
+// - XAUUSD H4 B抜け即 RR2/48: 71件, 勝率63.38%, PF2.58, +28.93R, 最大DD5.55R
+// - XAUUSD H4 A余白0.5R RR2/48: 58件, 勝率67.24%, PF2.98, +26.45R, 最大DD2.50R
+// - D1 EMA20上はPFが高いが件数が減るため、ENTRY条件ではなく追い風ラベル扱い
+//
+// 注意:
+// - 売買サインではない。目視照合用。
+// - Pivotはconfirmedのみ。未確定足の高値/安値は使わない。
+// - TradingViewとPythonはデータ配信元・同一足SL/TP処理が異なるため、まず位置の一致を見る。
+
+plot(close, title="Compile Anchor", color=color.new(color.gray, 100))
+
+grpCore = "LH3 definition"
+pivotLeft = input.int(5, "Pivot left", minval=1, maxval=30, group=grpCore)
+pivotRight = input.int(5, "Pivot right", minval=1, maxval=30, group=grpCore)
+atrLen = input.int(14, "ATR", minval=1, group=grpCore)
+minLowerAtr = input.float(0.20, "各lower highの最低切り下げ幅 ATR", minval=0.0, step=0.05, group=grpCore)
+lineTouchAtr = input.float(0.55, "H3ラインタッチ許容 ATR", minval=0.0, step=0.05, group=grpCore)
+maxBars12 = input.int(160, "H1-H2 最大本数", minval=5, maxval=1000, group=grpCore)
+maxBars23 = input.int(160, "H2-H3 最大本数", minval=5, maxval=1000, group=grpCore)
+maxActiveBars = input.int(420, "LH3後の監視本数", minval=20, maxval=2000, group=grpCore)
+
+grpConfirm = "Confirm"
+lineBreakBufferAtr = input.float(0.05, "赤LINE上抜けバッファ ATR", minval=0.0, step=0.01, group=grpConfirm)
+bBreakBufferAtr = input.float(0.03, "B/A上抜けバッファ ATR", minval=0.0, step=0.01, group=grpConfirm)
+maxBarsAfterLineForB = input.int(48, "LINE上抜け後B確認の最大本数", minval=1, maxval=300, group=grpConfirm)
+cooldownBars = input.int(48, "候補の間隔", minval=1, maxval=500, group=grpConfirm)
+
+grpDanger = "Danger filter"
+useARoomForEntry = input.bool(true, "ENTRY候補にA余白を要求", group=grpDanger)
+minARoomR = input.float(0.50, "Aまでの最低余白 R", minval=0.0, step=0.10, group=grpDanger)
+qualityCloseLoc = input.float(0.60, "QUALITY終値位置", minval=0.0, maxval=1.0, step=0.05, group=grpDanger)
+d1EmaLen = input.int(20, "D1 EMA", minval=1, group=grpDanger)
+useD1StrongForEntry = input.bool(false, "ENTRY候補にD1 EMA上も要求", group=grpDanger)
+useQualityForEntry = input.bool(false, "ENTRY候補にQUALITYも要求", group=grpDanger)
+
+grpRisk = "Validation levels"
+showValidationLevels = input.bool(true, "Entry/SL/TP表示", group=grpRisk)
+rr = input.float(2.0, "表示TP RR", minval=0.25, step=0.25, group=grpRisk)
+stopBufferAtr = input.float(0.20, "SL余白 ATR", minval=0.0, step=0.05, group=grpRisk)
+levelExtendBars = input.int(48, "Entry/SL/TPの表示本数", minval=5, maxval=300, group=grpRisk)
+
+grpView = "Visual"
+showCheckMarks = input.bool(true, "CHECKを表示", group=grpView)
+showEntryMarks = input.bool(true, "ENTRY候補を大きく表示", group=grpView)
+showRejectMarks = input.bool(true, "B抜けたがENTRYでない理由を表示", group=grpView)
+showStrongQuality = input.bool(true, "STRONG/QUALITY補助ラベル", group=grpView)
+showEntryBackground = input.bool(true, "ENTRY背景を薄く表示", group=grpView)
+showActiveGuides = input.bool(true, "現在のB/Aガイド表示", group=grpView)
+showTrendLines = input.bool(true, "赤LINE表示", group=grpView)
+showABLines = input.bool(true, "A/B水平線表示", group=grpView)
+showSetupLabels = input.bool(true, "LH3/Bラベル", group=grpView)
+showLineLabels = input.bool(true, "LINE上抜けラベル", group=grpView)
+showTable = input.bool(true, "状態テーブル", group=grpView)
+tablePosInput = input.string("top_right", "テーブル位置", options=["top_right", "top_left", "bottom_right", "bottom_left"], group=grpView)
+keepObjects = input.int(180, "残すラベル/ライン数", minval=30, maxval=450, group=grpView)
+
+f_table_pos(string pos) =>
+    pos == "top_left" ? position.top_left : pos == "bottom_right" ? position.bottom_right : pos == "bottom_left" ? position.bottom_left : position.top_right
+
+f_num(float x) =>
+    na(x) ? "-" : str.tostring(x, "#.###")
+
+f_yes(bool x) =>
+    x ? "yes" : "no"
+
+var label[] keptLabels = array.new_label()
+var line[] keptLines = array.new_line()
+
+keep_label(label lb) =>
+    array.push(keptLabels, lb)
+    while array.size(keptLabels) > keepObjects
+        label.delete(array.shift(keptLabels))
+
+keep_line(line ln) =>
+    array.push(keptLines, ln)
+    while array.size(keptLines) > keepObjects
+        line.delete(array.shift(keptLines))
+
+atr = ta.atr(atrLen)
+ph = ta.pivothigh(high, pivotLeft, pivotRight)
+pl = ta.pivotlow(low, pivotLeft, pivotRight)
+
+d1ClosePrev = request.security(syminfo.tickerid, "D", close[1], lookahead=barmerge.lookahead_off)
+d1EmaPrev = request.security(syminfo.tickerid, "D", ta.ema(close, d1EmaLen)[1], lookahead=barmerge.lookahead_off)
+d1Strong = not na(d1ClosePrev) and not na(d1EmaPrev) and d1ClosePrev > d1EmaPrev
+
+barRange = high - low
+closeLocation = barRange > 0 ? (close - low) / barRange : na
+qualityOk = not na(closeLocation) and closeLocation >= qualityCloseLoc
+
+var float h1 = na
+var float h2 = na
+var float h3 = na
+var int h1Bar = na
+var int h2Bar = na
+var int h3Bar = na
+
+var bool activeSeq = false
+var float seqH1 = na
+var float seqH2 = na
+var float seqH3 = na
+var int seqH1Bar = na
+var int seqH2Bar = na
+var int seqH3Bar = na
+var float visibleSlope = na
+var bool lineReclaimed = false
+var int lineReclaimBar = na
+var bool checkDone = false
+var bool entryDone = false
+var bool aConfirmed = false
+var float headLow = na
+var int headLowBar = na
+var float bLevel = na
+var int bBar = na
+var bool bFrozen = false
+var float structureLow = na
+var int lastCheckBar = na
+
+var int setupCount = 0
+var int lineCount = 0
+var int checkCount = 0
+var int entryCount = 0
+var int rejectCount = 0
+var int strongCount = 0
+var int qualityCount = 0
+var float lastEntry = na
+var float lastStop = na
+var float lastTarget = na
+var float lastARoomR = na
+
+if activeSeq and not na(seqH3Bar) and bar_index - seqH3Bar > maxActiveBars
+    activeSeq := false
+    lineReclaimed := false
+    checkDone := false
+    entryDone := false
+    aConfirmed := false
+    lineReclaimBar := na
+    headLow := na
+    headLowBar := na
+    bLevel := na
+    bBar := na
+    bFrozen := false
+    structureLow := na
+
+if activeSeq and not na(seqH3Bar) and bar_index >= seqH3Bar
+    structureLow := na(structureLow) ? low : math.min(structureLow, low)
+
+if activeSeq and not bFrozen and not na(pl)
+    int lowBar = bar_index - pivotRight
+    float lowPrice = pl
+    if lowBar > seqH3Bar and (na(headLow) or lowPrice < headLow)
+        headLow := lowPrice
+        headLowBar := lowBar
+        bLevel := na
+        bBar := na
+
+if not na(ph)
+    int highBar = bar_index - pivotRight
+    float highPrice = ph
+    float pAtr = atr[pivotRight]
+
+    if activeSeq and not bFrozen and not na(headLowBar) and highBar > headLowBar and na(bLevel)
+        bLevel := highPrice
+        bBar := highBar
+        if lineReclaimed
+            bFrozen := true
+        if showABLines
+            keep_line(line.new(bBar, bLevel, bBar + maxActiveBars, bLevel, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.aqua, 15), style=line.style_dashed, width=2))
+        if showSetupLabels
+            keep_label(label.new(bBar, bLevel, "B", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.aqua, 0), textcolor=color.black, size=size.tiny))
+
+    h1 := h2
+    h1Bar := h2Bar
+    h2 := h3
+    h2Bar := h3Bar
+    h3 := highPrice
+    h3Bar := highBar
+
+    bool haveThree = not na(h1) and not na(h2) and not na(h3) and not na(h1Bar) and not na(h2Bar) and not na(h3Bar)
+    bool lowerOk = haveThree and h1 > h2 + pAtr * minLowerAtr and h2 > h3 + pAtr * minLowerAtr
+    bool spacingOk = haveThree and h2Bar > h1Bar and h3Bar > h2Bar and (h2Bar - h1Bar <= maxBars12) and (h3Bar - h2Bar <= maxBars23)
+    float slope12 = haveThree and h2Bar != h1Bar ? (h2 - h1) / (h2Bar - h1Bar) : na
+    float expectedH3 = haveThree and not na(slope12) ? h1 + slope12 * (h3Bar - h1Bar) : na
+    bool touchOk = haveThree and not na(expectedH3) and math.abs(h3 - expectedH3) <= pAtr * lineTouchAtr
+    bool newLowerHighSetup = lowerOk and spacingOk and touchOk
+
+    bool lineLockActive = activeSeq and lineReclaimed and not checkDone and not na(lineReclaimBar) and bar_index - lineReclaimBar <= maxBarsAfterLineForB
+
+    if newLowerHighSetup and not lineLockActive
+        activeSeq := true
+        setupCount += 1
+        seqH1 := h1
+        seqH2 := h2
+        seqH3 := h3
+        seqH1Bar := h1Bar
+        seqH2Bar := h2Bar
+        seqH3Bar := h3Bar
+        visibleSlope := h3Bar != h1Bar ? (h3 - h1) / (h3Bar - h1Bar) : na
+        lineReclaimed := false
+        checkDone := false
+        entryDone := false
+        aConfirmed := false
+        lineReclaimBar := na
+        headLow := na
+        headLowBar := na
+        bLevel := na
+        bBar := na
+        bFrozen := false
+        structureLow := low
+        for k = 0 to pivotRight
+            structureLow := math.min(structureLow, low[k])
+        if showTrendLines
+            keep_line(line.new(seqH1Bar, seqH1, seqH3Bar, seqH3, xloc=xloc.bar_index, extend=extend.right, color=color.new(color.red, 0), width=2))
+        if showABLines
+            keep_line(line.new(seqH3Bar, seqH3, seqH3Bar + maxActiveBars, seqH3, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.orange, 20), style=line.style_dotted, width=1))
+        if showSetupLabels
+            keep_label(label.new(seqH3Bar, seqH3, "LH3\nA", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.orange, 0), textcolor=color.white, size=size.tiny))
+
+lineNow = activeSeq and not na(visibleSlope) and not na(seqH1) and not na(seqH1Bar) ? seqH1 + visibleSlope * (bar_index - seqH1Bar) : na
+lineBreakNow = activeSeq and not lineReclaimed and bar_index > seqH3Bar and not na(lineNow) and close > lineNow + atr * lineBreakBufferAtr and barstate.isconfirmed
+
+if lineBreakNow
+    lineReclaimed := true
+    lineReclaimBar := bar_index
+    if not na(bLevel)
+        bFrozen := true
+    lineCount += 1
+    if showLineLabels
+        keep_label(label.new(bar_index, high + atr * 0.30, "WAIT\nLINE", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
+
+cooldownOk = na(lastCheckBar) or bar_index - lastCheckBar >= cooldownBars
+bWithinWindow = not na(lineReclaimBar) and bar_index - lineReclaimBar <= maxBarsAfterLineForB
+bEntryThreshold = not na(bLevel) and not na(atr) ? bLevel + atr * bBreakBufferAtr : na
+checkNow = activeSeq and lineReclaimed and bWithinWindow and not checkDone and not na(bLevel) and not na(bEntryThreshold) and bar_index > bBar and close > bEntryThreshold and cooldownOk and barstate.isconfirmed
+aBreakNow = activeSeq and lineReclaimed and not aConfirmed and not na(seqH3) and close > seqH3 + atr * bBreakBufferAtr and barstate.isconfirmed
+
+hypotheticalStop = activeSeq and not na(structureLow) ? structureLow - atr * stopBufferAtr : na
+hypotheticalRisk = not na(hypotheticalStop) ? close - hypotheticalStop : na
+currentARoomR = activeSeq and not na(seqH3) and not na(hypotheticalRisk) and hypotheticalRisk > 0 ? (close >= seqH3 ? 999.0 : (seqH3 - close) / hypotheticalRisk) : na
+currentRiskOk = not na(hypotheticalRisk) and hypotheticalRisk > 0
+currentARoomOk = not useARoomForEntry or (not na(currentARoomR) and currentARoomR >= minARoomR)
+currentD1Ok = not useD1StrongForEntry or d1Strong
+currentQualityOk = not useQualityForEntry or qualityOk
+
+if checkNow
+    checkDone := true
+    lastCheckBar := bar_index
+    checkCount += 1
+
+    float entry = close
+    float stop = structureLow - atr * stopBufferAtr
+    float risk = entry - stop
+    float target = risk > 0 ? entry + risk * rr : na
+    float aRoomR = risk > 0 and not na(seqH3) ? (entry >= seqH3 ? 999.0 : (seqH3 - entry) / risk) : na
+    bool aRoomOk = not useARoomForEntry or (not na(aRoomR) and aRoomR >= minARoomR)
+    bool d1Ok = not useD1StrongForEntry or d1Strong
+    bool qOk = not useQualityForEntry or qualityOk
+    bool entryCandidate = risk > 0 and aRoomOk and d1Ok and qOk
+
+    lastEntry := entry
+    lastStop := stop
+    lastTarget := target
+    lastARoomR := aRoomR
+
+    if showCheckMarks
+        keep_label(label.new(bar_index, high + atr * 0.55, "CHECK\nB抜け", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.aqua, 0), textcolor=color.black, size=size.small))
+
+    if entryCandidate
+        entryDone := true
+        entryCount += 1
+        if showEntryMarks
+            string entryText = "ENTRY候補\nB + A余白\n" + str.tostring(entry, format.mintick)
+            keep_label(label.new(bar_index, low - atr * 0.85, entryText, xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.normal))
+        if showValidationLevels and not na(target)
+            keep_line(line.new(bar_index, entry, bar_index + levelExtendBars, entry, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.white, 0), style=line.style_solid, width=3))
+            keep_line(line.new(bar_index, stop, bar_index + levelExtendBars, stop, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.red, 0), style=line.style_solid, width=2))
+            keep_line(line.new(bar_index, target, bar_index + levelExtendBars, target, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.lime, 0), style=line.style_solid, width=2))
+            keep_line(line.new(bar_index, low - atr * 1.25, bar_index, high + atr * 1.25, xloc=xloc.bar_index, extend=extend.none, color=color.new(color.lime, 15), style=line.style_solid, width=2))
+            keep_label(label.new(bar_index + levelExtendBars, entry, "ENTRY", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(color.white, 10), textcolor=color.black, size=size.small))
+            keep_label(label.new(bar_index + levelExtendBars, stop, "SL", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(color.red, 0), textcolor=color.white, size=size.small))
+            keep_label(label.new(bar_index + levelExtendBars, target, "TP " + str.tostring(rr, "#.##") + "R", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(color.lime, 0), textcolor=color.black, size=size.small))
+    else
+        rejectCount += 1
+        string reason = risk <= 0 ? "SL不正" : not aRoomOk ? "A近い" : not d1Ok ? "D1弱い" : not qOk ? "終値弱い" : "条件不足"
+        if showRejectMarks
+            keep_label(label.new(bar_index, low - atr * 0.55, "NO ENTRY\n" + reason, xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.red, 0), textcolor=color.white, size=size.small))
+
+    if showStrongQuality and d1Strong
+        strongCount += 1
+        keep_label(label.new(bar_index, high + atr * 0.95, "STRONG\nD1 EMA", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.green, 0), textcolor=color.white, size=size.tiny))
+    if showStrongQuality and qualityOk
+        qualityCount += 1
+        keep_label(label.new(bar_index, high + atr * 1.25, "QUALITY\nclose", xloc=xloc.bar_index, style=label.style_label_down, color=color.new(color.yellow, 0), textcolor=color.black, size=size.tiny))
+
+if aBreakNow
+    aConfirmed := true
+    if showSetupLabels
+        keep_label(label.new(bar_index, high + atr * 0.80, "A\ncleared", xloc=xloc.bar_index, style=label.style_label_up, color=color.new(color.orange, 0), textcolor=color.black, size=size.tiny))
+
+plot(activeSeq ? lineNow : na, title="Active LH3 red pressure line", color=color.new(color.red, 65), linewidth=1)
+plot(showActiveGuides and activeSeq and lineReclaimed and not checkDone ? bLevel : na, title="ACTIVE B level", color=color.new(color.aqua, 0), linewidth=4, style=plot.style_linebr)
+plot(showActiveGuides and activeSeq and lineReclaimed and not checkDone ? bEntryThreshold : na, title="B close threshold", color=color.new(color.lime, 0), linewidth=2, style=plot.style_linebr)
+plot(showActiveGuides and activeSeq and lineReclaimed and not checkDone ? seqH3 : na, title="A level", color=color.new(color.orange, 0), linewidth=2, style=plot.style_linebr)
+
+plotshape(lineBreakNow, title="WAIT LINE reclaim", style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.tiny, text="WAIT")
+plotshape(checkNow, title="CHECK B break", style=shape.triangleup, location=location.belowbar, color=color.aqua, size=size.small, text="CHECK")
+plotshape(showEntryMarks and checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk, title="ENTRY candidate", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 0), text="ENTRY", textcolor=color.black, size=size.large)
+plotshape(aBreakNow, title="A confirm", style=shape.triangleup, location=location.belowbar, color=color.orange, size=size.tiny, text="A")
+bgcolor(showEntryBackground and checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk ? color.new(color.lime, 86) : na, title="ENTRY候補背景")
+
+chartIsH4 = timeframe.in_seconds(timeframe.period) == 240 * 60
+stateText = not activeSeq ? "NO SETUP" : entryDone ? "ENTRY" : checkDone ? "CHECKED" : lineReclaimed and not na(bLevel) ? "WAIT B BREAK" : lineReclaimed ? "LINE ONLY" : "WAIT LINE"
+entryNeedText = entryDone ? f_num(lastEntry) : activeSeq and lineReclaimed and not na(bEntryThreshold) ? "close > " + f_num(bEntryThreshold) : "-"
+roomText = na(currentARoomR) ? "-" : currentARoomR >= 900 ? "A cleared" : str.tostring(currentARoomR, "#.##") + "R"
+rejectReason = not activeSeq ? "no LH3" : not lineReclaimed ? "wait LINE" : na(bLevel) ? "wait B pivot" : na(bEntryThreshold) ? "wait ATR" : not bWithinWindow ? "B window over" : close <= bEntryThreshold ? "close below B" : not currentRiskOk ? "risk invalid" : not currentARoomOk ? "A room < " + str.tostring(minARoomR, "#.##") + "R" : not currentD1Ok ? "D1 EMA weak" : not currentQualityOk ? "close location weak" : "ENTRY候補"
+
+var table t = table.new(f_table_pos(tablePosInput), 2, 12, bgcolor=color.new(color.black, 10), border_width=1)
+if barstate.islast and showTable
+    table.cell(t, 0, 0, "LH3 B Danger", text_color=color.white, text_size=size.small)
+    table.cell(t, 1, 0, timeframe.period, text_color=chartIsH4 ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 1, "state", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 1, stateText, text_color=entryDone ? color.lime : checkDone ? color.aqua : lineReclaimed ? color.lime : color.silver, text_size=size.tiny)
+    table.cell(t, 0, 2, "setup / LINE", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 2, str.tostring(setupCount) + " / " + str.tostring(lineCount), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 3, "CHECK / ENTRY", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 3, str.tostring(checkCount) + " / " + str.tostring(entryCount), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 0, 4, "rejected", text_color=color.red, text_size=size.tiny)
+    table.cell(t, 1, 4, str.tostring(rejectCount), text_color=color.red, text_size=size.tiny)
+    table.cell(t, 0, 5, "B level", text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 1, 5, f_num(bLevel), text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 0, 6, "A level", text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 1, 6, f_num(seqH3), text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 0, 7, "A room now", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 1, 7, roomText, text_color=currentARoomOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 8, "D1 > EMA" + str.tostring(d1EmaLen), text_color=color.green, text_size=size.tiny)
+    table.cell(t, 1, 8, f_yes(d1Strong), text_color=d1Strong ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 9, "QUALITY", text_color=color.yellow, text_size=size.tiny)
+    table.cell(t, 1, 9, f_yes(qualityOk) + " / " + f_num(closeLocation), text_color=qualityOk ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 10, "ENTRY条件", text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 1, 10, entryNeedText, text_color=color.lime, text_size=size.tiny)
+    table.cell(t, 0, 11, "未ENTRY理由", text_color=color.orange, text_size=size.tiny)
+    table.cell(t, 1, 11, rejectReason, text_color=rejectReason == "ENTRY候補" ? color.lime : color.orange, text_size=size.tiny)
+
+alertcondition(lineBreakNow, title="LH3 WAIT LINE reclaim", message="LH3 red line reclaimed. Wait for B confirmation on {{ticker}} {{interval}}")
+alertcondition(checkNow, title="LH3 CHECK B break", message="LH3 CHECK: LINE+B break on {{ticker}} {{interval}}")
+alertcondition(checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk, title="LH3 ENTRY candidate", message="LH3 ENTRY candidate: LINE+B with A room filter on {{ticker}} {{interval}}")
+alertcondition(checkNow and not currentARoomOk, title="LH3 NO ENTRY A too close", message="LH3 B break rejected because A room is too small on {{ticker}} {{interval}}")

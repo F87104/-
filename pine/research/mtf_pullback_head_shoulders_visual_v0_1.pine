@@ -1,9 +1,10 @@
 //@version=5
-indicator("MTF Pullback Head & Shoulders Visual v0.6 [Research]",
+indicator("MTF Pullback Head & Shoulders Visual v0.7 [Research]",
      overlay=true,
      max_bars_back=5000,
      max_lines_count=500,
-     max_labels_count=500)
+     max_labels_count=500,
+     max_boxes_count=50)
 
 // Research only.
 // 目的:
@@ -14,6 +15,7 @@ indicator("MTF Pullback Head & Shoulders Visual v0.6 [Research]",
 // - v0.3: まず見つけることを優先し、上位足フィルタは候補の絞り込み用に変更
 // - v0.4: 初期表示を「上位足の戻し部分だけ」に変更。H&S関連は必要な時だけON。
 // - v0.6: EMAではなく、上位足ダウ理論の直近推進波から戻し帯を出す
+// - v0.7: 人間が見やすいように、現在の戻しゾーンを右側の大きな箱で表示する
 //
 // 読み方:
 // - SHORT候補: 上位足が下降トレンド、戻し中、下位足でH&S、ネックライン割れ
@@ -48,9 +50,13 @@ maxPatternBars = input.int(260, "パターン最大本数", minval=20, maxval=10
 cooldownBars = input.int(24, "候補表示の間隔", minval=1, maxval=500, group=grpPattern)
 
 grpVisual = "Visual"
-showDowSwingLevels = input.bool(true, "上位足ダウ高値/安値を表示", group=grpVisual)
-showPullbackBand = input.bool(true, "上位足戻し帯を表示", group=grpVisual)
-showPullbackBg = input.bool(true, "戻し背景を表示", group=grpVisual)
+showCurrentZoneBox = input.bool(true, "現在の戻しゾーンを箱で表示", group=grpVisual)
+showZoneLabel = input.bool(true, "戻しゾーン説明ラベル", group=grpVisual)
+zoneLeftBars = input.int(80, "箱の左幅", minval=10, maxval=500, group=grpVisual)
+zoneRightBars = input.int(48, "箱の右幅", minval=5, maxval=300, group=grpVisual)
+showDowSwingLevels = input.bool(false, "上位足ダウ高値/安値を表示", group=grpVisual)
+showPullbackBand = input.bool(false, "過去の戻し帯fillを表示", group=grpVisual)
+showPullbackBg = input.bool(false, "帯タッチ背景を表示", group=grpVisual)
 showStructure = input.bool(false, "LS/H/RSを表示", group=grpVisual)
 showFormingStructure = input.bool(false, "形成途中のLS/Hを表示", group=grpVisual)
 showNeckline = input.bool(false, "ネックラインを表示", group=grpVisual)
@@ -135,6 +141,56 @@ pBandBottom = plot(showPullbackBand ? pullbackBottom : na, title="HTF pullback b
 fill(pBandTop, pBandBottom, title="HTF pullback band", color=showPullbackBand and htfDown ? color.new(color.red, 76) : showPullbackBand and htfUp ? color.new(color.green, 76) : na)
 bgcolor(showPullbackBg and shortPullback ? color.new(color.red, 78) : na, title="HTF short pullback touch")
 bgcolor(showPullbackBg and longPullback ? color.new(color.green, 78) : na, title="HTF long pullback touch")
+
+zoneReady = (htfDown or htfUp) and not na(pullbackTop) and not na(pullbackBottom)
+zoneTop = zoneReady ? math.max(pullbackTop, pullbackBottom) : na
+zoneBottom = zoneReady ? math.min(pullbackTop, pullbackBottom) : na
+zoneMid = zoneReady ? (zoneTop + zoneBottom) / 2.0 : na
+zoneColor = htfDown ? color.red : color.green
+zoneTextColor = htfDown ? color.white : color.black
+zoneTitle = htfDown ? "下降ダウ\n戻り売りゾーン" : "上昇ダウ\n押し目買いゾーン"
+zoneTouchText = touchesPullbackBand ? "\n価格がゾーン内" : "\nまだゾーン外"
+
+var box currentZoneBox = na
+var label currentZoneLabel = na
+
+if showCurrentZoneBox and zoneReady
+    color boxBg = color.new(zoneColor, touchesPullbackBand ? 78 : 86)
+    color boxBorder = color.new(zoneColor, touchesPullbackBand ? 0 : 20)
+    int boxLeft = bar_index - zoneLeftBars
+    int boxRight = bar_index + zoneRightBars
+    if na(currentZoneBox)
+        currentZoneBox := box.new(boxLeft, zoneTop, boxRight, zoneBottom, xloc=xloc.bar_index, bgcolor=boxBg, border_color=boxBorder, border_width=2)
+    else
+        box.set_left(currentZoneBox, boxLeft)
+        box.set_right(currentZoneBox, boxRight)
+        box.set_top(currentZoneBox, zoneTop)
+        box.set_bottom(currentZoneBox, zoneBottom)
+        box.set_bgcolor(currentZoneBox, boxBg)
+        box.set_border_color(currentZoneBox, boxBorder)
+        box.set_border_width(currentZoneBox, 2)
+    if showZoneLabel
+        string labelText = zoneTitle + zoneTouchText + "\n" + f_num(zoneBottom) + " - " + f_num(zoneTop)
+        if na(currentZoneLabel)
+            currentZoneLabel := label.new(boxRight, zoneMid, labelText, xloc=xloc.bar_index, style=label.style_label_left, color=color.new(zoneColor, 0), textcolor=zoneTextColor, size=size.small)
+        else
+            label.set_x(currentZoneLabel, boxRight)
+            label.set_y(currentZoneLabel, zoneMid)
+            label.set_text(currentZoneLabel, labelText)
+            label.set_color(currentZoneLabel, color.new(zoneColor, 0))
+            label.set_textcolor(currentZoneLabel, zoneTextColor)
+            label.set_style(currentZoneLabel, label.style_label_left)
+            label.set_size(currentZoneLabel, size.small)
+    else if not na(currentZoneLabel)
+        label.delete(currentZoneLabel)
+        currentZoneLabel := na
+else
+    if not na(currentZoneBox)
+        box.delete(currentZoneBox)
+        currentZoneBox := na
+    if not na(currentZoneLabel)
+        label.delete(currentZoneLabel)
+        currentZoneLabel := na
 
 var float bLS = na
 var float bN1 = na
@@ -368,20 +424,20 @@ bullState = bullReady ? "wait NL break" : not na(iHead) ? "wait RS" : not na(iLS
 
 var table t = table.new(f_table_pos(tablePosInput), 2, 10, bgcolor=color.new(color.black, 10), border_width=1)
 if barstate.islast and showTable
-    table.cell(t, 0, 0, "Dow Pullback", text_color=color.white, text_size=size.small)
+    table.cell(t, 0, 0, "見るゾーン", text_color=color.white, text_size=size.small)
     table.cell(t, 1, 0, timeframe.period + " / " + htf, text_color=color.white, text_size=size.tiny)
     table.cell(t, 0, 1, "HTF state", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 1, stateText, text_color=shortPullback ? color.red : longPullback ? color.lime : color.silver, text_size=size.tiny)
     table.cell(t, 0, 2, "Dow down/up", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 2, f_yes(htfDown) + " / " + f_yes(htfUp), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 3, "band top", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 0, 3, "ゾーン上限", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 3, f_num(pullbackTop), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 4, "band bottom", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 0, 4, "ゾーン下限", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 4, f_num(pullbackBottom), text_color=color.white, text_size=size.tiny)
-    table.cell(t, 0, 5, "bar touches", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 0, 5, "今ゾーン内", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 5, f_yes(touchesPullbackBand), text_color=touchesPullbackBand ? color.lime : color.orange, text_size=size.tiny)
-    table.cell(t, 0, 6, "band fill", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 6, f_yes(showPullbackBand), text_color=showPullbackBand ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(t, 0, 6, "箱表示", text_color=color.silver, text_size=size.tiny)
+    table.cell(t, 1, 6, f_yes(showCurrentZoneBox), text_color=showCurrentZoneBox ? color.lime : color.orange, text_size=size.tiny)
     table.cell(t, 0, 7, "H&S hidden", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 7, f_yes(not showStructure and not showNeckline and not showCandidate), text_color=color.lime, text_size=size.tiny)
     table.cell(t, 0, 8, "setups S/L", text_color=color.silver, text_size=size.tiny)

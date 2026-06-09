@@ -91,12 +91,22 @@ var int[] pivotBars = array.new_int()
 f_add_pivot(string _kind, float _price, int _bar) =>
     bool changed = false
     int sz = array.size(pivotKinds)
-    if sz > 0 and array.get(pivotKinds, sz - 1) == _kind
-        float oldPrice = array.get(pivotPrices, sz - 1)
-        bool replace = _kind == "H" ? _price >= oldPrice : _price <= oldPrice
-        if replace
-            array.set(pivotPrices, sz - 1, _price)
-            array.set(pivotBars, sz - 1, _bar)
+    if sz > 0
+        if array.get(pivotKinds, sz - 1) == _kind
+            float oldPrice = array.get(pivotPrices, sz - 1)
+            bool replace = _kind == "H" ? _price >= oldPrice : _price <= oldPrice
+            if replace
+                array.set(pivotPrices, sz - 1, _price)
+                array.set(pivotBars, sz - 1, _bar)
+                changed := true
+        else
+            array.push(pivotKinds, _kind)
+            array.push(pivotPrices, _price)
+            array.push(pivotBars, _bar)
+            while array.size(pivotKinds) > 8
+                array.shift(pivotKinds)
+                array.shift(pivotPrices)
+                array.shift(pivotBars)
             changed := true
     else
         array.push(pivotKinds, _kind)
@@ -150,7 +160,9 @@ var bool setupExhaustedW3 = false
 var line activeTriggerLine = na
 var label stateLabel = na
 
-bool hasLongSeq = sz >= 5 and f_kind(5) == "L" and f_kind(4) == "H" and f_kind(3) == "L" and f_kind(2) == "H" and f_kind(1) == "L"
+bool hasLongSeq = false
+if sz >= 5
+    hasLongSeq := f_kind(5) == "L" and f_kind(4) == "H" and f_kind(3) == "L" and f_kind(2) == "H" and f_kind(1) == "L"
 
 if pivotChanged and hasLongSeq
     float p0 = f_price(5)

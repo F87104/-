@@ -41,8 +41,8 @@ plot(close, title="Compile Anchor", display=display.none)
 grpMode = "Validation mode"
 entryMode = input.string("v0.2", "検証モード", options=["Classic", "v0.2", "Strong shallow W2"], group=grpMode)
 useDateFilter = input.bool(true, "期間フィルタを使う", group=grpMode)
-startTime = input.time(timestamp(2020, 1, 1, 0, 0), "開始", group=grpMode)
-endTime = input.time(timestamp(2026, 12, 31, 23, 59), "終了", group=grpMode)
+startTime = input.time(1577836800000, "開始", group=grpMode)
+endTime = input.time(1798761540000, "終了", group=grpMode)
 requireH4 = input.bool(false, "H4以外は検証しない", group=grpMode)
 
 grpCore = "Classic W5 definition"

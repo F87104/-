@@ -45,7 +45,7 @@
 | 16 | H4 V Kickoff Catalyst | 2015-2026 | 各種 | - | - | - | - | 🔬 研究 | Vを直接買わず、V後の棚ブレイクを検証。Practical候補は90 trades / +33.55R / PF 1.83 |
 | 17 | D1 Trap Delayed H4 Shelf Strict | 2015-2026 | 9 | 100.0% | inf | +13.35R | 0.0R | 🔬 準本命 | D1安値Trapを直接買わず、30-180日後のH4棚ブレイクだけ買う |
 | 18 | Market Psychology Squeeze Strict | 2015-2026 | 43 | 53.5% | 2.21 | +24.72R | 3.09R | 🔬 フォワード候補 | 急落後の安値棚上抜け。GBPJPY除外でDDが大きく改善 |
-| 19 | Elliott W5 Reproducibility Classic | 2015-2024 / OOS | 531 | 25.4% | 1.17 | +47.5R | 20.5R | 🔬 部分支持 | 研究期間は対照群より良いがOOS PF0.48。単独採用しない |
+| 19 | Elliott W5 v0.2 Filter | 2015-2024 / OOS | 46 | 39.1% | 1.97 | +20.6R | 5.0R | 🔬 目視照合候補 | OOS8件 PF1.20。3波伸び切り除外が核。単独採用しない |
 
 **凡例**:
 - ✅ 採用 = 現在の本番運用に使用中
@@ -254,6 +254,7 @@ Pine: [`pine/visual/h4_sharp_drop_v_recovery_visual.pine`](../pine/visual/h4_sha
 |---|---|---|---|
 | **Elliott + V字フィボ 全体** | [`backtests/elliott_fibo/results_2015_2024/report_ja.md`](../backtests/elliott_fibo/results_2015_2024/report_ja.md) | 数百パターン網羅 | 件数◎ だが PF<1.3, DD大 |
 | **Elliott 5波 再現性 v0.1** | [`docs/research/elliott_wave5_reproducibility_2026-06-09/REPORT_ja.md`](research/elliott_wave5_reproducibility_2026-06-09/REPORT_ja.md) | Pivot/ZigZag + 比率条件でClassic W5と対照群を比較 | 研究期間は部分支持。OOSで崩れるためEvent scanner候補止まり |
+| **Elliott 5波 フィルター改善 v0.2** | [`docs/research/elliott_wave5_filter_improvement_2026-06-09/REPORT_ja.md`](research/elliott_wave5_filter_improvement_2026-06-09/REPORT_ja.md) | 3波伸び切り除外、2波深戻し除外、ロング限定で改善を検証 | `LONG_W3_CAP_W2_MOD` はResearch PF1.97 / OOS PF1.20。ただしOOS8件で本番不可 |
 
 **TOP 5 (Total R 順, 全体表より)**:
 

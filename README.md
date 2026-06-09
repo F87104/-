@@ -100,12 +100,15 @@
 | 対象 | XAUUSD / USDJPY / EURJPY / GBPJPY / CHFJPY / SILVER、H1/H4/D1 |
 | 結果 | **部分支持**。2015-2024ではClassic W5が対照群より良いが、OOS 2025-2026では崩れる |
 | Classic W5 vs 対照群 | PF 1.17 vs 1.09、2R到達率 25.42% vs 22.00%、MFE120 1.70R vs 1.53R |
-| 注意 | OOSはClassic W5 PF0.48 / avgR -0.37。単独売買ルール化は未支持 |
-| 強い場所 | H1、EURJPY / USDJPY / SILVER。H4/D1は弱い |
+| v0.2改善 | `long only + wave3/wave1<=1.2 + wave2<=0.618` で Research PF1.97 / OOS PF1.20 |
+| 注意 | OOSはまだ8件。単独売買ルール化は未支持 |
+| 強い方向 | 3波が伸び切っていないロング5波。H1過去成績だけの採用は危険 |
 | レポート | [REPORT_ja.md](docs/research/elliott_wave5_reproducibility_2026-06-09/REPORT_ja.md) |
+| 改善レポート | [v0.2 filter improvement](docs/research/elliott_wave5_filter_improvement_2026-06-09/REPORT_ja.md) |
 | 検証スクリプト | [run_elliott_wave5_reproducibility_study.py](backtests/elliott_fibo/run_elliott_wave5_reproducibility_study.py) |
+| 改善スクリプト | [run_elliott_wave5_filter_improvement_study.py](backtests/elliott_fibo/run_elliott_wave5_filter_improvement_study.py) |
 
-**現時点の読み:** エリオット5波は、AIに任せるなら「画像でなんとなく数える」より、Pivotと比率条件で候補を固定する方が再現性がある。ただし、伸びやすさは少し見える一方でOOSが弱いので、まずは **5波候補ラベル / Event scanner** として扱う。
+**現時点の読み:** エリオット5波は、AIに任せるなら「画像でなんとなく数える」より、Pivotと比率条件で候補を固定する方が再現性がある。改善の核は「3波が強すぎる場所を捨てる」こと。ただしOOS件数が少ないので、まずは **5波候補ラベル / Event scanner** として扱う。
 
 ---
 

@@ -26,7 +26,7 @@
 | **系統B B06 Pine照合** | [DECISION_b06_tv_oanda_parity.md](system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md) |
 | **Lower High 3 Touch 仮説** | [lower_high_three_touch_breakdown_hypothesis_2026-06-08.md](lower_high_three_touch_breakdown_hypothesis_2026-06-08.md) ／ [B抜け危険除外](lower_high_b_break_danger_filters_2026-06-08/REPORT_ja.md) ／ [通貨別検証Pine](lower_high_synapse_b_symbol_presets_2026-06-08.md) ／ [B床化確認](lower_high_b_support_confirmation_2026-06-08/REPORT_ja.md) ／ [確認フィルタ勝率PF](lower_high_synapse_confirm_filters_2026-06-08/REPORT_ja.md) ／ [赤LINE勝率PF](lower_high_synapse_reclaim_long_strategy_2026-06-08/REPORT_ja.md) ／ [下抜け実測](lower_high_three_touch_breakdown_2026-06-08/REPORT_ja.md) ／ [上抜けロング実測](lower_high_synapse_reclaim_long_2026-06-08/REPORT_ja.md) ／ [Synapse接続](lower_high_synapse_bridge_2026-06-08.md) |
 | **MTF押し目 x 下位足転換 仮説** | [仮説メモ](higher_tf_pullback_lower_tf_reversal_2026-06-08.md) ／ [v0.1検証レポート](mtf_pullback_lower_tf_reversal_2026-06-09/REPORT_ja.md) |
-| **Elliott 5波狙い 再現性 仮説** | [v0.1検証レポート](elliott_wave5_reproducibility_2026-06-09/REPORT_ja.md) ／ [検証CSV](elliott_wave5_reproducibility_2026-06-09/summary_by_method.csv) |
+| **Elliott 5波狙い 再現性 仮説** | [v0.1検証レポート](elliott_wave5_reproducibility_2026-06-09/REPORT_ja.md) ／ [v0.2改善レポート](elliott_wave5_filter_improvement_2026-06-09/REPORT_ja.md) ／ [検証CSV](elliott_wave5_reproducibility_2026-06-09/summary_by_method.csv) |
 | ~~上位足戻し x 下位足H&S 仮説~~ | **終了** — [DECISION](mtf_pullback_hs_DECISION_2026-06-08.md) ／ [試作Pine](../../pine/research/mtf_pullback_head_shoulders_visual_v0_1.pine) |
 | **旧心理スプリント（参照のみ）** | [ARCHIVE_psychology_sprint_2026-05_06.md](ARCHIVE_psychology_sprint_2026-05_06.md) |
 
@@ -37,7 +37,7 @@
 3. ~~SQZ フォワード~~ — 退役（2026-05-31）
 4. Lower High 3 Touch は、XAUUSD H4で `LINE上抜け + B抜け + Aまで0.5R以上` をENTRY候補にし、D1 EMA20上を強い追い風ラベル、終値位置60%以上を軽い品質ラベルとしてTradingViewで目視照合する
 5. MTF押し目 x 下位足転換は、GO/NO-GOサンプル20件をTradingViewで目視照合し、Event scanner化するか判断する
-6. Elliott 5波狙いは、W5_CLASSIC と CONTROL_NOT_W5 の代表20件をTradingViewで目視照合し、Pivot幅/ATR閾値の感度分析を行う。Pine化する場合もENTRYではなくEvent scannerから始める
+6. Elliott 5波狙いは、v0.2の `LONG_W3_CAP_W2_MOD`（ロング + 3波<=1.2 + 2波<=0.618）を代表20件TradingViewで目視照合する。Pine化する場合もENTRYではなくEvent scannerから始める
 7. ~~上位足戻し x 下位足H&S~~ — 終了。TradingView上で人間が直感的に使える見え方にならないため、本線から外す
 
 ## 進捗ログ（アクティブ）
@@ -59,6 +59,7 @@
 | 2026-06-08 | **上位足戻し x 下位足H&S 終了** | TradingViewで目視確認した結果、戻しゾーンもH&S候補も実践判断として見えにくく、複雑化するほどENTRY候補が分かりにくくなったため終了。 | 本線に戻さない。以後は `LH3 + B水平線` のENTRY候補を優先する |
 | 2026-06-09 | **MTF押し目 x 下位足転換 v0.1** | USDJPY/GBPJPY/XAUUSDでGO30件・NO-GO30件を機械抽出。GOはMAE120h 3.34R vs 3.48R、MFE120h 4.09R vs 2.14R、2R到達率26.67% vs 20.00%で主仮説は支持。ただしPF0.81 vs 0.84、平均R-0.14 vs -0.10で売買ルールは未採用。 | TradingViewで20件目視照合。Pine化するならENTRYではなくEvent scanner |
 | 2026-06-09 | **Elliott 5波狙い 再現性 v0.1** | XAUUSD/USDJPY/EURJPY/GBPJPY/CHFJPY/SILVERのH1/H4/D1で24746ラベルを生成。Classic W5は研究期間でPF1.17、2R到達率25.42%、MFE120 1.70Rと対照群を上回るが、OOSではPF0.48に崩れたため部分支持。 | 代表20件をTradingViewで目視照合。H1とEURJPY/USDJPY/SILVER中心に、Event scanner化できるか判断 |
+| 2026-06-09 | **Elliott 5波 フィルター改善 v0.2** | Classic W5の悪化要因をフィルター検証。`LONG_W3_CAP_W2_MOD` はResearch 46件・勝率39.13%・PF1.97、OOS 8件・勝率37.50%・PF1.20。3波が強すぎる場所を捨てるのが改善の核。 | OOS件数が少ないため本番化しない。代表20件をTradingViewで目視照合し、Event scannerラベル化を判断 |
 
 ## 進捗ログ（アーカイブ — 心理スプリント 2026-05〜06）
 
@@ -124,7 +125,7 @@
 | 4 | トレード実践記録 | 記録開始 | 作成したインジケータを実戦で使った結果を残す | USDJPY H4 159.674 を1件目として記録 | 決済後レビューを追記 |
 | 5 | Lower High 3 Touch Breakdown | B抜け危険除外v0.1 | 3回高値切り下げ後の売り継続と転換候補を分ける | 下抜け1578件、上抜け2389件、勝率PF14334シナリオ、B床化22698シナリオ、危険除外30474スコープ行を実測 | XAUUSD H4でA余白0.5R・D1 EMA20・終値位置60%以上をPineへ表示する |
 | 6 | MTF押し目 x 下位足転換 | v0.1検証済み | 上位足押し目の中にある下位足転換をENTRY前確認に使えるか調べる | GO30件/NO-GO30件。伸びはGO優位だがPF/平均Rは未改善 | 20件をTradingViewで目視照合し、Event scanner化判断 |
-| 7 | Elliott 5波狙い 再現性 | v0.1検証済み | 人間の波数えではなく、AI/コードの固定条件で5波が伸びやすいか調べる | Classic W5は研究期間で対照群より優位、OOSで崩れて部分支持 | TradingView目視照合20件、Pivot/ATR感度分析、Event scanner化判断 |
+| 7 | Elliott 5波狙い 再現性 | v0.2改善検証済み | 人間の波数えではなく、AI/コードの固定条件で5波が伸びやすいか調べる | ロング + 3波<=1.2 + 2波<=0.618でResearch PF1.97、OOS PF1.20。ただしOOS8件 | TradingView目視照合20件、Event scanner化判断 |
 | 8 | Wavebox / Rebreak | 記録済み | 波形、再ブレイク、押し戻りの有効条件を調べる | 運用前提、監査、Pine 実装メモを整理済み | 実運用に使う版と研究保留版を分ける |
 
 ## トレード心理研究の中間整理

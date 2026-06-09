@@ -103,7 +103,7 @@
 | v0.2改善 | `long only + wave3/wave1<=1.2 + wave2<=0.618` で Research PF1.97 / OOS PF1.20 |
 | 注意 | OOSはまだ8件。単独売買ルール化は未支持 |
 | 強い方向 | 3波が伸び切っていないロング5波。H1過去成績だけの採用は危険 |
-| Pine | [elliott_wave5_event_scanner_v0_2.pine](pine/research/elliott_wave5_event_scanner_v0_2.pine) |
+| Pine | [Event scanner](pine/research/elliott_wave5_event_scanner_v0_2.pine) ／ [H4検証strategy](pine/research/elliott_wave5_h4_validation_strategy_v0_1.pine) |
 | レポート | [REPORT_ja.md](docs/research/elliott_wave5_reproducibility_2026-06-09/REPORT_ja.md) |
 | 改善レポート | [v0.2 filter improvement](docs/research/elliott_wave5_filter_improvement_2026-06-09/REPORT_ja.md) |
 | 検証スクリプト | [run_elliott_wave5_reproducibility_study.py](backtests/elliott_fibo/run_elliott_wave5_reproducibility_study.py) |

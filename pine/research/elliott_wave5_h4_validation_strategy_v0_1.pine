@@ -1,0 +1,339 @@
+//@version=5
+strategy("Elliott W5 H4 Validation Strategy v0.1 [Research]",
+     overlay=true,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500,
+     pyramiding=0,
+     initial_capital=1000000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
+     process_orders_on_close=true,
+     calc_on_order_fills=true,
+     calc_on_every_tick=false)
+
+// Research only.
+// 目的:
+// - Elliott W5 Event Scanner v0.2 の候補をTradingViewストラテジーテスターで検証する
+// - まずはH4で、候補位置・勝率・PF・DDを確認する
+// - 本番売買ではなく、研究用の仮想検証Pine
+//
+// 初期設定:
+// - Mode: v0.2
+// - Long only
+// - Entry: 3波高値を終値で上抜けた足
+// - SL: 4波安値 - 0.20ATR
+// - TP: 2R
+// - Time exit: 48本
+//
+// 検証メモ:
+// - BASE_W5_CLASSIC: Research 勝率25.42% PF1.17 / OOS 勝率12.00% PF0.48
+// - LONG_W3_CAP_W2_MOD: Research 46件 勝率39.13% PF1.97 / OOS 8件 勝率37.50% PF1.20
+// - 改善の核は「3波が伸び切った後の5波を捨てる」こと
+//
+// 注意:
+// - H4での目視照合を優先する。M5/M15では波が細かくなりすぎやすい。
+// - TradingViewとPythonはデータ配信元・同一足SL/TP処理が異なるため、まず位置の一致を見る。
+// - OOS件数が少ないため、単独売買ルール化は禁止。
+
+plot(close, title="Compile Anchor", display=display.none)
+
+grpMode = "Validation mode"
+entryMode = input.string("v0.2", "検証モード", options=["Classic", "v0.2", "Strong shallow W2"], group=grpMode)
+useDateFilter = input.bool(true, "期間フィルタを使う", group=grpMode)
+startTime = input.time(timestamp(2020, 1, 1, 0, 0), "開始", group=grpMode)
+endTime = input.time(timestamp(2026, 12, 31, 23, 59), "終了", group=grpMode)
+requireH4 = input.bool(false, "H4以外は検証しない", group=grpMode)
+
+grpCore = "Classic W5 definition"
+pivotLeft = input.int(5, "Pivot left", minval=1, maxval=50, group=grpCore)
+pivotRight = input.int(5, "Pivot right", minval=1, maxval=50, group=grpCore)
+atrLen = input.int(14, "ATR", minval=1, group=grpCore)
+breakBufferAtr = input.float(0.02, "3波高値上抜けバッファ ATR", minval=0.0, step=0.01, group=grpCore)
+minWave2 = input.float(0.236, "Classic 2波 最小戻し", minval=0.0, maxval=1.0, step=0.001, group=grpCore)
+maxWave2 = input.float(0.786, "Classic 2波 最大戻し", minval=0.0, maxval=1.5, step=0.001, group=grpCore)
+minWave4 = input.float(0.236, "Classic 4波 最小戻し", minval=0.0, maxval=1.0, step=0.001, group=grpCore)
+maxWave4 = input.float(0.618, "Classic 4波 最大戻し", minval=0.0, maxval=1.5, step=0.001, group=grpCore)
+
+grpFilter = "v0.2 filter"
+maxWave3VsWave1 = input.float(1.20, "3波伸び切り除外 wave3/wave1 <=", minval=0.5, maxval=5.0, step=0.05, group=grpFilter)
+maxWave2ForV02 = input.float(0.618, "2波深戻し除外 wave2 <=", minval=0.1, maxval=1.0, step=0.001, group=grpFilter)
+strongWave2Max = input.float(0.382, "2波浅い強候補 wave2 <=", minval=0.1, maxval=1.0, step=0.001, group=grpFilter)
+requireEarlyBreak = input.bool(false, "早いブレイクだけ検証する", group=grpFilter)
+earlyBreakMax = input.float(0.05, "早いブレイク目安 entry_over_wave3 <=", minval=0.0, maxval=1.0, step=0.01, group=grpFilter)
+
+grpRisk = "Risk"
+rr = input.float(2.0, "TP RR", minval=0.25, step=0.25, group=grpRisk)
+stopBufferAtr = input.float(0.20, "SL余白 ATR", minval=0.0, step=0.05, group=grpRisk)
+maxHoldBars = input.int(48, "最大保有本数", minval=1, maxval=500, group=grpRisk)
+
+grpView = "Visual"
+showWaveLines = input.bool(true, "波ラインを表示", group=grpView)
+showSetupLabels = input.bool(true, "W5候補ラベル", group=grpView)
+showEntryLabels = input.bool(true, "ENTRY/SL/TPラベル", group=grpView)
+showTable = input.bool(true, "右上テーブル", group=grpView)
+tablePosInput = input.string("top_right", "テーブル位置", options=["top_left", "top_right", "bottom_left", "bottom_right"], group=grpView)
+levelExtendBars = input.int(48, "水平線の表示本数", minval=5, maxval=300, group=grpView)
+keepObjects = input.int(180, "残すラベル/ライン数", minval=30, maxval=450, group=grpView)
+
+f_table_pos(string pos) =>
+    pos == "top_left" ? position.top_left :
+     pos == "bottom_left" ? position.bottom_left :
+     pos == "bottom_right" ? position.bottom_right :
+     position.top_right
+
+f_num(float x) =>
+    na(x) ? "-" : str.tostring(x, "#.###")
+
+f_pct(float x) =>
+    na(x) ? "-" : str.tostring(x * 100.0, "#.#") + "%"
+
+f_mode_ok(bool classicOk, bool v02Ok, bool strongOk) =>
+    entryMode == "Classic" ? classicOk :
+     entryMode == "Strong shallow W2" ? strongOk :
+     v02Ok
+
+var label[] keptLabels = array.new_label()
+var line[] keptLines = array.new_line()
+
+keep_label(label lb) =>
+    array.push(keptLabels, lb)
+    while array.size(keptLabels) > keepObjects
+        label.delete(array.shift(keptLabels))
+
+keep_line(line ln) =>
+    array.push(keptLines, ln)
+    while array.size(keptLines) > keepObjects
+        line.delete(array.shift(keptLines))
+
+atr = ta.atr(atrLen)
+ph = ta.pivothigh(high, pivotLeft, pivotRight)
+pl = ta.pivotlow(low, pivotLeft, pivotRight)
+
+bool inDate = not useDateFilter or (time >= startTime and time <= endTime)
+bool isH4 = timeframe.in_seconds(timeframe.period) == 4 * 60 * 60
+bool tfOk = not requireH4 or isH4
+
+var string[] pivotKinds = array.new_string()
+var float[] pivotPrices = array.new_float()
+var int[] pivotBars = array.new_int()
+
+f_add_pivot(string _kind, float _price, int _bar) =>
+    bool changed = false
+    int sz = array.size(pivotKinds)
+    if sz > 0
+        if array.get(pivotKinds, sz - 1) == _kind
+            float oldPrice = array.get(pivotPrices, sz - 1)
+            bool replace = _kind == "H" ? _price >= oldPrice : _price <= oldPrice
+            if replace
+                array.set(pivotPrices, sz - 1, _price)
+                array.set(pivotBars, sz - 1, _bar)
+                changed := true
+        else
+            array.push(pivotKinds, _kind)
+            array.push(pivotPrices, _price)
+            array.push(pivotBars, _bar)
+            while array.size(pivotKinds) > 8
+                array.shift(pivotKinds)
+                array.shift(pivotPrices)
+                array.shift(pivotBars)
+            changed := true
+    else
+        array.push(pivotKinds, _kind)
+        array.push(pivotPrices, _price)
+        array.push(pivotBars, _bar)
+        while array.size(pivotKinds) > 8
+            array.shift(pivotKinds)
+            array.shift(pivotPrices)
+            array.shift(pivotBars)
+        changed := true
+    changed
+
+bool pivotChanged = false
+if not na(ph)
+    pivotChanged := f_add_pivot("H", ph, bar_index - pivotRight) or pivotChanged
+if not na(pl)
+    pivotChanged := f_add_pivot("L", pl, bar_index - pivotRight) or pivotChanged
+
+int sz = array.size(pivotKinds)
+
+f_kind(int fromEnd) =>
+    array.get(pivotKinds, array.size(pivotKinds) - fromEnd)
+
+f_price(int fromEnd) =>
+    array.get(pivotPrices, array.size(pivotPrices) - fromEnd)
+
+f_bar(int fromEnd) =>
+    array.get(pivotBars, array.size(pivotBars) - fromEnd)
+
+var bool setupActive = false
+var int setupP4Bar = na
+var float setupP0 = na
+var float setupP1 = na
+var float setupP2 = na
+var float setupP3 = na
+var float setupP4 = na
+var int setupB0 = na
+var int setupB1 = na
+var int setupB2 = na
+var int setupB3 = na
+var int setupB4 = na
+var float setupWave1 = na
+var float setupWave3 = na
+var float setupWave2Ret = na
+var float setupWave4Ret = na
+var float setupWave3Vs = na
+var bool setupV02Core = false
+var bool setupStrongW2 = false
+var bool setupExhaustedW3 = false
+var bool setupClassic = false
+
+var int setupCount = 0
+var int signalCount = 0
+var int rejectedCount = 0
+var float lastEntry = na
+var float lastStop = na
+var float lastTarget = na
+var int strategyEntryBar = na
+var float strategyStop = na
+var float strategyTarget = na
+
+bool hasLongSeq = false
+if sz >= 5
+    hasLongSeq := f_kind(5) == "L" and f_kind(4) == "H" and f_kind(3) == "L" and f_kind(2) == "H" and f_kind(1) == "L"
+
+if pivotChanged and hasLongSeq
+    float p0 = f_price(5)
+    float p1 = f_price(4)
+    float p2 = f_price(3)
+    float p3 = f_price(2)
+    float p4 = f_price(1)
+    int b0 = f_bar(5)
+    int b1 = f_bar(4)
+    int b2 = f_bar(3)
+    int b3 = f_bar(2)
+    int b4 = f_bar(1)
+    float wave1 = p1 - p0
+    float wave3 = p3 - p2
+    float wave2Ret = wave1 > 0 ? (p1 - p2) / wave1 : na
+    float wave4Ret = wave3 > 0 ? (p3 - p4) / wave3 : na
+    float wave3Vs = wave1 > 0 ? wave3 / wave1 : na
+    bool structureOk = p3 > p1 and p2 > p0 and p4 > p2
+    bool retraceOk = not na(wave2Ret) and not na(wave4Ret) and wave2Ret >= minWave2 and wave2Ret <= maxWave2 and wave4Ret >= minWave4 and wave4Ret <= maxWave4
+    bool wave3Classic = wave3 >= wave1
+    bool classicW5 = structureOk and retraceOk and wave3Classic
+    bool freshSetup = classicW5 and (na(setupP4Bar) or b4 != setupP4Bar)
+    if freshSetup
+        setupActive := true
+        setupP4Bar := b4
+        setupP0 := p0
+        setupP1 := p1
+        setupP2 := p2
+        setupP3 := p3
+        setupP4 := p4
+        setupB0 := b0
+        setupB1 := b1
+        setupB2 := b2
+        setupB3 := b3
+        setupB4 := b4
+        setupWave1 := wave1
+        setupWave3 := wave3
+        setupWave2Ret := wave2Ret
+        setupWave4Ret := wave4Ret
+        setupWave3Vs := wave3Vs
+        setupClassic := classicW5
+        setupV02Core := wave3Vs <= maxWave3VsWave1 and wave2Ret <= maxWave2ForV02
+        setupStrongW2 := setupV02Core and wave2Ret <= strongWave2Max
+        setupExhaustedW3 := wave3Vs > maxWave3VsWave1
+        setupCount += 1
+        if showWaveLines
+            keep_line(line.new(b0, p0, b1, p1, color=color.new(color.aqua, 0), width=2))
+            keep_line(line.new(b1, p1, b2, p2, color=color.new(color.gray, 20), width=1))
+            keep_line(line.new(b2, p2, b3, p3, color=color.new(color.aqua, 0), width=2))
+            keep_line(line.new(b3, p3, b4, p4, color=color.new(color.gray, 20), width=1))
+            keep_line(line.new(b3, p3, bar_index + levelExtendBars, p3, color=color.new(color.yellow, 0), style=line.style_dashed, width=2))
+        if showSetupLabels
+            string setupText = setupV02Core ? "W5待機\nv0.2" : setupExhaustedW3 ? "W5注意\n3波伸び切り" : "W5待機"
+            setupText += "\n3/1=" + f_num(wave3Vs) + " 2波=" + f_pct(wave2Ret)
+            color setupColor = setupV02Core ? color.new(color.lime, 8) : setupExhaustedW3 ? color.new(color.orange, 8) : color.new(color.gray, 20)
+            keep_label(label.new(b4, p4, setupText, style=label.style_label_up, color=setupColor, textcolor=color.black, size=size.small))
+
+bool canBreak = setupActive and not na(setupP3) and bar_index > setupB4
+bool breakout = canBreak and close[1] <= setupP3 and close > setupP3 + atr * breakBufferAtr
+float entryOverWave3 = breakout and setupWave3 > 0 ? (close - setupP3) / setupWave3 : na
+bool earlyBreak = breakout and entryOverWave3 <= earlyBreakMax
+bool modeOk = f_mode_ok(setupClassic, setupV02Core, setupStrongW2)
+bool earlyOk = not requireEarlyBreak or earlyBreak
+bool entrySignal = breakout and modeOk and earlyOk and inDate and tfOk and strategy.position_size == 0
+
+if breakout
+    float entry = close
+    float sl = setupP4 - atr * stopBufferAtr
+    float risk = entry - sl
+    bool riskOk = risk > 0
+    if entrySignal and riskOk
+        float tp = entry + risk * rr
+        signalCount += 1
+        lastEntry := entry
+        lastStop := sl
+        lastTarget := tp
+        strategyStop := sl
+        strategyTarget := tp
+        strategyEntryBar := bar_index
+        strategy.entry("W5-L", strategy.long, comment=entryMode)
+        strategy.exit("W5-TP/SL", "W5-L", stop=strategyStop, limit=strategyTarget)
+        if showEntryLabels
+            int labelBar = bar_index + int(math.min(levelExtendBars, 20))
+            keep_line(line.new(bar_index, entry, bar_index + levelExtendBars, entry, color=color.new(color.white, 0), style=line.style_dotted, width=1))
+            keep_line(line.new(bar_index, sl, bar_index + levelExtendBars, sl, color=color.new(color.red, 0), width=2))
+            keep_line(line.new(bar_index, tp, bar_index + levelExtendBars, tp, color=color.new(color.lime, 0), width=2))
+            keep_label(label.new(bar_index, high + atr * 0.35, "ENTRY\n" + entryMode + "\n3/1=" + f_num(setupWave3Vs), style=label.style_label_down, color=color.new(color.lime, 0), textcolor=color.black, size=size.small))
+            keep_label(label.new(labelBar, entry, "ENTRY", style=label.style_label_left, color=color.new(color.white, 0), textcolor=color.black, size=size.tiny))
+            keep_label(label.new(labelBar, sl, "SL", style=label.style_label_left, color=color.new(color.red, 0), textcolor=color.white, size=size.tiny))
+            keep_label(label.new(labelBar, tp, "TP " + str.tostring(rr, "#.#") + "R", style=label.style_label_left, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
+    else
+        rejectedCount += 1
+        if showEntryLabels
+            string rejectText = not modeOk ? "除外\nmode" : not earlyOk ? "除外\nearly" : not inDate ? "除外\nperiod" : not tfOk ? "除外\nH4 only" : not riskOk ? "除外\nrisk" : "除外\nposition"
+            keep_label(label.new(bar_index, high + atr * 0.35, rejectText, style=label.style_label_down, color=color.new(color.orange, 10), textcolor=color.black, size=size.tiny))
+    setupActive := false
+
+if strategy.position_size > 0 and not na(strategyStop) and not na(strategyTarget)
+    strategy.exit("W5-TP/SL", "W5-L", stop=strategyStop, limit=strategyTarget)
+
+if strategy.position_size > 0 and not na(strategyEntryBar) and bar_index - strategyEntryBar >= maxHoldBars
+    strategy.close("W5-L", comment="TIME")
+
+if strategy.position_size == 0 and strategy.position_size[1] > 0
+    strategyEntryBar := na
+    strategyStop := na
+    strategyTarget := na
+
+plotshape(entrySignal, title="Validation ENTRY", style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.small, text="W5")
+plotshape(breakout and not entrySignal and setupExhaustedW3, title="Wave3 exhausted warning", style=shape.xcross, location=location.abovebar, color=color.red, size=size.small, text="EX")
+
+alertcondition(entrySignal, title="Elliott W5 validation entry", message="Elliott W5 validation entry. Research strategy only.")
+
+var table t = table.new(f_table_pos(tablePosInput), 2, 10, bgcolor=color.new(color.black, 15), frame_color=color.new(color.white, 70), frame_width=1)
+if showTable and barstate.islast
+    string state = setupActive ? (setupV02Core ? "WAIT v0.2" : setupExhaustedW3 ? "W5 caution" : "WAIT") : strategy.position_size > 0 ? "IN TRADE" : "scan"
+    table.cell(t, 0, 0, "Elliott W5 STR", text_color=color.white, bgcolor=color.new(color.gray, 45))
+    table.cell(t, 1, 0, state, text_color=strategy.position_size > 0 ? color.lime : setupExhaustedW3 ? color.orange : color.white, bgcolor=color.new(color.gray, 65))
+    table.cell(t, 0, 1, "mode", text_color=color.white)
+    table.cell(t, 1, 1, entryMode, text_color=color.lime)
+    table.cell(t, 0, 2, "TF", text_color=color.white)
+    table.cell(t, 1, 2, isH4 ? "H4 OK" : "not H4", text_color=isH4 ? color.lime : color.orange)
+    table.cell(t, 0, 3, "setup/signal", text_color=color.white)
+    table.cell(t, 1, 3, str.tostring(setupCount) + " / " + str.tostring(signalCount), text_color=color.white)
+    table.cell(t, 0, 4, "rejected", text_color=color.white)
+    table.cell(t, 1, 4, str.tostring(rejectedCount), text_color=color.orange)
+    table.cell(t, 0, 5, "3波/1波", text_color=color.white)
+    table.cell(t, 1, 5, f_num(setupWave3Vs), text_color=setupExhaustedW3 ? color.red : color.lime)
+    table.cell(t, 0, 6, "2波戻し", text_color=color.white)
+    table.cell(t, 1, 6, f_pct(setupWave2Ret), text_color=setupStrongW2 ? color.aqua : color.white)
+    table.cell(t, 0, 7, "last entry", text_color=color.white)
+    table.cell(t, 1, 7, f_num(lastEntry), text_color=color.white)
+    table.cell(t, 0, 8, "last SL/TP", text_color=color.white)
+    table.cell(t, 1, 8, f_num(lastStop) + " / " + f_num(lastTarget), text_color=color.white)
+    table.cell(t, 0, 9, "rule", text_color=color.white)
+    table.cell(t, 1, 9, "H4 validation", text_color=color.gray)

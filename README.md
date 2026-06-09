@@ -3,7 +3,7 @@
 > **2本の実装ライン:** 系統A（ブレイク追い+V字+踏み上げ）／ 系統B（棚ブレイク系）  
 > 10年バックテスト (2015-2024) + OOS (2025-2026) で検証済み。
 
-**最終更新**: 2026-06-08
+**最終更新**: 2026-06-09
 
 ---
 
@@ -15,6 +15,7 @@
 系統A  V1(H1) + T5(H4) + 踏み上げ投げ切り(H4)  … 本番（H4は3本セット）
 系統B  棚抜け（B06）                          … JPY4・Pine34件執行正
 研究候補 LH3 Synapse B / XAUUSD H4 Precision     … メイン候補（本番未採用）
+研究候補 MTF押し目×下位足転換                   … 仮説支持・売買ルール未採用
 ```
 
 ---
@@ -69,6 +70,23 @@
 | A余白0.5R RR2/48 | 58 | 67.24% | 2.98 | 2.50R |
 
 次の確認は、`XAUUSD H4 / Precision` を主軸に、GBPJPY H1を研究枠として比較する。
+
+---
+
+### 研究中候補 — MTF押し目×下位足転換
+
+| 項目 | 内容 |
+|---|---|
+| 研究の問い | 上位足の押し目leg内で、下位足転換を待つとMAEが浅くMFEが大きくなるか |
+| 対象 | USDJPY / GBPJPY / XAUUSD、D1->H1 と H4->H1 |
+| サンプル | GO 30件 / NO-GO 30件（各通貨10件ずつ） |
+| 結果 | 主仮説は支持。ただしPF/平均Rは未改善のため、実運用は未採用 |
+| GO vs NO-GO | MAE120h 3.34R vs 3.48R、MFE120h 4.09R vs 2.14R、2R到達率 26.67% vs 20.00% |
+| 注意 | M15/M5は現在のOHLCソースに未配置。TradingView実スクショ照合は未完了 |
+| レポート | [REPORT_ja.md](docs/research/mtf_pullback_lower_tf_reversal_2026-06-09/REPORT_ja.md) |
+| 仮説メモ | [higher_tf_pullback_lower_tf_reversal_2026-06-08.md](docs/research/higher_tf_pullback_lower_tf_reversal_2026-06-08.md) |
+
+**現時点の読み:** 「押し目だから入る」より、「下位足のzigzagが止まり、直近LH/HLを終値で抜けるまで待つ」方が伸びは出やすい。ただしSL率が高く、PFもまだ弱いので、Pine化するなら売買サインではなく **Event scanner** から。
 
 ---
 

@@ -25,6 +25,7 @@
 | **系統B 本番運用** | [operations/system_b/README.md](../operations/system_b/README.md) |
 | **系統B B06 Pine照合** | [DECISION_b06_tv_oanda_parity.md](system_b_pine_parity_2026-06-01/DECISION_b06_tv_oanda_parity.md) |
 | **Lower High 3 Touch 仮説** | [lower_high_three_touch_breakdown_hypothesis_2026-06-08.md](lower_high_three_touch_breakdown_hypothesis_2026-06-08.md) ／ [B抜け危険除外](lower_high_b_break_danger_filters_2026-06-08/REPORT_ja.md) ／ [通貨別検証Pine](lower_high_synapse_b_symbol_presets_2026-06-08.md) ／ [B床化確認](lower_high_b_support_confirmation_2026-06-08/REPORT_ja.md) ／ [確認フィルタ勝率PF](lower_high_synapse_confirm_filters_2026-06-08/REPORT_ja.md) ／ [赤LINE勝率PF](lower_high_synapse_reclaim_long_strategy_2026-06-08/REPORT_ja.md) ／ [下抜け実測](lower_high_three_touch_breakdown_2026-06-08/REPORT_ja.md) ／ [上抜けロング実測](lower_high_synapse_reclaim_long_2026-06-08/REPORT_ja.md) ／ [Synapse接続](lower_high_synapse_bridge_2026-06-08.md) |
+| **MTF押し目 x 下位足転換 仮説** | [仮説メモ](higher_tf_pullback_lower_tf_reversal_2026-06-08.md) ／ [v0.1検証レポート](mtf_pullback_lower_tf_reversal_2026-06-09/REPORT_ja.md) |
 | ~~上位足戻し x 下位足H&S 仮説~~ | **終了** — [DECISION](mtf_pullback_hs_DECISION_2026-06-08.md) ／ [試作Pine](../../pine/research/mtf_pullback_head_shoulders_visual_v0_1.pine) |
 | **旧心理スプリント（参照のみ）** | [ARCHIVE_psychology_sprint_2026-05_06.md](ARCHIVE_psychology_sprint_2026-05_06.md) |
 
@@ -34,7 +35,8 @@
 2. **TB に追加フィルタを入れない**（検証で総R↓のみ）
 3. ~~SQZ フォワード~~ — 退役（2026-05-31）
 4. Lower High 3 Touch は、XAUUSD H4で `LINE上抜け + B抜け + Aまで0.5R以上` をENTRY候補にし、D1 EMA20上を強い追い風ラベル、終値位置60%以上を軽い品質ラベルとしてTradingViewで目視照合する
-5. ~~上位足戻し x 下位足H&S~~ — 終了。TradingView上で人間が直感的に使える見え方にならないため、本線から外す
+5. MTF押し目 x 下位足転換は、GO/NO-GOサンプル20件をTradingViewで目視照合し、Event scanner化するか判断する
+6. ~~上位足戻し x 下位足H&S~~ — 終了。TradingView上で人間が直感的に使える見え方にならないため、本線から外す
 
 ## 進捗ログ（アクティブ）
 
@@ -53,6 +55,7 @@
 | 2026-06-08 | **LH3 B抜け 通貨別検証Pine** | TradingViewのストラテジーテスターで勝率/PFを見るため、通貨別プリセット付きstrategy Pineを追加。XAUUSD H4はA余白0.5R、GBPJPY/USDJPYはH1、EUR/CHF/AUD/SILVERはH4を初期プリセットにした。 | TradingViewで `Auto` のまま各通貨に貼り、推奨TFがOKか確認して勝率/PFを見る |
 | 2026-06-08 | **上位足戻し x 下位足H&S** | 新規仮説。上位足では戻しに見える場所を背景で出し、その中の下位足H&S/逆H&Sを後から確認するPine v0.7を追加。v0.7は上位足ダウ理論の直近推進波から38.2〜61.8%戻し帯を出し、人間が見やすいように現在の戻しゾーンを右側の大きな箱とラベルで表示する。 | まずXAUUSDとUSDJPYで、D1ダウ戻し箱が人間の目に近いか確認する |
 | 2026-06-08 | **上位足戻し x 下位足H&S 終了** | TradingViewで目視確認した結果、戻しゾーンもH&S候補も実践判断として見えにくく、複雑化するほどENTRY候補が分かりにくくなったため終了。 | 本線に戻さない。以後は `LH3 + B水平線` のENTRY候補を優先する |
+| 2026-06-09 | **MTF押し目 x 下位足転換 v0.1** | USDJPY/GBPJPY/XAUUSDでGO30件・NO-GO30件を機械抽出。GOはMAE120h 3.34R vs 3.48R、MFE120h 4.09R vs 2.14R、2R到達率26.67% vs 20.00%で主仮説は支持。ただしPF0.81 vs 0.84、平均R-0.14 vs -0.10で売買ルールは未採用。 | TradingViewで20件目視照合。Pine化するならENTRYではなくEvent scanner |
 
 ## 進捗ログ（アーカイブ — 心理スプリント 2026-05〜06）
 
@@ -117,7 +120,8 @@
 | 3 | Market Psychology Squeeze | 記録済み | スクイーズ、投げ売り、踏み上げを戦略化する | 通貨別の相性、厳格条件、ローソク足の例えを整理済み | `CAPITULATION` / `SQUEEZE` の観察ラベルをPineへ入れる |
 | 4 | トレード実践記録 | 記録開始 | 作成したインジケータを実戦で使った結果を残す | USDJPY H4 159.674 を1件目として記録 | 決済後レビューを追記 |
 | 5 | Lower High 3 Touch Breakdown | B抜け危険除外v0.1 | 3回高値切り下げ後の売り継続と転換候補を分ける | 下抜け1578件、上抜け2389件、勝率PF14334シナリオ、B床化22698シナリオ、危険除外30474スコープ行を実測 | XAUUSD H4でA余白0.5R・D1 EMA20・終値位置60%以上をPineへ表示する |
-| 6 | Wavebox / Rebreak | 記録済み | 波形、再ブレイク、押し戻りの有効条件を調べる | 運用前提、監査、Pine 実装メモを整理済み | 実運用に使う版と研究保留版を分ける |
+| 6 | MTF押し目 x 下位足転換 | v0.1検証済み | 上位足押し目の中にある下位足転換をENTRY前確認に使えるか調べる | GO30件/NO-GO30件。伸びはGO優位だがPF/平均Rは未改善 | 20件をTradingViewで目視照合し、Event scanner化判断 |
+| 7 | Wavebox / Rebreak | 記録済み | 波形、再ブレイク、押し戻りの有効条件を調べる | 運用前提、監査、Pine 実装メモを整理済み | 実運用に使う版と研究保留版を分ける |
 
 ## トレード心理研究の中間整理
 

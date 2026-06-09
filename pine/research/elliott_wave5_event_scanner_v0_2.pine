@@ -41,18 +41,20 @@ earlyBreakMax = input.float(0.05, "早いブレイク目安 entry_over_wave3 <="
 showStrictEarlyAsCandidate = input.bool(false, "早いブレイクもv0.2必須にする", group=grpFilter)
 
 grpRisk = "Risk guide"
-showRiskLevels = input.bool(true, "ENTRY/SL/TP2 ガイド表示", group=grpRisk)
+showRiskLevels = input.bool(false, "ENTRY/SL/TP2 ガイド表示", group=grpRisk)
 rr = input.float(2.0, "TP RR", minval=0.25, step=0.25, group=grpRisk)
 stopBufferAtr = input.float(0.20, "SL余白 ATR", minval=0.0, step=0.05, group=grpRisk)
 levelExtendBars = input.int(48, "水平線の表示本数", minval=5, maxval=300, group=grpRisk)
 
 grpView = "Visual"
-showSetupLabels = input.bool(true, "W5候補ラベル", group=grpView)
+showSetupLabels = input.bool(false, "W5候補ラベル", group=grpView)
 showBreakLabels = input.bool(true, "ブレイク判定ラベル", group=grpView)
-showWaveLines = input.bool(true, "波ラインを表示", group=grpView)
-showActiveLevel = input.bool(true, "現在の3波高値ライン", group=grpView)
+showWaveLines = input.bool(false, "波ラインを表示", group=grpView)
+showActiveLevel = input.bool(false, "現在の3波高値ライン", group=grpView)
 showTable = input.bool(true, "右上テーブル", group=grpView)
 tablePosInput = input.string("top_right", "テーブル位置", options=["top_left", "top_right", "bottom_left", "bottom_right"], group=grpView)
+lineLabelRightBars = input.int(3, "ENTRY/SL/TPラベル右ずらし本数", minval=0, maxval=20, group=grpView)
+candleLabelOffsetAtr = input.float(0.03, "ローソク足ラベル距離 ATR", minval=0.0, maxval=0.50, step=0.01, group=grpView)
 keepObjects = input.int(180, "残すラベル/ライン数", minval=30, maxval=450, group=grpView)
 
 f_table_pos(string pos) =>
@@ -220,7 +222,7 @@ if pivotChanged and hasLongSeq
             string setupText = setupV02Core ? "W5候補\nv0.2待機" : setupExhaustedW3 ? "W5候補\n3波伸び切り注意" : "W5候補"
             setupText += "\n3/1=" + f_num(wave3Vs) + " 2波=" + f_pct(wave2Ret)
             color setupColor = setupV02Core ? color.new(color.lime, 8) : setupExhaustedW3 ? color.new(color.orange, 8) : color.new(color.gray, 20)
-            keep_label(label.new(b4, p4, setupText, style=label.style_label_up, color=setupColor, textcolor=color.black, size=size.small))
+            keep_label(label.new(b4, p4 - atr * candleLabelOffsetAtr, setupText, style=label.style_label_up, color=setupColor, textcolor=color.black, size=size.small))
 
 if not na(activeTriggerLine) and showActiveLevel
     line.set_x2(activeTriggerLine, bar_index + levelExtendBars)
@@ -240,14 +242,14 @@ if breakout
     string body = title + "\n3/1=" + f_num(setupWave3Vs) + " 2波=" + f_pct(setupWave2Ret)
     body += "\nentryOver=" + f_pct(entryOverWave3)
     if showBreakLabels
-        keep_label(label.new(bar_index, high + atr * 0.35, body, style=label.style_label_down, color=lbColor, textcolor=color.black, size=size.small))
+        keep_label(label.new(bar_index, high + atr * candleLabelOffsetAtr, body, style=label.style_label_down, color=lbColor, textcolor=color.black, size=size.small))
     if showRiskLevels
         float entry = close
         float sl = setupP4 - atr * stopBufferAtr
         float risk = entry - sl
         if risk > 0
             float tp = entry + risk * rr
-            int labelBar = bar_index + int(math.min(levelExtendBars, 20))
+            int labelBar = bar_index + lineLabelRightBars
             keep_line(line.new(bar_index, entry, bar_index + levelExtendBars, entry, color=color.new(color.white, 0), style=line.style_dotted, width=1))
             keep_line(line.new(bar_index, sl, bar_index + levelExtendBars, sl, color=color.new(color.red, 0), width=2))
             keep_line(line.new(bar_index, tp, bar_index + levelExtendBars, tp, color=color.new(color.lime, 0), width=2))

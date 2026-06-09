@@ -68,12 +68,15 @@ stopBufferAtr = input.float(0.20, "SL余白 ATR", minval=0.0, step=0.05, group=g
 maxHoldBars = input.int(48, "最大保有本数", minval=1, maxval=500, group=grpRisk)
 
 grpView = "Visual"
-showWaveLines = input.bool(true, "波ラインを表示", group=grpView)
-showSetupLabels = input.bool(true, "W5候補ラベル", group=grpView)
+showWaveLines = input.bool(false, "波ラインを表示", group=grpView)
+showSetupLabels = input.bool(false, "W5候補ラベル", group=grpView)
 showEntryLabels = input.bool(true, "ENTRY/SL/TPラベル", group=grpView)
+showLevelLines = input.bool(false, "ENTRY/SL/TP水平線", group=grpView)
 showTable = input.bool(true, "右上テーブル", group=grpView)
 tablePosInput = input.string("top_right", "テーブル位置", options=["top_left", "top_right", "bottom_left", "bottom_right"], group=grpView)
 levelExtendBars = input.int(48, "水平線の表示本数", minval=5, maxval=300, group=grpView)
+lineLabelRightBars = input.int(3, "ENTRY/SL/TPラベル右ずらし本数", minval=0, maxval=20, group=grpView)
+candleLabelOffsetAtr = input.float(0.03, "ローソク足ラベル距離 ATR", minval=0.0, maxval=0.50, step=0.01, group=grpView)
 keepObjects = input.int(180, "残すラベル/ライン数", minval=30, maxval=450, group=grpView)
 
 f_table_pos(string pos) =>
@@ -256,7 +259,7 @@ if pivotChanged and hasLongSeq
             string setupText = setupV02Core ? "W5待機\nv0.2" : setupExhaustedW3 ? "W5注意\n3波伸び切り" : "W5待機"
             setupText += "\n3/1=" + f_num(wave3Vs) + " 2波=" + f_pct(wave2Ret)
             color setupColor = setupV02Core ? color.new(color.lime, 8) : setupExhaustedW3 ? color.new(color.orange, 8) : color.new(color.gray, 20)
-            keep_label(label.new(b4, p4, setupText, style=label.style_label_up, color=setupColor, textcolor=color.black, size=size.small))
+            keep_label(label.new(b4, p4 - atr * candleLabelOffsetAtr, setupText, style=label.style_label_up, color=setupColor, textcolor=color.black, size=size.small))
 
 bool canBreak = setupActive and not na(setupP3) and bar_index > setupB4
 bool breakout = canBreak and close[1] <= setupP3 and close > setupP3 + atr * breakBufferAtr
@@ -283,19 +286,21 @@ if breakout
         strategy.entry("W5-L", strategy.long, comment=entryMode)
         strategy.exit("W5-TP/SL", "W5-L", stop=strategyStop, limit=strategyTarget)
         if showEntryLabels
-            int labelBar = bar_index + int(math.min(levelExtendBars, 20))
-            keep_line(line.new(bar_index, entry, bar_index + levelExtendBars, entry, color=color.new(color.white, 0), style=line.style_dotted, width=1))
-            keep_line(line.new(bar_index, sl, bar_index + levelExtendBars, sl, color=color.new(color.red, 0), width=2))
-            keep_line(line.new(bar_index, tp, bar_index + levelExtendBars, tp, color=color.new(color.lime, 0), width=2))
-            keep_label(label.new(bar_index, high + atr * 0.35, "ENTRY\n" + entryMode + "\n3/1=" + f_num(setupWave3Vs), style=label.style_label_down, color=color.new(color.lime, 0), textcolor=color.black, size=size.small))
-            keep_label(label.new(labelBar, entry, "ENTRY", style=label.style_label_left, color=color.new(color.white, 0), textcolor=color.black, size=size.tiny))
-            keep_label(label.new(labelBar, sl, "SL", style=label.style_label_left, color=color.new(color.red, 0), textcolor=color.white, size=size.tiny))
-            keep_label(label.new(labelBar, tp, "TP " + str.tostring(rr, "#.#") + "R", style=label.style_label_left, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
+            int labelBar = bar_index + lineLabelRightBars
+            float entryLabelY = high + atr * candleLabelOffsetAtr
+            keep_label(label.new(bar_index, entryLabelY, "ENTRY\n" + entryMode + "\n3/1=" + f_num(setupWave3Vs), style=label.style_label_down, color=color.new(color.lime, 0), textcolor=color.black, size=size.small))
+            if showLevelLines
+                keep_line(line.new(bar_index, entry, bar_index + levelExtendBars, entry, color=color.new(color.white, 0), style=line.style_dotted, width=1))
+                keep_line(line.new(bar_index, sl, bar_index + levelExtendBars, sl, color=color.new(color.red, 0), width=2))
+                keep_line(line.new(bar_index, tp, bar_index + levelExtendBars, tp, color=color.new(color.lime, 0), width=2))
+                keep_label(label.new(labelBar, entry, "ENTRY", style=label.style_label_left, color=color.new(color.white, 0), textcolor=color.black, size=size.tiny))
+                keep_label(label.new(labelBar, sl, "SL", style=label.style_label_left, color=color.new(color.red, 0), textcolor=color.white, size=size.tiny))
+                keep_label(label.new(labelBar, tp, "TP " + str.tostring(rr, "#.#") + "R", style=label.style_label_left, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
     else
         rejectedCount += 1
         if showEntryLabels
             string rejectText = not modeOk ? "除外\nmode" : not earlyOk ? "除外\nearly" : not inDate ? "除外\nperiod" : not tfOk ? "除外\nH4 only" : not riskOk ? "除外\nrisk" : "除外\nposition"
-            keep_label(label.new(bar_index, high + atr * 0.35, rejectText, style=label.style_label_down, color=color.new(color.orange, 10), textcolor=color.black, size=size.tiny))
+            keep_label(label.new(bar_index, high + atr * candleLabelOffsetAtr, rejectText, style=label.style_label_down, color=color.new(color.orange, 10), textcolor=color.black, size=size.tiny))
     setupActive := false
 
 if strategy.position_size > 0 and not na(strategyStop) and not na(strategyTarget)

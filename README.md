@@ -16,6 +16,7 @@
 系統B  棚抜け（B06）                          … JPY4・Pine34件執行正
 研究候補 LH3 Synapse B / XAUUSD H4 Precision     … メイン候補（本番未採用）
 研究候補 MTF押し目×下位足転換                   … 仮説支持・売買ルール未採用
+研究候補 Elliott 5波再現性                       … 部分支持・単独ルール未採用
 ```
 
 ---
@@ -87,6 +88,24 @@
 | 仮説メモ | [higher_tf_pullback_lower_tf_reversal_2026-06-08.md](docs/research/higher_tf_pullback_lower_tf_reversal_2026-06-08.md) |
 
 **現時点の読み:** 「押し目だから入る」より、「下位足のzigzagが止まり、直近LH/HLを終値で抜けるまで待つ」方が伸びは出やすい。ただしSL率が高く、PFもまだ弱いので、Pine化するなら売買サインではなく **Event scanner** から。
+
+---
+
+### 研究中候補 — Elliott 5波狙い 再現性
+
+| 項目 | 内容 |
+|---|---|
+| 研究の問い | AI/コードが同じ条件で検出できる5波候補は、普通のブレイクより本当に伸びやすいのか |
+| 検出方法 | 確定Pivot/ZigZag + 2波/4波戻し + 3波強度 + AI proxyスコア |
+| 対象 | XAUUSD / USDJPY / EURJPY / GBPJPY / CHFJPY / SILVER、H1/H4/D1 |
+| 結果 | **部分支持**。2015-2024ではClassic W5が対照群より良いが、OOS 2025-2026では崩れる |
+| Classic W5 vs 対照群 | PF 1.17 vs 1.09、2R到達率 25.42% vs 22.00%、MFE120 1.70R vs 1.53R |
+| 注意 | OOSはClassic W5 PF0.48 / avgR -0.37。単独売買ルール化は未支持 |
+| 強い場所 | H1、EURJPY / USDJPY / SILVER。H4/D1は弱い |
+| レポート | [REPORT_ja.md](docs/research/elliott_wave5_reproducibility_2026-06-09/REPORT_ja.md) |
+| 検証スクリプト | [run_elliott_wave5_reproducibility_study.py](backtests/elliott_fibo/run_elliott_wave5_reproducibility_study.py) |
+
+**現時点の読み:** エリオット5波は、AIに任せるなら「画像でなんとなく数える」より、Pivotと比率条件で候補を固定する方が再現性がある。ただし、伸びやすさは少し見える一方でOOSが弱いので、まずは **5波候補ラベル / Event scanner** として扱う。
 
 ---
 

@@ -30,7 +30,7 @@
 
 | 優先 | テーマ | 状態 | 入口 |
 |:---:|---|---|---|
-| 1 | **H4 Double V Reclaim / 初動V** | 最重要・検証中 | [研究メモ](docs/research/h4_double_v_reclaim_2026-06-02.md) |
+| 1 | **H4 Double V / D1 V Context** | **TVデータ起点で検証中** | 👉 **[TVワークフロー](docs/research/h4_double_v_tradingview_workflow_2026-06-10.md)** ／ [研究メモ](docs/research/h4_double_v_reclaim_2026-06-02.md) |
 | 2 | **H4 V Denial Re-Acceleration** | 重要・検証中 | [研究メモ](docs/research/h4_v_denial_reacceleration_2026-06-05.md) |
 | 3 | **ショート側研究** | 検証途中 | [short_side_research_2026-05-28_in_progress.md](docs/research/short_side_research_2026-05-28_in_progress.md) |
 | 4 | **Market Psychology Squeeze** | TV OHLC照合済み | [研究メモ](docs/research/market_psychology_squeeze_strict_2026-05-30.md) |

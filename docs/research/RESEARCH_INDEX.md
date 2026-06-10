@@ -14,18 +14,18 @@
 
 **受講生データ研究は一旦終了。** 研究リソースは **既存2本柱** の検証・拡張に集中する。
 
-1. **TrendBreakV1 + H4 T5** の OOS 継続確認（2025-2026）
-2. **H4 Double V Reclaim / 初動V** — D1 V Context + H4 Execute の目視・Strategy 検証
-3. **H4 V Denial Re-Acceleration** — H4T5 / Shelf Breakout との比較、勝ち負け各5件記録
-4. **ショート側研究** — 1ヶ月安値更新後の安値停滞ブレイクショートの精査
-5. **Market Psychology Squeeze** — 実運用に残す条件と除外条件の整理
+1. **H4 Double V / D1 V Context** — TradingView H4 OHLC エクスポート → Strategy Tester → Python 日付照合（[ワークフロー](h4_double_v_tradingview_workflow_2026-06-10.md)）
+2. **TrendBreakV1 + H4 T5** の OOS 継続確認（2025-2026）
+3. **H4 V Denial Re-Acceleration** — H4T5 / Shelf Breakout との比較
+4. **ショート側研究** — 1ヶ月安値更新後の安値停滞ブレイクショート
+5. **Market Psychology Squeeze** — 実運用条件の整理
 
 ## 進行中の研究
 
 | 優先 | 研究テーマ | 状態 | 目的 | 次の作業 |
 |---:|---|---|---|---|
 | 1 | **既存2本柱（TrendBreakV1 + H4 T5）** | **本番運用中** | 採用戦略の OOS 継続・監査 | [BACKTEST_INDEX.md](../BACKTEST_INDEX.md) ／ [STRATEGY_GUIDE.md](../../STRATEGY_GUIDE.md) |
-| 2 | **H4 Double V Reclaim / 初動V** | **最重要・検証中** | D1 V Context + H4 Execute でトレンド初動を狙う | 目視検証、Strategy Tester 照合 |
+| 2 | **H4 Double V / D1 V Context** | **TVデータ起点・検証中** | D1 V Context + H4 Execute | [TVワークフロー](h4_double_v_tradingview_workflow_2026-06-10.md) → H4 OHLC 配置 → Strategy Tester |
 | 3 | **H4 V Denial Re-Acceleration** | **重要・検証中** | 売り手の損切り連鎖を検出する | GBPJPY / USDJPY / EURJPY / AUDJPY H4 で勝ち負け各5件 |
 | 4 | **ショート側研究** | 検証途中 | ロング版ミラーの代替ショート入口 | 暫定候補の精査 |
 | 5 | **Market Psychology Squeeze** | TV OHLC照合済み | スクイーズ→踏み上げの戦略化 | 実運用条件の整理 |
@@ -55,7 +55,7 @@
 
 | 日付 | 研究テーマ | 進捗 | 次の判断 |
 |---|---|---|---|
-| 2026-06-10 | 受講生データ研究 | **研究一旦終了。** 137件つまずき・F1試験・心理Pine・市場心理図鑑まで完了。README / 研究台帳を既存手法優先に整理 | 既存2本柱（TrendBreakV1 + H4 T5）の研究続行 |
+| 2026-06-10 | H4 Double V / TVデータ起点 | TradingView H4 OHLC → Strategy Tester → Python 照合のワークフローを追加。`run_tv_data_coverage_check.py` で CSV 検証 | 各通貨 **H4（240分）** OANDA CSV を配置 |
 | 2026-06-10 | F1 OANDA 照合 | GBPJPY 1H OANDA CSV で Python/TV 件数パリティ確認（OFF 1193/458 vs TV 1279/473） | v2.x 移植は見送り（研究終了に伴う） |
 | 2026-06-05 | H4 V Denial Re-Acceleration | Strategy 研究版を追加 | H4T5 等と比較目視 |
 | 2026-06-03 | Short Covering Psychology Flow | 研究終了・本番不採用 | アーカイブ |
@@ -88,7 +88,7 @@
 | テーマ | ファイル |
 |---|---|
 | **既存2本柱** | [two_method_practical_research_2026-05-24.md](../two_method_practical_research_2026-05-24.md) ／ [BACKTEST_INDEX.md](../BACKTEST_INDEX.md) |
-| H4 Double V Reclaim | [h4_double_v_reclaim_2026-06-02.md](h4_double_v_reclaim_2026-06-02.md) |
+| H4 Double V Reclaim | [h4_double_v_reclaim_2026-06-02.md](h4_double_v_reclaim_2026-06-02.md) ／ **[TVワークフロー](h4_double_v_tradingview_workflow_2026-06-10.md)** |
 | H4 V Denial Re-Acceleration | [h4_v_denial_reacceleration_2026-06-05.md](h4_v_denial_reacceleration_2026-06-05.md) |
 | Market Psychology Squeeze | [market_psychology_squeeze_strict_2026-05-30.md](market_psychology_squeeze_strict_2026-05-30.md) |
 | ショート側研究 | [short_side_research_2026-05-28_in_progress.md](short_side_research_2026-05-28_in_progress.md) |

@@ -1,0 +1,20 @@
+# アーカイブ（archive）
+
+過去に集めたトレード記録データ。研究・教材用。
+
+[← トレード日誌トップ](../README.md)
+
+---
+
+## student — 受講生トレード記録
+
+| ファイル | 内容 |
+|---|---|
+| [student/entries.csv](student/entries.csv) | 137件の実エントリー（匿名ID、写真パス付き） |
+
+関連研究:
+
+- [受講生つまずきクラスタ研究](../../research/student_stumble_clusters_research_2026-05-31.md)
+- [受講生エントリー集中パターン研究](../../research/student_entry_cluster_research_2026-05-31.md)
+
+画像パス `chart_pattern_work/extracted_images/` は元データ抽出時の参照先です（リポジトリ外の場合あり）。

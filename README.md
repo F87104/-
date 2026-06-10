@@ -133,6 +133,7 @@ pine/research/          ← TradingView 用 Pine（ここ）
 
 | ドキュメント | 内容 |
 |---|---|
+| 👉 **[docs/trade_diary/README.md](docs/trade_diary/README.md)** | **トレード日誌トップ** — 実践日誌・心理記録・受講生記録 |
 | 👉 **[STRATEGY_GUIDE.md](STRATEGY_GUIDE.md)** | **メインの説明書 (これを読めばOK)** |
 | 👉 **[docs/BACKTEST_INDEX.md](docs/BACKTEST_INDEX.md)** | **全検証カタログ (試したもの全部の一覧)** |
 | 📊 [docs/spreadsheet/](docs/spreadsheet/) | **Google スプレッドシート用 CSV/TSV** (9シート) |

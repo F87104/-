@@ -324,7 +324,7 @@ v0.2をGBPJPY H1に貼った結果、v0.1よりも主信号の関係が見やす
 
 記録テンプレート:
 
-- [realtime_trade_psychology_log_template.csv](realtime_trade_psychology_log_template.csv)
+- [realtime_log_template.csv](../trade_diary/psychology/realtime_log_template.csv)
 
 リアルタイム用の注意:
 

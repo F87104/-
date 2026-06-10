@@ -36,3 +36,7 @@ backtests/elliott_fibo/results_2026_05_28/low_break_lookback_exit_study/exit_mod
 
 # Data directory (raw data, 別途バックアップ管理)
 data/
+
+# Slack / local secrets
+.env
+config/slack_reflection.json

@@ -84,7 +84,26 @@ f1BlockLong  = nearRound and nearHigh and close > open and longSignal
 f1BlockShort = nearRound and nearLow and close < open and shortSignal
 ```
 
+## Python 照合（GBPJPY 1H / OANDA CSV）
+
+TradingView からエクスポートした OHLC CSV を使う。
+
+1. ファイルをリポジトリへ配置（`data/` は gitignore 対象）  
+   `data/raw/tv_oanda/GBPJPY_H1.csv`  
+   例: `OANDA_GBPJPY, 60_87a90.csv` をリネームしてコピー
+2. 実行:
+
+```bash
+python3 backtests/stumble_chase/run_f1_gbpjpy_tv_validation.py
+# または
+python3 backtests/stumble_chase/run_f1_gbpjpy_tv_validation.py --csv "path/to/OANDA_GBPJPY, 60_87a90.csv"
+```
+
+3. 出力: `backtests/stumble_chase/results_gbpjpy_h1_tv_validation/`  
+   `filter_off` / `filter_on_all` の **件数** を TV Strategy Tester と先に照合。v2.x 採用候補は `filter_on_f1_only`。
+
 ## 次にやること
 
 1. v2.x 本体ブランチ取得後 F1 だけ移植
 2. ~~追加データ抽出~~ → **137件で十分（確定）**
+3. OANDA GBPJPY 1H CSV で Python/TV 件数照合

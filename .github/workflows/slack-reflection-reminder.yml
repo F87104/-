@@ -1,0 +1,40 @@
+name: Slack reflection reminder
+
+on:
+  schedule:
+    # 09:00 JST (00:00 UTC)
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+    inputs:
+      entry_id:
+        description: "Optional entry_id (e.g. E-2026-06-10-001). Empty = daily rotation."
+        required: false
+        type: string
+      dry_run:
+        description: "Print payload only (no Slack post)"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  post-reflection:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Post trade reflection to Slack
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          SLACK_THREAD_TS: ${{ secrets.SLACK_THREAD_TS }}
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.entry_id }}" ]; then
+            ARGS="--entry-id ${{ inputs.entry_id }}"
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          python3 scripts/post_trade_reflection_to_slack.py $ARGS

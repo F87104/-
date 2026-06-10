@@ -2,6 +2,9 @@
 
 作成日: 2026-05-31
 
+> **2026-06-10 研究終了。** F1 試験は完了（件数照合済み）。  
+> **v2.x 本体への移植は見送り。** 本番研究は既存2本柱（TrendBreakV1 + H4 T5）に集中する。
+
 ## 研究の問い
 
 つまずきクラスタで見つかった「節目高値追い」「天井買い」「底売り」を、
@@ -55,7 +58,17 @@
 
 [stumble_chase_suppression_experiment_v0_1.pine](../../pine/research/stumble_chase_suppression_experiment_v0_1.pine)
 
-F1/F2/F3 のロジックはこのファイルで確定。データ137件・待つ場所15件を根拠に v2.x へ **F1 優先** で移植する。
+F1/F2/F3 のロジックはこのファイルで確定。**2026-06-10: v2.x 移植は見送り**（アーカイブ）。
+
+## OANDA CSV 照合（2026-06-10 / Python）
+
+| case | 件数 | PF |
+|------|-----:|---:|
+| filter_off | 1,193 | 1.07 |
+| filter_on_all | 458 | 0.911 |
+| TV 参照 OFF/ON | 1,279 / 473 | 0.906 / 0.78 |
+
+件数パリティは取れたが、PF 改善は未確認 → **本番移植見送り**。
 
 ## TradingView 実測（GBPJPY 1H・全期間）
 
@@ -74,17 +87,18 @@ F1/F2/F3 のロジックはこのファイルで確定。データ137件・待�
 
 ## v2.x への載せ方
 
-1. 下記 F1 ブロック条件を matrix 戦略の新規エントリー前に `and not f1BlockLong` で追加
-2. 通貨別: GBPJPY=ON / XAUUSD=ON / USDJPY=要検証
-3. F2/F3 は v0.1.1 に残し、本番採用は見送り
+~~1. 下記 F1 ブロック条件を matrix 戦略の新規エントリー前に `and not f1BlockLong` で追加~~  
+~~2. 通貨別: GBPJPY=ON / XAUUSD=ON / USDJPY=要検証~~  
+~~3. F2/F3 は v0.1.1 に残し、本番採用は見送り~~
+
+**2026-06-10 更新: v2.x 移植は見送り。** OANDA 照合で件数パリティは取れたが、PF 改善は未確認。試験 Pine と CSV はアーカイブとして残す。
 
 ```pine
-// F1 core (from v0.1.1)
+// F1 core (from v0.1.1) — 参考実装のみ
 f1BlockLong  = nearRound and nearHigh and close > open and longSignal
 f1BlockShort = nearRound and nearLow and close < open and shortSignal
 ```
 
 ## 次にやること
 
-1. v2.x 本体ブランチ取得後 F1 だけ移植
-2. ~~追加データ抽出~~ → **137件で十分（確定）**
+**2026-06-10: 研究終了。** 次は [RESEARCH_INDEX.md](RESEARCH_INDEX.md) の既存2本柱研究（TrendBreakV1 + H4 T5）へ。

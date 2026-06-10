@@ -10,126 +10,93 @@
 - 「研究の問い」「途中経過」「次にやること」を必ず残す
 - 新しい発見は、あとから教材・検証・Pine 化のどれに使うか分けて記録する
 
-## 次にやること
+## 次にやること（2026-06-10 更新）
 
-1. v2.x マトリクス戦略へ **F1 節目追い抑制** だけ移植（137件データで確定）
-2. v0.4 を教材として継続利用（赤=失敗 / 青=待つ）
-3. GBPJPY / XAUUSD / USDJPY で `S/W/C` を各20例記録（任意）
+**受講生データ研究は一旦終了。** 研究リソースは **既存2本柱** の検証・拡張に集中する。
 
-## 進捗ログ
-
-| 日付 | 研究テーマ | 進捗 | 次の判断 |
-|---|---|---|---|
-| 2026-05-31 | トレード心理研究 | 失敗チャートの代表例7ケースをローカルで選び、可視化第一版を作成。公開版には画像・元データは載せない。 | 代表ケースごとに「実際の入口」「本来待つ場所」「損切り位置」を手動でより正確に重ねる |
-| 2026-05-31 | トレード心理研究 | 代表7ケースに、赤=実際の入口、青=本来待つ場所、黄=損切り位置、緑=次回ルールの手動マーキング下書きをローカルで作成。 | 位置を微調整したあと、教材化できるケースと研究保留ケースに分ける |
-| 2026-05-31 | トレード心理研究 | 代表7ケースを仕分けし、優先教材3ケース、教材候補3ケース、研究保留1ケースに分類。優先教材3ケースの1枚教材下書きをローカルで作成。 | 優先教材3ケースの文章を調整し、教材として使える形に整える |
-| 2026-05-31 | トレード心理研究 | 優先教材3ケースについて、完成版テキストと完成版カードをローカルで作成。テーマは「節目抜けですぐ入らない」「レンジ内の急落に反応しない」「ローソク足1本だけで決めない」。 | 受講者に伝わりやすい短い表現へ整える |
-| 2026-05-31 | トレード心理研究 | 失敗パターン3ケースをPine可視化プロトタイプに変換。赤=失敗しやすい入口、緑=待てた場合の候補として表示する設計。 | TradingView上で目視確認し、赤と緑の出方を調整する |
-| 2026-05-31 | トレード心理研究 | TradingViewで初期版を確認し、表示が多すぎてチャートが読みにくい問題を確認。Pineをv0.2へ改善し、ラベル初期OFF、背景初期OFF、同種サイン間引き、C07条件の厳格化を実施。 | H4でC01とC03だけを先に確認し、次にC07をONにして表示量を調整する |
-| 2026-05-31 | トレード心理研究 | 資料量が多いため、失敗パターンだけでなく最適エントリーパターンも抽出できる可能性が高いと判断。成功例と失敗例を同じ列で比較する研究ノートを追加。 | 成功トレード10から20件を抽出し、E01からE05の候補に分類する |
-| 2026-05-31 | トレード心理研究 | 匿名化済み705トレードから最適エントリー一次抽出を開始。結果既知537件、利益/利確247件を母数に、成功候補20件をローカルで抽出。E04「押し戻り継続」が全体平均より少し良く、E01は抜け単体では弱いと確認。 | 成功候補20件を目視確認し、失敗例とペア比較する |
-| 2026-05-31 | トレード心理研究 | 成功候補20件と失敗教材候補をペア比較。勝ちに多い条件は「抜け後の停滞」「レンジ外定着」「押し戻り継続」「否定ライン先置き」。V字・ヒゲは単体では緑サインにしない方針。 | P01からP03をPineの緑サイン条件へ変換する |
-| 2026-05-31 | トレード心理研究 | 研究目的を「気づきを得ること」と明確化。売買ルール化を急がず、エントリー直前の心理、失敗の逆利用、成功候補に混ざる危険な成功体験を細かい気づきとして整理。 | 気づきからPine化するもの、教材化するもの、保留するものに分ける |
-| 2026-05-31 | トレード心理研究 | 細かい気づきをPine化し、群衆心理検出器 v0.1 を作成。FOMO、PANIC、WICKを群衆反応として表示し、WAIT、OUT、PBを待てた候補として表示する。 | TradingViewで表示量と位置を確認し、研究用に条件を絞る |
-| 2026-05-31 | トレード心理研究 | TradingViewでv0.1を確認し、WICKとPBが多すぎてローソク足が読みにくい問題を確認。v0.2でWICK/PB/状態テーブル/否定ラインを初期OFF、表示間隔を24本へ変更。 | まずFOMO、PANIC、WAIT/OUTだけで気づきを確認する |
-| 2026-05-31 | トレード心理研究 | GBPJPY H1でv0.2を確認。FOMOは入口ではなく観察開始点、PANICは保留ゾーン、WAITは反応を遅らせた候補として見える。FOMO/PANIC直後に入るより、WAIT/OUTや再確認を待つ仮説が強まった。 | v0.3でFOMOを継続候補と伸び切り注意に分け、PANICを保留ゾーン化する |
-| 2026-05-31 | トレード心理研究 | リアルタイムへの落とし込みを整理。FOMO/PANICは即エントリー禁止、WAIT/OUTは追加条件確認、最終判断はA=見送り、B=観察、C=候補、D=実行可能の4段階にする。 | A/B/C/D判定を記録できるシートまたはCSVを作る |
-| 2026-05-31 | トレード心理研究 | 複雑化したため、リアルタイム表示を `STOP`、`WAIT`、`CHECK` の3つに簡略化。シンプル版Pineを追加。 | STOPで待てたか、CHECKまで待てたかだけを記録する |
-| 2026-05-31 | 受講生エントリー集中パターン研究 | 匿名化705トレードから、エントリー根拠文だけを使って複数人が同じ形で入る候補を一次抽出。節目抜け449件/54名、トレンド継続期待305件/52名、V字192件/50名、レンジ急変179件/46名。 | P01の画像20件を並べ、失敗の早い入口と成功の待った入口を比較する |
-| 2026-05-31 | 受講生エントリー集中パターン研究 | P01「節目抜け・ブレイク飛び乗り」で画像照合できた候補162件/28名を抽出。確認用20枚シートは損失10件/利益10件。勝ち負けの両方に抵抗線抜け、高値停滞、V字、2回目ブレイクが出るため、形そのものではなく待ち方が分岐と判断。 | 20枚シートに早い入口と待った入口を手動マーキングする |
-| 2026-05-31 | 受講生エントリー集中パターン研究 | P01の20枚シートにSTOP/CHECK暫定マーキングを作成。損失側は抜け/停滞を見てすぐ意味づけするSTOP候補、利益側は戻り・再停滞・再ブレイクを見るCHECK候補として整理し、シンプル版Pineをv0.2へ更新。 | TradingViewでSimple v0.2のSTOP/CHECK表示を確認する |
-| 2026-05-31 | 受講生エントリー集中パターン研究 | TradingViewでSimple v0.2を確認。CHECKが多すぎ、STOP文字が目立ち、節目が細かすぎる問題を確認。v0.3でCHECKを最低4本待機+再加速余白+EMA方向一致に厳格化し、表示をS/W/Cに短縮、表示間隔を48本へ変更。 | Simple v0.3をTradingViewで確認し、候補が減ったか見る |
-| 2026-05-31 | 受講生エントリー集中パターン研究 | GBPJPY H1でSimple v0.3を確認。Sは人が反応したくなる場所をよく拾えており、W/Cで待った後の候補も見やすくなった。ただしCも売買サインではなく、上位足方向と損切り位置が必要。 | v0.3のままS/W/Cを20例だけ目視記録する |
-| 2026-05-31 | 受講生つまずきクラスタ研究 | 失敗チャート137件から entry_datetime / entry_price を画像抽出。48時間×価格近接で29クラスタ、うち15が全敗。GBPJPY 199円台5人全敗・XAUUSD天井買い3ゾーンなどを特定。Pine v0.3で GBPJPY / USDJPY / XAUUSD の実エントリー重ね表示を作成。 | 全敗ゾーンごとに本来待つ場所をマーキングし、v2.x フィルタ候補を試験実装する |
-| 2026-05-31 | 受講生つまずきクラスタ研究 | 全敗15クラスタに「待つ場所」をマーキング（pullback/bounce/confirmation）。wait_zones CSV と Pine v0.4（赤=失敗・青=待つ）を GBPJPY/USDJPY/XAUUSD に追加。 | TradingView で v0.4 の青帯を目視確認し、v2.x 節目飛び乗り抑制フィルタを試験実装する |
-| 2026-05-31 | 節目飛び乗り抑制フィルタ試験 | GBPJPY 1H で OFF/ON 実測。ON で件数63%減・DD改善、全期間PFは微悪化。**137件データで十分**と確定。v0.1.1 の F1 を v2.x 移植候補に。 | v2.x 本体へ F1 だけ AND 移植 |
-| 2026-05-31 | 通貨別の心理傾向 | 137件の実エントリー抽出データと705件の匿名化済み心理データから、GBPJPYは勢いの罠、XAUUSDは値幅の罠、USDJPYは節目抜けの罠として見る仮説を追加。 | GBPJPY、XAUUSD、USDJPYで `S/W/C` を各20例ずつ記録し、通貨別にC条件を少し変えるか判断する |
-| 2026-06-03 | Short Covering Psychology Flow | 売り優勢、売り失敗、ショートカバー、加速を分けて表示するH4可視化を追加。表示整理と標準感度への再調整まで行ったが、実戦候補としては微妙と判断。 | **研究終了。本番不採用。心理フローの参考アーカイブとして残す** |
-| 2026-06-05 | H4 V Denial Re-Acceleration | 「誰が負けているか」を主語にし、急落後のVを売り失敗の文脈、上側棚をCHECK、売り手の損切りライン突破をSIGNALとして扱うStrategy研究版を追加。 | H4T5 / H4 V Initial Shelf Breakout と同じチャートで比較し、SIGNALが人間の目で売り手の損切り連鎖に見えるか確認する |
+1. **TrendBreakV1 + H4 T5** の OOS 継続確認（2025-2026）
+2. **H4 Double V Reclaim / 初動V** — D1 V Context + H4 Execute の目視・Strategy 検証
+3. **H4 V Denial Re-Acceleration** — H4T5 / Shelf Breakout との比較、勝ち負け各5件記録
+4. **ショート側研究** — 1ヶ月安値更新後の安値停滞ブレイクショートの精査
+5. **Market Psychology Squeeze** — 実運用に残す条件と除外条件の整理
 
 ## 進行中の研究
 
-| 優先 | 研究テーマ | 状態 | 目的 | 現在地 | 次の作業 |
-|---:|---|---|---|---|---|
-| 1 | 受講生つまずきクラスタ研究 | **データ確定** | 137件・全敗15・Pine v0.4 + F1試験 v0.1.1 完了 | 追加抽出不要 | v2.x へ F1 移植 |
-| 2 | H4 V Denial Re-Acceleration | **重要・検証中** | 売り手が負けを認める瞬間を、V文脈 + 上側棚 + 損切りライン突破で検出する | Pine Strategy と研究メモを追加済み | GBPJPY / USDJPY / EURJPY / AUDJPY H4で目視し、勝ち負け各5件を記録 |
-| 3 | Market Psychology Squeeze | 記録済み | スクイーズ、投げ売り、踏み上げを戦略化する | 通貨別の相性と厳格条件を整理済み | 実運用に残す条件と除外条件をまとめる |
-| 4 | **市場心理図鑑** | **Vol.1 公開** | チャート形状ではなく参加者心理を分類する辞書 | 基本12パターンを記載 | Vol.2 心理合成、Event scanner 実装 |
-| 5 | Wavebox / Rebreak | 記録済み | 波形、再ブレイク、押し戻りの有効条件を調べる | 運用前提、監査、Pine 実装メモを整理済み | 実運用に使う版と研究保留版を分ける |
+| 優先 | 研究テーマ | 状態 | 目的 | 次の作業 |
+|---:|---|---|---|---|
+| 1 | **既存2本柱（TrendBreakV1 + H4 T5）** | **本番運用中** | 採用戦略の OOS 継続・監査 | [BACKTEST_INDEX.md](../BACKTEST_INDEX.md) ／ [STRATEGY_GUIDE.md](../../STRATEGY_GUIDE.md) |
+| 2 | **H4 Double V Reclaim / 初動V** | **最重要・検証中** | D1 V Context + H4 Execute でトレンド初動を狙う | 目視検証、Strategy Tester 照合 |
+| 3 | **H4 V Denial Re-Acceleration** | **重要・検証中** | 売り手の損切り連鎖を検出する | GBPJPY / USDJPY / EURJPY / AUDJPY H4 で勝ち負け各5件 |
+| 4 | **ショート側研究** | 検証途中 | ロング版ミラーの代替ショート入口 | 暫定候補の精査 |
+| 5 | **Market Psychology Squeeze** | TV OHLC照合済み | スクイーズ→踏み上げの戦略化 | 実運用条件の整理 |
+| 6 | Wavebox / Rebreak | 記録済み | 波形・再ブレイクの有効条件 | 実運用版と研究保留版の切り分け |
 
 ## 終了した研究
 
 | 日付 | 研究テーマ | 終了理由 | アーカイブ |
 |---|---|---|---|
-| 2026-06-03 | Short Covering Psychology Flow | 心理フローとしては面白いが、入口の優位性が H4T5 / D1 V Context / Double V ほど明確ではなく、裁量判断が増えやすい | [short_covering_psychology_flow_2026-06-03.md](short_covering_psychology_flow_2026-06-03.md) |
+| **2026-06-10** | **受講生データ研究（一括）** | 気づき・教材としては有用だが、単独の売買手法（PF改善）にはならない。本番自動売買への組み込みは見送り | 下記「受講生データ研究アーカイブ」 |
+| 2026-06-03 | Short Covering Psychology Flow | 入口の優位性が H4T5 / D1 V Context / Double V ほど明確ではない | [short_covering_psychology_flow_2026-06-03.md](short_covering_psychology_flow_2026-06-03.md) |
 
-## トレード心理研究の中間整理
+### 受講生データ研究アーカイブ（2026-06-10 クローズ）
+
+| テーマ | 成果 | ファイル |
+|---|---|---|
+| つまずきクラスタ | 137件 / 29クラスタ / 全敗15 | [student_stumble_clusters_research_2026-05-31.md](student_stumble_clusters_research_2026-05-31.md) |
+| エントリー集中パターン | P01 節目抜け・S/W/C Pine | [student_entry_cluster_research_2026-05-31.md](student_entry_cluster_research_2026-05-31.md) |
+| トレード心理 / 群衆心理 | FOMO/PANIC/WAIT 可視化 | [trade_psychology_failure_patterns_to_pine_2026-05-31.md](trade_psychology_failure_patterns_to_pine_2026-05-31.md) |
+| 節目飛び乗り抑制 F1 試験 | OFF/ON 件数照合済み。**v2.x 移植は見送り** | [stumble_chase_suppression_filter_v0_1.md](stumble_chase_suppression_filter_v0_1.md) |
+| 市場心理図鑑 | Vol.1 + 収集ライブラリ（教材として継続） | [市場心理図鑑/README.md](市場心理図鑑/README.md) |
+| Pine v0.4 | 赤=失敗 / 青=待つ（教材用） | `pine/research/student_stumble_zones_*_v0_4.pine` |
+
+**F1 試験の結論（再掲）:** つまずき型エントリーの約6割は削れるが、PF 改善は確認できず。F1 は **売買手法ではなく安全装置の候補** だったが、本番 TrendBreakV1 との合成検証前に研究終了。
+
+## 進捗ログ
+
+| 日付 | 研究テーマ | 進捗 | 次の判断 |
+|---|---|---|---|
+| 2026-06-10 | 受講生データ研究 | **研究一旦終了。** 137件つまずき・F1試験・心理Pine・市場心理図鑑まで完了。README / 研究台帳を既存手法優先に整理 | 既存2本柱（TrendBreakV1 + H4 T5）の研究続行 |
+| 2026-06-10 | F1 OANDA 照合 | GBPJPY 1H OANDA CSV で Python/TV 件数パリティ確認（OFF 1193/458 vs TV 1279/473） | v2.x 移植は見送り（研究終了に伴う） |
+| 2026-06-05 | H4 V Denial Re-Acceleration | Strategy 研究版を追加 | H4T5 等と比較目視 |
+| 2026-06-03 | Short Covering Psychology Flow | 研究終了・本番不採用 | アーカイブ |
+| 2026-05-31 | 受講生つまずきクラスタ研究 | 137件・全敗15・Pine v0.4 + F1試験 v0.1.1 完了 | **2026-06-10 研究終了** |
+| 2026-05-31 | 節目飛び乗り抑制フィルタ試験 | GBPJPY 1H OFF/ON 実測。件数63%減・DD改善、PF微悪化 | **v2.x 移植見送り** |
+
+<details>
+<summary>2026-05-31 以前の進捗ログ（折りたたみ）</summary>
+
+| 日付 | 研究テーマ | 進捗 | 次の判断 |
+|---|---|---|---|
+| 2026-05-31 | トレード心理研究 | 失敗チャートの代表例7ケースをローカルで選び、可視化第一版を作成 | **2026-06-10 研究終了** |
+| 2026-05-31 | 受講生エントリー集中パターン研究 | P01「節目抜け・ブレイク飛び乗り」162件/28名。Simple v0.3 で S/W/C 確認 | **2026-06-10 研究終了** |
+| 2026-05-31 | 通貨別の心理傾向 | GBPJPY=勢いの罠、XAUUSD=値幅の罠、USDJPY=節目抜けの罠 | **2026-06-10 研究終了** |
+
+</details>
+
+## トレード心理研究の中間整理（アーカイブ）
 
 研究の問い:
 
 - 人はどのチャート形状で焦って入りやすいか
 - どの感情が損切り遅れ、飛び乗り、根拠の後付けにつながるか
 - 成功したトレードと失敗したトレードで、エントリー前の待ち方がどう違うか
-- Sai フィードバックを、再現できるルールに変換できるか
-- 勝っている人は、入る直前にどの条件がそろうまで待っているか
 
-構造化する項目:
-
-| 項目 | 内容 |
-|---|---|
-| 匿名ID | 個人を特定しない研究用ID |
-| 回数 | 同じ人の何回目の報告か |
-| 通貨ペア | 取引対象 |
-| エントリー根拠 | 入った理由 |
-| 決済理由 | 利確、損切り、撤退の理由 |
-| 感情 | 焦り、期待、不安、悔しさ、安心など |
-| 失敗パターン | 飛び乗り、損切り遅れ、レンジ中央、根拠不足など |
-| 成功パターン | 待てた、節目確認、損切り明確、環境認識一致など |
-| Saiフィードバック | 指摘、改善案、次の見る場所 |
-| 心理ラベル | 研究用に付ける短い心理分類 |
-| エントリー型 | 抜け再確認、押し戻り、レンジ端反発、レンジ外定着、転換確認など |
-| 入る直前の確認 | 次足確認、戻り確認、再加速、否定ライン明確化など |
-
-## 失敗チャート研究の見方
-
-チャートを見るときは、勝ち負けだけでなく「どこで心が動いたか」を見る。
-
-| 見る場所 | 確認すること |
-|---|---|
-| エントリー直前 | 待つべきローソク足が残っていたか |
-| 節目付近 | 抜けた瞬間に飛び乗っていないか |
-| レンジ中央 | 方向感がない場所で入っていないか |
-| 損切り位置 | 入る前に撤退場所が決まっていたか |
-| 決済後 | 反省がルール化されているか、感情だけで終わっていないか |
-
-次に作るもの:
-
-1. 代表チャートの比較表
-2. 失敗パターン別のチャート画像集
-3. エントリー位置、待つ場所、損切り位置を重ねた教材画像
-4. 心理ラベル別の改善ルール
+**2026-06-10:** 上記は教材・気づきとして成果物を残すが、新規研究は行わない。
 
 ## 公開済み研究ノート
 
 | テーマ | ファイル |
 |---|---|
-| Market Psychology | [market_psychology_pattern_library_2026-05-30.md](market_psychology_pattern_library_2026-05-30.md) |
-| **市場心理図鑑** | **[市場心理図鑑/README.md](市場心理図鑑/README.md)** ／ [Vol.1](市場心理図鑑/vol01_core_patterns.md) ／ [実OHLC](市場心理図鑑/real_gallery.md) |
-| Market Psychology Squeeze | [market_psychology_squeeze_strict_2026-05-30.md](market_psychology_squeeze_strict_2026-05-30.md) |
-| Short Covering Psychology Flow | [short_covering_psychology_flow_2026-06-03.md](short_covering_psychology_flow_2026-06-03.md) |
-| 通貨別相性 | [market_psychology_squeeze_currency_compatibility_2026-05-30.md](market_psychology_squeeze_currency_compatibility_2026-05-30.md) |
-| Wavebox 運用条件 | [wavebox_operational_preconditions_v1.md](wavebox_operational_preconditions_v1.md) |
-| Wavebox フォワード検証 | [wavebox_forward_validation_protocol.md](wavebox_forward_validation_protocol.md) |
-| ショート側研究 | [short_side_research_2026-05-28_in_progress.md](short_side_research_2026-05-28_in_progress.md) |
-| H4 V字回復候補 | [h4_v_recovery_strategy_candidates_2026-05-30.md](h4_v_recovery_strategy_candidates_2026-05-30.md) |
+| **既存2本柱** | [two_method_practical_research_2026-05-24.md](../two_method_practical_research_2026-05-24.md) ／ [BACKTEST_INDEX.md](../BACKTEST_INDEX.md) |
+| H4 Double V Reclaim | [h4_double_v_reclaim_2026-06-02.md](h4_double_v_reclaim_2026-06-02.md) |
 | H4 V Denial Re-Acceleration | [h4_v_denial_reacceleration_2026-06-05.md](h4_v_denial_reacceleration_2026-06-05.md) |
-| トレード心理Pine化 | [trade_psychology_failure_patterns_to_pine_2026-05-31.md](trade_psychology_failure_patterns_to_pine_2026-05-31.md) |
-| トレード心理 最適エントリー研究 | [trade_psychology_optimal_entry_pattern_research_2026-05-31.md](trade_psychology_optimal_entry_pattern_research_2026-05-31.md) |
-| リアルタイム心理記録テンプレート | [realtime_trade_psychology_log_template.csv](realtime_trade_psychology_log_template.csv) |
-| 受講生エントリー集中パターン研究 | [student_entry_cluster_research_2026-05-31.md](student_entry_cluster_research_2026-05-31.md) |
-| 受講生つまずきクラスタ研究 | [student_stumble_clusters_research_2026-05-31.md](student_stumble_clusters_research_2026-05-31.md) |
-| 節目飛び乗り抑制フィルタ試験 | [stumble_chase_suppression_filter_v0_1.md](stumble_chase_suppression_filter_v0_1.md) |
-| 通貨別の心理傾向 | [currency_pair_personality_hypothesis_2026-05-31.md](currency_pair_personality_hypothesis_2026-05-31.md) |
+| Market Psychology Squeeze | [market_psychology_squeeze_strict_2026-05-30.md](market_psychology_squeeze_strict_2026-05-30.md) |
+| ショート側研究 | [short_side_research_2026-05-28_in_progress.md](short_side_research_2026-05-28_in_progress.md) |
+| Wavebox 運用条件 | [wavebox_operational_preconditions_v1.md](wavebox_operational_preconditions_v1.md) |
+| **市場心理図鑑（教材）** | [市場心理図鑑/README.md](市場心理図鑑/README.md) |
+| 受講生つまずき（終了） | [student_stumble_clusters_research_2026-05-31.md](student_stumble_clusters_research_2026-05-31.md) |
+| F1 試験（終了） | [stumble_chase_suppression_filter_v0_1.md](stumble_chase_suppression_filter_v0_1.md) |
+| Short Covering（終了） | [short_covering_psychology_flow_2026-06-03.md](short_covering_psychology_flow_2026-06-03.md) |
 
 ## 新しい研究を書くとき
 

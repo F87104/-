@@ -95,19 +95,19 @@
 - 06/10 19:31 設定、有効期限 06/20 02:00
 - ショート決済: 買い OCO × 50.0
 
-### 3. TradingView — 日足（D1）※実スクショ待ち
+### 3. TradingView — 日足（D1）4100 割れシナリオ
 
-- FXCM 日足、高値 **~5750** 付近のパラボリック天井から急落
-- オレンジ **4100** 付近の足場 / 次支持 **3359・3137**
-- 保存先（未）: `images/incoming/xauusd_d1.png` → 注釈後 `images/2026-06-10_xauusd_04_d1_structure.png`
+**生スクショ（incoming）**
 
-```bash
-python3 scripts/annotate_xauusd_d1_chart.py \
-  docs/trade_diary/practice/images/incoming/xauusd_d1.png \
-  docs/trade_diary/practice/images/2026-06-10_xauusd_04_d1_structure.png
-```
+![XAUUSD D1 生スクショ — FXCM 4100 ライン](../images/incoming/xauusd_d1.png)
 
-※ 自動生成の注釈図（文字化け）は削除済み。実スクショのみ使用する。
+**注釈付き（4100 割れシナリオ・OCO）**
+
+![XAUUSD D1 — 4100 割れシナリオ注釈](../images/2026-06-10_xauusd_04_d1_structure.png)
+
+- FXCM 日足、オレンジ **4095 / 4100** 付近の足場
+- 左上: 仮説・真空地帯・建玉 OCO（SL 4236 / TP 4000）
+- 2026-06-10 20:23 UTC+9 時点のスクショ
 
 ## 日足分析 — 4100 割れシナリオ（2026-06-10 記録）
 

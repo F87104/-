@@ -10,7 +10,7 @@
 | やりたいこと | 行き先 |
 |---|---|
 | **自分の実践トレードを見る・追加する** | 👉 [practice/](practice/) |
-| **最新エントリー** | [2026-06-10 XAUUSD 利確 +109万](practice/entries/2026-06-04_xauusd_v1_short_signal.md) ／ [2026-06-09 CHFJPY v2.1 SQZ](practice/entries/2026-06-09_chfjpy_v21_sqz_signal_buy.md) ／ [2026-06-03 XAUUSD 投げ切り損](practice/entries/2026-06-03_xauusd_h1_alert_buy.md) ／ [2026-06-01 USDJPY](practice/entries/2026-06-01_usdjpy_h4t5_signal_buy.md) |
+| **最新エントリー** | [2026-06-10 XAUUSD 手法外ショート](practice/entries/2026-06-10_xauusd_offstrategy_short.md) ／ [2026-06-10 XAUUSD 利確 +109万](practice/entries/2026-06-04_xauusd_v1_short_signal.md) ／ [2026-06-09 CHFJPY v2.1 SQZ](practice/entries/2026-06-09_chfjpy_v21_sqz_signal_buy.md) |
 | **リアルタイム心理を記録する** | [psychology/](psychology/) |
 | **受講生トレード記録（137件・研究用）** | [archive/student/](archive/student/) |
 | **トレード心理の研究ノート** | [reference/](reference/) |
@@ -41,6 +41,7 @@ docs/trade_diary/
 | 記録の種類 | 保存先 | 形式 |
 |---|---|---|
 | 実際に入ったトレード（建玉・決済・写真） | `practice/entries/` + `practice/index.csv` | Markdown + CSV |
+| **手法外・裁量トレード** | 同上（`entry_reason` に「手法外」と明記） | Markdown + CSV |
 | 入る前の心理（STOP / WAIT / CHECK） | `psychology/logs/` | CSV（テンプレ: `realtime_log_template.csv`） |
 | 受講生データの分析 | `archive/student/` | 既存 CSV を参照（編集は研究ノート側） |
 
@@ -53,6 +54,7 @@ docs/trade_diary/
 | 2026-06-09 | CHFJPY H4 | 買い | シグナル点灯 @201.368（v2.1 SQZ） | [エントリー](practice/entries/2026-06-09_chfjpy_v21_sqz_signal_buy.md) |
 | 2026-06-01 | USDJPY H4 | 買い | 4HT5シグナル点灯 | [エントリー](practice/entries/2026-06-01_usdjpy_h4t5_signal_buy.md) |
 | 2026-06-03 | XAUUSD H1 | 買い | 損切り -668,492（投げ切り） | [エントリー](practice/entries/2026-06-03_xauusd_h1_alert_buy.md) |
+| 2026-06-10 | XAUUSD H1 | 売り | **手法外** 裁量 @4164.77 | [エントリー](practice/entries/2026-06-10_xauusd_offstrategy_short.md) |
 | 2026-06-10 | XAUUSD H1 | 売り | **利確 +1,091,277**（V1ショート @4200） | [エントリー](practice/entries/2026-06-04_xauusd_v1_short_signal.md) |
 | 2026-06-04 | GBPJPY H4 | 買い | 投げ切りシグナル | [エントリー](practice/entries/2026-06-04_gbpjpy_nagekiri_signal_buy.md) |
 

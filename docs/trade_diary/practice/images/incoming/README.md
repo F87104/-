@@ -2,6 +2,18 @@
 
 TradingView / GMO の**実スクショ**をここに置いてから、注釈スクリプトを実行してください。
 
+## フォント要件
+
+注釈 PNG 生成には **日本語フォント** が必要です（未インストールだと □□□ になる）。
+
+```bash
+sudo apt install fonts-wqy-microhei   # 最低限これ
+# または
+sudo apt install fonts-noto-cjk       # より綺麗
+```
+
+スクリプトは `scripts/chart_fonts.py` でフォントを自動選択します。
+
 ## XAUUSD 日足に説明を書き込む
 
 ```bash

@@ -11,7 +11,11 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 from PIL import Image, ImageDraw, ImageFont
+
+from chart_fonts import get_japanese_font
 
 
 ANNOTATIONS = [
@@ -47,22 +51,15 @@ ANNOTATIONS = [
 ]
 
 
-def load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    for path in (
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
-        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-    ):
-        if Path(path).exists():
-            return ImageFont.truetype(path, size)
-    return ImageFont.load_default()
+def load_font(size: int):
+    return get_japanese_font(size)
 
 
 def draw_box(
     draw: ImageDraw.ImageDraw,
     xy: tuple[int, int],
     lines: list[str],
-    font: ImageFont.ImageFont,
+    font: ImageFont.FreeTypeFont,
     fill: tuple[int, int, int, int],
     text_color: tuple[int, int, int],
 ) -> None:

@@ -2,24 +2,22 @@
 """4100 割れシナリオ注釈付き D1 ゴールドチャート図を PNG 生成する。"""
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+# scripts/ から chart_fonts を import 可能にする
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from PIL import Image, ImageDraw
+
+from chart_fonts import get_japanese_font
 
 OUT = Path("docs/trade_diary/practice/images/2026-06-10_xauusd_04_d1_structure_annotated.png")
 W, H = 1400, 900
 
 
-def font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    candidates = [
-        "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc" if bold else "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    ]
-    for path in candidates:
-        if Path(path).exists():
-            return ImageFont.truetype(path, size)
-    return ImageFont.load_default()
+def font(size: int, bold: bool = False):
+    return get_japanese_font(size, bold=bold)
 
 
 def text_box(

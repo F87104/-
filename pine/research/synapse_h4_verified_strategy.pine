@@ -23,11 +23,11 @@
 //
 // 推奨時間足: H4
 // =============================================================================
-strategy("Synapse H4 Verified (銘柄別自動プリセット)",
+strategy("Synapse H4 Verified v2 (銘柄別自動プリセット・ロット再設計)",
      overlay=true,
      initial_capital=10000,
-     default_qty_type=strategy.fixed,
-     default_qty_value=1,
+     default_qty_type=strategy.percent_of_equity,
+     default_qty_value=100,
      pyramiding=0,
      calc_on_order_fills=true,
      calc_on_every_tick=false,
@@ -51,7 +51,8 @@ atrLen      = input.int(14,    "ATR 期間", minval=1, group=grpG)
 pivotWidth  = input.int(2,     "ピボット幅 (H4=2)", minval=1, group=grpG)
 minSwingAtr = input.float(1.10,"スイング最小幅 (ATR)", minval=0.1, step=0.05, group=grpG)
 maxHold     = input.int(60,    "最大保有 (本)", minval=10, group=grpG)
-riskPct     = input.float(1.0, "1トレードのリスク (%)", minval=0.01, step=0.1, group=grpG)
+// ポジションサイズは strategy() の percent_of_equity 100% 固定（暴走防止）。
+// 実発注時のロットは別途リスク管理する前提。
 
 // ---------------------------------------------------------------------
 // プリセット（銘柄別自動 / 手動）
@@ -392,23 +393,21 @@ var float activeStop = na
 var int   entryBar   = na
 var bool  posLong    = false
 
-if sigLong and not na(sigStopOut)
-    float dist = close - sigStopOut
-    if dist > 0
-        float qty = (strategy.equity * (riskPct / 100.0)) / dist
-        activeStop := sigStopOut
-        entryBar := bar_index
-        posLong := true
-        strategy.entry("L", strategy.long, qty=qty)
+// サイズは strategy() の default_qty (percent_of_equity 100%) を使用。
+// 旧版の「資金×リスク%÷損切り幅」は損切り幅が極小のときに巨大ロットとなり、
+// 円ペアで純益/DDが暴走した。資金固定%へ作り直したので暴走しない。
+// (損切りが価格の約1%なら実質リスク約1%/トレード。PF・純益・DDが必ず整合する)
+if sigLong and not na(sigStopOut) and close > sigStopOut
+    activeStop := sigStopOut
+    entryBar := bar_index
+    posLong := true
+    strategy.entry("L", strategy.long)
 
-if sigShort and not na(sigStopOut)
-    float dist = sigStopOut - close
-    if dist > 0
-        float qty = (strategy.equity * (riskPct / 100.0)) / dist
-        activeStop := sigStopOut
-        entryBar := bar_index
-        posLong := false
-        strategy.entry("S", strategy.short, qty=qty)
+if sigShort and not na(sigStopOut) and close < sigStopOut
+    activeStop := sigStopOut
+    entryBar := bar_index
+    posLong := false
+    strategy.entry("S", strategy.short)
 
 if strategy.position_size != 0 and not na(activeStop)
     if posLong

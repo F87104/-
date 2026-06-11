@@ -14,7 +14,7 @@
 //   │ EURJPY   │  ✅   │  ✅   │  ❌   │  Sqz + Cap
 //   │ AUDJPY   │  ✅   │  ✅   │  ❌   │  Sqz + Cap
 //   │ CHFJPY   │  ✅   │  ✅   │  ✅   │  3構造全部
-//   │ XAUUSD   │  ✅   │  ❌   │  ❌   │  Sqz 単独
+//   │ XAUUSD   │  ✅*  │  ✅*  │  ❌   │  Sqz + Cap (金専用param: Sqz38件PF2.2/Cap34件PF2.1)
 //   │ XAGUSD   │  ✅   │  ❌   │  ❌   │  Sqz 単独
 //   │ GBPJPY   │  ❌   │  ❌   │  ❌   │  全構造で除外
 //   │ NAS100   │  ✅*  │  ✅*  │  ❌   │  指数専用パラメータ (* 下記)
@@ -90,7 +90,7 @@ bool isNAS100 = str.contains(sym, "NAS100") or str.contains(sym, "NDX") or str.c
 //     旧v2.1の銘柄別割当に従って ON にする。USDJPY の Squeeze は単独でPF0.36と
 //     弱いため OFF（USDJPY は Cap+LL が本命）。
 bool autoSqz = isXAUUSD or isXAGUSD or isEURJPY or isAUDJPY or isCHFJPY or isNAS100
-bool autoCap = isEURJPY or isAUDJPY or isUSDJPY or isCHFJPY or isNAS100
+bool autoCap = isEURJPY or isAUDJPY or isUSDJPY or isCHFJPY or isNAS100 or isXAUUSD
 bool autoLL  = isUSDJPY or isCHFJPY
 // GBPJPY と未分類は全て false (除外扱い)
 
@@ -144,15 +144,39 @@ volLen   = input.int(20, "Volume 平均期間", minval=2, group=grpV2)
 volMult  = input.float(1.3, "Volume 倍率", minval=0.5, step=0.1, group=grpV2)
 
 // ---------------------------------------------------------------------
-// NAS100 専用パラメータ上書き (auto時のみ)
-//   指数はボラ構造が為替/貴金属と異なるため、検証で得た専用値に切替える。
+// 銘柄別パラメータ上書き (auto時のみ)
+//   ボラ構造が銘柄で異なるため、検証で得た専用値に切替える。
+//   - NAS100: 棚3.0/急落参照9/急落3.5、Capはd1EMA50下OFF+クライマックス2.2
+//   - XAUUSD: 棚2.0/急落参照9/急落3.0、Capは下落窓18/下落2.5/クライマックス1.8、TP1.5R
+//             (標準paramだとゴールドはSqz3件のみ → 専用調整でSqz38件PF2.2/Cap34件PF2.1)
 // ---------------------------------------------------------------------
-bool nasOverride = autoMatrix and isNAS100
-float effShelfAtr = nasOverride ? 3.0 : shelfAtr   // 棚幅上限 (ATR)
-int   effDropWin  = nasOverride ? 9   : dropWin     // 棚直前の急変窓
-float effDropAtr  = nasOverride ? 3.5 : dropAtr     // 急落幅下限 (ATR)
-float effSigRngC  = nasOverride ? 2.2 : sigRngC     // クライマックス足値幅 (ATR)
-bool  effUseDownD1 = nasOverride ? false : useDownD1 // 指数はD1 EMA50下を要求しない
+bool nasOv = autoMatrix and isNAS100
+bool xauOv = autoMatrix and isXAUUSD
+
+float effShelfAtr  = shelfAtr
+int   effDropWin   = dropWin
+float effDropAtr   = dropAtr
+float effSigRngC   = sigRngC
+bool  effUseDownD1 = useDownD1
+int   effDeclBars  = declBars
+float effDropAtrC  = dropAtrC
+float effRr        = rr
+
+if nasOv
+    effShelfAtr  := 3.0
+    effDropWin   := 9
+    effDropAtr   := 3.5
+    effSigRngC   := 2.2
+    effUseDownD1 := false
+else if xauOv
+    effShelfAtr  := 2.0
+    effDropWin   := 9
+    effDropAtr   := 3.0
+    effSigRngC   := 1.8
+    effDeclBars  := 18
+    effDropAtrC  := 2.5
+    effUseDownD1 := true
+    effRr        := 1.5
 
 // ---------------------------------------------------------------------
 // Common indicators
@@ -189,8 +213,8 @@ float sqzStop = shelfLo - stopBufATR * atr
 // ---------------------------------------------------------------------
 // ② Capitulation (long)
 // ---------------------------------------------------------------------
-bool capNewLow   = low <= ta.lowest(low, declBars)
-bool capProlong  = (ta.highest(high, declBars) - low) >= dropAtrC * atr
+bool capNewLow   = low <= ta.lowest(low, effDeclBars)
+bool capProlong  = (ta.highest(high, effDeclBars) - low) >= effDropAtrC * atr
 bool capBig      = rng >= effSigRngC * atr
 bool capWick     = rngOk and ((math.min(open, close) - low) / rng) >= wickThr
 bool capCloseLoc = rngOk and ((close - low) / rng) >= closeLocC
@@ -255,7 +279,7 @@ if strategy.position_size != 0 and not na(activeStop)
     if posIsLong
         float risk0 = strategy.position_avg_price - activeStop
         if risk0 > 0
-            float target = strategy.position_avg_price + rr * risk0
+            float target = strategy.position_avg_price + effRr * risk0
             strategy.exit("X", from_entry="L", stop=activeStop, limit=target)
             if useEarly and not na(entryBar)
                 int barsHeld = bar_index - entryBar
@@ -267,7 +291,7 @@ if strategy.position_size != 0 and not na(activeStop)
     else
         float risk0 = activeStop - strategy.position_avg_price
         if risk0 > 0
-            float target = strategy.position_avg_price - rr * risk0
+            float target = strategy.position_avg_price - effRr * risk0
             strategy.exit("X", from_entry="S", stop=activeStop, limit=target)
             if useEarly and not na(entryBar)
                 int barsHeld = bar_index - entryBar
@@ -321,7 +345,7 @@ color  sigColor = sqzLong ? color.lime : (capLong ? color.aqua : color.red)
 if showLevels and anySig and not na(sigStop) and barstate.isconfirmed
     float entryPrice = close       // 次バー始値で約定するが、視覚的には close (信号バー終値) を起点
     float riskNow    = sigIsLong ? (entryPrice - sigStop) : (sigStop - entryPrice)
-    float tpPrice    = sigIsLong ? (entryPrice + rr * riskNow) : (entryPrice - rr * riskNow)
+    float tpPrice    = sigIsLong ? (entryPrice + effRr * riskNow) : (entryPrice - effRr * riskNow)
     int   xRight     = bar_index + levelExtend
 
     // keepHistory が OFF の時だけ、前回のオブジェクトを削除する

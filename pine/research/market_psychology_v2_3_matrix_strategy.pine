@@ -267,6 +267,10 @@ float llStop = shelfHiL + stopBufATR * atr
 // ---------------------------------------------------------------------
 // Order routing (long-side has priority over short-side on same bar)
 // ---------------------------------------------------------------------
+// ポジション管理は「保留値(pending)→建玉成立時に確定(active)」方式。
+// 同一足で決済と新規が起きても損切り情報が消えない（持ちっぱなし防止）。
+var float pendStop   = na
+var bool  pendLong   = false
 var float activeStop = na
 var int   entryBar   = na
 var bool  posIsLong  = false
@@ -280,19 +284,23 @@ if longSig
     float dist = close - longStop
     if dist > 0
         float qty = (strategy.equity * (riskPct / 100.0)) / dist
-        activeStop := longStop
-        entryBar   := bar_index
-        posIsLong  := true
+        pendStop := longStop
+        pendLong := true
         strategy.entry("L", strategy.long, qty=qty)
 
 if shortSig
     float dist = llStop - close
     if dist > 0
         float qty = (strategy.equity * (riskPct / 100.0)) / dist
-        activeStop := llStop
-        entryBar   := bar_index
-        posIsLong  := false
+        pendStop := llStop
+        pendLong := false
         strategy.entry("S", strategy.short, qty=qty)
+
+// 建玉が新たに成立した足で、保留値を確定値へラッチ
+if strategy.position_size != 0 and strategy.position_size[1] == 0
+    activeStop := pendStop
+    posIsLong  := pendLong
+    entryBar   := bar_index
 
 // Exit + early exit
 if strategy.position_size != 0 and not na(activeStop)
@@ -326,7 +334,8 @@ if strategy.position_size != 0 and not na(activeStop)
         if barsHeld >= maxHold
             strategy.close("S", comment="timeout")
 
-if strategy.position_size == 0 and strategy.position_size[1] != 0
+// フラットになったら確定値をクリア
+if strategy.position_size == 0
     activeStop := na
     entryBar   := na
 

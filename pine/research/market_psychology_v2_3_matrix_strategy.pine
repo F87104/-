@@ -10,12 +10,12 @@
 //   ┌──────────┬───────┬───────┬───────┐
 //   │ Symbol   │ Sqz   │ Cap   │ LL    │
 //   ├──────────┼───────┼───────┼───────┤
-//   │ USDJPY   │  ✅   │  ✅   │  ✅   │  LL が PF2.91 と突出 (本命)
+//   │ USDJPY   │  ❌   │  ✅   │  ✅   │  Cap + LL (LL PF2.91が本命/SqzはPF0.36で除外)
 //   │ EURJPY   │  ✅   │  ✅   │  ❌   │  Sqz + Cap
 //   │ AUDJPY   │  ✅   │  ✅   │  ❌   │  Sqz + Cap
-//   │ CHFJPY   │  ✅   │  ✅   │  ❌   │  Sqz + Cap (LLはPF1.24で除外)
-//   │ XAUUSD   │  ✅   │  ✅   │  ❌   │  Sqz + Cap
-//   │ XAGUSD   │  ✅   │  ❌   │  ❌   │  Sqz 単独 (Capはv2方針で除外)
+//   │ CHFJPY   │  ✅   │  ✅   │  ✅   │  3構造全部
+//   │ XAUUSD   │  ✅   │  ❌   │  ❌   │  Sqz 単独
+//   │ XAGUSD   │  ✅   │  ❌   │  ❌   │  Sqz 単独
 //   │ GBPJPY   │  ❌   │  ❌   │  ❌   │  全構造で除外
 //   │ NAS100   │  ✅*  │  ✅*  │  ❌   │  指数専用パラメータ (* 下記)
 //   └──────────┴───────┴───────┴───────┘
@@ -85,10 +85,13 @@ bool isCHFJPY = str.contains(sym, "CHFJPY")
 bool isGBPJPY = str.contains(sym, "GBPJPY")
 bool isNAS100 = str.contains(sym, "NAS100") or str.contains(sym, "NDX") or str.contains(sym, "US100") or str.contains(sym, "USTEC")
 
-// 2026-06-11 TV再検証マトリクス
-bool autoSqz = isUSDJPY or isEURJPY or isAUDJPY or isCHFJPY or isXAUUSD or isXAGUSD or isNAS100
-bool autoCap = isUSDJPY or isEURJPY or isAUDJPY or isCHFJPY or isXAUUSD or isNAS100
-bool autoLL  = isUSDJPY
+// 2026-06-11 TV再検証マトリクス（旧v2.1の銘柄別マトリクスをベースにNAS100を追加）
+// 注: Squeeze/Capitulation は銘柄単独だと低頻度のため「合算で有効な構造」を
+//     旧v2.1の銘柄別割当に従って ON にする。USDJPY の Squeeze は単独でPF0.36と
+//     弱いため OFF（USDJPY は Cap+LL が本命）。
+bool autoSqz = isXAUUSD or isXAGUSD or isEURJPY or isAUDJPY or isCHFJPY or isNAS100
+bool autoCap = isEURJPY or isAUDJPY or isUSDJPY or isCHFJPY or isNAS100
+bool autoLL  = isUSDJPY or isCHFJPY
 // GBPJPY と未分類は全て false (除外扱い)
 
 bool useSqz = autoMatrix ? autoSqz : manualSqz

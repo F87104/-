@@ -6,74 +6,13 @@
 
 ---
 
-## 🔍 いま見るべき場所 — 受講生つまずきクラスタ研究
-
-**迷ったらここから。** 複数の受講生が **同じ日時・同じ価格帯** で入って失敗した場所を、TradingView 上に重ねた研究です。
-
-### 3ステップで辿る
-
-| 順番 | やること | ファイル |
-|:---:|---|---|
-| **1** | **結論を読む**（何がつまずきか） | 👉 **[student_stumble_clusters_research_2026-05-31.md](docs/research/student_stumble_clusters_research_2026-05-31.md)** |
-| **2** | **生データを見る**（137件・29クラスタ） | [student_entries_extracted.csv](docs/research/student_entries_extracted.csv) ／ [student_stumble_clusters_v0_2.csv](docs/research/student_stumble_clusters_v0_2.csv) |
-| **3** | **TradingView で重ねる**（1H チャートに貼る） | 下の Pine **v0.4** 表を参照 |
-
-### TradingView 用 Pine（`pine/research/` フォルダ）— **最新 v0.4**
-
-| 通貨 | チャート | Pine ファイル | 中身 |
-|---|---|---|---|
-| **GBPJPY** | 1H | [student_stumble_zones_gbpjpy_v0_4.pine](pine/research/student_stumble_zones_gbpjpy_v0_4.pine) | 60件 + 赤9 + **青9（待つ場所）** |
-| **USDJPY** | 1H | [student_stumble_zones_usdjpy_v0_4.pine](pine/research/student_stumble_zones_usdjpy_v0_4.pine) | 16件 + 赤3 + **青3** |
-| **XAUUSD** | 1H | [student_stumble_zones_xauusd_v0_4.pine](pine/research/student_stumble_zones_xauusd_v0_4.pine) | 42件 + 赤3 + **青3** |
-
-**使い方:** GitHub で `.pine` を開く → 中身をコピー → TradingView Pine Editor に貼る → 同じ通貨の **1H** チャートで Add to chart。
-
-| 表示 | 意味 |
-|---|---|
-| 緑/赤三角 | 受講生の実エントリー（勝/負） |
-| **赤い帯** | 複数人が全員負けたゾーン（つまずき） |
-| **青い帯** | 本来待つべき場所（v0.4 追加） |
-
-待つ場所データ: [student_stumble_wait_zones_v0_1.csv](docs/research/student_stumble_wait_zones_v0_1.csv)
-
-**v2.x 試験フィルタ:** [stumble_chase_suppression_experiment_v0_1.pine](pine/research/stumble_chase_suppression_experiment_v0_1.pine) — フィルタOFF/ON で A/B 比較
-
-### 最重要つまずき（全員が負けた15クラスタの代表）
-
-| 通貨 | 人数 | 売買 | 価格帯 | 構造 |
-|---|---:|---|---|---|
-| GBPJPY | **5人** | 買い | 199円台 | 高値追い |
-| GBPJPY | **4人** | 売り | 188円台 | 安値売り（落ちるナイフ） |
-| USDJPY | 3人 | 売り | 140円台 | 割れ狙い→反発 |
-| XAUUSD | 2人 | 買い | **2719** | 天井買い |
-| XAUUSD | 2人 | 買い | **2777** | 天井買い |
-| XAUUSD | 2人 | 買い | **2948** | 天井買い |
-
-### フォルダの場所（GitHub 上）
-
-```
-docs/research/          ← 研究ノート・CSV（ここ）
-  student_stumble_clusters_research_2026-05-31.md   … まとめ（最初に読む）
-  student_entries_extracted.csv                     … 137件の実エントリー
-  student_stumble_clusters_v0_2.csv                 … 29クラスタ集計
-  student_stumble_wait_zones_v0_1.csv             … 待つ場所15件
-  RESEARCH_INDEX.md                                 … 全研究の台帳
-
-pine/research/          ← TradingView 用 Pine（ここ）
-  student_stumble_zones_gbpjpy_v0_4.pine   ⭐ 最新（赤+青）
-  student_stumble_zones_usdjpy_v0_4.pine
-  student_stumble_zones_xauusd_v0_4.pine
-```
-
----
-
 ## 研究ダッシュボード
 
 このリポジトリは、戦略コードだけでなく「何を研究しているか」を忘れないための研究台帳としても使います。
 
 ### 重要研究: H4 Double V Reclaim / 初動V
 
-- 研究メモ: [docs/research/h4_double_v_reclaim_2026-06-02.md](docs/research/h4_double_v_reclaim_2026-06-02.md)
+- 研究メモ: [docs/research/H4ダブルV回収_初動V_2026-06-02.md](docs/research/H4ダブルV回収_初動V_2026-06-02.md)
 - TradingView可視化: [pine/visual/h4_double_v_short_denial_visual.pine](pine/visual/h4_double_v_short_denial_visual.pine)
 - D1 V 日足専用可視化: [pine/visual/d1_v_context_daily_visual.pine](pine/visual/d1_v_context_daily_visual.pine)
 - D1 V -> H4確認可視化: [pine/visual/d1_v_context_h4_visual.pine](pine/visual/d1_v_context_h4_visual.pine)
@@ -86,7 +25,7 @@ pine/research/          ← TradingView 用 Pine（ここ）
 
 ### 重要研究: H4 V Denial Re-Acceleration / 売り手の損切り連鎖
 
-- 研究メモ: [docs/research/h4_v_denial_reacceleration_2026-06-05.md](docs/research/h4_v_denial_reacceleration_2026-06-05.md)
+- 研究メモ: [docs/research/H4_V否定_再加速_2026-06-05.md](docs/research/H4_V否定_再加速_2026-06-05.md)
 - TradingView Strategy: [pine/research/h4_v_denial_reacceleration_strategy.pine](pine/research/h4_v_denial_reacceleration_strategy.pine)
 - 狙い: **急落 -> 急反発 -> 上側棚 -> 売り手の損切りライン突破**を、チャートパターンではなく「売り手が負けを認める瞬間」として検出する。
 - 表示順: **WATCH = 売り失敗の文脈 / SIGNAL = 損切りライン突破 / SIM FILL = 次足始値約定**。
@@ -94,7 +33,7 @@ pine/research/          ← TradingView 用 Pine（ここ）
 
 ### 重要メモ: Market Psychology Squeeze / TradingView XAGUSD照合
 
-- 研究メモ: [docs/research/market_psychology_squeeze_strict_2026-05-30.md](docs/research/market_psychology_squeeze_strict_2026-05-30.md)
+- 研究メモ: [docs/research/市場心理スクイーズ厳選_2026-05-30.md](docs/research/市場心理スクイーズ厳選_2026-05-30.md)
 - TradingView確認用Pine: [pine/research/market_psychology_squeeze_strict_strategy.pine](pine/research/market_psychology_squeeze_strict_strategy.pine)
 - TradingView/OANDA XAGUSD再検証: [backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/report_ja.md](backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/report_ja.md)
 - TradingView H4 OHLC再検証: [backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/report_ja.md](backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/report_ja.md)
@@ -107,7 +46,7 @@ pine/research/          ← TradingView 用 Pine（ここ）
 
 ### 終了研究: Short Covering Psychology Flow
 
-- 研究メモ: [docs/research/short_covering_psychology_flow_2026-06-03.md](docs/research/short_covering_psychology_flow_2026-06-03.md)
+- 研究メモ: [docs/research/ショートカバリング心理フロー_2026-06-03.md](docs/research/ショートカバリング心理フロー_2026-06-03.md)
 - TradingView可視化: [pine/visual/short_covering_psychology_flow_visual.pine](pine/visual/short_covering_psychology_flow_visual.pine)
 - 狙い: ローソク足の形ではなく、**売り手が安心していた状態が崩れ、損切りから買い戻しに変わる心理遷移**を可視化する。
 - 表示順: **SELL DOMINANCE -> SELL FAILURE -> SHORT COVERING -> ACCELERATION**
@@ -117,15 +56,15 @@ pine/research/          ← TradingView 用 Pine（ここ）
 
 | 優先 | 研究テーマ | 状態 | 入口 |
 |---:|---|---|---|
-| 1 | **受講生つまずきクラスタ** | 進行中 | 👉 上の **[3ステップ表](#-いま見るべき場所--受講生つまずきクラスタ研究)** |
-| 2 | **H4 Double V Reclaim / 初動V** | **最重要・検証中** | [研究メモ](docs/research/h4_double_v_reclaim_2026-06-02.md) ／ [D1 V日足表示](pine/visual/d1_v_context_daily_visual.pine) ／ [D1 V->H4可視化](pine/visual/d1_v_context_h4_visual.pine) ／ [D1 V->H4検証](pine/production/d1_v_context_h4_strategy.pine) ／ [H4T5級 高精度V](pine/visual/h4_psychological_v_t5_quality_visual.pine) ／ [H4 Double V](pine/visual/h4_double_v_short_denial_visual.pine) |
-| 3 | **H4 V Denial Re-Acceleration** | **重要・研究中** | [研究メモ](docs/research/h4_v_denial_reacceleration_2026-06-05.md) ／ [Pine Strategy](pine/research/h4_v_denial_reacceleration_strategy.pine) |
-| 4 | **Short Covering Psychology Flow** | **終了・本番不採用** | [研究メモ](docs/research/short_covering_psychology_flow_2026-06-03.md) ／ [Pine可視化](pine/visual/short_covering_psychology_flow_visual.pine) |
-| 5 | 受講生エントリー集中パターン | 進行中 | [student_entry_cluster_research_2026-05-31.md](docs/research/student_entry_cluster_research_2026-05-31.md) |
-| 6 | トレード心理 / 群衆心理 | 進行中 | [RESEARCH_INDEX.md](docs/research/RESEARCH_INDEX.md) ／ [crowd_psychology_simple_visual.pine](pine/visual/crowd_psychology_simple_visual.pine) |
-| 7 | Market Psychology Squeeze | TV OHLC照合済み | [研究メモ](docs/research/market_psychology_squeeze_strict_2026-05-30.md) ／ [XAGUSD TV一覧](backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/report_ja.md) ／ [TV H4 OHLC再検証](backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/report_ja.md) |
+| 1 | **受講生つまずきクラスタ** | 進行中 | [研究まとめ](docs/research/受講生つまずきクラスタ研究_2026-05-31.md) ／ [Pine v0.4](pine/research/student_stumble_zones_gbpjpy_v0_4.pine) |
+| 2 | **H4 Double V Reclaim / 初動V** | **最重要・検証中** | [研究メモ](docs/research/H4ダブルV回収_初動V_2026-06-02.md) ／ [D1 V日足表示](pine/visual/d1_v_context_daily_visual.pine) ／ [D1 V->H4可視化](pine/visual/d1_v_context_h4_visual.pine) ／ [D1 V->H4検証](pine/production/d1_v_context_h4_strategy.pine) ／ [H4T5級 高精度V](pine/visual/h4_psychological_v_t5_quality_visual.pine) ／ [H4 Double V](pine/visual/h4_double_v_short_denial_visual.pine) |
+| 3 | **H4 V Denial Re-Acceleration** | **重要・研究中** | [研究メモ](docs/research/H4_V否定_再加速_2026-06-05.md) ／ [Pine Strategy](pine/research/h4_v_denial_reacceleration_strategy.pine) |
+| 4 | **Short Covering Psychology Flow** | **終了・本番不採用** | [研究メモ](docs/research/ショートカバリング心理フロー_2026-06-03.md) ／ [Pine可視化](pine/visual/short_covering_psychology_flow_visual.pine) |
+| 5 | 受講生エントリー集中パターン | 進行中 | [受講生エントリー集中パターン研究_2026-05-31.md](docs/research/受講生エントリー集中パターン研究_2026-05-31.md) |
+| 6 | トレード心理 / 群衆心理 | 進行中 | [研究インデックス.md](docs/research/研究インデックス.md) ／ [crowd_psychology_simple_visual.pine](pine/visual/crowd_psychology_simple_visual.pine) |
+| 7 | Market Psychology Squeeze | TV OHLC照合済み | [研究メモ](docs/research/市場心理スクイーズ厳選_2026-05-30.md) ／ [XAGUSD TV一覧](backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_oanda_xagusd_recheck/report_ja.md) ／ [TV H4 OHLC再検証](backtests/elliott_fibo/results_2026_06_05/market_psychology_tv_ohlc_check/report_ja.md) |
 | 8 | **市場心理図鑑** | **Vol.1 + 収集ライブラリ** | [図鑑](docs/research/市場心理図鑑/README.md) ／ [収集90件+](docs/research/市場心理図鑑/collection/index.md) |
-| 9 | Wavebox / Rebreak | 記録済み | [wavebox_operational_preconditions_v1.md](docs/research/wavebox_operational_preconditions_v1.md) |
+| 9 | Wavebox / Rebreak | 記録済み | [ウェーブボックス運用前提条件_v1.md](docs/research/ウェーブボックス運用前提条件_v1.md) |
 
 ---
 
@@ -134,16 +73,16 @@ pine/research/          ← TradingView 用 Pine（ここ）
 | ドキュメント | 内容 |
 |---|---|
 | 👉 **[docs/trade_diary/README.md](docs/trade_diary/README.md)** | **トレード日誌トップ** — 実践日誌・心理記録・受講生記録 |
-| 👉 **[STRATEGY_GUIDE.md](STRATEGY_GUIDE.md)** | **メインの説明書 (これを読めばOK)** |
-| 👉 **[docs/BACKTEST_INDEX.md](docs/BACKTEST_INDEX.md)** | **全検証カタログ (試したもの全部の一覧)** |
+| 👉 **[戦略ガイド.md](戦略ガイド.md)** | **メインの説明書 (これを読めばOK)** |
+| 👉 **[docs/バックテスト一覧.md](docs/バックテスト一覧.md)** | **全検証カタログ (試したもの全部の一覧)** |
 | 📊 [docs/spreadsheet/](docs/spreadsheet/) | **Google スプレッドシート用 CSV/TSV** (9シート) |
-| [docs/two_method_practical_research_2026-05-24.md](docs/two_method_practical_research_2026-05-24.md) | 2本柱研究ノート (公式版) |
-| [docs/h4_t5_macd_bb_practical_audit_2026-05-24.md](docs/h4_t5_macd_bb_practical_audit_2026-05-24.md) | H4 T5 補助手法の実用監査 |
-| [docs/h4_t5_macd_bb_live_ready_notes.md](docs/h4_t5_macd_bb_live_ready_notes.md) | H4 T5 本番運用ノート |
-| [docs/research/short_side_research_2026-05-28_in_progress.md](docs/research/short_side_research_2026-05-28_in_progress.md) | ショート側研究ノート (**検証途中・本番未採用**) |
-| [docs/research/h4_double_v_reclaim_2026-06-02.md](docs/research/h4_double_v_reclaim_2026-06-02.md) | H4 Double V Reclaim / 初動V研究 (**重要・可視化中**) |
-| [docs/research/h4_v_denial_reacceleration_2026-06-05.md](docs/research/h4_v_denial_reacceleration_2026-06-05.md) | H4 V Denial Re-Acceleration 研究 (**重要・検証中**) |
-| [docs/research/short_covering_psychology_flow_2026-06-03.md](docs/research/short_covering_psychology_flow_2026-06-03.md) | Short Covering Psychology Flow研究 (**終了・本番不採用**) |
+| [docs/2本柱実用研究_2026-05-24.md](docs/2本柱実用研究_2026-05-24.md) | 2本柱研究ノート (公式版) |
+| [docs/H4_T5_MACD_BB_実用監査_2026-05-24.md](docs/H4_T5_MACD_BB_実用監査_2026-05-24.md) | H4 T5 補助手法の実用監査 |
+| [docs/H4_T5_本番運用ノート.md](docs/H4_T5_本番運用ノート.md) | H4 T5 本番運用ノート |
+| [docs/research/ショート側研究_進行中_2026-05-28.md](docs/research/ショート側研究_進行中_2026-05-28.md) | ショート側研究ノート (**検証途中・本番未採用**) |
+| [docs/research/H4ダブルV回収_初動V_2026-06-02.md](docs/research/H4ダブルV回収_初動V_2026-06-02.md) | H4 Double V Reclaim / 初動V研究 (**重要・可視化中**) |
+| [docs/research/H4_V否定_再加速_2026-06-05.md](docs/research/H4_V否定_再加速_2026-06-05.md) | H4 V Denial Re-Acceleration 研究 (**重要・検証中**) |
+| [docs/research/ショートカバリング心理フロー_2026-06-03.md](docs/research/ショートカバリング心理フロー_2026-06-03.md) | Short Covering Psychology Flow研究 (**終了・本番不採用**) |
 | [docs/FX検証研究ノート_2015-2024.docx](docs/FX検証研究ノート_2015-2024.docx) | Word版総合レポート |
 | [backtests/ensemble/trendbreak_t5_practical_combo_2015_2024/report_ja.md](backtests/ensemble/trendbreak_t5_practical_combo_2015_2024/report_ja.md) | TrendBreak+T5 アンサンブル検証 |
 
@@ -162,10 +101,10 @@ pine/research/          ← TradingView 用 Pine（ここ）
 
 | 研究 | 状態 | メモ |
 |---|---|---|
-| [H4 Double V Reclaim / 初動V](docs/research/h4_double_v_reclaim_2026-06-02.md) | 🔬 最重要・可視化中 | V1売り失敗後、V2押しからV1右肩ゾーン突破を狙う。小さいノイズVを削って「トレンド初動のV」を探す研究 |
-| [H4 V Denial Re-Acceleration](docs/research/h4_v_denial_reacceleration_2026-06-05.md) | 🔬 重要・検証中 | 急落後のVを売り失敗の文脈として使い、上側棚から売り手の損切りライン突破を狙う研究 |
-| [Short Covering Psychology Flow](docs/research/short_covering_psychology_flow_2026-06-03.md) | 終了・本番不採用 | 売り優勢から売り失敗、損切り買い戻し、加速までの心理遷移をH4で可視化する研究。優位性が明確でないため終了 |
-| [ショート側研究 2026-05-28](docs/research/short_side_research_2026-05-28_in_progress.md) | 🔬 検証途中 | ロング版ミラーは不採用。H4 1ヶ月安値更新後の安値停滞ブレイクショートが暫定候補 |
+| [H4 Double V Reclaim / 初動V](docs/research/H4ダブルV回収_初動V_2026-06-02.md) | 🔬 最重要・可視化中 | V1売り失敗後、V2押しからV1右肩ゾーン突破を狙う。小さいノイズVを削って「トレンド初動のV」を探す研究 |
+| [H4 V Denial Re-Acceleration](docs/research/H4_V否定_再加速_2026-06-05.md) | 🔬 重要・検証中 | 急落後のVを売り失敗の文脈として使い、上側棚から売り手の損切りライン突破を狙う研究 |
+| [Short Covering Psychology Flow](docs/research/ショートカバリング心理フロー_2026-06-03.md) | 終了・本番不採用 | 売り優勢から売り失敗、損切り買い戻し、加速までの心理遷移をH4で可視化する研究。優位性が明確でないため終了 |
+| [ショート側研究 2026-05-28](docs/research/ショート側研究_進行中_2026-05-28.md) | 🔬 検証途中 | ロング版ミラーは不採用。H4 1ヶ月安値更新後の安値停滞ブレイクショートが暫定候補 |
 
 ### 推奨運用構成
 
@@ -204,7 +143,7 @@ pine/research/          ← TradingView 用 Pine（ここ）
 4. 通貨: **XAUUSD, USDJPY, EURJPY, GBPJPY, CHFJPY, SILVER** の6つ
 5. アラート設定 → 通知が来たら手動 (または API 経由) で発注
 
-詳細は **[STRATEGY_GUIDE.md](STRATEGY_GUIDE.md)** を参照。
+詳細は **[戦略ガイド.md](戦略ガイド.md)** を参照。
 
 ---
 
@@ -213,7 +152,7 @@ pine/research/          ← TradingView 用 Pine（ここ）
 ```
 fx-ai/
 ├── README.md                       ← このファイル (入り口)
-├── STRATEGY_GUIDE.md               ← 戦略の説明書 (本体)
+├── 戦略ガイド.md               ← 戦略の説明書 (本体)
 ├── pine/                           ← TradingView Pine Script
 │   ├── production/                    本番運用中 ⭐
 │   │   ├── TrendBreakV1_Final.pine        主力 (H1 ブレイクアウト)
@@ -238,15 +177,15 @@ fx-ai/
 │       ├── wavebox_usdjpy_h1_rebreak_v1_1.pine
 │       └── synapse_mtf_wave_reversal_v3.pine
 ├── docs/                           ← 研究ノート ⭐
-│   ├── BACKTEST_INDEX.md              全検証カタログ
-│   ├── two_method_practical_research_2026-05-24.md  最新の総括
-│   ├── h4_t5_macd_bb_practical_audit_2026-05-24.md  実用監査
-│   ├── h4_t5_macd_bb_live_ready_notes.md            運用ノート
+│   ├── バックテスト一覧.md              全検証カタログ
+│   ├── 2本柱実用研究_2026-05-24.md  最新の総括
+│   ├── H4_T5_MACD_BB_実用監査_2026-05-24.md  実用監査
+│   ├── H4_T5_本番運用ノート.md            運用ノート
 │   ├── research/                      研究中 (各戦略のメモ)
-│   │   ├── student_stumble_clusters_research_2026-05-31.md  ⭐ つまずき研究まとめ
+│   │   ├── 受講生つまずきクラスタ研究_2026-05-31.md  ⭐ つまずき研究まとめ
 │   │   ├── student_entries_extracted.csv                  ⭐ 137件エントリー
 │   │   ├── student_stumble_clusters_v0_2.csv              ⭐ 29クラスタ
-│   │   ├── RESEARCH_INDEX.md                              全研究台帳
+│   │   ├── 研究インデックス.md                              全研究台帳
 │   │   └── ... (wavebox, chfjpy 等)
 │   ├── reference/                     参考資料 (Word/Doc 等)
 │   │   ├── FX検証研究ノート_2015-2024.docx

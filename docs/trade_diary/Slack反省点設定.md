@@ -75,4 +75,4 @@ cp config/slack_reflection.example.json config/slack_reflection.json
 ## 6. 日誌側のルール
 
 反省点を Slack に載せたいエントリーには Markdown に `## 反省点` セクションを書く。  
-現時点で対象: [2026-06-10 XAUUSD 手法外](practice/entries/2026-06-10_xauusd_offstrategy_short.md)
+現時点で対象: [2026-06-10 XAUUSD 手法外](practice/entries/2026-06-10_XAUUSD_手法外ショート.md)

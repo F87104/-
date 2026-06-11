@@ -18,9 +18,9 @@
 
 | ID | 日付 | 内容 |
 |---|---|---|
-| E-2026-06-10-001 | 2026-06-10 | [XAUUSD H1 売り — 手法外裁量](entries/2026-06-10_xauusd_offstrategy_short.md) |
-| E-2026-06-09-001 | 2026-06-09 | [CHFJPY H4 買い — 本命v2.1 SQZ ロング](entries/2026-06-09_chfjpy_v21_sqz_signal_buy.md) |
-| E-2026-06-04-002 | 2026-06-04 | [XAUUSD H1 売り — V1ショート](entries/2026-06-04_xauusd_v1_short_signal.md) |
-| E-2026-06-04-001 | 2026-06-04 | [GBPJPY 買い — 投げ切りシグナル](entries/2026-06-04_gbpjpy_nagekiri_signal_buy.md) |
-| E-2026-06-01-001 | 2026-06-01 | [USDJPY H4 買い — 4HT5シグナル点灯](entries/2026-06-01_usdjpy_h4t5_signal_buy.md) |
-| E-2026-06-03-001 | 2026-06-03 | [XAUUSD H1 買い — 投げ切りシグナル（決済 -668,492）](entries/2026-06-03_xauusd_h1_alert_buy.md) |
+| E-2026-06-10-001 | 2026-06-10 | [XAUUSD H1 売り — 手法外裁量](entries/2026-06-10_XAUUSD_手法外ショート.md) |
+| E-2026-06-09-001 | 2026-06-09 | [CHFJPY H4 買い — 本命v2.1 SQZ ロング](entries/2026-06-09_CHFJPY_v2_1_SQZシグナル買い.md) |
+| E-2026-06-04-002 | 2026-06-04 | [XAUUSD H1 売り — V1ショート](entries/2026-06-04_XAUUSD_V1ショートシグナル.md) |
+| E-2026-06-04-001 | 2026-06-04 | [GBPJPY 買い — 投げ切りシグナル](entries/2026-06-04_GBPJPY_投げ切りシグナル買い.md) |
+| E-2026-06-01-001 | 2026-06-01 | [USDJPY H4 買い — 4HT5シグナル点灯](entries/2026-06-01_USDJPY_H4T5シグナル買い.md) |
+| E-2026-06-03-001 | 2026-06-03 | [XAUUSD H1 買い — 投げ切りシグナル（決済 -668,492）](entries/2026-06-03_XAUUSD_H1アラート買い.md) |

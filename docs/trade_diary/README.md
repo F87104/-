@@ -10,9 +10,9 @@
 | やりたいこと | 行き先 |
 |---|---|
 | **自分の実践トレードを見る・追加する** | 👉 [practice/](practice/) |
-| **最新エントリー** | [2026-06-10 XAUUSD 手法外ショート](practice/entries/2026-06-10_xauusd_offstrategy_short.md) ／ [2026-06-10 XAUUSD 利確 +109万](practice/entries/2026-06-04_xauusd_v1_short_signal.md) ／ [2026-06-09 CHFJPY v2.1 SQZ](practice/entries/2026-06-09_chfjpy_v21_sqz_signal_buy.md) |
+| **最新エントリー** | [2026-06-10 XAUUSD 手法外ショート](practice/entries/2026-06-10_XAUUSD_手法外ショート.md) ／ [2026-06-10 XAUUSD 利確 +109万](practice/entries/2026-06-04_XAUUSD_V1ショートシグナル.md) ／ [2026-06-09 CHFJPY v2.1 SQZ](practice/entries/2026-06-09_CHFJPY_v2_1_SQZシグナル買い.md) |
 | **リアルタイム心理を記録する** | [psychology/](psychology/) |
-| **Slack 反省点リマインド（定期投稿）** | [slack_reflection_setup.md](slack_reflection_setup.md) |
+| **Slack 反省点リマインド（定期投稿）** | [Slack反省点設定.md](Slack反省点設定.md) |
 | **受講生トレード記録（137件・研究用）** | [archive/student/](archive/student/) |
 | **トレード心理の研究ノート** | [reference/](reference/) |
 
@@ -52,12 +52,12 @@ docs/trade_diary/
 
 | 日付 | 銘柄 | 方向 | 理由 | 詳細 |
 |---|---|---|---|---|
-| 2026-06-09 | CHFJPY H4 | 買い | シグナル点灯 @201.368（v2.1 SQZ） | [エントリー](practice/entries/2026-06-09_chfjpy_v21_sqz_signal_buy.md) |
-| 2026-06-01 | USDJPY H4 | 買い | 4HT5シグナル点灯 | [エントリー](practice/entries/2026-06-01_usdjpy_h4t5_signal_buy.md) |
-| 2026-06-03 | XAUUSD H1 | 買い | 損切り -668,492（投げ切り） | [エントリー](practice/entries/2026-06-03_xauusd_h1_alert_buy.md) |
-| 2026-06-10 | XAUUSD H1 | 売り | **手法外** 裁量 @4164.77 | [エントリー](practice/entries/2026-06-10_xauusd_offstrategy_short.md) |
-| 2026-06-10 | XAUUSD H1 | 売り | **利確 +1,091,277**（V1ショート @4200） | [エントリー](practice/entries/2026-06-04_xauusd_v1_short_signal.md) |
-| 2026-06-04 | GBPJPY H4 | 買い | 投げ切りシグナル | [エントリー](practice/entries/2026-06-04_gbpjpy_nagekiri_signal_buy.md) |
+| 2026-06-09 | CHFJPY H4 | 買い | シグナル点灯 @201.368（v2.1 SQZ） | [エントリー](practice/entries/2026-06-09_CHFJPY_v2_1_SQZシグナル買い.md) |
+| 2026-06-01 | USDJPY H4 | 買い | 4HT5シグナル点灯 | [エントリー](practice/entries/2026-06-01_USDJPY_H4T5シグナル買い.md) |
+| 2026-06-03 | XAUUSD H1 | 買い | 損切り -668,492（投げ切り） | [エントリー](practice/entries/2026-06-03_XAUUSD_H1アラート買い.md) |
+| 2026-06-10 | XAUUSD H1 | 売り | **手法外** 裁量 @4164.77 | [エントリー](practice/entries/2026-06-10_XAUUSD_手法外ショート.md) |
+| 2026-06-10 | XAUUSD H1 | 売り | **利確 +1,091,277**（V1ショート @4200） | [エントリー](practice/entries/2026-06-04_XAUUSD_V1ショートシグナル.md) |
+| 2026-06-04 | GBPJPY H4 | 買い | 投げ切りシグナル | [エントリー](practice/entries/2026-06-04_GBPJPY_投げ切りシグナル買い.md) |
 
 一覧 CSV: [practice/index.csv](practice/index.csv)
 
@@ -67,10 +67,10 @@ docs/trade_diary/
 
 | ドキュメント | 内容 |
 |---|---|
-| [docs/research/RESEARCH_INDEX.md](../research/RESEARCH_INDEX.md) | 全研究台帳 |
+| [docs/research/研究インデックス.md](../research/研究インデックス.md) | 全研究台帳 |
 | [docs/reference/](../reference/) | FX検証研究ノート（Word） |
-| [受講生つまずき研究](../research/student_stumble_clusters_research_2026-05-31.md) | 137件データの分析まとめ |
-| [トレード心理 最適エントリー研究](../research/trade_psychology_optimal_entry_pattern_research_2026-05-31.md) | STOP/WAIT/CHECK プロトコル |
+| [受講生つまずき研究](../research/受講生つまずきクラスタ研究_2026-05-31.md) | 137件データの分析まとめ |
+| [トレード心理 最適エントリー研究](../research/トレード心理最適エントリーパターン研究_2026-05-31.md) | STOP/WAIT/CHECK プロトコル |
 
 ---
 

@@ -3,7 +3,7 @@
 > ローソク足を研究するのではなく、**人間の意思決定**を研究するための辞書。
 
 作成日: 2026-06-03  
-関連: [pattern_library (旧10パターン)](../market_psychology_pattern_library_2026-05-30.md) ／ [framework](../../skills/market_psychology/framework.md)
+関連: [pattern_library (旧10パターン)](../市場心理パターンライブラリ_2026-05-30.md) ／ [framework](../../skills/market_psychology/framework.md)
 
 ---
 
@@ -154,7 +154,7 @@ Vol.1 のうち、バックテストで相性がよい合成:
 7. ボラが拡大する
 
 → `IGNITION_STRICT` / `SQZ_STRICT` として検証済み。  
-詳細: [market_psychology_squeeze_strict_2026-05-30.md](../market_psychology_squeeze_strict_2026-05-30.md)
+詳細: [市場心理スクイーズ厳選_2026-05-30.md](../市場心理スクイーズ厳選_2026-05-30.md)
 
 ---
 

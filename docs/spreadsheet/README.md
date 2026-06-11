@@ -1,6 +1,6 @@
 # Google スプレッドシート用 検証結果一覧
 
-> [`docs/BACKTEST_INDEX.md`](../BACKTEST_INDEX.md) の内容を、Google スプレッドシートで開きやすい CSV / TSV にまとめたもの。
+> [`docs/バックテスト一覧.md`](../バックテスト一覧.md) の内容を、Google スプレッドシートで開きやすい CSV / TSV にまとめたもの。
 
 ---
 
@@ -77,7 +77,7 @@
 
 新しい検証結果が出たら:
 
-1. `docs/BACKTEST_INDEX.md` を更新
+1. `docs/バックテスト一覧.md` を更新
 2. `docs/spreadsheet/build_spreadsheet_csvs.py` の該当データを更新
 3. `python3 docs/spreadsheet/build_spreadsheet_csvs.py` を実行
 4. CSV/TSV が再生成される
@@ -87,6 +87,6 @@
 
 ## 📎 関連リンク
 
-- [`../BACKTEST_INDEX.md`](../BACKTEST_INDEX.md) — markdown 版 (こちらが本体)
+- [`../バックテスト一覧.md`](../バックテスト一覧.md) — markdown 版 (こちらが本体)
 - [`../../README.md`](../../README.md) — リポジトリ入口
-- [`../../STRATEGY_GUIDE.md`](../../STRATEGY_GUIDE.md) — 戦略運用説明書
+- [`../../戦略ガイド.md`](../../戦略ガイド.md) — 戦略運用説明書

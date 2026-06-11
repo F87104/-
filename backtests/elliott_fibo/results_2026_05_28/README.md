@@ -6,7 +6,7 @@ Status: 検証途中。ここにある手法はまだ本番採用ではない。
 
 ## まず読むもの
 
-1. 全体の研究ノート: `../../../docs/research/short_side_research_2026-05-28_in_progress.md`
+1. 全体の研究ノート: `../../../docs/research/ショート側研究_進行中_2026-05-28.md`
 2. 現時点の本命候補: `monthly_low_rebreak_short/report_ja.md`
 3. 不採用理由の確認: `t5_short_mirror_validation/report_ja.md`
 
@@ -61,7 +61,7 @@ H4安値停滞の別角度分析では、6本以内に停滞レンジ中央へ�
 ## 再開するときの流れ
 
 1. このREADMEを読む。
-2. `../../../docs/research/short_side_research_2026-05-28_in_progress.md` を読む。
+2. `../../../docs/research/ショート側研究_進行中_2026-05-28.md` を読む。
 3. `monthly_low_rebreak_short/report_ja.md` で暫定候補を確認する。
 4. 必要なら `monthly_low_rebreak_short/trades.csv` で個別トレードを見る。
 5. 期間・利確基準を見る場合は `low_break_lookback_exit_study/report_ja.md` を読む。

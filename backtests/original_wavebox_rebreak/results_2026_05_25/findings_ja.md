@@ -17,7 +17,7 @@
 
 仕様書:
 
-- `docs/original_wavebox_rebreak_v0_1.md`
+- `docs/オリジナルウェーブボックス再ブレイク_v0_1.md`
 
 ## 初回検証の結論
 

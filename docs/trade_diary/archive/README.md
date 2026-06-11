@@ -14,7 +14,7 @@
 
 関連研究:
 
-- [受講生つまずきクラスタ研究](../../research/student_stumble_clusters_research_2026-05-31.md)
-- [受講生エントリー集中パターン研究](../../research/student_entry_cluster_research_2026-05-31.md)
+- [受講生つまずきクラスタ研究](../../research/受講生つまずきクラスタ研究_2026-05-31.md)
+- [受講生エントリー集中パターン研究](../../research/受講生エントリー集中パターン研究_2026-05-31.md)
 
 画像パス `chart_pattern_work/extracted_images/` は元データ抽出時の参照先です（リポジトリ外の場合あり）。

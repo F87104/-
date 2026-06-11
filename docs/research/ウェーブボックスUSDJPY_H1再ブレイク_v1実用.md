@@ -9,7 +9,7 @@ USDJPY H1 WaveBox Rebreak は、現時点では `USDJPY / H1` 専用の実戦候
 
 実戦前提条件:
 
-- `/Users/asamifujita/Documents/Codex/2026-05-21/fx-ai/docs/wavebox_operational_preconditions_v1.md`
+- `/Users/asamifujita/Documents/Codex/2026-05-21/fx-ai/docs/ウェーブボックス運用前提条件_v1.md`
 
 実戦標準は `v0.4 filtered + 1波剪定` とする。
 
@@ -210,7 +210,7 @@ v1.1の方針:
 
 詳細:
 
-- `/Users/asamifujita/Documents/Codex/2026-05-21/fx-ai/docs/wavebox_red_team_audit_2026-05-26.md`
+- `/Users/asamifujita/Documents/Codex/2026-05-21/fx-ai/docs/ウェーブボックスレッドチーム監査_2026-05-26.md`
 
 結論:
 

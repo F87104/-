@@ -1,7 +1,7 @@
 # リアルタイム心理記録（psychology）
 
 エントリー**前**の心理ラベル（STOP / WAIT / CHECK）を記録する領域です。  
-プロトコル詳細は [トレード心理 最適エントリー研究](../../research/trade_psychology_optimal_entry_pattern_research_2026-05-31.md) を参照。
+プロトコル詳細は [トレード心理 最適エントリー研究](../../research/トレード心理最適エントリーパターン研究_2026-05-31.md) を参照。
 
 [← トレード日誌トップ](../README.md)
 

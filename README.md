@@ -20,12 +20,23 @@
 
 | 目的 | ファイル |
 |---|---|
-| Synapse Pine（H4に載せる） | `pine/research/synapse_mtf_wave_reversal_v4.pine` |
-| v2.1 Matrix Pine（H4に載せる） | `pine/research/market_psychology_v2_matrix_strategy.pine` |
+| **Synapse Pine（検証反映・銘柄別自動）⭐** | `pine/research/synapse_h4_verified_strategy.pine` |
+| **v2.3 Matrix Pine（NAS100対応）⭐** | `pine/research/market_psychology_v2_3_matrix_strategy.pine` |
+| Synapse Pine（旧・波形可視化） | `pine/research/synapse_mtf_wave_reversal_v4.pine` |
+| v2.1 Matrix Pine（旧版） | `pine/research/market_psychology_v2_matrix_strategy.pine` |
 | Synapse 手法定義書 | [Synapse手法定義_v0_1.md](docs/research/Synapse手法定義_v0_1.md) |
 | v2.1 仕様書 | [v2_spec.md](docs/research/market_psychology/v2_spec.md) |
 | v2.1 フォワード記録 | [forward_log_v2_1_matrix.md](docs/research/market_psychology/forward_log_2026_05_v2_1_matrix.md) |
 | 2大研究 検証計画（全体） | [2大研究_検証計画_2026-06-11.md](docs/research/2大研究_検証計画_2026-06-11.md) |
+
+### 検証で得た銘柄別ベスト（Pineに反映済み）
+
+| 銘柄 | Synapse構造/フィルタ/TP | v2.3 構造 |
+|---|---|---|
+| USDJPY | ihs / context / 1.5R | Sqz+Cap+LL |
+| GBPJPY | ihs / diag / 1.5R（PF2.41★） | 除外 |
+| XAGUSD | role / basic / 2.0R（PF2.19★） | Sqz |
+| NAS100 | ihs / diag / 1.5R | Sqz+Cap（指数専用param） |
 
 ---
 

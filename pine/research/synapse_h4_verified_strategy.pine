@@ -1,0 +1,457 @@
+//@version=5
+// =============================================================================
+// Synapse H4 Verified Strategy — 2026-06-11 TradingView検証反映版
+//
+// LH3 Synapse手法（2波の終わり→3波の始まりを A/B/斜めラインで捉える）を、
+// TradingView H4データの検証結果に合わせて実装したストラテジー。
+//
+// 検証根拠:
+//   docs/research/Synapse_TV_H4検証_横断比較.md
+//   docs/research/Synapse_精度向上フィルタ_2026-06-11.md
+//   docs/research/Synapse_銀XAGUSD_別構造再検討_2026-06-11.md
+//
+// 銘柄別ベスト構成 (ihs=逆三尊型5pivot / role=A/B役割型5pivot):
+//   USDJPY ihs/context/1.5R  ADX18 調整1.0 実体0.45   PF2.02
+//   EURJPY ihs/diag/1.5R     なし                     PF1.28
+//   GBPJPY ihs/diag/1.5R     調整1.0                  PF2.41 ★最良
+//   AUDJPY ihs/context/2.0R  ADX18 実体0.45           PF1.47
+//   CHFJPY ihs/diag/2.0R     ADX18 調整1.0 実体0.45   PF1.34
+//   XAUUSD ihs/diag/2.0R     ADX26 調整1.0            PF1.43
+//   XAGUSD role/basic/2.0R   ADX18 実体0.45           PF2.19 ★最良
+//   NAS100 ihs/diag/1.5R     ADX18 調整1.0            PF1.68
+//   共通で効くフィルタ: 「調整時間(adjust)≥1.0」と「実体(body)」。
+//
+// 推奨時間足: H4
+// =============================================================================
+strategy("Synapse H4 Verified (銘柄別自動プリセット)",
+     overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
+     pyramiding=0,
+     calc_on_order_fills=true,
+     calc_on_every_tick=false,
+     process_orders_on_close=false,
+     commission_type=strategy.commission.percent,
+     commission_value=0.0,
+     slippage=2,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500)
+
+plot(na, title="Compiler Anchor", display=display.none)
+
+// ---------------------------------------------------------------------
+// 共通入力
+// ---------------------------------------------------------------------
+grpG        = "共通"
+requireH4   = input.bool(true, "H4 チャートのみ売買", group=grpG)
+useDate     = input.bool(true, "2014 〜 2026 のみ", group=grpG)
+atrLen      = input.int(14,    "ATR 期間", minval=1, group=grpG)
+pivotWidth  = input.int(2,     "ピボット幅 (H4=2)", minval=1, group=grpG)
+minSwingAtr = input.float(1.10,"スイング最小幅 (ATR)", minval=0.1, step=0.05, group=grpG)
+maxHold     = input.int(60,    "最大保有 (本)", minval=10, group=grpG)
+riskPct     = input.float(1.0, "1トレードのリスク (%)", minval=0.01, step=0.1, group=grpG)
+
+// ---------------------------------------------------------------------
+// プリセット（銘柄別自動 / 手動）
+// ---------------------------------------------------------------------
+grpP = "プリセット"
+autoPreset = input.bool(true, "銘柄別に自動設定", group=grpP, tooltip="OFFにすると下の手動設定が効く")
+mStruct  = input.string("ihs",  "[手動] 構造", options=["ihs", "role"], group=grpP)
+mFilter  = input.string("diag", "[手動] フィルタ", options=["context", "diag", "basic"], group=grpP)
+mTp      = input.float(2.0, "[手動] TP (R)", minval=0.5, step=0.5, group=grpP)
+mAdjMin  = input.float(0.0, "[手動] 調整時間下限", minval=0.0, step=0.25, group=grpP)
+mBodyMin = input.float(0.0, "[手動] 実体比率下限", minval=0.0, maxval=1.0, step=0.05, group=grpP)
+mAdxMin  = input.float(0.0, "[手動] ADX下限", minval=0.0, step=1.0, group=grpP)
+
+// ---------------------------------------------------------------------
+// 銘柄判定 → プリセット選択
+// ---------------------------------------------------------------------
+string sym = syminfo.ticker
+bool isXAU = str.contains(sym, "XAUUSD") or str.contains(sym, "GOLD")
+bool isXAG = str.contains(sym, "XAGUSD") or str.contains(sym, "SILVER")
+bool isEUR = str.contains(sym, "EURJPY")
+bool isAUD = str.contains(sym, "AUDJPY")
+bool isUSD = str.contains(sym, "USDJPY")
+bool isCHF = str.contains(sym, "CHFJPY")
+bool isGBP = str.contains(sym, "GBPJPY")
+bool isNAS = str.contains(sym, "NAS100") or str.contains(sym, "NDX") or str.contains(sym, "US100") or str.contains(sym, "USTEC")
+
+string pStruct  = "ihs"
+string pFilter  = "diag"
+float  pTp      = 2.0
+float  pAdjMin  = 0.0
+float  pBodyMin = 0.0
+float  pAdxMin  = 0.0
+
+if isUSD
+    pStruct  := "ihs"
+    pFilter  := "context"
+    pTp      := 1.5
+    pAdjMin  := 1.0
+    pBodyMin := 0.45
+    pAdxMin  := 18.0
+else if isEUR
+    pStruct  := "ihs"
+    pFilter  := "diag"
+    pTp      := 1.5
+else if isGBP
+    pStruct  := "ihs"
+    pFilter  := "diag"
+    pTp      := 1.5
+    pAdjMin  := 1.0
+else if isAUD
+    pStruct  := "ihs"
+    pFilter  := "context"
+    pTp      := 2.0
+    pBodyMin := 0.45
+    pAdxMin  := 18.0
+else if isCHF
+    pStruct  := "ihs"
+    pFilter  := "diag"
+    pTp      := 2.0
+    pAdjMin  := 1.0
+    pBodyMin := 0.45
+    pAdxMin  := 18.0
+else if isXAU
+    pStruct  := "ihs"
+    pFilter  := "diag"
+    pTp      := 2.0
+    pAdjMin  := 1.0
+    pAdxMin  := 26.0
+else if isXAG
+    pStruct  := "role"
+    pFilter  := "basic"
+    pTp      := 2.0
+    pBodyMin := 0.45
+    pAdxMin  := 18.0
+else if isNAS
+    pStruct  := "ihs"
+    pFilter  := "diag"
+    pTp      := 1.5
+    pAdjMin  := 1.0
+    pAdxMin  := 18.0
+
+string useStruct  = autoPreset ? pStruct  : mStruct
+string useFilter  = autoPreset ? pFilter  : mFilter
+float  useTp      = autoPreset ? pTp      : mTp
+float  useAdjMin  = autoPreset ? pAdjMin  : mAdjMin
+float  useBodyMin = autoPreset ? pBodyMin : mBodyMin
+float  useAdxMin  = autoPreset ? pAdxMin  : mAdxMin
+
+// フィルタ別パラメータ（Python FILTER_SPECS 準拠）
+float fRetMin   = 0.50
+float fRetMax   = useFilter == "basic" ? 0.95 : 0.886
+float fBodyMin  = useFilter == "basic" ? 0.0 : 0.35
+bool  fReqDiag  = useFilter != "basic"
+bool  fReqAlign = useFilter == "context"
+float fMaxChase = useFilter == "context" ? 1.80 : (useFilter == "diag" ? 2.0 : 3.0)
+float fSlopeMin = useFilter == "basic" ? 0.0 : 0.03
+float fSlopeMax = useFilter == "context" ? 1.20 : (useFilter == "diag" ? 1.50 : 99.0)
+float fAdjFilt  = useFilter == "context" ? 0.50 : (useFilter == "diag" ? 0.25 : 0.0)
+
+// ---------------------------------------------------------------------
+// 指標
+// ---------------------------------------------------------------------
+atr = ta.atr(atrLen)
+[diP, diM, adxVal] = ta.dmi(14, 14)
+float bodyRatio = (high - low) > 0 ? math.abs(close - open) / (high - low) : 0.0
+float breakBuf = atr * 0.05
+float stopBuf  = atr * 0.20
+
+int chartSec = timeframe.in_seconds(timeframe.period)
+bool h4Ok   = not requireH4 or chartSec == 240 * 60
+bool dateOk = not useDate or (year >= 2014 and year <= 2026)
+bool atrOk  = not na(atr) and atr > 0
+
+// D1 上位足コンテキスト（前D1確定値、lookaheadなし）
+float d1ema   = request.security(syminfo.tickerid, "D", ta.ema(close, 100)[1], lookahead=barmerge.lookahead_off)
+float d1emaP  = request.security(syminfo.tickerid, "D", ta.ema(close, 100)[4], lookahead=barmerge.lookahead_off)
+float d1cls   = request.security(syminfo.tickerid, "D", close[1], lookahead=barmerge.lookahead_off)
+float d1slope = d1ema - d1emaP
+
+// ---------------------------------------------------------------------
+// ピボット収集（確定 + マージ）
+// ---------------------------------------------------------------------
+var float[] pPrice = array.new_float()
+var int[]   pKind  = array.new_int()
+var int[]   pBar   = array.new_int()
+var float[] pAtr   = array.new_float()
+
+addPivot(int kind, float price, int barI, float atrI) =>
+    int sz = array.size(pKind)
+    if sz == 0
+        array.push(pKind, kind)
+        array.push(pPrice, price)
+        array.push(pBar, barI)
+        array.push(pAtr, atrI)
+    else
+        int lk = array.get(pKind, sz - 1)
+        float lp = array.get(pPrice, sz - 1)
+        float la = array.get(pAtr, sz - 1)
+        if kind == lk
+            bool moreExtreme = (kind == 1 and price > lp) or (kind == -1 and price < lp)
+            if moreExtreme
+                array.set(pPrice, sz - 1, price)
+                array.set(pBar, sz - 1, barI)
+                array.set(pAtr, sz - 1, atrI)
+        else
+            float swing = math.abs(price - lp)
+            float thr = math.max(atrI, la) * minSwingAtr
+            if swing >= thr
+                array.push(pKind, kind)
+                array.push(pPrice, price)
+                array.push(pBar, barI)
+                array.push(pAtr, atrI)
+    if array.size(pKind) > 12
+        array.shift(pKind)
+        array.shift(pPrice)
+        array.shift(pBar)
+        array.shift(pAtr)
+
+float ph = ta.pivothigh(pivotWidth, pivotWidth)
+float pl = ta.pivotlow(pivotWidth, pivotWidth)
+float atrAtPivot = atr[pivotWidth]
+if not na(ph)
+    addPivot(1, ph, bar_index - pivotWidth, na(atrAtPivot) ? atr : atrAtPivot)
+if not na(pl)
+    addPivot(-1, pl, bar_index - pivotWidth, na(atrAtPivot) ? atr : atrAtPivot)
+
+// ---------------------------------------------------------------------
+// 直近5ピボット
+// ---------------------------------------------------------------------
+int psz = array.size(pKind)
+bool have5 = psz >= 5
+
+gK(int k) => array.get(pKind, psz - 1 - k)
+gP(int k) => array.get(pPrice, psz - 1 - k)
+gB(int k) => array.get(pBar, psz - 1 - k)
+
+string kinds5 = ""
+if have5
+    s4 = gK(4) == -1 ? "L" : "H"
+    s3 = gK(3) == -1 ? "L" : "H"
+    s2 = gK(2) == -1 ? "L" : "H"
+    s1 = gK(1) == -1 ? "L" : "H"
+    s0 = gK(0) == -1 ? "L" : "H"
+    kinds5 := s4 + s3 + s2 + s1 + s0
+
+// ---------------------------------------------------------------------
+// 候補の確定（構造別）
+// 戻り値: dir, p0p,p1p,p2p, p0b,p1b,p2b, alv,blv, tl0p,tl1p,tl0b,tl1b, stp, rOk
+// ---------------------------------------------------------------------
+makeCand() =>
+    int dir = 0
+    float p0p = na
+    float p1p = na
+    float p2p = na
+    int p0b = 0
+    int p1b = 0
+    int p2b = 0
+    float alv = na
+    float blv = na
+    float tl0p = na
+    float tl1p = na
+    int tl0b = 0
+    int tl1b = 0
+    float stp = na
+    bool rOk = false
+    if have5 and useStruct == "ihs"
+        if kinds5 == "LHLHL"
+            dir := 1
+            p0p := gP(4)
+            p1p := gP(3)
+            p2p := gP(0)
+            p0b := gB(4)
+            p1b := gB(3)
+            p2b := gB(0)
+            alv := gP(3)
+            blv := gP(1)
+            tl0p := gP(3)
+            tl1p := gP(1)
+            tl0b := gB(3)
+            tl1b := gB(1)
+            stp := gP(2) <= gP(0) ? gP(2) : gP(0)
+            rOk := gP(0) >= gP(2) - atr * 0.75
+        else if kinds5 == "HLHLH"
+            dir := -1
+            p0p := gP(4)
+            p1p := gP(3)
+            p2p := gP(0)
+            p0b := gB(4)
+            p1b := gB(3)
+            p2b := gB(0)
+            alv := gP(3)
+            blv := gP(1)
+            tl0p := gP(3)
+            tl1p := gP(1)
+            tl0b := gB(3)
+            tl1b := gB(1)
+            stp := gP(2) >= gP(0) ? gP(2) : gP(0)
+            rOk := gP(0) <= gP(2) + atr * 0.75
+    else if have5 and useStruct == "role"
+        if kinds5 == "HLHLH"
+            dir := 1
+            p0p := gP(3)
+            p1p := gP(2)
+            p2p := gP(1)
+            p0b := gB(3)
+            p1b := gB(2)
+            p2b := gB(1)
+            alv := gP(2)
+            blv := gP(0)
+            tl0p := gP(4)
+            tl1p := gP(2)
+            tl0b := gB(4)
+            tl1b := gB(2)
+            stp := gP(1)
+            rOk := gP(1) > gP(3) - atr * 0.50
+        else if kinds5 == "LHLHL"
+            dir := -1
+            p0p := gP(3)
+            p1p := gP(2)
+            p2p := gP(1)
+            p0b := gB(3)
+            p1b := gB(2)
+            p2b := gB(1)
+            alv := gP(2)
+            blv := gP(0)
+            tl0p := gP(4)
+            tl1p := gP(2)
+            tl0b := gB(4)
+            tl1b := gB(2)
+            stp := gP(1)
+            rOk := gP(1) < gP(3) + atr * 0.50
+    [dir, p0p, p1p, p2p, p0b, p1b, p2b, alv, blv, tl0p, tl1p, tl0b, tl1b, stp, rOk]
+
+[dir_, p0p_, p1p_, p2p_, p0b_, p1b_, p2b_, alv_, blv_, tl0p_, tl1p_, tl0b_, tl1b_, stp_, rOk_] = makeCand()
+
+// ---------------------------------------------------------------------
+// 派生量 + フィルタ → シグナル
+// ---------------------------------------------------------------------
+bool sigLong = false
+bool sigShort = false
+float sigStopOut = na
+
+if dir_ != 0 and atrOk
+    float slope = (tl1p_ - tl0p_) / math.max(tl1b_ - tl0b_, 1)
+    float tlNow = tl1p_ + slope * (bar_index - tl1b_)
+    float slopeAtr = math.abs(slope / atr)
+
+    float wave1 = dir_ == 1 ? (p1p_ - p0p_) : (p0p_ - p1p_)
+    float retr = na
+    if wave1 > 0
+        retr := dir_ == 1 ? (p1p_ - p2p_) / wave1 : (p2p_ - p1p_) / wave1
+    int wave1Bars = math.max(p1b_ - p0b_, 1)
+    int adjBars = math.max(p2b_ - p1b_, 1)
+    float adjRatio = adjBars / wave1Bars
+    float stopPx = dir_ == 1 ? (stp_ - stopBuf) : (stp_ + stopBuf)
+
+    bool bCross = dir_ == 1 ? (close > blv_ + breakBuf and close[1] <= blv_ + breakBuf) : (close < blv_ - breakBuf and close[1] >= blv_ - breakBuf)
+    bool diagNow = dir_ == 1 ? (close > tlNow + breakBuf) : (close < tlNow - breakBuf)
+    float chaseAtr = dir_ == 1 ? (close - blv_) / atr : (blv_ - close) / atr
+
+    int align = 0
+    int oppose = 0
+    if not na(d1cls) and not na(d1ema) and not na(d1slope)
+        if dir_ == 1
+            align := (d1cls >= d1ema and d1slope >= 0) ? 1 : 0
+            oppose := (d1cls < d1ema and d1slope < 0) ? 1 : 0
+        else
+            align := (d1cls <= d1ema and d1slope <= 0) ? 1 : 0
+            oppose := (d1cls > d1ema and d1slope > 0) ? 1 : 0
+
+    bool stopValid = dir_ == 1 ? (close > stopPx) : (close < stopPx)
+    bool wave1Ok = wave1 > atr * 1.20
+
+    bool passFilter = bCross and (diagNow or not fReqDiag) and stopValid and wave1Ok and rOk_
+    passFilter := passFilter and not na(retr) and retr >= fRetMin and retr <= fRetMax
+    passFilter := passFilter and adjRatio >= fAdjFilt
+    passFilter := passFilter and bodyRatio >= fBodyMin
+    passFilter := passFilter and (not fReqAlign or align >= 1)
+    passFilter := passFilter and (oppose == 0 or useFilter != "context")
+    passFilter := passFilter and chaseAtr >= 0 and chaseAtr <= fMaxChase
+    passFilter := passFilter and slopeAtr >= fSlopeMin and slopeAtr <= fSlopeMax
+
+    bool adxOk = na(adxVal) ? true : adxVal >= useAdxMin
+    bool passPrecision = adjRatio >= useAdjMin and bodyRatio >= useBodyMin and adxOk
+
+    bool ok = passFilter and passPrecision and h4Ok and dateOk and strategy.position_size == 0
+    if ok and dir_ == 1
+        sigLong := true
+        sigStopOut := stopPx
+    if ok and dir_ == -1
+        sigShort := true
+        sigStopOut := stopPx
+
+// ---------------------------------------------------------------------
+// 発注
+// ---------------------------------------------------------------------
+var float activeStop = na
+var int   entryBar   = na
+var bool  posLong    = false
+
+if sigLong and not na(sigStopOut)
+    float dist = close - sigStopOut
+    if dist > 0
+        float qty = (strategy.equity * (riskPct / 100.0)) / dist
+        activeStop := sigStopOut
+        entryBar := bar_index
+        posLong := true
+        strategy.entry("L", strategy.long, qty=qty)
+
+if sigShort and not na(sigStopOut)
+    float dist = sigStopOut - close
+    if dist > 0
+        float qty = (strategy.equity * (riskPct / 100.0)) / dist
+        activeStop := sigStopOut
+        entryBar := bar_index
+        posLong := false
+        strategy.entry("S", strategy.short, qty=qty)
+
+if strategy.position_size != 0 and not na(activeStop)
+    if posLong
+        float risk0 = strategy.position_avg_price - activeStop
+        if risk0 > 0
+            float tp = strategy.position_avg_price + useTp * risk0
+            strategy.exit("X", from_entry="L", stop=activeStop, limit=tp)
+            if strategy.opentrades > 0 and bar_index - strategy.opentrades.entry_bar_index(0) >= maxHold
+                strategy.close("L", comment="timeout")
+    else
+        float risk0 = activeStop - strategy.position_avg_price
+        if risk0 > 0
+            float tp = strategy.position_avg_price - useTp * risk0
+            strategy.exit("X", from_entry="S", stop=activeStop, limit=tp)
+            if strategy.opentrades > 0 and bar_index - strategy.opentrades.entry_bar_index(0) >= maxHold
+                strategy.close("S", comment="timeout")
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    activeStop := na
+    entryBar := na
+
+// ---------------------------------------------------------------------
+// 表示
+// ---------------------------------------------------------------------
+plotshape(sigLong,  title="Synapse Long",  style=shape.triangleup,   location=location.belowbar, color=color.new(color.lime, 0), size=size.small)
+plotshape(sigShort, title="Synapse Short", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0),  size=size.small)
+
+alertcondition(sigLong,  title="Synapse Long",  message="Synapse long on {{ticker}} {{interval}} @ {{close}}")
+alertcondition(sigShort, title="Synapse Short", message="Synapse short on {{ticker}} {{interval}} @ {{close}}")
+
+var table tbl = table.new(position.top_right, 2, 7, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+if barstate.islast
+    table.cell(tbl, 0, 0, "Symbol", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 0, sym, text_color=color.yellow, text_size=size.tiny)
+    table.cell(tbl, 0, 1, "Preset", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 1, autoPreset ? "AUTO" : "MANUAL", text_color=autoPreset ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(tbl, 0, 2, "構造", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 2, useStruct, text_color=color.aqua, text_size=size.tiny)
+    table.cell(tbl, 0, 3, "フィルタ", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 3, useFilter, text_color=color.aqua, text_size=size.tiny)
+    table.cell(tbl, 0, 4, "TP(R)", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 4, str.tostring(useTp), text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 0, 5, "調整/実体", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 5, str.tostring(useAdjMin) + " / " + str.tostring(useBodyMin), text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 0, 6, "ADX下限", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 6, str.tostring(useAdxMin), text_color=color.white, text_size=size.tiny)

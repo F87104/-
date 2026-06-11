@@ -2,7 +2,30 @@
 
 > H1/H4 ベースの自動売買戦略コレクション。10年バックテスト (2015-2024) + OOS (2025-2026) で検証済みの **2本柱戦略** を運用するためのコード一式。
 
-**最終更新**: 2026-06-05
+**最終更新**: 2026-06-11
+
+---
+
+## 🔥 いま進めている研究（最優先2件）
+
+| 研究 | 状態 | 次のアクション | 計画書 |
+|---|---|---|---|
+| **LH3 Synapse手法** | ⚠️ 8通貨展開・精度向上中 | Synapse Pine を8通貨H4で目視確認 | [計画書](docs/research/2大研究_検証計画_2026-06-11.md#研究1-lh3-synapse手法) |
+| **本命v2.1 Market Psychology Matrix** | 🟡 フォワード検証中（1/30件） | NAS100構造確認 + フォワード継続 | [計画書](docs/research/2大研究_検証計画_2026-06-11.md#研究2-本命v21-market-psychology-matrix) |
+
+**対象8銘柄**: USDJPY / EURJPY / GBPJPY / AUDJPY / NAS100 / XAUUSD / XAGUSD / CHFJPY  
+**データ**: TradingView H4 を正とする
+
+### すぐ使うファイル
+
+| 目的 | ファイル |
+|---|---|
+| Synapse Pine（H4に載せる） | `pine/research/synapse_mtf_wave_reversal_v4.pine` |
+| v2.1 Matrix Pine（H4に載せる） | `pine/research/market_psychology_v2_matrix_strategy.pine` |
+| Synapse 手法定義書 | [Synapse手法定義_v0_1.md](docs/research/Synapse手法定義_v0_1.md) |
+| v2.1 仕様書 | [v2_spec.md](docs/research/market_psychology/v2_spec.md) |
+| v2.1 フォワード記録 | [forward_log_v2_1_matrix.md](docs/research/market_psychology/forward_log_2026_05_v2_1_matrix.md) |
+| 2大研究 検証計画（全体） | [2大研究_検証計画_2026-06-11.md](docs/research/2大研究_検証計画_2026-06-11.md) |
 
 ---
 

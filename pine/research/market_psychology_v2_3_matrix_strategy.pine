@@ -15,7 +15,7 @@
 //   │ AUDJPY   │  ✅   │  ✅   │  ❌   │  Sqz + Cap
 //   │ CHFJPY   │  ✅   │  ✅   │  ✅   │  3構造全部
 //   │ XAUUSD   │  ✅*  │  ✅*  │  ❌   │  Sqz + Cap (金専用param: Sqz38件PF2.2/Cap34件PF2.1)
-//   │ XAGUSD   │  ✅   │  ❌   │  ❌   │  Sqz 単独
+//   │ XAGUSD   │  ✅*  │  ✅*  │  ❌   │  Sqz + Cap (銀専用param: Sqz12件PF2.8/Cap13件PF4.3)
 //   │ GBPJPY   │  ❌   │  ❌   │  ❌   │  全構造で除外
 //   │ NAS100   │  ✅*  │  ✅*  │  ❌   │  指数専用パラメータ (* 下記)
 //   └──────────┴───────┴───────┴───────┘
@@ -90,7 +90,7 @@ bool isNAS100 = str.contains(sym, "NAS100") or str.contains(sym, "NDX") or str.c
 //     旧v2.1の銘柄別割当に従って ON にする。USDJPY の Squeeze は単独でPF0.36と
 //     弱いため OFF（USDJPY は Cap+LL が本命）。
 bool autoSqz = isXAUUSD or isXAGUSD or isEURJPY or isAUDJPY or isCHFJPY or isNAS100
-bool autoCap = isEURJPY or isAUDJPY or isUSDJPY or isCHFJPY or isNAS100 or isXAUUSD
+bool autoCap = isEURJPY or isAUDJPY or isUSDJPY or isCHFJPY or isNAS100 or isXAUUSD or isXAGUSD
 bool autoLL  = isUSDJPY or isCHFJPY
 // GBPJPY と未分類は全て false (除外扱い)
 
@@ -153,6 +153,7 @@ volMult  = input.float(1.3, "Volume 倍率", minval=0.5, step=0.1, group=grpV2)
 bool nasOv = autoMatrix and isNAS100
 bool xauOv = autoMatrix and isXAUUSD
 bool eurOv = autoMatrix and isEURJPY
+bool xagOv = autoMatrix and isXAGUSD
 
 float effShelfAtr  = shelfAtr
 int   effDropWin   = dropWin
@@ -186,6 +187,15 @@ else if eurOv
     effDeclBars  := 18
     effDropAtrC  := 2.5
     effUseDownD1 := false
+    effRr        := 1.5
+else if xagOv
+    effShelfAtr  := 3.0
+    effDropWin   := 6
+    effDropAtr   := 3.5
+    effSigRngC   := 2.2
+    effDeclBars  := 24
+    effDropAtrC  := 4.0
+    effUseDownD1 := true
     effRr        := 1.5
 
 // ---------------------------------------------------------------------

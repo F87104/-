@@ -410,20 +410,27 @@ if sigShort and not na(sigStopOut) and close < sigStopOut
     strategy.entry("S", strategy.short)
 
 if strategy.position_size != 0 and not na(activeStop)
+    int barsHeld = na(entryBar) ? 0 : bar_index - entryBar
     if posLong
         float risk0 = strategy.position_avg_price - activeStop
         if risk0 > 0
             float tp = strategy.position_avg_price + useTp * risk0
             strategy.exit("X", from_entry="L", stop=activeStop, limit=tp)
-            if strategy.opentrades > 0 and bar_index - strategy.opentrades.entry_bar_index(0) >= maxHold
-                strategy.close("L", comment="timeout")
+        else
+            // 約定が損切りラインを割って入った（不利な飛び約定）→ 即手仕舞い
+            strategy.close("L", comment="bad_fill")
+        // タイムアウトは risk0 に関係なく必ず効かせる（持ちっぱなし防止）
+        if barsHeld >= maxHold
+            strategy.close("L", comment="timeout")
     else
         float risk0 = activeStop - strategy.position_avg_price
         if risk0 > 0
             float tp = strategy.position_avg_price - useTp * risk0
             strategy.exit("X", from_entry="S", stop=activeStop, limit=tp)
-            if strategy.opentrades > 0 and bar_index - strategy.opentrades.entry_bar_index(0) >= maxHold
-                strategy.close("S", comment="timeout")
+        else
+            strategy.close("S", comment="bad_fill")
+        if barsHeld >= maxHold
+            strategy.close("S", comment="timeout")
 
 if strategy.position_size == 0 and strategy.position_size[1] != 0
     activeStop := na

@@ -67,7 +67,7 @@ cp config/slack_reflection.example.json config/slack_reflection.json
 
 ## 5. 定期実行
 
-`.github/workflows/slack-reflection-reminder.yml` が **毎日 09:00 JST** に実行。
+`.github/workflows/slack-reflection-reminder.yml` が **毎日 09:00 JST**（`timezone: Asia/Tokyo`）に実行。
 
 - デフォルト: `entry_filter=open` のエントリーから **日替わりローテーション**
 - 手動: Actions タブ → **Slack reflection reminder** → **Run workflow**

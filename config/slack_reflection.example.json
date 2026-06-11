@@ -3,5 +3,5 @@
   "thread_ts": "1710000000.000000",
   "entry_filter": "open",
   "rotation": "daily",
-  "schedule_note": "GitHub Actions cron: 09:00 JST = 00:00 UTC"
+  "schedule_note": "GitHub Actions cron: 0 9 * * * timezone Asia/Tokyo"
 }

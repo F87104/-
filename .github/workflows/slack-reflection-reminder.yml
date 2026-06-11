@@ -2,8 +2,9 @@ name: Slack reflection reminder
 
 on:
   schedule:
-    # 09:00 JST (00:00 UTC)
-    - cron: "0 0 * * *"
+    # 毎日 09:00 JST（timezone 明示）
+    - cron: "0 9 * * *"
+      timezone: Asia/Tokyo
   workflow_dispatch:
     inputs:
       entry_id:

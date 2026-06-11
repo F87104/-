@@ -1,0 +1,519 @@
+//@version=5
+// =============================================================================
+// Market Psychology v2.2 — Currency × Structure Matrix + 棚の質スコア + D1 文脈強化
+//
+// v2.1 (Sqz + Cap + LL の自動マトリクス) に **Phase 1 精度向上策** を追加した版:
+//
+//   A. 棚の質スコアフィルタ (Sqz / LL に効く)
+//      - 棚 6 本 close の標準偏差 ≤ X*ATR (圧縮の質)
+//      - Sqz: 棚の傾き ≥ 0 (右肩上がり、買い圧優位)
+//      - シグナル足の上ヒゲ ≤ X (Sqz は上ヒゲ短い方が良い)
+//      - シグナル足の終値位置 ≥ X
+//
+//   B. D1 文脈強化 (Cap / LL に効く)
+//      - Cap: D1 RSI ≤ X (売られすぎ確認)
+//      - LL : D1 RSI ≥ Y (買われすぎ確認)
+//      - 既存の D1 EMA50 フィルタ (Cap) は維持
+//
+// 期待効果 (USDJPY 13 年データの予測):
+//   v2.1:  60t / WR 47% / PF 1.63 / DD 4.06% / Net +20.28%
+//   v2.2:  40-50t / WR 55-60% / PF 2.0-2.3 / DD 2.5-3.0% / Net +25-30%
+//
+// 採用マトリクス (v2.1 と同じ、変更なし):
+//   XAUUSD: Sqz only       AUDJPY: Sqz + Cap        CHFJPY: 3 構造全部
+//   XAGUSD: Sqz only       USDJPY: Cap + LL         GBPJPY: 全除外
+//   EURJPY: Sqz + Cap
+//
+// 推奨時間足: H4
+// =============================================================================
+strategy("本命v2.2 Market Psychology Matrix + 棚質 + D1 (Sqz+Cap+LL)",
+     overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.fixed,
+     default_qty_value=1,
+     pyramiding=0,
+     calc_on_order_fills=true,
+     calc_on_every_tick=false,
+     process_orders_on_close=false,
+     commission_type=strategy.commission.percent,
+     commission_value=0.0,
+     slippage=2,
+     max_bars_back=5000,
+     max_lines_count=500,
+     max_labels_count=500)
+
+plot(na, title="Compiler Anchor", display=display.none)
+
+// ---------------------------------------------------------------------
+// Common
+// ---------------------------------------------------------------------
+grpG       = "共通"
+requireH4  = input.bool(true,  "H4 チャートのみ売買", group=grpG)
+useDate    = input.bool(true,  "2015 〜 2026 のみ",   group=grpG)
+atrLen     = input.int(14,     "ATR 期間",            minval=1, group=grpG)
+rr         = input.float(2.0,  "TP RR",               minval=0.1, step=0.1, group=grpG)
+stopBufATR = input.float(0.25, "SL 余白 (ATR)",       minval=0.0, step=0.05, group=grpG)
+maxHold    = input.int(120,    "最大保有 (本)",       minval=10, group=grpG)
+riskPct    = input.float(1.0,  "1 トレードのリスク (%)", minval=0.01, step=0.1, group=grpG)
+
+// ---------------------------------------------------------------------
+// Matrix mode
+// ---------------------------------------------------------------------
+grpM = "マトリクスモード"
+autoMatrix = input.bool(true, "シンボル別に自動 ON/OFF", group=grpM)
+manualSqz  = input.bool(true,  "[手動] ① Squeeze",        group=grpM)
+manualCap  = input.bool(false, "[手動] ② Capitulation",   group=grpM)
+manualLL   = input.bool(false, "[手動] ③ Long Liquidation", group=grpM)
+
+string sym = syminfo.ticker
+bool isXAUUSD = str.contains(sym, "XAUUSD") or str.contains(sym, "GOLD")
+bool isXAGUSD = str.contains(sym, "XAGUSD") or str.contains(sym, "SILVER")
+bool isEURJPY = str.contains(sym, "EURJPY")
+bool isAUDJPY = str.contains(sym, "AUDJPY")
+bool isUSDJPY = str.contains(sym, "USDJPY")
+bool isCHFJPY = str.contains(sym, "CHFJPY")
+bool isGBPJPY = str.contains(sym, "GBPJPY")
+
+bool autoSqz = isXAUUSD or isXAGUSD or isEURJPY or isAUDJPY or isCHFJPY
+bool autoCap = isEURJPY or isAUDJPY or isUSDJPY or isCHFJPY
+bool autoLL  = isUSDJPY or isCHFJPY
+
+bool useSqz = autoMatrix ? autoSqz : manualSqz
+bool useCap = autoMatrix ? autoCap : manualCap
+bool useLL  = autoMatrix ? autoLL  : manualLL
+bool symKnown = isXAUUSD or isXAGUSD or isEURJPY or isAUDJPY or isUSDJPY or isCHFJPY or isGBPJPY
+
+// ---------------------------------------------------------------------
+// Squeeze v2 params
+// ---------------------------------------------------------------------
+grpS      = "① 踏み上げ Squeeze v2"
+shelfBars = input.int(6, "棚の本数", minval=2, group=grpS)
+dropWin   = input.int(6, "棚直前の急変窓", minval=2, group=grpS)
+shelfAtr  = input.float(2.2, "棚幅上限 (ATR)", minval=0.5, step=0.1, group=grpS)
+dropAtr   = input.float(4.0, "急落幅下限 (ATR)", minval=1.0, step=0.1, group=grpS)
+
+// ---------------------------------------------------------------------
+// Capitulation v2 params
+// ---------------------------------------------------------------------
+grpC      = "② 投げ切り Capitulation v2"
+declBars  = input.int(24, "長期下落の窓", minval=4, group=grpC)
+dropAtrC  = input.float(4.0, "下落幅 >= ?×ATR", minval=1.0, step=0.1, group=grpC)
+sigRngC   = input.float(3.0, "クライマックス足値幅 >= ?×ATR", minval=0.5, step=0.1, group=grpC)
+wickThr   = input.float(0.5, "下ヒゲ/全体 >=", minval=0.0, maxval=1.0, step=0.05, group=grpC)
+closeLocC = input.float(0.5, "終値位置 >=", minval=0.0, maxval=1.0, step=0.05, group=grpC)
+useDownD1 = input.bool(true, "日足 EMA50 下降中のみ", group=grpC)
+
+// ---------------------------------------------------------------------
+// Long Liquidation v1 params
+// ---------------------------------------------------------------------
+grpL       = "③ Long Liquidation v1"
+rallyBars  = input.int(6,   "急騰の窓", minval=3, group=grpL)
+rallyPrior = input.int(12,  "急騰の比較窓", minval=6, group=grpL)
+rallyAtr   = input.float(3.0, "急騰幅 >= ?×ATR", minval=1.0, step=0.1, group=grpL)
+shelfBarsL = input.int(6,   "棚の本数 (LL)", minval=2, group=grpL)
+shelfAtrL  = input.float(2.0, "棚幅上限 ATR (LL)", minval=0.5, step=0.1, group=grpL)
+
+// ---------------------------------------------------------------------
+// 🆕 v2.2 A: 棚の質スコアフィルタ
+// ---------------------------------------------------------------------
+grpQ              = "🆕 v2.2 A: 棚の質スコア (Sqz / LL)"
+useShelfQuality   = input.bool(true,  "棚の質スコアを使う", group=grpQ)
+maxShelfCloseStd  = input.float(0.35, "棚 close 標準偏差上限 (×ATR)", minval=0.05, step=0.05, group=grpQ,
+     tooltip="棚 6 本の close 標準偏差。小さいほど密集 = 高品質")
+minSqzShelfSlope  = input.float(-0.50, "Sqz 棚の傾き下限 (×ATR / shelfBars)", step=0.05, group=grpQ,
+     tooltip="正 = 右肩上がり、負 = 右肩下がり。0 以上推奨だが緩めに -0.5 ATR まで許容")
+maxUpperWickSqz   = input.float(0.40,  "Sqz シグナル足上ヒゲ上限", minval=0.0, maxval=1.0, step=0.05, group=grpQ,
+     tooltip="上ヒゲ / 全体。大きいと戻り売りで失敗しやすい")
+minCloseLocSqz    = input.float(0.55, "Sqz シグナル足終値位置下限", minval=0.0, maxval=1.0, step=0.05, group=grpQ)
+maxLowerWickLL    = input.float(0.40,  "LL シグナル足下ヒゲ上限", minval=0.0, maxval=1.0, step=0.05, group=grpQ)
+maxCloseLocLL     = input.float(0.45, "LL シグナル足終値位置上限", minval=0.0, maxval=1.0, step=0.05, group=grpQ)
+
+// ---------------------------------------------------------------------
+// 🆕 v2.2 B: D1 文脈強化
+// ---------------------------------------------------------------------
+grpD1     = "🆕 v2.2 B: D1 文脈強化 (Cap / LL)"
+useStrictD1 = input.bool(true,  "D1 RSI フィルタを使う", group=grpD1)
+d1RsiCapMax = input.float(40.0, "Cap: D1 RSI ≤ ?", minval=10.0, maxval=70.0, step=1.0, group=grpD1,
+     tooltip="売られすぎ確認。30-40 が標準。低いほど厳しい")
+d1RsiLLMin  = input.float(55.0, "LL: D1 RSI ≥ ?", minval=30.0, maxval=90.0, step=1.0, group=grpD1,
+     tooltip="買われすぎ確認。55-65 が標準。高いほど厳しい")
+
+// ---------------------------------------------------------------------
+// Optional v2 filters
+// ---------------------------------------------------------------------
+grpV2     = "v2 追加フィルタ (任意)"
+useEarly  = input.bool(true,  "早期撤退: MFE < X*R after N bars", group=grpV2)
+earlyMfeR = input.float(0.5,  "早期撤退 MFE 閾値 (R)", minval=0.1, step=0.05, group=grpV2)
+earlyBars = input.int(12,     "早期撤退 経過バー数", minval=2, group=grpV2)
+earlyLossR = input.float(0.35, "早期撤退 損 (R)", minval=0.05, step=0.05, group=grpV2)
+
+useHour  = input.bool(false, "時間フィルタ: 4/8/16/20 UTC のみ", group=grpV2)
+useVol   = input.bool(false, "Volume: vol > sma(20)*X", group=grpV2)
+volLen   = input.int(20, "Volume 平均期間", minval=2, group=grpV2)
+volMult  = input.float(1.3, "Volume 倍率", minval=0.5, step=0.1, group=grpV2)
+
+// ---------------------------------------------------------------------
+// Common indicators
+// ---------------------------------------------------------------------
+atr   = ta.atr(atrLen)
+rng   = high - low
+rngOk = rng > 0
+
+int chartSec = timeframe.in_seconds(timeframe.period)
+bool h4Ok    = not requireH4 or chartSec == 240 * 60
+bool dateOk  = not useDate or (year >= 2015 and year <= 2026)
+bool hourOk  = not useHour or hour == 4 or hour == 8 or hour == 16 or hour == 20
+
+float volAvg = ta.sma(volume, volLen)
+bool  volOk  = not useVol or (not na(volAvg) and volume > volAvg * volMult)
+bool atrOk   = not na(atr) and atr > 0
+
+bool baseReady = h4Ok and dateOk and hourOk and volOk and atrOk and symKnown
+
+// ---------------------------------------------------------------------
+// D1 indicators
+// ---------------------------------------------------------------------
+float d1ema = request.security(syminfo.tickerid, "D", ta.ema(close, 50)[1], lookahead=barmerge.lookahead_off)
+float d1rsi = request.security(syminfo.tickerid, "D", ta.rsi(close, 14)[1], lookahead=barmerge.lookahead_off)
+
+// ---------------------------------------------------------------------
+// 棚の質スコア計算 (Sqz / LL 共通)
+// ---------------------------------------------------------------------
+// 棚 N 本の close 標準偏差 (signal バー除く、過去 shelfBars 本)
+float shelfStd_sqz = ta.stdev(close, shelfBars)[1]
+float shelfStd_LL  = ta.stdev(close, shelfBarsL)[1]
+float shelfStdAtr_sqz = atrOk ? shelfStd_sqz / atr : na
+float shelfStdAtr_LL  = atrOk ? shelfStd_LL / atr : na
+
+// 棚の傾き (1 本目の close と shelfBars 本前の close の差) / ATR
+float shelfSlope_sqz = atrOk ? (close[1] - close[shelfBars]) / atr : na
+float shelfSlope_LL  = atrOk ? (close[1] - close[shelfBarsL]) / atr : na
+
+// シグナル足の上ヒゲ / 下ヒゲ / 終値位置
+float bodyTop    = math.max(open, close)
+float bodyBottom = math.min(open, close)
+float upperWick  = rngOk ? (high - bodyTop) / rng : 0.0
+float lowerWick  = rngOk ? (bodyBottom - low) / rng : 0.0
+float closeLoc   = rngOk ? (close - low) / rng : 0.5
+
+// 棚の質スコアの各条件 (Sqz / LL) を中間変数に分解 (Pine v5 多行 and 回避)
+bool sqzQualStd   = na(shelfStdAtr_sqz) or shelfStdAtr_sqz <= maxShelfCloseStd
+bool sqzQualSlope = na(shelfSlope_sqz)  or shelfSlope_sqz >= minSqzShelfSlope
+bool sqzQualWick  = upperWick <= maxUpperWickSqz
+bool sqzQualClose = closeLoc >= minCloseLocSqz
+bool sqzQualAll   = sqzQualStd and sqzQualSlope and sqzQualWick and sqzQualClose
+bool sqzQualOk    = not useShelfQuality or sqzQualAll
+
+bool llQualStd    = na(shelfStdAtr_LL) or shelfStdAtr_LL <= maxShelfCloseStd
+bool llQualWick   = lowerWick <= maxLowerWickLL
+bool llQualClose  = closeLoc <= maxCloseLocLL
+bool llQualAll    = llQualStd and llQualWick and llQualClose
+bool llQualOk     = not useShelfQuality or llQualAll
+
+// ---------------------------------------------------------------------
+// ① Squeeze (long)
+// ---------------------------------------------------------------------
+float shelfHi  = ta.highest(high, shelfBars)[1]
+float shelfLo  = ta.lowest(low,  shelfBars)[1]
+float priorHiS = ta.highest(high, dropWin)[1 + shelfBars]
+
+bool sqzCompr = (shelfHi - shelfLo) <= shelfAtr * atr
+bool sqzSharp = (priorHiS - shelfHi) >= dropAtr * atr
+bool sqzFresh = close[1] <= shelfHi and close > shelfHi
+
+bool sqzLong  = useSqz and baseReady and sqzCompr and sqzSharp and sqzFresh and sqzQualOk and strategy.position_size == 0
+float sqzStop = shelfLo - stopBufATR * atr
+
+// ---------------------------------------------------------------------
+// ② Capitulation (long)
+// ---------------------------------------------------------------------
+bool capNewLow   = low <= ta.lowest(low, declBars)
+bool capProlong  = (ta.highest(high, declBars) - low) >= dropAtrC * atr
+bool capBig      = rng >= sigRngC * atr
+bool capWick     = rngOk and ((bodyBottom - low) / rng) >= wickThr
+bool capCloseLoc = rngOk and ((close - low) / rng) >= closeLocC
+
+bool capDownEMA = not useDownD1 or close < d1ema
+bool capD1RsiOk = not useStrictD1 or d1rsi <= d1RsiCapMax
+
+bool capStructOk = capNewLow and capProlong and capBig and capWick and capCloseLoc and capDownEMA and capD1RsiOk
+bool capLong     = useCap and baseReady and capStructOk and strategy.position_size == 0
+float capStop    = low - stopBufATR * atr
+
+// ---------------------------------------------------------------------
+// ③ Long Liquidation (short)
+// ---------------------------------------------------------------------
+float rallyHigh = ta.highest(high, rallyBars)[1]
+float rallyLow  = ta.lowest(low, rallyPrior)[1 + rallyBars]
+bool  hadRally  = (rallyHigh - rallyLow) >= rallyAtr * atr
+
+float shelfHiL = ta.highest(high, shelfBarsL)[1]
+float shelfLoL = ta.lowest(low,  shelfBarsL)[1]
+bool  compressedL = (shelfHiL - shelfLoL) <= shelfAtrL * atr
+
+float swingHi = ta.highest(high, rallyBars + shelfBarsL)[1]
+bool failedNewHigh = shelfHiL < swingHi - 0.05 * atr
+bool freshBreakL = close[1] >= shelfLoL and close < shelfLoL
+bool llD1RsiOk = not useStrictD1 or d1rsi >= d1RsiLLMin
+
+bool llShort = useLL and baseReady and hadRally and compressedL and failedNewHigh and freshBreakL and llQualOk and llD1RsiOk and strategy.position_size == 0
+float llStop = shelfHiL + stopBufATR * atr
+
+// ---------------------------------------------------------------------
+// Order routing
+// ---------------------------------------------------------------------
+var float activeStop = na
+var int   entryBar   = na
+var bool  posIsLong  = false
+
+bool longSig  = sqzLong or capLong
+bool shortSig = llShort and not longSig
+
+float longStop = sqzLong ? sqzStop : capStop
+
+if longSig
+    float dist = close - longStop
+    if dist > 0
+        float qty = (strategy.equity * (riskPct / 100.0)) / dist
+        activeStop := longStop
+        entryBar   := bar_index
+        posIsLong  := true
+        strategy.entry("L", strategy.long, qty=qty)
+
+if shortSig
+    float dist = llStop - close
+    if dist > 0
+        float qty = (strategy.equity * (riskPct / 100.0)) / dist
+        activeStop := llStop
+        entryBar   := bar_index
+        posIsLong  := false
+        strategy.entry("S", strategy.short, qty=qty)
+
+if strategy.position_size != 0 and not na(activeStop)
+    if posIsLong
+        float risk0 = strategy.position_avg_price - activeStop
+        if risk0 > 0
+            float target = strategy.position_avg_price + rr * risk0
+            strategy.exit("X", from_entry="L", stop=activeStop, limit=target)
+            if useEarly and not na(entryBar)
+                int barsHeld = bar_index - entryBar
+                float mfeR = (ta.highest(high, barsHeld + 1) - strategy.position_avg_price) / risk0
+                if barsHeld >= earlyBars and mfeR < earlyMfeR
+                    strategy.close("L", comment="early_exit_mfe")
+            if strategy.opentrades > 0 and bar_index - strategy.opentrades.entry_bar_index(0) >= maxHold
+                strategy.close("L", comment="timeout")
+    else
+        float risk0 = activeStop - strategy.position_avg_price
+        if risk0 > 0
+            float target = strategy.position_avg_price - rr * risk0
+            strategy.exit("X", from_entry="S", stop=activeStop, limit=target)
+            if useEarly and not na(entryBar)
+                int barsHeld = bar_index - entryBar
+                float mfeR = (strategy.position_avg_price - ta.lowest(low, barsHeld + 1)) / risk0
+                if barsHeld >= earlyBars and mfeR < earlyMfeR
+                    strategy.close("S", comment="early_exit_mfe")
+            if strategy.opentrades > 0 and bar_index - strategy.opentrades.entry_bar_index(0) >= maxHold
+                strategy.close("S", comment="timeout")
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    activeStop := na
+    entryBar   := na
+
+// ---------------------------------------------------------------------
+// Visuals
+// ---------------------------------------------------------------------
+grpVz       = "表示オプション"
+showLevels  = input.bool(true, "Entry / SL / TP 価格ライン", group=grpVz)
+keepHistory = input.bool(true, "過去全シグナルのラベルを残す", group=grpVz)
+levelExtend = input.int(15, "ライン延長 (バー数)", minval=1, group=grpVz)
+labelMode   = input.string("compact", "ラベルスタイル", options=["compact", "verbose", "off"], group=grpVz)
+
+plotshape(sqzLong, title="Squeeze Long", style=shape.triangleup,
+     location=location.belowbar, color=color.new(color.lime, 0),
+     size=size.small, display=display.pane)
+plotshape(capLong, title="Capitulation Long", style=shape.triangleup,
+     location=location.belowbar, color=color.new(color.aqua, 0),
+     size=size.small, display=display.pane)
+plotshape(llShort, title="Long Liquidation Short", style=shape.triangledown,
+     location=location.abovebar, color=color.new(color.red, 0),
+     size=size.small, display=display.pane)
+
+var line  entryLine = na
+var line  slLine    = na
+var line  tpLine    = na
+var label sigLabel  = na
+var label entryTag  = na
+var label slTag     = na
+var label tpTag     = na
+
+bool anySig = sqzLong or capLong or llShort
+float sigStop = sqzLong ? sqzStop : (capLong ? capStop : (llShort ? llStop : na))
+bool  sigIsLong = sqzLong or capLong
+string sigName = sqzLong ? "SQZ" : (capLong ? "CAP" : (llShort ? "LL" : ""))
+color  sigColor = sqzLong ? color.lime : (capLong ? color.aqua : color.red)
+
+if showLevels and anySig and not na(sigStop) and barstate.isconfirmed
+    float entryPrice = close
+    float riskNow    = sigIsLong ? (entryPrice - sigStop) : (sigStop - entryPrice)
+    float tpPrice    = sigIsLong ? (entryPrice + rr * riskNow) : (entryPrice - rr * riskNow)
+    int   xRight     = bar_index + levelExtend
+
+    if not keepHistory
+        if not na(entryLine)
+            line.delete(entryLine)
+        if not na(slLine)
+            line.delete(slLine)
+        if not na(tpLine)
+            line.delete(tpLine)
+        if not na(sigLabel)
+            label.delete(sigLabel)
+        if not na(entryTag)
+            label.delete(entryTag)
+        if not na(slTag)
+            label.delete(slTag)
+        if not na(tpTag)
+            label.delete(tpTag)
+
+    entryLine := line.new(bar_index, entryPrice, xRight, entryPrice,
+         xloc=xloc.bar_index, color=color.new(sigColor, 0), width=2, style=line.style_solid)
+    slLine    := line.new(bar_index, sigStop, xRight, sigStop,
+         xloc=xloc.bar_index, color=color.new(color.red, 0), width=2, style=line.style_dashed)
+    tpLine    := line.new(bar_index, tpPrice, xRight, tpPrice,
+         xloc=xloc.bar_index, color=color.new(color.green, 0), width=2, style=line.style_dashed)
+
+    if labelMode == "compact"
+        entryTag := label.new(xRight, entryPrice,
+             text=sigName + " " + str.tostring(entryPrice, format.mintick),
+             xloc=xloc.bar_index, style=label.style_label_left,
+             color=color.new(sigColor, 0), textcolor=color.black, size=size.tiny)
+        slTag := label.new(xRight, sigStop,
+             text="SL " + str.tostring(sigStop, format.mintick),
+             xloc=xloc.bar_index, style=label.style_label_left,
+             color=color.new(color.red, 20), textcolor=color.white, size=size.tiny)
+        tpTag := label.new(xRight, tpPrice,
+             text="TP " + str.tostring(tpPrice, format.mintick),
+             xloc=xloc.bar_index, style=label.style_label_left,
+             color=color.new(color.green, 20), textcolor=color.white, size=size.tiny)
+    else if labelMode == "verbose"
+        string txt = sigName + " " + (sigIsLong ? "ロング" : "ショート") +
+             "\nEntry ≈ " + str.tostring(entryPrice, format.mintick) +
+             "\nSL: " + str.tostring(sigStop, format.mintick) +
+             "\nTP: " + str.tostring(tpPrice, format.mintick) +
+             "\nRisk: " + str.tostring(math.abs(riskNow), format.mintick)
+        sigLabel := label.new(bar_index, sigIsLong ? low : high, txt, xloc=xloc.bar_index,
+             style=sigIsLong ? label.style_label_up : label.style_label_down,
+             color=color.new(sigColor, 0), textcolor=color.black, size=size.small)
+
+alertcondition(sqzLong, title="Sqz v2.2 Long",
+     message="SQZ v2.2 long on {{ticker}} {{interval}} @ {{close}}")
+alertcondition(capLong, title="Cap v2.2 Long",
+     message="CAP v2.2 long on {{ticker}} {{interval}} @ {{close}}")
+alertcondition(llShort, title="LL v2.2 Short",
+     message="LL v2.2 short on {{ticker}} {{interval}} @ {{close}}")
+
+// ---------------------------------------------------------------------
+// Status table
+// ---------------------------------------------------------------------
+var table tbl = table.new(position.top_right, 2, 8,
+     bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+if barstate.islast
+    table.cell(tbl, 0, 0, "Symbol", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 0, sym, text_color=color.yellow, text_size=size.tiny)
+    table.cell(tbl, 0, 1, "Mode", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 1, autoMatrix ? "AUTO" : "MANUAL",
+         text_color=autoMatrix ? color.lime : color.orange, text_size=size.tiny)
+    table.cell(tbl, 0, 2, "① Sqz", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 2, useSqz ? "ON" : "off",
+         text_color=useSqz ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(tbl, 0, 3, "② Cap", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 3, useCap ? "ON" : "off",
+         text_color=useCap ? color.aqua : color.gray, text_size=size.tiny)
+    table.cell(tbl, 0, 4, "③ LL ", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 4, useLL ? "ON" : "off",
+         text_color=useLL ? color.red : color.gray, text_size=size.tiny)
+    table.cell(tbl, 0, 5, "棚質", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 5, useShelfQuality ? "ON" : "off",
+         text_color=useShelfQuality ? color.lime : color.gray, text_size=size.tiny)
+    table.cell(tbl, 0, 6, "D1 RSI", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 6, useStrictD1 ? str.tostring(d1rsi, "#.#") : "off",
+         text_color=useStrictD1 ? color.yellow : color.gray, text_size=size.tiny)
+    table.cell(tbl, 0, 7, "Version", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 7, "v2.2", text_color=color.yellow, text_size=size.tiny)
+
+// ---------------------------------------------------------------------
+// 🆕 年別サマリーテーブル (Strategy Tester の数字を年別に分解)
+// ---------------------------------------------------------------------
+grpY = "🆕 年別サマリー"
+useYearTable = input.bool(true, "年別サマリーを表示", group=grpY)
+yearBase     = input.int(2013, "開始年", minval=2000, maxval=2030, group=grpY)
+yearSpan     = input.int(14,   "表示年数", minval=1, maxval=20, group=grpY,
+     tooltip="開始年から何年分を表示するか (2013 + 14 = 2026 まで)")
+
+if useYearTable and barstate.islast
+    var int[]   yT = array.new_int(20, 0)
+    var int[]   yW = array.new_int(20, 0)
+    var float[] yP = array.new_float(20, 0.0)
+
+    // 配列を毎回リセット (最後のバーで集計)
+    for i = 0 to 19
+        array.set(yT, i, 0)
+        array.set(yW, i, 0)
+        array.set(yP, i, 0.0)
+
+    int n = strategy.closedtrades
+    if n > 0
+        for i = 0 to n - 1
+            int et = strategy.closedtrades.entry_time(i)
+            int yr = year(et)
+            int idx = yr - yearBase
+            if idx >= 0 and idx < 20
+                array.set(yT, idx, array.get(yT, idx) + 1)
+                float pf = strategy.closedtrades.profit(i)
+                array.set(yP, idx, array.get(yP, idx) + pf)
+                if pf > 0
+                    array.set(yW, idx, array.get(yW, idx) + 1)
+
+    var table yTbl = table.new(position.bottom_right, 4, 22,
+         bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+
+    table.cell(yTbl, 0, 0, "Year",   text_color=color.white, text_size=size.tiny, bgcolor=color.new(color.blue, 50))
+    table.cell(yTbl, 1, 0, "Trades", text_color=color.white, text_size=size.tiny, bgcolor=color.new(color.blue, 50))
+    table.cell(yTbl, 2, 0, "WR%",    text_color=color.white, text_size=size.tiny, bgcolor=color.new(color.blue, 50))
+    table.cell(yTbl, 3, 0, "Net%",   text_color=color.white, text_size=size.tiny, bgcolor=color.new(color.blue, 50))
+
+    int totalT = 0
+    int totalW = 0
+    float totalP = 0.0
+    int row = 1
+
+    for i = 0 to yearSpan - 1
+        int t = array.get(yT, i)
+        if t > 0 and row < 20
+            int w = array.get(yW, i)
+            float pSum = array.get(yP, i)
+            float netPct = 100.0 * pSum / strategy.initial_capital
+            float wrPct = 100.0 * w / t
+            color rowColor = netPct >= 0 ? color.new(color.green, 70) : color.new(color.red, 70)
+            table.cell(yTbl, 0, row, str.tostring(yearBase + i),
+                 text_color=color.yellow, text_size=size.tiny, bgcolor=rowColor)
+            table.cell(yTbl, 1, row, str.tostring(t),
+                 text_color=color.white, text_size=size.tiny, bgcolor=rowColor)
+            table.cell(yTbl, 2, row, str.tostring(wrPct, "#.#"),
+                 text_color=color.white, text_size=size.tiny, bgcolor=rowColor)
+            table.cell(yTbl, 3, row, str.tostring(netPct, "+0.00;-0.00"),
+                 text_color=netPct >= 0 ? color.lime : color.red, text_size=size.tiny, bgcolor=rowColor)
+            totalT := totalT + t
+            totalW := totalW + w
+            totalP := totalP + pSum
+            row := row + 1
+
+    // 合計行
+    if totalT > 0 and row < 21
+        float totalNetPct = 100.0 * totalP / strategy.initial_capital
+        float totalWrPct = 100.0 * totalW / totalT
+        color sumColor = totalNetPct >= 0 ? color.new(color.green, 40) : color.new(color.red, 40)
+        table.cell(yTbl, 0, row, "合計", text_color=color.white, text_size=size.tiny, bgcolor=sumColor)
+        table.cell(yTbl, 1, row, str.tostring(totalT), text_color=color.white, text_size=size.tiny, bgcolor=sumColor)
+        table.cell(yTbl, 2, row, str.tostring(totalWrPct, "#.#"), text_color=color.white, text_size=size.tiny, bgcolor=sumColor)
+        table.cell(yTbl, 3, row, str.tostring(totalNetPct, "+0.00;-0.00"),
+             text_color=totalNetPct >= 0 ? color.lime : color.red, text_size=size.tiny, bgcolor=sumColor)

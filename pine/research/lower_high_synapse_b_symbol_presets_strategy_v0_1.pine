@@ -82,6 +82,8 @@ enterAllMode = input.string("Auto", "NO ENTRYフィルタ制御", options=["Auto
      tooltip="Auto: 銘柄ごとに最適設定を自動選択。ON: 全CHECK件でエントリー（フィルタ無視）。OFF: フィルタ通過のみエントリー。\n\n銘柄別Auto設定:\n・ゴールド/銀 → フィルタ有効（NO ENTRY除外）PF2.98\n・NAS100 → フィルタ無視（全件）PF2.21\n・ポンド円 → フィルタ無視（全件）PF1.39\n・その他 → フィルタ有効")
 // 銘柄別に最適なフィルタON/OFFを自動判定（あなたのTVテスト結果に基づく）
 bool isNas = str.contains(ticker, "NAS100") or str.contains(ticker, "NDX") or str.contains(ticker, "US100") or str.contains(ticker, "USTEC")
+// 2026-06-12 テスト結果: ゴールド/銀はフィルタON(ENTRYのみ)、他は全件の方がPF高い
+// ゴールド(isXau)と銀(isSilver)を含めない → フィルタ有効(ENTRYのみ)
 bool autoAllChecks = isNas or isGbpJpy or isEurJpy or isChfJpy or isUsdJpy or isAudJpy
 bool enterAllChecks = enterAllMode == "Auto" ? autoAllChecks : enterAllMode == "ON（全件）"
 manualUseARoomForEntry = input.bool(true, "ENTRY候補にA余白を要求（Manual）", group=grpDanger)
@@ -105,10 +107,15 @@ levelExtendBars = input.int(48, "Entry/SL/TPの表示本数", minval=5, maxval=3
 
 bool precisionOn = precisionMode == "Precision" or precisionMode == "Strict"
 bool strictOn = precisionMode == "Strict"
-// 2026-06-12 テスト結果反映: ユーロ円/ゴールドはRR3.0が最適、他は2.0
+// =====================================================================
+// 2026-06-12 全銘柄テスト結果を正確に反映（TradingView H4 実測）
+// =====================================================================
+// RR: ユーロ円/ゴールド = 3.0（伸ばす型）、他 = 2.0（早く取る型）
 float presetRr = activePreset == "EURJPY H4" ? 3.0 : activePreset == "XAUUSD H4" ? 3.0 : activePreset == "GBPJPY H1" ? 2.0 : activePreset == "USDJPY H1" ? 2.0 : activePreset == "CHFJPY H4" ? 1.0 : activePreset == "AUDJPY H4" ? 2.0 : activePreset == "SILVER H4" ? 2.0 : 2.0
-// 2026-06-12: タイムアウトなし（TP or SL到達まで無制限に保有）
-int presetMaxHoldBars = 9999
+// タイムアウト: ドル円/ユーロ円/ゴールド = 無し(9999)、NAS100/豪ドル円 = 48、ポンド円 = 120
+//   TIME無しが良い銘柄: USDJPY(PF1.45→2.20) / EURJPY(1.31→2.71) / XAUUSD(1.20→1.38)
+//   TIME有りが良い銘柄: NAS100(2.21維持) / GBPJPY(1.39→0.99で悪化) / AUDJPY(1.41→1.08で悪化)
+int presetMaxHoldBars = activePreset == "USDJPY H1" ? 9999 : activePreset == "EURJPY H4" ? 9999 : activePreset == "XAUUSD H4" ? 9999 : activePreset == "GBPJPY H1" ? 120 : activePreset == "AUDJPY H4" ? 48 : 48
 int presetBWindow = activePreset == "XAUUSD H4" ? 48 : activePreset == "GBPJPY H1" ? 72 : activePreset == "USDJPY H1" ? 48 : activePreset == "EURJPY H4" ? 48 : activePreset == "CHFJPY H4" ? 72 : activePreset == "AUDJPY H4" ? 48 : activePreset == "SILVER H4" ? 48 : 48
 int presetCooldown = activePreset == "GBPJPY H1" or activePreset == "USDJPY H1" ? 72 : 48
 float basePresetMinARoomR = activePreset == "XAUUSD H4" ? 0.50 : activePreset == "SILVER H4" ? 0.50 : activePreset == "ALL H4 Balanced" ? 0.50 : 0.00

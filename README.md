@@ -126,12 +126,27 @@
 
 ## 🎯 結論 (TL;DR)
 
-### 採用戦略 — 2本柱
+### 採用戦略 — 4本柱
 
-| 役割 | 戦略 | Pine ファイル | 中身 |
-|---|---|---|---|
-| **主力** | **TrendBreakV1 HYBRID** | [`pine/production/TrendBreakV1_Final.pine`](pine/production/TrendBreakV1_Final.pine) | 高安値ブレイクアウト (H1) |
-| **補助** | **H4 T5 + MACD + BB** | [`pine/production/h4_t5_macd_bb_live_ready.pine`](pine/production/h4_t5_macd_bb_live_ready.pine) | 急落V字回復後の停滞ブレイク (H4) |
+| 役割 | 戦略 | Pine ファイル | 時間足 | 対象銘柄 |
+|---|---|---|---|---|
+| **主力①** | **TrendBreakV1 HYBRID** | [`pine/production/TrendBreakV1_Final.pine`](pine/production/TrendBreakV1_Final.pine) | H1 | 6通貨 |
+| **主力②** | **LH3 Synapse B** ⭐新 | [`pine/research/lower_high_synapse_b_symbol_presets_strategy_v0_1.pine`](pine/research/lower_high_synapse_b_symbol_presets_strategy_v0_1.pine) | H4 | NAS100⭐/XAUUSD/USDJPY/AUDJPY/EURJPY/GBPJPY |
+| **補助①** | **v2.3 Market Psychology** ⭐新 | [`pine/research/market_psychology_v2_3_matrix_strategy.pine`](pine/research/market_psychology_v2_3_matrix_strategy.pine) | H4 | USDJPY⭐/CHFJPY |
+| **補助②** | **H4 T5 + MACD + BB** | [`pine/production/h4_t5_macd_bb_live_ready.pine`](pine/production/h4_t5_macd_bb_live_ready.pine) | H4 | 6通貨 |
+
+### ⭐ Synapse B スイング版 成績（2026-06-12 TradingView H4 実測・設定不要）
+
+| 銘柄 | PF | 勝率 | 件数 | 自動設定 |
+|---|---:|---:|---:|---|
+| **NAS100** | **2.03** | 67% | 21 | RR2.0 / TIME60 |
+| XAUUSD | 1.30 | 46% | 41 | RR3.0 / TIME60 / フィルタON |
+| USDJPY | 1.30 | 45% | 40 | RR2.0 / TIME60 |
+| AUDJPY | 1.29 | 51% | 45 | RR2.0 / TIME60 |
+| EURJPY | 1.23 | 53% | 34 | RR3.0 / TIME60 |
+| GBPJPY | 1.08 | 45% | 42 | RR2.0 / TIME60 |
+
+👉 **[最終結果の詳細](docs/research/2大研究_最終結果_2026-06-12.md)**
 
 ### 進行中の研究
 
@@ -142,18 +157,18 @@
 | [Short Covering Psychology Flow](docs/research/ショートカバリング心理フロー_2026-06-03.md) | 終了・本番不採用 | 売り優勢から売り失敗、損切り買い戻し、加速までの心理遷移をH4で可視化する研究。優位性が明確でないため終了 |
 | [ショート側研究 2026-05-28](docs/research/ショート側研究_進行中_2026-05-28.md) | 🔬 検証途中 | ロング版ミラーは不採用。H4 1ヶ月安値更新後の安値停滞ブレイクショートが暫定候補 |
 
-### 推奨運用構成
+### 推奨運用構成（4本柱・全銘柄）
 
-**6通貨ペア** で両戦略を同時運用 (AUDJPY は除外):
-
-| 通貨 | TF | コメント |
-|---|---|---|
-| XAUUSD (金) | H1+H4 | エースアセット |
-| USDJPY | H1+H4 | 安定 |
-| EURJPY | H1+H4 | 中庸 |
-| GBPJPY | H1+H4 | 高ボラ |
-| CHFJPY | H1+H4 | 中庸 |
-| SILVER | H1+H4 | TrendBreakV1 主役 |
+| 銘柄 | TrendBreak H1 | Synapse B H4 | v2心理 H4 | T5 H4 | 手法数 |
+|---|:---:|:---:|:---:|:---:|---:|
+| **NAS100** | - | ⭐PF2.03 | - | - | 1 |
+| **USDJPY** | ✅ | ✅PF1.30 | ⭐PF1.63 | ✅ | 4 |
+| **XAUUSD** | ✅ | ✅PF1.30 | - | ✅ | 3 |
+| **AUDJPY** | - | ✅PF1.29 | ✅PF5.67 | - | 2 |
+| **EURJPY** | ✅ | ✅PF1.23 | - | ✅ | 3 |
+| **CHFJPY** | ✅ | - | ⭐PF1.44 | ✅ | 3 |
+| **GBPJPY** | ✅ | △PF1.08 | - | ✅ | 3 |
+| SILVER | ✅ | - | - | ✅ | 2 |
 
 ### 10年バックテスト成績 (6通貨, 2015-2024, コスト込み)
 
@@ -173,13 +188,25 @@
 
 ## 🚀 すぐ使う場合
 
-1. **TradingView** を開く
-2. **H1チャート 6枚** に `pine/production/TrendBreakV1_Final.pine` (Auto preset)
-3. **H4チャート 6枚** に `pine/production/h4_t5_macd_bb_live_ready.pine` (デフォルト = Strict + Balanced REC1.2)
-4. 通貨: **XAUUSD, USDJPY, EURJPY, GBPJPY, CHFJPY, SILVER** の6つ
-5. アラート設定 → 通知が来たら手動 (または API 経由) で発注
+### Synapse B（⭐新・スイング向け）— 設定不要で銘柄切替だけ
 
-詳細は **[戦略ガイド.md](戦略ガイド.md)** を参照。
+1. `pine/research/lower_high_synapse_b_symbol_presets_strategy_v0_1.pine` をPine Editorに貼る
+2. **H4チャート**で以下の銘柄に載せる: NAS100 / XAUUSD / USDJPY / AUDJPY / EURJPY / GBPJPY
+3. **設定は一切不要**（銘柄別にRR/TIME/フィルタが全自動）
+
+### v2.3 Market Psychology — 設定不要
+
+1. `pine/research/market_psychology_v2_3_matrix_strategy.pine` をPine Editorに貼る
+2. **H4チャート**で USDJPY / CHFJPY に載せる
+3. **設定は一切不要**
+
+### TrendBreakV1 + H4 T5（従来の2本柱）
+
+1. **H1チャート 6枚** に `pine/production/TrendBreakV1_Final.pine` (Auto preset)
+2. **H4チャート 6枚** に `pine/production/h4_t5_macd_bb_live_ready.pine`
+3. 通貨: **XAUUSD, USDJPY, EURJPY, GBPJPY, CHFJPY, SILVER** の6つ
+
+詳細は **[戦略ガイド.md](戦略ガイド.md)** ／ **[最終結果](docs/research/2大研究_最終結果_2026-06-12.md)** を参照。
 
 ---
 

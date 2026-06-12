@@ -10,7 +10,7 @@
 | やりたいこと | 行き先 |
 |---|---|
 | **自分の実践トレードを見る・追加する** | 👉 [practice/](practice/) |
-| **最新エントリー** | [2026-06-10 XAUUSD 手法外ショート](practice/entries/2026-06-10_XAUUSD_手法外ショート.md) ／ [2026-06-10 XAUUSD 利確 +109万](practice/entries/2026-06-04_XAUUSD_V1ショートシグナル.md) ／ [2026-06-09 CHFJPY v2.1 SQZ](practice/entries/2026-06-09_CHFJPY_v2_1_SQZシグナル買い.md) |
+| **最新エントリー** | [2026-06-12 XAUUSD v2.3 CAP 見送り](practice/entries/2026-06-12_XAUUSD_v2_3_CAPシグナル見送り.md) ／ [2026-06-10 XAUUSD 手法外ショート](practice/entries/2026-06-10_XAUUSD_手法外ショート.md) ／ [2026-06-09 CHFJPY v2.1 SQZ](practice/entries/2026-06-09_CHFJPY_v2_1_SQZシグナル買い.md) |
 | **リアルタイム心理を記録する** | [psychology/](psychology/) |
 | **Slack 反省点リマインド（定期投稿）** | [Slack反省点設定.md](Slack反省点設定.md) |
 | **受講生トレード記録（137件・研究用）** | [archive/student/](archive/student/) |
@@ -43,6 +43,7 @@ docs/trade_diary/
 |---|---|---|
 | 実際に入ったトレード（建玉・決済・写真） | `practice/entries/` + `practice/index.csv` | Markdown + CSV |
 | **手法外・裁量トレード** | 同上（`entry_reason` に「手法外」と明記） | Markdown + CSV |
+| **シグナル記録（未エントリー）** | 同上（`status=skipped`、建値・数量は —） | Markdown + CSV |
 | 入る前の心理（STOP / WAIT / CHECK） | `psychology/logs/` | CSV（テンプレ: `realtime_log_template.csv`） |
 | 受講生データの分析 | `archive/student/` | 既存 CSV を参照（編集は研究ノート側） |
 

@@ -153,6 +153,8 @@ float jpyPerPriceAtCurrentLots = lotValueMode == "Auto" ? currentLots * autoJpyP
 
 grpView = "Visual"
 cleanView = input.bool(true, "見やすい表示モード（最新中心）", group=grpView)
+showInOut = input.bool(true, "エントリー/決済を大きく表示（IN/OUT）", group=grpView,
+     tooltip="戦略の建玉状態から、実際にエントリーした足にIN、決済した足にOUTを大きく表示する。")
 showEventMarkers = input.bool(true, "WAIT/CHECK小マーカー", group=grpView)
 showCurrentTrendLine = input.bool(true, "現在の赤LINEを太く表示", group=grpView)
 showCheckMarks = input.bool(false, "CHECKを表示", group=grpView)
@@ -494,6 +496,16 @@ plotshape(showEventMarkers and checkNow, title="CHECK B break", style=shape.tria
 plotshape(showEventMarkers and checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk and currentRiskAtrOk and currentBreakExtOk and currentFlatOk, title="ENTRY candidate small", style=shape.circle, location=location.belowbar, color=color.new(color.lime, 0), text="GO", textcolor=color.black, size=size.tiny)
 plotshape(showEventMarkers and aBreakNow, title="A confirm", style=shape.triangleup, location=location.belowbar, color=color.orange, size=size.tiny, text="A")
 bgcolor(not cleanView and showEntryBackground and checkNow and currentRiskOk and currentARoomOk and currentD1Ok and currentQualityOk and currentRiskAtrOk and currentBreakExtOk and currentFlatOk ? color.new(color.lime, 86) : na, title="ENTRY候補背景")
+
+// === 実際のエントリー / 決済を大きく表示（建玉状態の遷移から検出。常に正確）===
+bool justEnteredLong = strategy.position_size > 0 and strategy.position_size[1] <= 0
+bool justExited      = strategy.position_size <= 0 and strategy.position_size[1] > 0
+plotshape(showInOut and justEnteredLong, title="IN (entry)", style=shape.labelup,
+     location=location.belowbar, color=color.new(color.lime, 0), text="IN", textcolor=color.black, size=size.normal)
+plotshape(showInOut and justExited, title="OUT (exit)", style=shape.labeldown,
+     location=location.abovebar, color=color.new(color.fuchsia, 0), text="OUT", textcolor=color.white, size=size.normal)
+// 建玉中は背景を薄く塗って「保有中」を一目で分かるようにする
+bgcolor(showInOut and strategy.position_size > 0 ? color.new(color.lime, 92) : na, title="保有中の背景")
 
 chartIsH4 = timeframe.in_seconds(timeframe.period) == 240 * 60
 stateText = not activeSeq ? "NO SETUP" : entryDone ? "ENTRY" : checkDone ? "CHECKED" : lineReclaimed and not na(bLevel) ? "WAIT B BREAK" : lineReclaimed ? "LINE ONLY" : "WAIT LINE"

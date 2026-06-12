@@ -99,7 +99,7 @@ grpRisk = "Validation levels"
 enableStrategyOrders = input.bool(true, "検証注文を出す（勝率/PFを見る時だけON）", group=grpRisk)
 showValidationLevels = input.bool(true, "Entry/SL/TP表示", group=grpRisk)
 manualRr = input.float(2.0, "TP RR（Manual）", minval=0.25, step=0.25, group=grpRisk)
-manualMaxHoldBars = input.int(48, "最大保有本数（Manual）", minval=1, maxval=500, group=grpRisk)
+manualMaxHoldBars = input.int(9999, "最大保有本数（Manual）", minval=1, maxval=9999, group=grpRisk)
 manualStopBufferAtr = input.float(0.20, "SL余白 ATR（Manual）", minval=0.0, step=0.05, group=grpRisk)
 levelExtendBars = input.int(48, "Entry/SL/TPの表示本数", minval=5, maxval=300, group=grpRisk)
 
@@ -107,7 +107,8 @@ bool precisionOn = precisionMode == "Precision" or precisionMode == "Strict"
 bool strictOn = precisionMode == "Strict"
 // 2026-06-12 テスト結果反映: ユーロ円/ゴールドはRR3.0が最適、他は2.0
 float presetRr = activePreset == "EURJPY H4" ? 3.0 : activePreset == "XAUUSD H4" ? 3.0 : activePreset == "GBPJPY H1" ? 2.0 : activePreset == "USDJPY H1" ? 2.0 : activePreset == "CHFJPY H4" ? 1.0 : activePreset == "AUDJPY H4" ? 2.0 : activePreset == "SILVER H4" ? 2.0 : 2.0
-int presetMaxHoldBars = activePreset == "XAUUSD H4" ? 48 : activePreset == "GBPJPY H1" ? 120 : activePreset == "USDJPY H1" ? 48 : activePreset == "EURJPY H4" ? 48 : activePreset == "CHFJPY H4" ? 48 : activePreset == "AUDJPY H4" ? 48 : activePreset == "SILVER H4" ? 48 : 120
+// 2026-06-12: タイムアウトなし（TP or SL到達まで無制限に保有）
+int presetMaxHoldBars = 9999
 int presetBWindow = activePreset == "XAUUSD H4" ? 48 : activePreset == "GBPJPY H1" ? 72 : activePreset == "USDJPY H1" ? 48 : activePreset == "EURJPY H4" ? 48 : activePreset == "CHFJPY H4" ? 72 : activePreset == "AUDJPY H4" ? 48 : activePreset == "SILVER H4" ? 48 : 48
 int presetCooldown = activePreset == "GBPJPY H1" or activePreset == "USDJPY H1" ? 72 : 48
 float basePresetMinARoomR = activePreset == "XAUUSD H4" ? 0.50 : activePreset == "SILVER H4" ? 0.50 : activePreset == "ALL H4 Balanced" ? 0.50 : 0.00

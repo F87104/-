@@ -77,8 +77,12 @@ manualCooldownBars = input.int(48, "候補の間隔（Manual）", minval=1, maxv
 
 grpDanger = "Danger filter"
 precisionMode = input.string("Precision", "精度モード", options=["Balanced", "Precision", "Strict"], group=grpDanger)
-enterAllChecks = input.bool(false, "NO ENTRYもエントリーする（CHECK全件）", group=grpDanger,
-     tooltip="ONにすると、危険フィルタ(A余白/D1/終値/SL幅/飛び乗り/ロット)で弾いていた NO ENTRY も含め、B抜けCHECK全件でエントリーする。保有中とSL不正のみ除外。検証用。")
+enterAllMode = input.string("Auto", "NO ENTRYフィルタ制御", options=["Auto", "ON（全件）", "OFF（フィルタ有効）"], group=grpDanger,
+     tooltip="Auto: 銘柄ごとに最適設定を自動選択。ON: 全CHECK件でエントリー（フィルタ無視）。OFF: フィルタ通過のみエントリー。\n\n銘柄別Auto設定:\n・ゴールド/銀 → フィルタ有効（NO ENTRY除外）PF2.98\n・NAS100 → フィルタ無視（全件）PF2.21\n・ポンド円 → フィルタ無視（全件）PF1.39\n・その他 → フィルタ有効")
+// 銘柄別に最適なフィルタON/OFFを自動判定（あなたのTVテスト結果に基づく）
+bool isNas = str.contains(ticker, "NAS100") or str.contains(ticker, "NDX") or str.contains(ticker, "US100") or str.contains(ticker, "USTEC")
+bool autoAllChecks = isNas or isGbpJpy or isEurJpy or isChfJpy or isUsdJpy or isAudJpy
+bool enterAllChecks = enterAllMode == "Auto" ? autoAllChecks : enterAllMode == "ON（全件）"
 manualUseARoomForEntry = input.bool(true, "ENTRY候補にA余白を要求（Manual）", group=grpDanger)
 manualMinARoomR = input.float(0.50, "Aまでの最低余白 R（Manual）", minval=0.0, step=0.10, group=grpDanger)
 manualQualityCloseLoc = input.float(0.60, "QUALITY終値位置（Manual）", minval=0.0, maxval=1.0, step=0.05, group=grpDanger)

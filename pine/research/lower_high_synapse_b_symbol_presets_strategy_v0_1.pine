@@ -114,10 +114,10 @@ bool strictOn = precisionMode == "Strict"
 // =====================================================================
 // RR: ユーロ円/ゴールド = 3.0（伸ばす型）、他 = 2.0（早く取る型）
 float presetRr = activePreset == "EURJPY H4" ? 3.0 : activePreset == "XAUUSD H4" ? 3.0 : activePreset == "GBPJPY H1" ? 2.0 : activePreset == "USDJPY H1" ? 2.0 : activePreset == "CHFJPY H4" ? 1.0 : activePreset == "AUDJPY H4" ? 2.0 : activePreset == "SILVER H4" ? 2.0 : 2.0
-// タイムアウト: ドル円/ユーロ円/ゴールド = 無し(9999)、NAS100/豪ドル円 = 48、ポンド円 = 120
-//   TIME無しが良い銘柄: USDJPY(PF1.45→2.20) / EURJPY(1.31→2.71) / XAUUSD(1.20→1.38)
-//   TIME有りが良い銘柄: NAS100(2.21維持) / GBPJPY(1.39→0.99で悪化) / AUDJPY(1.41→1.08で悪化)
-int presetMaxHoldBars = activePreset == "USDJPY H1" ? 9999 : activePreset == "EURJPY H4" ? 9999 : activePreset == "XAUUSD H4" ? 9999 : activePreset == "GBPJPY H1" ? 120 : activePreset == "AUDJPY H4" ? 48 : 48
+// タイムアウト: スイングトレード前提で全銘柄60本（H4で約10日間）に統一
+// TIME無しだとユーロ円で1年保有、ゴールドで4ヶ月保有など非現実的なトレードが発生。
+// 60本 = 約10日間はスイングの時間感覚に合い、スワップ/資金拘束も現実的。
+int presetMaxHoldBars = 60
 int presetBWindow = activePreset == "XAUUSD H4" ? 48 : activePreset == "GBPJPY H1" ? 72 : activePreset == "USDJPY H1" ? 48 : activePreset == "EURJPY H4" ? 48 : activePreset == "CHFJPY H4" ? 72 : activePreset == "AUDJPY H4" ? 48 : activePreset == "SILVER H4" ? 48 : 48
 int presetCooldown = activePreset == "GBPJPY H1" or activePreset == "USDJPY H1" ? 72 : 48
 float basePresetMinARoomR = activePreset == "XAUUSD H4" ? 0.50 : activePreset == "SILVER H4" ? 0.50 : activePreset == "ALL H4 Balanced" ? 0.50 : 0.00

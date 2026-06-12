@@ -155,6 +155,8 @@ grpView = "Visual"
 cleanView = input.bool(true, "見やすい表示モード（最新中心）", group=grpView)
 showInOut = input.bool(true, "エントリー/決済を大きく表示（IN/OUT）", group=grpView,
      tooltip="戦略の建玉状態から、実際にエントリーした足にIN、決済した足にOUTを大きく表示する。")
+showV1Style = input.bool(true, "V1風トレード表示（Entry/SL/TPの線＋損益R）", group=grpView,
+     tooltip="TrendBreakV1風。エントリーからEntry/SL/TPの水平線を引き、決済足に Exit +X.XR を色付きで表示する。")
 showEventMarkers = input.bool(true, "WAIT/CHECK小マーカー", group=grpView)
 showCurrentTrendLine = input.bool(true, "現在の赤LINEを太く表示", group=grpView)
 showCheckMarks = input.bool(false, "CHECKを表示", group=grpView)
@@ -506,6 +508,34 @@ plotshape(showInOut and justExited, title="OUT (exit)", style=shape.labeldown,
      location=location.abovebar, color=color.new(color.fuchsia, 0), text="OUT", textcolor=color.white, size=size.normal)
 // 建玉中は背景を薄く塗って「保有中」を一目で分かるようにする
 bgcolor(showInOut and strategy.position_size > 0 ? color.new(color.lime, 92) : na, title="保有中の背景")
+
+// === V1風トレード表示：Entry/SL/TP の線 ＋ 決済足に損益R（緑=勝ち/赤=負け）===
+var float tEntry    = na
+var float tStop     = na
+var float tTarget   = na
+var int   tEntryBar = na
+var float tRisk     = na
+
+if justEnteredLong
+    tEntry    := strategy.position_avg_price
+    tStop     := strategyStop
+    tTarget   := strategyTarget
+    tEntryBar := na(strategyEntryBar) ? bar_index : strategyEntryBar
+    tRisk     := not na(tStop) ? tEntry - tStop : na
+
+if showV1Style and justExited and not na(tEntryBar) and not na(tEntry)
+    int   ci    = strategy.closedtrades - 1
+    float exitP = ci >= 0 ? strategy.closedtrades.exit_price(ci) : close
+    float rMult = (not na(tRisk) and tRisk > 0) ? (exitP - tEntry) / tRisk : na
+    bool  win   = not na(rMult) and rMult > 0
+    color wc    = win ? color.lime : color.red
+    keep_line(line.new(tEntryBar, tEntry, bar_index, tEntry, xloc=xloc.bar_index, color=color.new(color.white, 0), width=2))
+    if not na(tStop)
+        keep_line(line.new(tEntryBar, tStop, bar_index, tStop, xloc=xloc.bar_index, color=color.new(color.red, 30), style=line.style_dashed, width=1))
+    if not na(tTarget)
+        keep_line(line.new(tEntryBar, tTarget, bar_index, tTarget, xloc=xloc.bar_index, color=color.new(color.lime, 30), style=line.style_dashed, width=1))
+    keep_label(label.new(tEntryBar, tEntry, "Long", xloc=xloc.bar_index, style=label.style_label_right, color=color.new(color.gray, 10), textcolor=color.white, size=size.small))
+    keep_label(label.new(bar_index, exitP, "Exit " + (rMult >= 0 ? "+" : "") + str.tostring(rMult, "#.#") + "R", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(wc, 0), textcolor=win ? color.black : color.white, size=size.small))
 
 chartIsH4 = timeframe.in_seconds(timeframe.period) == 240 * 60
 stateText = not activeSeq ? "NO SETUP" : entryDone ? "ENTRY" : checkDone ? "CHECKED" : lineReclaimed and not na(bLevel) ? "WAIT B BREAK" : lineReclaimed ? "LINE ONLY" : "WAIT LINE"

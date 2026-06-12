@@ -77,7 +77,9 @@ manualMaxBarsAfterLineForB = input.int(48, "LINE上抜け後B確認の最大本�
 manualCooldownBars = input.int(48, "候補の間隔（Manual）", minval=1, maxval=500, group=grpConfirm)
 
 grpDanger = "Danger filter"
-precisionMode = input.string("Precision", "精度モード", options=["Balanced", "Precision", "Strict"], group=grpDanger)
+// 2026-06-12: テスト結果でBalancedが全銘柄で最良PFだったため既定をBalancedに変更
+// (Precisionだと追加フィルタでドル円PF2.20→1.67等に悪化)
+precisionMode = input.string("Balanced", "精度モード", options=["Balanced", "Precision", "Strict"], group=grpDanger)
 enterAllMode = input.string("Auto", "NO ENTRYフィルタ制御", options=["Auto", "ON（全件）", "OFF（フィルタ有効）"], group=grpDanger,
      tooltip="Auto: 銘柄ごとに最適設定を自動選択。ON: 全CHECK件でエントリー（フィルタ無視）。OFF: フィルタ通過のみエントリー。\n\n銘柄別Auto設定:\n・ゴールド/銀 → フィルタ有効（NO ENTRY除外）PF2.98\n・NAS100 → フィルタ無視（全件）PF2.21\n・ポンド円 → フィルタ無視（全件）PF1.39\n・その他 → フィルタ有効")
 // 銘柄別に最適なフィルタON/OFFを自動判定（あなたのTVテスト結果に基づく）

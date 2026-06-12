@@ -122,14 +122,17 @@ float basePresetMinARoomR = activePreset == "XAUUSD H4" ? 0.50 : activePreset ==
 float precisionPresetMinARoomR = activePreset == "GBPJPY H1" or activePreset == "USDJPY H1" ? 0.25 : 0.50
 float strictPresetMinARoomR = activePreset == "XAUUSD H4" or activePreset == "SILVER H4" or activePreset == "ALL H4 Balanced" ? 1.00 : 0.50
 float presetMinARoomR = strictOn ? strictPresetMinARoomR : precisionOn ? math.max(basePresetMinARoomR, precisionPresetMinARoomR) : basePresetMinARoomR
-bool basePresetUseARoom = activePreset == "XAUUSD H4" or activePreset == "SILVER H4" or activePreset == "ALL H4 Balanced"
-bool presetUseARoom = basePresetUseARoom or precisionOn
+// 2026-06-12: ゴールドはプリセットONでもフィルタを緩くする（Precisionフィルタで0件になる問題）
+// ゴールドのテスト結果 PF1.38 は NO ENTRYフィルタON + 精度フィルタOFF で得た数字。
+bool xauRelax = activePreset == "XAUUSD H4"
+bool basePresetUseARoom = (activePreset == "XAUUSD H4" or activePreset == "SILVER H4" or activePreset == "ALL H4 Balanced") and not xauRelax
+bool presetUseARoom = (basePresetUseARoom or precisionOn) and not xauRelax
 float presetQualityCloseLoc = activePreset == "XAUUSD H4" ? 0.60 : activePreset == "GBPJPY H1" ? 0.55 : activePreset == "USDJPY H1" ? 0.55 : 0.60
-bool presetUseQuality = precisionOn
-bool presetUseD1Strong = strictOn
-bool presetUseRiskAtr = precisionOn
+bool presetUseQuality = precisionOn and not xauRelax
+bool presetUseD1Strong = strictOn and not xauRelax
+bool presetUseRiskAtr = precisionOn and not xauRelax
 float presetMaxRiskAtr = 3.00
-bool presetUseBreakExt = precisionOn
+bool presetUseBreakExt = precisionOn and not xauRelax
 float presetMaxBreakExtAtr = strictOn ? 0.80 : 1.20
 float presetStopBufferAtr = activePreset == "XAUUSD H4" ? 0.20 : activePreset == "SILVER H4" ? 0.20 : activePreset == "GBPJPY H1" ? 0.15 : activePreset == "USDJPY H1" ? 0.15 : 0.20
 float presetBBreakBufferAtr = activePreset == "GBPJPY H1" or activePreset == "USDJPY H1" ? 0.02 : 0.03

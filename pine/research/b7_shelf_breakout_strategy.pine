@@ -1,25 +1,19 @@
 //@version=5
 // =============================================================================
-// B7棚 — H4 V Shelf Breakout Strategy（急落否定後の棚ブレイク）
+// B7棚 — H4 V Shelf Breakout Strategy（急落否定後の棚ブレイク）v2
 //
-// 急落が否定された後、上側で崩れずに棚を作り、その棚高値を終値で抜ける瞬間を狙う。
-// V字の底を当てる逆張りではなく、売りの失敗を確認した後の上昇再開を買う順張り手法。
+// 急落→急回復→上側で棚形成→棚高値ブレイクで買う。
+// ピボット状態遷移ではなく、毎足ローリングウィンドウで条件判定（バグ防止）。
 //
-// 2026-06-14 TradingView H4 実測（tv_data 8銘柄）:
-//   CHFJPY  PF1.92 / 50% / 38件 / RR2.0  ⭐最良
-//   XAUUSD  PF1.54 / 46% / 35件 / RR2.0
-//   XAGUSD  PF1.54 / 53% / 32件 / RR1.5
-//   USDJPY  PF1.27 / 47% / 58件 / RR1.5  件数最多
-//   NAS100  PF1.23 / 47% / 47件 / RR1.5
-//   EURJPY  PF1.19 / 40% / 48件 / RR2.0
-//   GBPJPY  PF1.14 / 38% / 50件 / RR2.0
-//   AUDJPY  除外（PF<1.0）
+// 2026-06-14 TV検証（Python / tv_data）:
+//   CHFJPY  PF1.92 / 50% / 38件 ⭐
+//   XAUUSD  PF1.54 / 46% / 35件
+//   XAGUSD  PF1.54 / 53% / 32件（銀が使える）
+//   USDJPY  PF1.27 / 47% / 58件
 //
-// 仕様: docs/research/H4_V字棚ブレイクアウト手法_2026-05-29.md
-// 検証: docs/research/B7棚_TV検証_2026-06-14.md
 // 推奨時間足: H4
 // =============================================================================
-strategy("B7棚 V Shelf Breakout (銘柄別自動)",
+strategy("B7棚 V Shelf Breakout (銘柄別自動) v2",
      overlay=true,
      initial_capital=1000000,
      default_qty_type=strategy.percent_of_equity,
@@ -38,7 +32,7 @@ strategy("B7棚 V Shelf Breakout (銘柄別自動)",
 plot(na, title="Compile Anchor", display=display.none)
 
 // ---------------------------------------------------------------------
-// 共通入力
+// 入力
 // ---------------------------------------------------------------------
 grpG = "共通"
 requireH4 = input.bool(true, "H4チャートのみ売買", group=grpG)
@@ -46,8 +40,26 @@ useDate   = input.bool(true, "2015〜2026のみ", group=grpG)
 atrLen    = input.int(14, "ATR期間", minval=1, group=grpG)
 maxHold   = input.int(60, "最大保有(本)", minval=10, group=grpG)
 
+grpV = "V Shelf 条件"
+dropLook   = input.int(24, "急落の参照窓(本)", minval=4, maxval=60, group=grpV)
+dropAtrMin = input.float(2.8, "急落幅下限(ATR)", minval=1.0, step=0.1, group=grpV)
+recMin     = input.float(0.65, "回復率下限", minval=0.0, maxval=1.5, step=0.05, group=grpV)
+recMax     = input.float(1.25, "回復率上限", minval=0.5, maxval=2.0, step=0.05, group=grpV)
+shelfBars  = input.int(7, "棚の本数", minval=3, maxval=20, group=grpV)
+shelfAtr   = input.float(1.8, "棚幅上限(ATR)", minval=0.5, step=0.1, group=grpV)
+shelfHold  = input.float(0.4, "棚安値保持率", minval=0.0, maxval=1.0, step=0.05, group=grpV)
+breakBuf   = input.float(0.05, "ブレイクバッファ(ATR)", minval=0.0, step=0.01, group=grpV)
+minBody    = input.float(0.30, "ブレイク足実体下限", minval=0.0, maxval=1.0, step=0.05, group=grpV)
+minCLoc    = input.float(0.50, "ブレイク足終値位置下限", minval=0.0, maxval=1.0, step=0.05, group=grpV)
+stopBuf    = input.float(0.25, "SL余白(ATR)", minval=0.0, step=0.05, group=grpV)
+maxRiskAtr = input.float(2.5, "最大リスク幅(ATR)", minval=0.5, step=0.1, group=grpV)
+
+grpVz = "表示"
+showInOut   = input.bool(true, "IN/OUTラベル", group=grpVz)
+showV1Style = input.bool(true, "Entry/SL/TP線＋損益R", group=grpVz)
+
 // ---------------------------------------------------------------------
-// 銘柄判定
+// 銘柄判定・RR自動
 // ---------------------------------------------------------------------
 string sym = syminfo.ticker
 bool isXAU = str.contains(sym, "XAUUSD") or str.contains(sym, "GOLD")
@@ -58,33 +70,8 @@ bool isUSD = str.contains(sym, "USDJPY")
 bool isCHF = str.contains(sym, "CHFJPY")
 bool isGBP = str.contains(sym, "GBPJPY")
 bool isNAS = str.contains(sym, "NAS100") or str.contains(sym, "NDX") or str.contains(sym, "US100") or str.contains(sym, "USTEC")
-
-// AUDJPY は PF<1.0 で除外
-bool symKnown = isXAU or isXAG or isEUR or isUSD or isCHF or isGBP or isNAS
-
-// 銘柄別RR（2026-06-14 検証結果）
-// 伸ばす型: CHFJPY/XAUUSD/EURJPY/GBPJPY = RR2.0
-// 早く取る型: USDJPY/XAGUSD/NAS100 = RR1.5
+bool symOk = isXAU or isXAG or isEUR or isUSD or isCHF or isGBP or isNAS
 float rr = isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0
-
-// ---------------------------------------------------------------------
-// V Shelf Breakout パラメータ
-// ---------------------------------------------------------------------
-grpV = "V Shelf 条件"
-shelfBars     = input.int(7, "棚の本数", minval=3, maxval=20, group=grpV)
-shelfAtrMax   = input.float(1.8, "棚幅上限(ATR)", minval=0.5, step=0.1, group=grpV)
-dropAtrMin    = input.float(2.8, "急落幅下限(ATR)", minval=1.0, step=0.1, group=grpV)
-breakBufAtr   = input.float(0.05, "ブレイクバッファ(ATR)", minval=0.0, step=0.01, group=grpV)
-minBody       = input.float(0.30, "ブレイク足実体下限", minval=0.0, maxval=1.0, step=0.05, group=grpV)
-minCloseLoc   = input.float(0.50, "ブレイク足終値位置下限", minval=0.0, maxval=1.0, step=0.05, group=grpV)
-stopBufAtr    = input.float(0.25, "SL余白(ATR)", minval=0.0, step=0.05, group=grpV)
-
-// ---------------------------------------------------------------------
-// 表示
-// ---------------------------------------------------------------------
-grpVz = "表示"
-showInOut   = input.bool(true, "IN/OUTラベル表示", group=grpVz)
-showV1Style = input.bool(true, "Entry/SL/TP線＋損益R表示", group=grpVz)
 
 // ---------------------------------------------------------------------
 // 指標
@@ -92,93 +79,66 @@ showV1Style = input.bool(true, "Entry/SL/TP線＋損益R表示", group=grpVz)
 atr = ta.atr(atrLen)
 rng = high - low
 rngOk = rng > 0
-float bodyRatio = rngOk ? math.abs(close - open) / rng : 0.0
-float closeLoc = rngOk ? (close - low) / rng : 0.5
+float bodyR = rngOk ? math.abs(close - open) / rng : 0.0
+float cLoc = rngOk ? (close - low) / rng : 0.5
 
 int chartSec = timeframe.in_seconds(timeframe.period)
 bool h4Ok = not requireH4 or chartSec == 240 * 60
 bool dateOk = not useDate or (year >= 2015 and year <= 2026)
 bool atrOk = not na(atr) and atr > 0
-
-// ピボット検出（確定のみ、先読みなし）
-float ph = ta.pivothigh(3, 3)
-float pl = ta.pivotlow(3, 3)
-
-// V shock 検出用の変数
-var float vHiPrice = na
-var int   vHiBar = na
-var float vLoPrice = na
-var int   vLoBar = na
-var bool  vActive = false
-var float shelfHi = na
-var float shelfLo = na
-var int   shelfStartBar = na
-
-// 新しい pivot high
-if not na(ph)
-    vHiPrice := ph
-    vHiBar := bar_index - 3
-    vActive := false
-
-// 新しい pivot low → V shock 判定
-if not na(pl) and not na(vHiPrice)
-    float drop = vHiPrice - pl
-    float dropAtr = atrOk ? drop / atr : 0.0
-    int dropBars = (bar_index - 3) - vHiBar
-    if dropAtr >= dropAtrMin and dropBars >= 2 and dropBars <= 24
-        vLoPrice := pl
-        vLoBar := bar_index - 3
-        vActive := true
-        shelfHi := na
-        shelfLo := na
-        shelfStartBar := na
-
-// V回復チェック + 棚形成の監視
-bool sigLong = false
-float sigStop = na
-float sigEntry = na
-float sigTarget = na
-
-if vActive and atrOk and h4Ok and dateOk and symKnown and strategy.position_size == 0
-    float drop = vHiPrice - vLoPrice
-    float recovery = drop > 0 ? (close - vLoPrice) / drop : 0.0
-
-    // 回復率チェック（65-125%）
-    if recovery >= 0.65 and recovery <= 1.25 and na(shelfStartBar)
-        shelfStartBar := bar_index
-
-    // 棚形成中
-    if not na(shelfStartBar) and bar_index >= shelfStartBar + shelfBars
-        // 棚の値幅チェック
-        float sHi = ta.highest(high, shelfBars)[1]
-        float sLo = ta.lowest(low, shelfBars)[1]
-        float sRange = (sHi - sLo) / atr
-        float holdLine = vLoPrice + drop * 0.4
-
-        bool shelfOk = sRange <= shelfAtrMax and sLo >= holdLine
-
-        // ブレイク判定（前足≤棚高値、今足>棚高値+バッファ）
-        bool freshBreak = close[1] <= sHi and close > sHi + breakBufAtr * atr
-        bool qualityOk = bodyRatio >= minBody and closeLoc >= minCloseLoc
-
-        if shelfOk and freshBreak and qualityOk
-            float stop = sLo - stopBufAtr * atr
-            if close > stop
-                float risk = close - stop
-                float riskAtr = risk / atr
-                if riskAtr <= 2.5
-                    sigLong := true
-                    sigStop := stop
-                    sigEntry := close
-                    sigTarget := close + risk * rr
-                    vActive := false
-
-    // タイムアウト（V shockから120本経過で失効）
-    if bar_index - vLoBar > 120
-        vActive := false
+bool baseOk = h4Ok and dateOk and atrOk and symOk
 
 // ---------------------------------------------------------------------
-// 発注（保留→確定ラッチ方式）
+// V Shelf Breakout 検出（毎足ローリング・先読みなし）
+//
+// 考え方: 「現在の棚（直近shelfBars本）の直前に急落→回復があったか」を毎足チェック。
+// ピボット状態遷移を使わず、ローリングウィンドウだけで完結するのでバグが出にくい。
+// ---------------------------------------------------------------------
+
+// 棚 = 直近 shelfBars 本（1本前まで = [1]〜[shelfBars]）
+float sHi = ta.highest(high, shelfBars)[1]
+float sLo = ta.lowest(low, shelfBars)[1]
+float sRng = atrOk ? (sHi - sLo) / atr : 999.0
+bool shelfNarrow = sRng <= shelfAtr
+
+// ブレイク = 前足≤棚高値 & 今足>棚高値+バッファ
+bool freshBreak = not na(sHi) and close[1] <= sHi and close > sHi + breakBuf * atr
+bool qualOk = bodyR >= minBody and cLoc >= minCLoc
+
+// 棚の前に急落→回復があったか（棚開始点のさらに前 dropLook 本を見る）
+// 急落 = その窓の最高値 - 最安値 >= dropAtrMin * ATR
+// 回復 = 棚安値が急落の一定%以上を回復している
+int preStart = shelfBars + 1
+int preEnd = shelfBars + dropLook
+float preHi = ta.highest(high, dropLook)[preStart]
+float preLo = ta.lowest(low, dropLook)[preStart]
+float dropSize = not na(preHi) and not na(preLo) ? preHi - preLo : 0.0
+float dropAtr = atrOk ? dropSize / atr : 0.0
+bool hadDrop = dropAtr >= dropAtrMin
+
+// 回復率 = (棚安値 - 急落安値) / 急落幅
+float recRate = dropSize > 0 and not na(sLo) and not na(preLo) ? (sLo - preLo) / dropSize : 0.0
+bool recOk = recRate >= recMin and recRate <= recMax
+
+// 棚安値保持 = 棚安値が急落の holdLine 以上
+float holdLine = not na(preLo) ? preLo + dropSize * shelfHold : na
+bool holdOk = not na(holdLine) and not na(sLo) and sLo >= holdLine
+
+// SL / リスク
+float stop = not na(sLo) ? sLo - stopBuf * atr : na
+bool stopValid = not na(stop) and close > stop
+float risk = stopValid ? close - stop : 0.0
+float riskA = atrOk and risk > 0 ? risk / atr : 999.0
+bool riskOk = riskA <= maxRiskAtr and risk > 0
+
+// 全条件
+bool sigLong = baseOk and strategy.position_size == 0 and shelfNarrow and freshBreak and qualOk and hadDrop and recOk and holdOk and stopValid and riskOk
+
+float sigStop = sigLong ? stop : na
+float sigTarget = sigLong ? close + risk * rr : na
+
+// ---------------------------------------------------------------------
+// 発注（保留→確定ラッチ）
 // ---------------------------------------------------------------------
 var float pendStop = na
 var float pendTarget = na
@@ -215,7 +175,7 @@ if strategy.position_size == 0
     entryBar := na
 
 // ---------------------------------------------------------------------
-// 表示（IN/OUT + V1風）
+// 表示
 // ---------------------------------------------------------------------
 plotshape(showInOut and justEntered, title="IN", style=shape.labelup,
      location=location.belowbar, color=color.new(color.lime, 0), text="IN", textcolor=color.black, size=size.normal)
@@ -223,7 +183,6 @@ plotshape(showInOut and justExited, title="OUT", style=shape.labeldown,
      location=location.abovebar, color=color.new(color.fuchsia, 0), text="OUT", textcolor=color.white, size=size.normal)
 bgcolor(showInOut and strategy.position_size > 0 ? color.new(color.lime, 92) : na, title="保有中背景")
 
-// V1風 Entry/SL/TP線 + 損益R
 var float tEntry = na
 var float tStop = na
 var float tTarget = na
@@ -251,18 +210,19 @@ if showV1Style and justExited and not na(tEntryBar) and not na(tEntry)
     label.new(tEntryBar, tEntry, "B7棚", xloc=xloc.bar_index, style=label.style_label_right, color=color.new(color.gray, 10), textcolor=color.white, size=size.small)
     label.new(bar_index, exitP, "Exit " + (rMult >= 0 ? "+" : "") + str.tostring(rMult, "#.#") + "R", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(wc, 0), textcolor=win ? color.black : color.white, size=size.small)
 
-// ステータステーブル
+plotshape(sigLong, title="B7 Signal", style=shape.triangleup, location=location.belowbar, color=color.new(color.aqua, 0), size=size.small)
+
 var table tbl = table.new(position.top_right, 2, 5, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
 if barstate.islast
     table.cell(tbl, 0, 0, "Symbol", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 1, 0, sym, text_color=color.yellow, text_size=size.tiny)
     table.cell(tbl, 0, 1, "手法", text_color=color.white, text_size=size.tiny)
-    table.cell(tbl, 1, 1, "B7棚", text_color=color.aqua, text_size=size.tiny)
+    table.cell(tbl, 1, 1, "B7棚 v2", text_color=color.aqua, text_size=size.tiny)
     table.cell(tbl, 0, 2, "RR", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 1, 2, str.tostring(rr), text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 0, 3, "TIME", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 1, 3, str.tostring(maxHold) + "本", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 0, 4, "対応", text_color=color.white, text_size=size.tiny)
-    table.cell(tbl, 1, 4, symKnown ? (isAUD ? "除外" : "ON") : "未分類", text_color=symKnown and not isAUD ? color.lime : color.red, text_size=size.tiny)
+    table.cell(tbl, 1, 4, symOk ? "ON" : "未対応", text_color=symOk ? color.lime : color.red, text_size=size.tiny)
 
-alertcondition(sigLong, title="B7棚 Long", message="B7棚 V Shelf Breakout long on {{ticker}} {{interval}} @ {{close}}")
+alertcondition(sigLong, title="B7棚 Long", message="B7棚 V Shelf Breakout on {{ticker}} {{interval}} @ {{close}}")

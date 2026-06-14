@@ -126,13 +126,14 @@
 
 ## 🎯 結論 (TL;DR)
 
-### 採用戦略 — 4本柱
+### 採用戦略 — 5本柱
 
 | 役割 | 戦略 | Pine ファイル | 時間足 | 対象銘柄 |
 |---|---|---|---|---|
 | **主力①** | **TrendBreakV1 HYBRID** | [`pine/production/TrendBreakV1_Final.pine`](pine/production/TrendBreakV1_Final.pine) | H1 | 6通貨 |
-| **主力②** | **LH3 Synapse B** ⭐新 | [`pine/research/lower_high_synapse_b_symbol_presets_strategy_v0_1.pine`](pine/research/lower_high_synapse_b_symbol_presets_strategy_v0_1.pine) | H4 | NAS100⭐/XAUUSD/USDJPY/AUDJPY/EURJPY/GBPJPY |
-| **補助①** | **v2.3 Market Psychology** ⭐新 | [`pine/research/market_psychology_v2_3_matrix_strategy.pine`](pine/research/market_psychology_v2_3_matrix_strategy.pine) | H4 | USDJPY⭐/CHFJPY |
+| **主力②** | **LH3 Synapse B** | [`pine/research/lower_high_synapse_b_symbol_presets_strategy_v0_1.pine`](pine/research/lower_high_synapse_b_symbol_presets_strategy_v0_1.pine) | H4 | NAS100⭐/XAUUSD/USDJPY/AUDJPY/EURJPY/GBPJPY |
+| **主力③** | **B7棚 V Shelf Breakout** ⭐新 | [`pine/research/b7_shelf_breakout_strategy.pine`](pine/research/b7_shelf_breakout_strategy.pine) | H4 | GBPJPY⭐/XAGUSD⭐/EURJPY/CHFJPY |
+| **補助①** | **v2.3 Market Psychology** | [`pine/research/market_psychology_v2_3_matrix_strategy.pine`](pine/research/market_psychology_v2_3_matrix_strategy.pine) | H4 | USDJPY⭐/CHFJPY |
 | **補助②** | **H4 T5 + MACD + BB** | [`pine/production/h4_t5_macd_bb_live_ready.pine`](pine/production/h4_t5_macd_bb_live_ready.pine) | H4 | 6通貨 |
 
 ### ⭐ Synapse B スイング版 成績（2026-06-12 TradingView H4 実測・設定不要）
@@ -159,16 +160,16 @@
 
 ### 推奨運用構成（4本柱・全銘柄）
 
-| 銘柄 | TrendBreak H1 | Synapse B H4 | v2心理 H4 | T5 H4 | 手法数 |
-|---|:---:|:---:|:---:|:---:|---:|
-| **NAS100** | - | ⭐PF2.03 | - | - | 1 |
-| **USDJPY** | ✅ | ✅PF1.30 | ⭐PF1.63 | ✅ | 4 |
-| **XAUUSD** | ✅ | ✅PF1.30 | - | ✅ | 3 |
-| **AUDJPY** | - | ✅PF1.29 | ✅PF5.67 | - | 2 |
-| **EURJPY** | ✅ | ✅PF1.23 | - | ✅ | 3 |
-| **CHFJPY** | ✅ | - | ⭐PF1.44 | ✅ | 3 |
-| **GBPJPY** | ✅ | △PF1.08 | - | ✅ | 3 |
-| SILVER | ✅ | - | - | ✅ | 2 |
+| 銘柄 | TrendBreak H1 | Synapse B H4 | B7棚 H4 | v2心理 H4 | T5 H4 | 手法数 |
+|---|:---:|:---:|:---:|:---:|:---:|---:|
+| **NAS100** | - | ⭐PF2.03 | △PF1.02 | - | - | 2 |
+| **USDJPY** | ✅ | ✅PF1.30 | △PF1.05 | ⭐PF1.63 | ✅ | 5 |
+| **XAUUSD** | ✅ | ✅PF1.30 | ❌PF0.85 | - | ✅ | 3 |
+| **AUDJPY** | - | ✅PF1.29 | ❌ | ✅PF5.67 | - | 2 |
+| **EURJPY** | ✅ | ✅PF1.23 | ✅PF1.31 | - | ✅ | 4 |
+| **CHFJPY** | ✅ | - | ✅PF1.30 | ⭐PF1.44 | ✅ | 4 |
+| **GBPJPY** | ✅ | △PF1.08 | ⭐**PF1.96** | - | ✅ | 4 |
+| **XAGUSD** | ✅ | - | ⭐**PF1.67** | - | ✅ | 3 |
 
 ### 10年バックテスト成績 (6通貨, 2015-2024, コスト込み)
 

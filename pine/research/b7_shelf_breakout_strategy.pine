@@ -7,7 +7,7 @@
 //
 // 2026-06-14 TV検証（Python / tv_data）:
 //   CHFJPY  PF1.92 / 50% / 38件 ⭐
-//   XAUUSD  PF2.55 / 50% / 30件 ⭐ (精度版#13: 急落4.0/棚3/棚幅2.0/保持0.60/回復0.70/終値0.70/RR3.0)
+//   XAUUSD  PF1.54 / 46% / 35件
 //   XAGUSD  PF1.54 / 53% / 32件（銀が使える）
 //   USDJPY  PF1.27 / 47% / 58件
 //
@@ -39,6 +39,9 @@ requireH4 = input.bool(true, "H4チャートのみ売買", group=grpG)
 useDate   = input.bool(true, "2015〜2026のみ", group=grpG)
 atrLen    = input.int(14, "ATR期間", minval=1, group=grpG)
 maxHold   = input.int(60, "最大保有(本)", minval=10, group=grpG)
+
+grpX = "★ ゴールド専用モード"
+useGold = input.bool(false, "ON=ゴールド用パラメータに切替", group=grpX, tooltip="XAUUSD用。棚3本/棚幅2.0/急落4.0/保持0.6/回復0.7/終値位置0.7/RR3.0")
 
 grpV = "V Shelf 条件"
 dropLook   = input.int(24, "急落の参照窓(本)", minval=4, maxval=60, group=grpV)
@@ -72,17 +75,15 @@ bool isGBP = str.contains(sym, "GBPJPY")
 bool isNAS = str.contains(sym, "NAS100") or str.contains(sym, "NDX") or str.contains(sym, "US100") or str.contains(sym, "USTEC")
 bool symOk = isXAU or isXAG or isEUR or isUSD or isCHF or isGBP or isNAS
 
-// 銘柄別RR（2026-06-14 検証結果、XAUUSD 2026-06-15 精度向上版）
-float rr = isXAU ? 3.0 : isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0
+// 銘柄別RR（2026-06-14 検証結果）
+float rr = useGold ? 3.0 : isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0
 
-// ゴールド専用パラメータ（2026-06-15 精度向上版 #13）
-// ベース PF1.14/42件 → 精度版 PF2.55/30件/勝率50%/合計23.7R
-int   shelfN        = isXAU ? 3    : shelfBars
-float effDropAtrMin = isXAU ? 4.0  : dropAtrMin
-float effShelfAtr   = isXAU ? 2.0  : shelfAtr
-float effShelfHold  = isXAU ? 0.60 : shelfHold
-float effRecMin     = isXAU ? 0.70 : recMin
-float effMinCLoc    = isXAU ? 0.70 : minCLoc
+// ゴールド専用モードON時のパラメータ上書き（2026-06-15 精度版#13）
+float effDropAtrMin = useGold ? 4.0  : dropAtrMin
+float effShelfAtr   = useGold ? 2.0  : shelfAtr
+float effShelfHold  = useGold ? 0.60 : shelfHold
+float effRecMin     = useGold ? 0.70 : recMin
+float effMinCLoc    = useGold ? 0.70 : minCLoc
 
 // ---------------------------------------------------------------------
 // 指標
@@ -102,11 +103,12 @@ bool baseOk = h4Ok and dateOk and atrOk and symOk
 // ---------------------------------------------------------------------
 // V Shelf Breakout 検出（毎足ローリング・先読みなし）
 //
-// 考え方: 「現在の棚（直近shelfN本）の直前に急落→回復があったか」を毎足チェック。
+// 考え方: 「現在の棚（直近shelfBars本）の直前に急落→回復があったか」を毎足チェック。
 // ピボット状態遷移を使わず、ローリングウィンドウだけで完結するのでバグが出にくい。
 // ---------------------------------------------------------------------
 
-// 棚 = 直近 shelfN 本（1本前まで = [1]〜[shelfN]）
+// 棚 = 直近 shelfN 本（ゴールドモードON→3本 / OFF→入力値）
+int shelfN = useGold ? 3 : shelfBars
 float sHi = ta.highest(high, shelfN)[1]
 float sLo = ta.lowest(low, shelfN)[1]
 float sRng = atrOk ? (sHi - sLo) / atr : 999.0
@@ -117,6 +119,8 @@ bool freshBreak = not na(sHi) and close[1] <= sHi and close > sHi + breakBuf * a
 bool qualOk = bodyR >= minBody and cLoc >= effMinCLoc
 
 // 棚の前に急落→回復があったか（棚開始点のさらに前 dropLook 本を見る）
+// 急落 = その窓の最高値 - 最安値 >= dropAtrMin * ATR
+// 回復 = 棚安値が急落の一定%以上を回復している
 int preStart = shelfN + 1
 float preHi = ta.highest(high, dropLook)[preStart]
 float preLo = ta.lowest(low, dropLook)[preStart]
@@ -225,11 +229,11 @@ if barstate.islast
     table.cell(tbl, 0, 0, "Symbol", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 1, 0, sym, text_color=color.yellow, text_size=size.tiny)
     table.cell(tbl, 0, 1, "手法", text_color=color.white, text_size=size.tiny)
-    table.cell(tbl, 1, 1, isXAU ? "B7棚 GOLD" : "B7棚 v2", text_color=isXAU ? color.yellow : color.aqua, text_size=size.tiny)
+    table.cell(tbl, 1, 1, useGold ? "B7棚 GOLD" : "B7棚 v2", text_color=useGold ? color.yellow : color.aqua, text_size=size.tiny)
     table.cell(tbl, 0, 2, "RR", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 1, 2, str.tostring(rr), text_color=color.white, text_size=size.tiny)
-    table.cell(tbl, 0, 3, "急落/棚幅", text_color=color.white, text_size=size.tiny)
-    table.cell(tbl, 1, 3, str.tostring(effDropAtrMin, "#.#") + "/" + str.tostring(effShelfAtr, "#.#"), text_color=isXAU ? color.yellow : color.white, text_size=size.tiny)
+    table.cell(tbl, 0, 3, "TIME", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 3, str.tostring(maxHold) + "本", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 0, 4, "対応", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 1, 4, symOk ? "ON" : "未対応", text_color=symOk ? color.lime : color.red, text_size=size.tiny)
 

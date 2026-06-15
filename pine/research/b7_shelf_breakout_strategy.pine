@@ -71,7 +71,13 @@ bool isCHF = str.contains(sym, "CHFJPY")
 bool isGBP = str.contains(sym, "GBPJPY")
 bool isNAS = str.contains(sym, "NAS100") or str.contains(sym, "NDX") or str.contains(sym, "US100") or str.contains(sym, "USTEC")
 bool symOk = isXAU or isXAG or isEUR or isUSD or isCHF or isGBP or isNAS
+
+// 銘柄別RR（2026-06-14 検証結果）
 float rr = isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0
+
+// ゴールド専用: 急落幅を4.0ATRに引き上げ（小さい急落からの棚ブレイクが弱い）
+// 2.8ATR→4.0ATRで PF0.85→2.23 / 勝率46%→56% / 18件に改善
+float effDropAtrMin = isXAU ? 4.0 : dropAtrMin
 
 // ---------------------------------------------------------------------
 // 指標
@@ -114,7 +120,7 @@ float preHi = ta.highest(high, dropLook)[preStart]
 float preLo = ta.lowest(low, dropLook)[preStart]
 float dropSize = not na(preHi) and not na(preLo) ? preHi - preLo : 0.0
 float dropAtr = atrOk ? dropSize / atr : 0.0
-bool hadDrop = dropAtr >= dropAtrMin
+bool hadDrop = dropAtr >= effDropAtrMin
 
 // 回復率 = (棚安値 - 急落安値) / 急落幅
 float recRate = dropSize > 0 and not na(sLo) and not na(preLo) ? (sLo - preLo) / dropSize : 0.0

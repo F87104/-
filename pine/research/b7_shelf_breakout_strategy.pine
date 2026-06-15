@@ -7,7 +7,7 @@
 //
 // 2026-06-14 TV検証（Python / tv_data）:
 //   CHFJPY  PF1.92 / 50% / 38件 ⭐
-//   XAUUSD  PF1.54 / 46% / 35件
+//   XAUUSD  PF1.505 / 43% / 28件 ⭐ (ゴールド専用: 急落4.0/棚3/棚幅2.0)
 //   XAGUSD  PF1.54 / 53% / 32件（銀が使える）
 //   USDJPY  PF1.27 / 47% / 58件
 //
@@ -41,7 +41,7 @@ atrLen    = input.int(14, "ATR期間", minval=1, group=grpG)
 maxHold   = input.int(60, "最大保有(本)", minval=10, group=grpG)
 
 grpX = "★ ゴールド専用モード"
-useGold = input.bool(false, "ON=ゴールド用パラメータに切替", group=grpX, tooltip="XAUUSD用。棚3本/棚幅2.0/急落4.0/保持0.6/回復0.7/終値位置0.7/RR3.0")
+useGold = input.bool(false, "ON=ゴールド用パラメータに切替", group=grpX, tooltip="XAUUSD用。棚3本/棚幅2.0/急落4.0/RR2.0 → PF1.505/28件/勝率43%/DD3.8%")
 
 grpV = "V Shelf 条件"
 dropLook   = input.int(24, "急落の参照窓(本)", minval=4, maxval=60, group=grpV)
@@ -76,14 +76,15 @@ bool isNAS = str.contains(sym, "NAS100") or str.contains(sym, "NDX") or str.cont
 bool symOk = isXAU or isXAG or isEUR or isUSD or isCHF or isGBP or isNAS
 
 // 銘柄別RR（2026-06-14 検証結果）
-float rr = useGold ? 3.0 : isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0
+float rr = isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0
 
-// ゴールド専用モードON時のパラメータ上書き（2026-06-15 精度版#13）
-float effDropAtrMin = useGold ? 4.0  : dropAtrMin
-float effShelfAtr   = useGold ? 2.0  : shelfAtr
-float effShelfHold  = useGold ? 0.60 : shelfHold
-float effRecMin     = useGold ? 0.70 : recMin
-float effMinCLoc    = useGold ? 0.70 : minCLoc
+// ゴールド専用モードON時のパラメータ上書き
+// 2026-06-15 TV実測: PF1.505 / 28件 / 勝率42.86% / DD3.77%
+float effDropAtrMin = useGold ? 4.0 : dropAtrMin
+float effShelfAtr   = useGold ? 2.0 : shelfAtr
+float effShelfHold  = shelfHold
+float effRecMin     = recMin
+float effMinCLoc    = minCLoc
 
 // ---------------------------------------------------------------------
 // 指標

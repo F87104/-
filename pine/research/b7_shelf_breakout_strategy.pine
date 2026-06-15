@@ -7,7 +7,7 @@
 //
 // 2026-06-14 TV検証（Python / tv_data）:
 //   CHFJPY  PF1.92 / 50% / 38件 ⭐
-//   XAUUSD  PF2.23 / 56% / 18件 ⭐ (急落4.0/棚幅2.0/棚3本)
+//   XAUUSD  PF2.55 / 50% / 30件 ⭐ (精度版#13: 急落4.0/棚3/棚幅2.0/保持0.60/回復0.70/終値0.70/RR3.0)
 //   XAGUSD  PF1.54 / 53% / 32件（銀が使える）
 //   USDJPY  PF1.27 / 47% / 58件
 //
@@ -72,17 +72,19 @@ bool isGBP = str.contains(sym, "GBPJPY")
 bool isNAS = str.contains(sym, "NAS100") or str.contains(sym, "NDX") or str.contains(sym, "US100") or str.contains(sym, "USTEC")
 bool symOk = isXAU or isXAG or isEUR or isUSD or isCHF or isGBP or isNAS
 
-// 銘柄別RR（2026-06-14 検証結果）
-float rr = isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0
+// 銘柄別RR（2026-06-14 検証結果、XAUUSD 2026-06-15 精度向上版）
+float rr = isXAU ? 3.0 : isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0
 
-// ゴールド専用パラメータ（2026-06-15 最終検証）
-// デフォルト(2.8/1.8/7) PF0.85 → 最適(4.0/2.0/3) PF2.23+
-// 急落4.0ATR: 小さい急落を除外し高品質シグナルのみ
-// 棚幅2.0ATR: 棚許容を少し広げて有効パターンを拾う
-// 棚3本:   短い棚で素早いブレイクを捉える
-float effDropAtrMin = isXAU ? 4.0 : dropAtrMin
-float effShelfAtr   = isXAU ? 2.0 : shelfAtr
-int   effShelfBars  = isXAU ? 3   : shelfBars
+// ゴールド専用パラメータ（2026-06-15 精度向上版 #13）
+// ベース PF1.14/42件 → 精度版 PF2.55/30件/勝率50%/合計23.7R
+// 急落4.0ATR + 棚3本 + 棚幅2.0ATR（構造フィルタ）
+// 保持0.60 + 回復0.70 + 終値0.70 + RR3.0（精度フィルタ）
+float effDropAtrMin = isXAU ? 4.0  : dropAtrMin
+float effShelfAtr   = isXAU ? 2.0  : shelfAtr
+int   effShelfBars  = isXAU ? 3    : shelfBars
+float effShelfHold  = isXAU ? 0.60 : shelfHold
+float effRecMin     = isXAU ? 0.70 : recMin
+float effMinCLoc    = isXAU ? 0.70 : minCLoc
 
 // ---------------------------------------------------------------------
 // 指標
@@ -114,7 +116,7 @@ bool shelfNarrow = sRng <= effShelfAtr
 
 // ブレイク = 前足≤棚高値 & 今足>棚高値+バッファ
 bool freshBreak = not na(sHi) and close[1] <= sHi and close > sHi + breakBuf * atr
-bool qualOk = bodyR >= minBody and cLoc >= minCLoc
+bool qualOk = bodyR >= minBody and cLoc >= effMinCLoc
 
 // 棚の前に急落→回復があったか（棚開始点のさらに前 dropLook 本を見る）
 // 急落 = その窓の最高値 - 最安値 >= dropAtrMin * ATR
@@ -129,10 +131,10 @@ bool hadDrop = dropAtr >= effDropAtrMin
 
 // 回復率 = (棚安値 - 急落安値) / 急落幅
 float recRate = dropSize > 0 and not na(sLo) and not na(preLo) ? (sLo - preLo) / dropSize : 0.0
-bool recOk = recRate >= recMin and recRate <= recMax
+bool recOk = recRate >= effRecMin and recRate <= recMax
 
 // 棚安値保持 = 棚安値が急落の holdLine 以上
-float holdLine = not na(preLo) ? preLo + dropSize * shelfHold : na
+float holdLine = not na(preLo) ? preLo + dropSize * effShelfHold : na
 bool holdOk = not na(holdLine) and not na(sLo) and sLo >= holdLine
 
 // SL / リスク

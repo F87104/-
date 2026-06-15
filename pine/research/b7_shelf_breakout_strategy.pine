@@ -62,8 +62,9 @@ showV1Style = input.bool(true, "Entry/SL/TP線＋損益R", group=grpVz)
 // 銘柄判定・RR自動
 // ---------------------------------------------------------------------
 string sym = syminfo.ticker
-bool isXAU = str.contains(sym, "XAUUSD") or str.contains(sym, "GOLD")
-bool isXAG = str.contains(sym, "XAGUSD") or str.contains(sym, "SILVER")
+string base = syminfo.basecurrency
+bool isXAU = str.contains(sym, "XAUUSD") or str.contains(sym, "GOLD") or base == "XAU"
+bool isXAG = str.contains(sym, "XAGUSD") or str.contains(sym, "SILVER") or base == "XAG"
 bool isEUR = str.contains(sym, "EURJPY")
 bool isAUD = str.contains(sym, "AUDJPY")
 bool isUSD = str.contains(sym, "USDJPY")
@@ -225,17 +226,21 @@ if showV1Style and justExited and not na(tEntryBar) and not na(tEntry)
 
 plotshape(sigLong, title="B7 Signal", style=shape.triangleup, location=location.belowbar, color=color.new(color.aqua, 0), size=size.small)
 
-var table tbl = table.new(position.top_right, 2, 5, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
+var table tbl = table.new(position.top_left, 2, 7, bgcolor=color.new(color.black, 70), border_color=color.gray, border_width=1)
 if barstate.islast
-    table.cell(tbl, 0, 0, "Symbol", text_color=color.white, text_size=size.tiny)
-    table.cell(tbl, 1, 0, sym, text_color=color.yellow, text_size=size.tiny)
-    table.cell(tbl, 0, 1, "手法", text_color=color.white, text_size=size.tiny)
-    table.cell(tbl, 1, 1, "B7棚 v2", text_color=color.aqua, text_size=size.tiny)
-    table.cell(tbl, 0, 2, "RR", text_color=color.white, text_size=size.tiny)
-    table.cell(tbl, 1, 2, str.tostring(rr), text_color=color.white, text_size=size.tiny)
-    table.cell(tbl, 0, 3, "急落/棚幅/棚数", text_color=color.white, text_size=size.tiny)
-    table.cell(tbl, 1, 3, str.tostring(effDropAtrMin, "#.#") + "/" + str.tostring(effShelfAtr, "#.#") + "/" + str.tostring(effShelfBars), text_color=isXAU ? color.yellow : color.white, text_size=size.tiny)
-    table.cell(tbl, 0, 4, "対応", text_color=color.white, text_size=size.tiny)
-    table.cell(tbl, 1, 4, symOk ? "ON" : "未対応", text_color=symOk ? color.lime : color.red, text_size=size.tiny)
+    table.cell(tbl, 0, 0, "Symbol", text_color=color.white, text_size=size.small)
+    table.cell(tbl, 1, 0, sym + " [" + base + "]", text_color=color.yellow, text_size=size.small)
+    table.cell(tbl, 0, 1, "判定", text_color=color.white, text_size=size.small)
+    table.cell(tbl, 1, 1, isXAU ? "GOLD専用" : symOk ? "ON" : "未対応", text_color=isXAU ? color.yellow : symOk ? color.lime : color.red, text_size=size.small)
+    table.cell(tbl, 0, 2, "RR", text_color=color.white, text_size=size.small)
+    table.cell(tbl, 1, 2, str.tostring(rr), text_color=color.white, text_size=size.small)
+    table.cell(tbl, 0, 3, "急落ATR", text_color=color.white, text_size=size.small)
+    table.cell(tbl, 1, 3, str.tostring(effDropAtrMin, "#.#"), text_color=isXAU ? color.yellow : color.white, text_size=size.small)
+    table.cell(tbl, 0, 4, "棚幅ATR", text_color=color.white, text_size=size.small)
+    table.cell(tbl, 1, 4, str.tostring(effShelfAtr, "#.#"), text_color=isXAU ? color.yellow : color.white, text_size=size.small)
+    table.cell(tbl, 0, 5, "棚本数", text_color=color.white, text_size=size.small)
+    table.cell(tbl, 1, 5, str.tostring(effShelfBars), text_color=isXAU ? color.yellow : color.white, text_size=size.small)
+    table.cell(tbl, 0, 6, "保持/回復/終値", text_color=color.white, text_size=size.small)
+    table.cell(tbl, 1, 6, str.tostring(effShelfHold, "#.##") + "/" + str.tostring(effRecMin, "#.##") + "/" + str.tostring(effMinCLoc, "#.##"), text_color=isXAU ? color.yellow : color.white, text_size=size.small)
 
 alertcondition(sigLong, title="B7棚 Long", message="B7棚 V Shelf Breakout on {{ticker}} {{interval}} @ {{close}}")

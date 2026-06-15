@@ -7,7 +7,7 @@
 //
 // 2026-06-14 TV検証（Python / tv_data）:
 //   CHFJPY  PF1.92 / 50% / 38件 ⭐
-//   XAUUSD  PF1.54 / 46% / 35件
+//   XAUUSD  PF2.23 / 56% / 18件 ⭐ (急落4.0/棚幅2.0/棚3本)
 //   XAGUSD  PF1.54 / 53% / 32件（銀が使える）
 //   USDJPY  PF1.27 / 47% / 58件
 //
@@ -75,9 +75,14 @@ bool symOk = isXAU or isXAG or isEUR or isUSD or isCHF or isGBP or isNAS
 // 銘柄別RR（2026-06-14 検証結果）
 float rr = isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0
 
-// ゴールド専用: 急落幅を4.0ATRに引き上げ（小さい急落からの棚ブレイクが弱い）
-// 2.8ATR→4.0ATRで PF0.85→2.23 / 勝率46%→56% / 18件に改善
+// ゴールド専用パラメータ（2026-06-15 最終検証）
+// デフォルト(2.8/1.8/7) PF0.85 → 最適(4.0/2.0/3) PF2.23+
+// 急落4.0ATR: 小さい急落を除外し高品質シグナルのみ
+// 棚幅2.0ATR: 棚許容を少し広げて有効パターンを拾う
+// 棚3本:   短い棚で素早いブレイクを捉える
 float effDropAtrMin = isXAU ? 4.0 : dropAtrMin
+float effShelfAtr   = isXAU ? 2.0 : shelfAtr
+int   effShelfBars  = isXAU ? 3   : shelfBars
 
 // ---------------------------------------------------------------------
 // 指標
@@ -101,11 +106,11 @@ bool baseOk = h4Ok and dateOk and atrOk and symOk
 // ピボット状態遷移を使わず、ローリングウィンドウだけで完結するのでバグが出にくい。
 // ---------------------------------------------------------------------
 
-// 棚 = 直近 shelfBars 本（1本前まで = [1]〜[shelfBars]）
-float sHi = ta.highest(high, shelfBars)[1]
-float sLo = ta.lowest(low, shelfBars)[1]
+// 棚 = 直近 effShelfBars 本（1本前まで = [1]〜[effShelfBars]）
+float sHi = ta.highest(high, effShelfBars)[1]
+float sLo = ta.lowest(low, effShelfBars)[1]
 float sRng = atrOk ? (sHi - sLo) / atr : 999.0
-bool shelfNarrow = sRng <= shelfAtr
+bool shelfNarrow = sRng <= effShelfAtr
 
 // ブレイク = 前足≤棚高値 & 今足>棚高値+バッファ
 bool freshBreak = not na(sHi) and close[1] <= sHi and close > sHi + breakBuf * atr
@@ -114,8 +119,8 @@ bool qualOk = bodyR >= minBody and cLoc >= minCLoc
 // 棚の前に急落→回復があったか（棚開始点のさらに前 dropLook 本を見る）
 // 急落 = その窓の最高値 - 最安値 >= dropAtrMin * ATR
 // 回復 = 棚安値が急落の一定%以上を回復している
-int preStart = shelfBars + 1
-int preEnd = shelfBars + dropLook
+int preStart = effShelfBars + 1
+int preEnd = effShelfBars + dropLook
 float preHi = ta.highest(high, dropLook)[preStart]
 float preLo = ta.lowest(low, dropLook)[preStart]
 float dropSize = not na(preHi) and not na(preLo) ? preHi - preLo : 0.0
@@ -226,8 +231,8 @@ if barstate.islast
     table.cell(tbl, 1, 1, "B7棚 v2", text_color=color.aqua, text_size=size.tiny)
     table.cell(tbl, 0, 2, "RR", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 1, 2, str.tostring(rr), text_color=color.white, text_size=size.tiny)
-    table.cell(tbl, 0, 3, "TIME", text_color=color.white, text_size=size.tiny)
-    table.cell(tbl, 1, 3, str.tostring(maxHold) + "本", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 0, 3, "急落/棚幅/棚数", text_color=color.white, text_size=size.tiny)
+    table.cell(tbl, 1, 3, str.tostring(effDropAtrMin, "#.#") + "/" + str.tostring(effShelfAtr, "#.#") + "/" + str.tostring(effShelfBars), text_color=isXAU ? color.yellow : color.white, text_size=size.tiny)
     table.cell(tbl, 0, 4, "対応", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 1, 4, symOk ? "ON" : "未対応", text_color=symOk ? color.lime : color.red, text_size=size.tiny)
 

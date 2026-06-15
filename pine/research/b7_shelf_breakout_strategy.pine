@@ -77,13 +77,6 @@ float rr = isXAU ? 3.0 : isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0
 
 // ゴールド専用パラメータ（2026-06-15 精度向上版 #13）
 // ベース PF1.14/42件 → 精度版 PF2.55/30件/勝率50%/合計23.7R
-// 急落4.0ATR + 棚3本 + 棚幅2.0ATR（構造フィルタ）
-// 保持0.60 + 回復0.70 + 終値0.70 + RR3.0（精度フィルタ）
-//
-// 重要: isXAU は syminfo.ticker（simple string）由来なので simple bool。
-//   したがって isXAU ? 3 : shelfBars は simple int にとどまり series へ昇格しない。
-//   さらに ta.highest / ta.lowest の length は series int も受け付けるため、
-//   この三項演算子をそのまま length・[] オフセットに渡してよい。
 int   shelfN        = isXAU ? 3    : shelfBars
 float effDropAtrMin = isXAU ? 4.0  : dropAtrMin
 float effShelfAtr   = isXAU ? 2.0  : shelfAtr
@@ -109,13 +102,13 @@ bool baseOk = h4Ok and dateOk and atrOk and symOk
 // ---------------------------------------------------------------------
 // V Shelf Breakout 検出（毎足ローリング・先読みなし）
 //
-// shelfN は simple int なので length にそのまま渡せる（旧型と同じ構造）。
+// 考え方: 「現在の棚（直近shelfN本）の直前に急落→回復があったか」を毎足チェック。
+// ピボット状態遷移を使わず、ローリングウィンドウだけで完結するのでバグが出にくい。
 // ---------------------------------------------------------------------
 
 // 棚 = 直近 shelfN 本（1本前まで = [1]〜[shelfN]）
 float sHi = ta.highest(high, shelfN)[1]
 float sLo = ta.lowest(low, shelfN)[1]
-
 float sRng = atrOk ? (sHi - sLo) / atr : 999.0
 bool shelfNarrow = sRng <= effShelfAtr
 
@@ -124,13 +117,9 @@ bool freshBreak = not na(sHi) and close[1] <= sHi and close > sHi + breakBuf * a
 bool qualOk = bodyR >= minBody and cLoc >= effMinCLoc
 
 // 棚の前に急落→回復があったか（棚開始点のさらに前 dropLook 本を見る）
-// 急落 = その窓の最高値 - 最安値 >= effDropAtrMin * ATR
-// 回復 = 棚安値が急落の一定%以上を回復している
-// 棚開始の1本前から数えるので offset = shelfN + 1（simple int → safe）
 int preStart = shelfN + 1
 float preHi = ta.highest(high, dropLook)[preStart]
 float preLo = ta.lowest(low, dropLook)[preStart]
-
 float dropSize = not na(preHi) and not na(preLo) ? preHi - preLo : 0.0
 float dropAtr = atrOk ? dropSize / atr : 0.0
 bool hadDrop = dropAtr >= effDropAtrMin

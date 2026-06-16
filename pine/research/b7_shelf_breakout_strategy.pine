@@ -41,7 +41,8 @@ grpG = "共通"
 requireH4 = input.bool(true, "H4チャートのみ売買", group=grpG)
 useDate   = input.bool(true, "2015〜2026のみ", group=grpG)
 atrLen    = input.int(14, "ATR期間", minval=1, group=grpG)
-maxHold   = input.int(60, "最大保有(本)", minval=10, group=grpG)
+useTimeout = input.bool(true, "タイムアウト有効", group=grpG)
+maxHold    = input.int(60, "最大保有(本)", minval=10, group=grpG)
 
 grpX = "★ 銘柄プリセット"
 preset = input.string("OFF", "プリセット選択", options=["OFF", "USDJPY", "EURJPY", "GBPJPY", "CHFJPY", "XAGUSD", "NAS100", "XAUUSD"], group=grpX, tooltip="ONで銘柄別最適パラメータを自動適用。OFFなら下の手動設定を使用。")
@@ -199,7 +200,7 @@ if strategy.position_size > 0 and not na(activeStop)
         strategy.exit("X", from_entry="B7", stop=activeStop, limit=activeTarget)
     else
         strategy.close("B7", comment="bad_fill")
-    if barsHeld >= effMaxHold
+    if useTimeout and barsHeld >= effMaxHold
         strategy.close("B7", comment="timeout")
 
 if strategy.position_size == 0

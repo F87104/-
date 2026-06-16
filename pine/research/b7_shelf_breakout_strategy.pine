@@ -10,7 +10,7 @@
 //   XAGUSD  PF3.00 / 68% / 19件 ⭐ RR1.5/TIME80/SL0.15
 //   GBPJPY  PF1.78 / 62% / 34件 ⭐ RR2.0/TIME15/SL0.50
 //   NAS100  PF1.83 / 45% / 29件   RR2.5/TIME60/SL0.25
-//   XAUUSD  PF1.75 / 42% / 33件   RR3.0/TIME80/SL0.50
+//   XAUUSD  PF2.23 / 48% / 23件   RR3.0/TIME80/SL0.50 + EMA20>EMA50トレンドフィルタ
 //   EURJPY  PF1.44 / 52% / 88件   RR2.0/TIME15/SL0.25
 //   USDJPY  PF1.17 / 38% / 64件   RR2.0/TIME60/SL0.15
 //
@@ -111,6 +111,8 @@ float effMinCLoc    = minCLoc
 // 指標
 // ---------------------------------------------------------------------
 atr = ta.atr(atrLen)
+float ema20 = ta.ema(close, 20)
+float ema50 = ta.ema(close, 50)
 rng = high - low
 rngOk = rng > 0
 float bodyR = rngOk ? math.abs(close - open) / rng : 0.0
@@ -165,8 +167,11 @@ float risk = stopValid ? close - stop : 0.0
 float riskA = atrOk and risk > 0 ? risk / atr : 999.0
 bool riskOk = riskA <= maxRiskAtr and risk > 0
 
+// トレンドフィルタ（ゴールドプリセット時: EMA20>EMA50でレンジ除外 → PF1.75→2.23）
+bool trendOk = pXAU ? ema20 > ema50 : true
+
 // 全条件
-bool sigLong = baseOk and strategy.position_size == 0 and shelfNarrow and freshBreak and qualOk and hadDrop and recOk and holdOk and stopValid and riskOk
+bool sigLong = baseOk and strategy.position_size == 0 and shelfNarrow and freshBreak and qualOk and hadDrop and recOk and holdOk and stopValid and riskOk and trendOk
 
 float sigStop = sigLong ? stop : na
 float sigTarget = sigLong ? close + risk * rr : na
@@ -260,6 +265,9 @@ if showV1Style and justExited and not na(tEntryBar) and not na(tEntry)
     label.new(bar_index, exitP, rTxt, xloc=xloc.bar_index, style=label.style_label_left, color=color.new(wc, 0), textcolor=win ? color.black : color.white, size=size.small)
 
 plotshape(sigLong, title="B7 Signal", style=shape.triangleup, location=location.belowbar, color=color.new(color.aqua, 0), size=size.small)
+
+plot(pXAU ? ema20 : na, title="EMA20", color=color.new(color.orange, 30), linewidth=1)
+plot(pXAU ? ema50 : na, title="EMA50", color=color.new(color.blue, 30), linewidth=1)
 
 var table tbl = table.new(position.top_right, 2, 5, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
 if barstate.islast

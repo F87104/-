@@ -45,7 +45,7 @@ useTimeout = input.bool(true, "タイムアウト有効", group=grpG)
 maxHold    = input.int(60, "最大保有(本)", minval=10, group=grpG)
 
 grpX = "★ 銘柄プリセット"
-preset = input.string("OFF", "プリセット選択", options=["OFF", "USDJPY", "EURJPY", "GBPJPY", "CHFJPY", "XAGUSD", "NAS100", "XAUUSD"], group=grpX, tooltip="ONで銘柄別最適パラメータを自動適用。OFFなら下の手動設定を使用。")
+preset = input.string("OFF", "プリセット選択", options=["OFF", "USDJPY", "EURJPY", "GBPJPY", "CHFJPY", "XAGUSD", "NAS100", "XAUUSD"], group=grpX, tooltip="RR/急落/棚幅/SL/TIMEを自動適用。棚本数は手動設定: XAUUSD→3, EURJPY/USDJPY→5, 他→7")
 
 grpV = "V Shelf 条件"
 dropLook   = input.int(24, "急落の参照窓(本)", minval=4, maxval=60, group=grpV)
@@ -131,10 +131,10 @@ bool baseOk = h4Ok and dateOk and atrOk and symOk
 // ピボット状態遷移を使わず、ローリングウィンドウだけで完結するのでバグが出にくい。
 // ---------------------------------------------------------------------
 
-// 棚 = 直近 shelfN 本（プリセットで上書き、OFF→入力値）
-int shelfN = pXAU ? 3 : (pEUR or pUSD) ? 5 : shelfBars
-float sHi = ta.highest(high, shelfN)[1]
-float sLo = ta.lowest(low, shelfN)[1]
+// 棚 = 直近 shelfBars 本（入力値をそのまま使用）
+// ※棚本数はプリセットで変更せず手動設定: XAUUSD→3, EURJPY/USDJPY→5, 他→7
+float sHi = ta.highest(high, shelfBars)[1]
+float sLo = ta.lowest(low, shelfBars)[1]
 float sRng = atrOk ? (sHi - sLo) / atr : 999.0
 bool shelfNarrow = sRng <= effShelfAtr
 
@@ -145,7 +145,7 @@ bool qualOk = bodyR >= minBody and cLoc >= effMinCLoc
 // 棚の前に急落→回復があったか（棚開始点のさらに前 dropLook 本を見る）
 // 急落 = その窓の最高値 - 最安値 >= dropAtrMin * ATR
 // 回復 = 棚安値が急落の一定%以上を回復している
-int preStart = shelfN + 1
+int preStart = shelfBars + 1
 float preHi = ta.highest(high, dropLook)[preStart]
 float preLo = ta.lowest(low, dropLook)[preStart]
 float dropSize = not na(preHi) and not na(preLo) ? preHi - preLo : 0.0

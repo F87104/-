@@ -136,6 +136,64 @@
 | **補助①** | **v2.3 Market Psychology** | [`pine/research/market_psychology_v2_3_matrix_strategy.pine`](pine/research/market_psychology_v2_3_matrix_strategy.pine) | H4 | USDJPY⭐/CHFJPY |
 | **補助②** | **H4 T5 + MACD + BB** | [`pine/production/h4_t5_macd_bb_live_ready.pine`](pine/production/h4_t5_macd_bb_live_ready.pine) | H4 | 6通貨 |
 
+### ⭐ LH3 Synapse B 研究経緯（2026-06-11〜13）
+
+波動の「Lower High 3（切り下げ3回目）」の反転をA/B線とダイアゴナルブレイクで捉える手法。研究の流れ:
+
+```
+[着想] 波動2の終わりで波動3の初動を狙う = 「3回下げ止まった」確認後のエントリー
+  ↓
+[Python検証] tv_data/のH4データで8銘柄×複数構造(ihs/role/role_ab等)バックテスト
+  → NAS100 PF2.21⭐ / XAGUSD PF2.19 / USDJPY PF1.27
+  → CHFJPY PF0.47で除外 / XAGUSD 0件(構造依存)
+  ↓
+[精度フィルタ検証] ADX・adjust_ratio・body_ratioをオーバーレイテスト
+  → Balanced/Precisionモードの有効性を確認
+  → XAGUSDは role_ab_5pivot + Precision で復活(PF2.19)
+  ↓
+[Pine作成] synapse_h4_verified_strategy.pine — 銘柄別自動プリセット
+  ↓
+[バグ①] ポジションサイジング暴走 — 自作qty計算でロットが際限なく増加
+  → 原因: equity×risk% / dist の計算がJPY通貨で異常値に
+  → 修正: strategy.percent_of_equity(100) に統一
+  ↓
+[バグ②] ポジション持ちっぱなし — ゴールド8年/ポンド5年保有等
+  → 原因: strategy.exit が risk0 > 0 の条件内にあり、
+    bad fillでrisk0 ≤ 0の時にSL/TPもtimeoutも発動しない
+  → 修正: 「保留→確定ラッチ」システムを導入
+    pendStop/activeStop 2段構成でfill時に確定、
+    risk0 ≤ 0 は即close("bad_fill")、
+    timeoutはrisk0ガード外で常時チェック
+  ↓
+[RR最適化] 全銘柄でRR 1.5〜4.0をTV実測
+  → 「早く取る型」(NAS100/USDJPY/AUDJPY/GBPJPY → RR2.0)
+  → 「伸ばす型」(EURJPY/XAUUSD → RR3.0)
+  → RR3.0が天井。4.0はほぼ同じ
+  ↓
+[フィルタ最適化] NO ENTRYフィルタのON/OFF をTV実測
+  → XAUUSD: ON(PF2.98) / NAS100: OFF(PF2.21) / 他: OFF
+  ↓
+[V1スタイル可視化] Entry/SL/TP線 + IN/OUTラベル + R倍率表示
+  ↓
+[現在] 6銘柄対応・設定不要・全自動プリセット完成
+```
+
+**最終成績（TradingView H4 実測・設定不要）:**
+
+| 銘柄 | PF | 勝率 | 件数 | RR | フィルタ |
+|---|---:|---:|---:|---:|---|
+| **NAS100** | **2.03** | 67% | 21 | 2.0 | OFF |
+| **XAUUSD** | **1.30** | 46% | 41 | 3.0 | ON |
+| **USDJPY** | **1.30** | 45% | 40 | 2.0 | OFF |
+| **AUDJPY** | **1.29** | 51% | 45 | 2.0 | OFF |
+| **EURJPY** | **1.23** | 53% | 34 | 3.0 | OFF |
+| GBPJPY | 1.08 | 45% | 42 | 2.0 | OFF |
+
+> Pine: [`pine/research/lower_high_synapse_b_symbol_presets_strategy_v0_1.pine`](pine/research/lower_high_synapse_b_symbol_presets_strategy_v0_1.pine)
+> 検証詳細: [`docs/research/2大研究_最終結果_2026-06-12.md`](docs/research/2大研究_最終結果_2026-06-12.md)
+> 手法定義: [`docs/research/Synapse手法定義_v0_1.md`](docs/research/Synapse手法定義_v0_1.md)
+> 精度フィルタ: [`docs/research/Synapse_精度向上フィルタ_2026-06-11.md`](docs/research/Synapse_精度向上フィルタ_2026-06-11.md)
+
 ### ⭐ B7棚 V Shelf Breakout 研究経緯（2026-06-14〜16）
 
 急落後のV字回復 → 棚形成 → 棚高値ブレイクを狙う手法。研究の流れ:

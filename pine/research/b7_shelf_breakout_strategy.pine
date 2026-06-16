@@ -205,19 +205,22 @@ if strategy.position_size == 0
     entryBar := na
 
 // ---------------------------------------------------------------------
-// 表示
+// 表示（TrendBreakV1スタイル: Entry黄 / SL赤 / TP緑）
 // ---------------------------------------------------------------------
 plotshape(showInOut and justEntered, title="IN", style=shape.labelup,
-     location=location.belowbar, color=color.new(color.lime, 0), text="IN", textcolor=color.black, size=size.normal)
+     location=location.belowbar, color=color.new(color.yellow, 0), text="Long", textcolor=color.black, size=size.small)
 plotshape(showInOut and justExited, title="OUT", style=shape.labeldown,
-     location=location.abovebar, color=color.new(color.fuchsia, 0), text="OUT", textcolor=color.white, size=size.normal)
-bgcolor(showInOut and strategy.position_size > 0 ? color.new(color.lime, 92) : na, title="保有中背景")
+     location=location.abovebar, color=color.new(color.fuchsia, 0), text="Exit", textcolor=color.white, size=size.small)
 
 var float tEntry = na
 var float tStop = na
 var float tTarget = na
 var int tEntryBar = na
 var float tRisk = na
+var line lnEntry = na
+var line lnStop = na
+var line lnTarget = na
+var label lbEntry = na
 
 if justEntered
     tEntry := strategy.position_avg_price
@@ -225,6 +228,20 @@ if justEntered
     tTarget := activeTarget
     tEntryBar := bar_index
     tRisk := not na(activeStop) ? tEntry - activeStop : na
+    if showV1Style
+        lnEntry := line.new(bar_index, tEntry, bar_index + 1, tEntry, xloc=xloc.bar_index, color=color.yellow, width=2)
+        if not na(tStop)
+            lnStop := line.new(bar_index, tStop, bar_index + 1, tStop, xloc=xloc.bar_index, color=color.red, width=2, style=line.style_solid)
+        if not na(tTarget)
+            lnTarget := line.new(bar_index, tTarget, bar_index + 1, tTarget, xloc=xloc.bar_index, color=color.lime, width=2, style=line.style_solid)
+
+if showV1Style and strategy.position_size > 0 and not na(tEntryBar)
+    if not na(lnEntry)
+        line.set_x2(lnEntry, bar_index)
+    if not na(lnStop)
+        line.set_x2(lnStop, bar_index)
+    if not na(lnTarget)
+        line.set_x2(lnTarget, bar_index)
 
 if showV1Style and justExited and not na(tEntryBar) and not na(tEntry)
     int ci = strategy.closedtrades - 1
@@ -232,13 +249,8 @@ if showV1Style and justExited and not na(tEntryBar) and not na(tEntry)
     float rMult = (not na(tRisk) and tRisk > 0) ? (exitP - tEntry) / tRisk : na
     bool win = not na(rMult) and rMult > 0
     color wc = win ? color.lime : color.red
-    line.new(tEntryBar, tEntry, bar_index, tEntry, xloc=xloc.bar_index, color=color.new(color.white, 0), width=2)
-    if not na(tStop)
-        line.new(tEntryBar, tStop, bar_index, tStop, xloc=xloc.bar_index, color=color.new(color.red, 30), style=line.style_dashed, width=1)
-    if not na(tTarget)
-        line.new(tEntryBar, tTarget, bar_index, tTarget, xloc=xloc.bar_index, color=color.new(color.lime, 30), style=line.style_dashed, width=1)
-    label.new(tEntryBar, tEntry, "B7棚", xloc=xloc.bar_index, style=label.style_label_right, color=color.new(color.gray, 10), textcolor=color.white, size=size.small)
-    label.new(bar_index, exitP, "Exit " + (rMult >= 0 ? "+" : "") + str.tostring(rMult, "#.#") + "R", xloc=xloc.bar_index, style=label.style_label_left, color=color.new(wc, 0), textcolor=win ? color.black : color.white, size=size.small)
+    string rTxt = not na(rMult) ? ((rMult >= 0 ? "+" : "") + str.tostring(rMult, "#.#") + "R") : ""
+    label.new(bar_index, exitP, rTxt, xloc=xloc.bar_index, style=label.style_label_left, color=color.new(wc, 0), textcolor=win ? color.black : color.white, size=size.small)
 
 plotshape(sigLong, title="B7 Signal", style=shape.triangleup, location=location.belowbar, color=color.new(color.aqua, 0), size=size.small)
 

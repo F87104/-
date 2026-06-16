@@ -230,10 +230,13 @@ if justEntered
     tRisk := not na(activeStop) ? tEntry - activeStop : na
     if showV1Style
         lnEntry := line.new(bar_index, tEntry, bar_index + 1, tEntry, xloc=xloc.bar_index, color=color.yellow, width=2)
+        label.new(bar_index, tEntry, "Entry " + str.tostring(tEntry, format.mintick), xloc=xloc.bar_index, style=label.style_label_right, color=color.new(color.yellow, 20), textcolor=color.black, size=size.small)
         if not na(tStop)
             lnStop := line.new(bar_index, tStop, bar_index + 1, tStop, xloc=xloc.bar_index, color=color.red, width=2, style=line.style_solid)
+            label.new(bar_index, tStop, "SL " + str.tostring(tStop, format.mintick), xloc=xloc.bar_index, style=label.style_label_right, color=color.new(color.red, 20), textcolor=color.white, size=size.small)
         if not na(tTarget)
             lnTarget := line.new(bar_index, tTarget, bar_index + 1, tTarget, xloc=xloc.bar_index, color=color.lime, width=2, style=line.style_solid)
+            label.new(bar_index, tTarget, "TP " + str.tostring(tTarget, format.mintick), xloc=xloc.bar_index, style=label.style_label_right, color=color.new(color.lime, 20), textcolor=color.black, size=size.small)
 
 if showV1Style and strategy.position_size > 0 and not na(tEntryBar)
     if not na(lnEntry)
@@ -267,4 +270,7 @@ if barstate.islast
     table.cell(tbl, 0, 4, "対応", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 1, 4, symOk ? "ON" : "未対応", text_color=symOk ? color.lime : color.red, text_size=size.tiny)
 
-alertcondition(sigLong, title="B7棚 Long", message="B7棚 V Shelf Breakout on {{ticker}} {{interval}} @ {{close}}")
+alertcondition(sigLong, title="B7棚 Long", message="B7棚 Long {{ticker}} {{interval}}\nEntry: {{close}}\nSL: {{plot(\"SL Price\")}}\nTP: {{plot(\"TP Price\")}}")
+
+plot(sigLong ? sigStop : na, title="SL Price", display=display.status_line + display.data_window)
+plot(sigLong ? sigTarget : na, title="TP Price", display=display.status_line + display.data_window)

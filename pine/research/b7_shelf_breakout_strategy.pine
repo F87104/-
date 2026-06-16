@@ -10,7 +10,7 @@
 //   XAGUSD  PF2.33  / 63% / 16件 ⭐ 急落3.5/RR1.5
 //   CHFJPY  PF1.96  / 45% / 31件 ⭐ 棚幅2.5/RR2.5
 //   NAS100  PF1.83  / 45% / 29件   棚幅1.5/RR2.5
-//   USDJPY  PF1.60  / 46% / 41件   急落3.5
+//   USDJPY  PF2.095 / 50% / 14件   棚5/急落3.5 TV実測(OANDA)
 //   EURJPY  PF1.42  / 41% / 86件   棚5/棚幅2.0/急落3.0/RR2.5
 //   GBPJPY  PF1.33  / 36% / 31件   棚幅1.5/急落3.5/RR2.5
 //
@@ -79,7 +79,7 @@ bool isNAS = str.contains(sym, "NAS100") or str.contains(sym, "NDX") or str.cont
 bool symOk = isXAU or isXAG or isEUR or isUSD or isCHF or isGBP or isNAS
 
 // 銘柄別最適パラメータ（2026-06-16 Python tv_data スイープ結果）
-// USDJPY  棚7/棚幅1.8/急落3.5/RR2.0 → PF1.60/41件
+// USDJPY  棚5/棚幅1.8/急落3.5/RR2.0 → PF2.095/14件 TV実測(OANDA)
 // EURJPY  棚5/棚幅2.0/急落3.0/RR2.5 → PF1.42/86件  ※棚5本は手動設定
 // GBPJPY  棚7/棚幅1.5/急落3.5/RR2.5 → PF1.33/31件
 // CHFJPY  棚7/棚幅2.5/急落2.8/RR2.5 → PF1.96/31件
@@ -126,7 +126,7 @@ bool baseOk = h4Ok and dateOk and atrOk and symOk
 // ---------------------------------------------------------------------
 
 // 棚 = 直近 shelfN 本（プリセットで上書き、OFF→入力値）
-int shelfN = pXAU ? 3 : pEUR ? 5 : shelfBars
+int shelfN = pXAU ? 3 : (pEUR or pUSD) ? 5 : shelfBars
 float sHi = ta.highest(high, shelfN)[1]
 float sLo = ta.lowest(low, shelfN)[1]
 float sRng = atrOk ? (sHi - sLo) / atr : 999.0

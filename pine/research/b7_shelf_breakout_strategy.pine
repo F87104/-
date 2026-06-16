@@ -8,7 +8,7 @@
 // 2026-06-16 銘柄別最適化（エントリー+エグジット完全最適化）:
 //   CHFJPY  PF5.53 / 77% / 13件 ⭐ RR3.0/TIME30/SL0.50
 //   XAGUSD  PF3.00 / 68% / 19件 ⭐ RR1.5/TIME80/SL0.15
-//   GBPJPY  PF1.78 / 62% / 34件 ⭐ RR2.0/TIME15/SL0.50
+//   GBPJPY  PF2.074/ 50% / 48件 ⭐ デフォルト値 TV実測
 //   NAS100  PF1.83 / 45% / 29件   RR2.5/TIME60/SL0.25
 //   XAUUSD  PF1.49 / 42% / 192件  RR2.0/TIME60/SL0.45 TV実測(棚3手動)
 //   EURJPY  PF1.44 / 52% / 88件   RR2.0/TIME15/SL0.25
@@ -101,8 +101,8 @@ float rr = pOff ? (isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0) : pUSD ? 2.0 :
 
 float effDropAtrMin = pOff ? dropAtrMin : pUSD ? 3.5 : pEUR ? 3.0 : pGBP ? 2.8 : pCHF ? 2.8 : pXAG ? 3.5 : pNAS ? 2.8 : pXAU ? 4.0 : dropAtrMin
 float effShelfAtr   = pOff ? shelfAtr   : pUSD ? 1.8 : pEUR ? 2.0 : pGBP ? 1.8 : pCHF ? 2.5 : pXAG ? 1.8 : pNAS ? 1.5 : pXAU ? 2.0 : shelfAtr
-float effStopBuf    = pOff ? stopBuf : pUSD ? 0.15 : pEUR ? 0.25 : pGBP ? 0.50 : pCHF ? 0.50 : pXAG ? 0.15 : pNAS ? 0.25 : pXAU ? 0.45 : stopBuf
-int   effMaxHold    = pOff ? maxHold : pUSD ? 60  : pEUR ? 15  : pGBP ? 15  : pCHF ? 30  : pXAG ? 80  : pNAS ? 60  : pXAU ? 60  : maxHold
+float effStopBuf    = pOff ? stopBuf : pUSD ? 0.15 : pEUR ? 0.25 : pGBP ? 0.25 : pCHF ? 0.50 : pXAG ? 0.15 : pNAS ? 0.25 : pXAU ? 0.45 : stopBuf
+int   effMaxHold    = pOff ? maxHold : pUSD ? 60  : pEUR ? 15  : pGBP ? 60  : pCHF ? 30  : pXAG ? 80  : pNAS ? 60  : pXAU ? 60  : maxHold
 float effShelfHold  = shelfHold
 float effRecMin     = recMin
 float effMinCLoc    = minCLoc

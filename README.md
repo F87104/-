@@ -2,7 +2,7 @@
 
 > H1/H4 ベースの自動売買戦略コレクション。10年バックテスト (2015-2024) + OOS (2025-2026) で検証済みの **2本柱戦略** を運用するためのコード一式。
 
-**最終更新**: 2026-06-11
+**最終更新**: 2026-06-16
 
 ---
 
@@ -132,9 +132,58 @@
 |---|---|---|---|---|
 | **主力①** | **TrendBreakV1 HYBRID** | [`pine/production/TrendBreakV1_Final.pine`](pine/production/TrendBreakV1_Final.pine) | H1 | 6通貨 |
 | **主力②** | **LH3 Synapse B** | [`pine/research/lower_high_synapse_b_symbol_presets_strategy_v0_1.pine`](pine/research/lower_high_synapse_b_symbol_presets_strategy_v0_1.pine) | H4 | NAS100⭐/XAUUSD/USDJPY/AUDJPY/EURJPY/GBPJPY |
-| **主力③** | **B7棚 V Shelf Breakout** ⭐新 | [`pine/research/b7_shelf_breakout_strategy.pine`](pine/research/b7_shelf_breakout_strategy.pine) | H4 | GBPJPY⭐/XAGUSD⭐/EURJPY/CHFJPY |
+| **主力③** | **B7棚 V Shelf Breakout** ⭐新 | [`pine/research/b7_shelf_breakout_strategy.pine`](pine/research/b7_shelf_breakout_strategy.pine) | H4 | 全7銘柄（プリセット選択） |
 | **補助①** | **v2.3 Market Psychology** | [`pine/research/market_psychology_v2_3_matrix_strategy.pine`](pine/research/market_psychology_v2_3_matrix_strategy.pine) | H4 | USDJPY⭐/CHFJPY |
 | **補助②** | **H4 T5 + MACD + BB** | [`pine/production/h4_t5_macd_bb_live_ready.pine`](pine/production/h4_t5_macd_bb_live_ready.pine) | H4 | 6通貨 |
+
+### ⭐ B7棚 V Shelf Breakout 研究経緯（2026-06-14〜16）
+
+急落後のV字回復 → 棚形成 → 棚高値ブレイクを狙う手法。研究の流れ:
+
+```
+[着想] 急落否定後の棚ブレイクは「売り手の損切り連鎖」を捉えられるのでは？
+  ↓
+[Python検証] tv_data/のH4データで8銘柄バックテスト
+  → CHFJPY PF1.92⭐ / XAGUSD PF1.54 / USDJPY PF1.27
+  → AUDJPY PF<1.0 で除外
+  ↓
+[Pine v1] var状態遷移で実装 → バグ多発（棚判定が不安定）
+  ↓
+[Pine v2] ローリングウィンドウ方式に全面書き直し → バグ解消
+  ↓
+[ゴールド問題] デフォルト設定で PF0.85 → 除外判定
+  → 原因分析: ゴールドは急落が大きいため小さい急落(2.8ATR)がノイズ
+  → 急落4.0ATR + 棚3本 + 棚幅2.0ATR → PF1.505 (TV実測FXCM)
+  ↓
+[精度向上実験] 保持率/回復率/終値位置/RRを網羅テスト
+  → Python PF2.55 だがPineとの検出差異で見送り
+  → TV実測を正として構造パラメータのみ採用
+  ↓
+[全銘柄パラメータ最適化] 棚数×棚幅×急落×RR の720通りスイープ
+  → 7銘柄それぞれの最適構造を特定
+  ↓
+[エグジット最適化] TIME(10-120)×RR(1.0-3.0)×SL余白(0.10-0.50)スイープ
+  → 発見: SL幅を広く(0.50ATR)した方が勝率・PF改善する銘柄が多い
+  → 発見: 短期TIME(15本)が有効な銘柄と長期(80本)が有効な銘柄がある
+  ↓
+[現在] 銘柄別プリセット完成 — ドロップダウン選択で全パラメータ自動適用
+```
+
+**銘柄別最適パラメータ（エントリー+エグジット完全最適化）:**
+
+| 銘柄 | PF | 勝率 | 件数 | 棚数 | 棚幅 | 急落 | RR | TIME | SL余白 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| **CHFJPY** | **5.53** | 77% | 13 | 7 | 2.5 | 2.8 | 3.0 | 30 | 0.50 |
+| **XAGUSD** | **3.00** | 68% | 19 | 7 | 1.8 | 3.5 | 1.5 | 80 | 0.15 |
+| **GBPJPY** | **1.78** | 62% | 34 | 7 | 1.8 | 2.8 | 2.0 | 15 | 0.50 |
+| **NAS100** | **1.83** | 45% | 29 | 7 | 1.5 | 2.8 | 2.5 | 60 | 0.25 |
+| **XAUUSD** | **1.75** | 42% | 33 | 3 | 2.0 | 4.0 | 3.0 | 80 | 0.50 |
+| **EURJPY** | **1.44** | 52% | 88 | 5 | 2.0 | 3.0 | 2.0 | 15 | 0.25 |
+| **USDJPY** | **1.17** | 38% | 64 | 5 | 1.8 | 3.5 | 2.0 | 60 | 0.15 |
+
+> Pine: [`pine/research/b7_shelf_breakout_strategy.pine`](pine/research/b7_shelf_breakout_strategy.pine)
+> 検証詳細: [`docs/research/B7棚_TV検証_2026-06-14.md`](docs/research/B7棚_TV検証_2026-06-14.md)
+> 手法条件: [`docs/research/B7棚_発動条件_2026-06-14.md`](docs/research/B7棚_発動条件_2026-06-14.md)
 
 ### ⭐ Synapse B スイング版 成績（2026-06-12 TradingView H4 実測・設定不要）
 
@@ -162,14 +211,14 @@
 
 | 銘柄 | TrendBreak H1 | Synapse B H4 | B7棚 H4 | v2心理 H4 | T5 H4 | 手法数 |
 |---|:---:|:---:|:---:|:---:|:---:|---:|
-| **NAS100** | - | ⭐PF2.03 | △PF1.02 | - | - | 2 |
-| **USDJPY** | ✅ | ✅PF1.30 | △PF1.05 | ⭐PF1.63 | ✅ | 5 |
-| **XAUUSD** | ✅ | ✅PF1.30 | ❌PF0.85 | - | ✅ | 3 |
+| **NAS100** | - | ⭐PF2.03 | ✅PF1.83 | - | - | 2 |
+| **USDJPY** | ✅ | ✅PF1.30 | ✅PF1.17 | ⭐PF1.63 | ✅ | 5 |
+| **XAUUSD** | ✅ | ✅PF1.30 | ✅PF1.75 | - | ✅ | 4 |
 | **AUDJPY** | - | ✅PF1.29 | ❌ | ✅PF5.67 | - | 2 |
-| **EURJPY** | ✅ | ✅PF1.23 | ✅PF1.31 | - | ✅ | 4 |
-| **CHFJPY** | ✅ | - | ✅PF1.30 | ⭐PF1.44 | ✅ | 4 |
-| **GBPJPY** | ✅ | △PF1.08 | ⭐**PF1.96** | - | ✅ | 4 |
-| **XAGUSD** | ✅ | - | ⭐**PF1.67** | - | ✅ | 3 |
+| **EURJPY** | ✅ | ✅PF1.23 | ✅PF1.44 | - | ✅ | 4 |
+| **CHFJPY** | ✅ | - | ⭐**PF5.53** | ⭐PF1.44 | ✅ | 4 |
+| **GBPJPY** | ✅ | △PF1.08 | ⭐**PF1.78** | - | ✅ | 4 |
+| **XAGUSD** | ✅ | - | ⭐**PF3.00** | - | ✅ | 3 |
 
 ### 10年バックテスト成績 (6通貨, 2015-2024, コスト込み)
 

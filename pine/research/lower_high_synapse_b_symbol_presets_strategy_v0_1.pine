@@ -397,7 +397,7 @@ if lineBreakNow
 cooldownOk = na(lastCheckBar) or bar_index - lastCheckBar >= cooldownBars
 bWithinWindow = not na(lineReclaimBar) and bar_index - lineReclaimBar <= maxBarsAfterLineForB
 bEntryThreshold = not na(bLevel) and not na(atr) ? bLevel + atr * bBreakBufferAtr : na
-checkNow = activeSeq and lineReclaimed and bWithinWindow and not checkDone and not na(bLevel) and not na(bEntryThreshold) and bar_index > bBar and close > bEntryThreshold and cooldownOk and barstate.isconfirmed
+checkNow = activeSeq and lineReclaimed and bWithinWindow and not checkDone and not na(bLevel) and not na(bEntryThreshold) and bar_index > bBar and close > bEntryThreshold and cooldownOk and barstate.isconfirmed and strategy.position_size <= 0
 aBreakNow = activeSeq and lineReclaimed and not aConfirmed and not na(seqH3) and close > seqH3 + atr * bBreakBufferAtr and barstate.isconfirmed
 
 hypotheticalStop = activeSeq and not na(structureLow) ? structureLow - atr * stopBufferAtr : na
@@ -623,7 +623,7 @@ if barstate.islast and showTable
     table.cell(t, 0, 15, "未ENTRY理由", text_color=color.orange, text_size=size.tiny)
     table.cell(t, 1, 15, rejectReason, text_color=rejectReason == "ENTRY候補" ? color.lime : color.orange, text_size=size.tiny)
     table.cell(t, 0, 16, "RR / hold", text_color=color.silver, text_size=size.tiny)
-    table.cell(t, 1, 16, str.tostring(rr, "#.##") + " / " + str.tostring(maxHoldBars), text_color=color.white, text_size=size.tiny)
+    table.cell(t, 1, 16, str.tostring(rr, "#.##") + " / " + (useTimeout ? str.tostring(maxHoldBars) : "OFF"), text_color=color.white, text_size=size.tiny)
     table.cell(t, 0, 17, "現在lot", text_color=color.silver, text_size=size.tiny)
     table.cell(t, 1, 17, str.tostring(currentLots, "#.##"), text_color=lastLotOk ? color.lime : color.red, text_size=size.tiny)
     table.cell(t, 0, 18, "1.00損益", text_color=color.silver, text_size=size.tiny)

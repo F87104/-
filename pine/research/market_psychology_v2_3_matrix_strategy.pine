@@ -136,7 +136,7 @@ grpV2     = "v2 追加フィルタ (任意)"
 useEarly  = input.bool(true,  "早期撤退: MFE < X*R after N bars", group=grpV2)
 earlyMfeR = input.float(0.5,  "早期撤退 MFE 閾値 (R)", minval=0.1, step=0.05, group=grpV2)
 earlyBars = input.int(12,     "早期撤退 経過バー数", minval=2, group=grpV2)
-earlyLossR = input.float(0.35, "早期撤退 損 (R)", minval=0.05, step=0.05, group=grpV2)
+earlyLossR = input.float(0.35, "早期撤退 損 (R)", minval=0.05, step=0.05, group=grpV2)  // TODO: 未使用 — MFE条件と併用する損失閾値として組み込むか、不要なら削除
 
 useHour  = input.bool(false, "時間フィルタ: 4/8/16/20 UTC のみ", group=grpV2)
 useVol   = input.bool(false, "Volume: vol > sma(20)*X", group=grpV2)
@@ -338,6 +338,16 @@ if strategy.position_size != 0 and not na(activeStop)
 if strategy.position_size == 0
     activeStop := na
     entryBar   := na
+    pendStop   := na
+    pendLong   := false
+    posIsLong  := false
+
+// Safety: ラッチ失敗で activeStop が na のままポジション保有 → 即時手仕舞い
+if strategy.position_size != 0 and na(activeStop)
+    if strategy.position_size > 0
+        strategy.close("L", comment="safety_no_stop")
+    else
+        strategy.close("S", comment="safety_no_stop")
 
 // ---------------------------------------------------------------------
 // Visuals (display=pane で十字線追従の値表示を抑制)
@@ -509,7 +519,7 @@ if useYearTable and barstate.islast
 
     for i = 0 to yearSpan - 1
         int t = array.get(yT, i)
-        if t > 0 and row < 20
+        if t > 0 and row < 21
             int w = array.get(yW, i)
             float pSum = array.get(yP, i)
             float netPct = 100.0 * pSum / strategy.initial_capital
@@ -528,7 +538,7 @@ if useYearTable and barstate.islast
             totalP := totalP + pSum
             row := row + 1
 
-    if totalT > 0 and row < 21
+    if totalT > 0 and row < 22
         float totalNetPct = 100.0 * totalP / strategy.initial_capital
         float totalWrPct = 100.0 * totalW / totalT
         color sumColor = totalNetPct >= 0 ? color.new(color.green, 40) : color.new(color.red, 40)

@@ -201,25 +201,20 @@ if justEntered
     activeTarget := pendTarget
     entryBar := bar_index
 
-if strategy.position_size > 0
-    if na(activeStop)
-        strategy.close("B7", comment="safety_no_stop")
+if strategy.position_size > 0 and not na(activeStop)
+    int barsHeld = na(entryBar) ? 0 : bar_index - entryBar
+    float risk0 = strategy.position_avg_price - activeStop
+    if risk0 > 0
+        strategy.exit("X", from_entry="B7", stop=activeStop, limit=activeTarget)
     else
-        int barsHeld = na(entryBar) ? 0 : bar_index - entryBar
-        float risk0 = strategy.position_avg_price - activeStop
-        if risk0 > 0
-            strategy.exit("X", from_entry="B7", stop=activeStop, limit=activeTarget)
-        else
-            strategy.close("B7", comment="bad_fill")
-        if useTimeout and barsHeld >= effMaxHold
-            strategy.close("B7", comment="timeout")
+        strategy.close("B7", comment="bad_fill")
+    if useTimeout and barsHeld >= effMaxHold
+        strategy.close("B7", comment="timeout")
 
 if strategy.position_size == 0
     activeStop := na
     activeTarget := na
     entryBar := na
-    pendStop := na
-    pendTarget := na
 
 // ---------------------------------------------------------------------
 // 表示（TrendBreakV1スタイル: Entry黄 / SL赤 / TP緑）

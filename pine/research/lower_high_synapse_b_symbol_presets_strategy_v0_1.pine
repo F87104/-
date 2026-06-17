@@ -102,6 +102,7 @@ manualMaxBreakExtAtr = input.float(1.20, "Bからの最大伸び ATR（Manual）
 grpRisk = "Validation levels"
 enableStrategyOrders = input.bool(true, "検証注文を出す（勝率/PFを見る時だけON）", group=grpRisk)
 showValidationLevels = input.bool(true, "Entry/SL/TP表示", group=grpRisk)
+useTimeout = input.bool(true, "タイムアウト有効", group=grpRisk, tooltip="OFFにするとSL/TPのみで決済（時間制限なし）")
 manualRr = input.float(2.0, "TP RR（Manual）", minval=0.25, step=0.25, group=grpRisk)
 manualMaxHoldBars = input.int(9999, "最大保有本数（Manual）", minval=1, maxval=9999, group=grpRisk)
 manualStopBufferAtr = input.float(0.20, "SL余白 ATR（Manual）", minval=0.0, step=0.05, group=grpRisk)
@@ -499,7 +500,7 @@ if aBreakNow
 
 if enableStrategyOrders and strategy.position_size > 0 and not na(strategyEntryBar)
     strategy.exit("LH3-B Exit", "LH3-B Long", stop=strategyStop, limit=strategyTarget)
-    if bar_index - strategyEntryBar >= maxHoldBars
+    if useTimeout and bar_index - strategyEntryBar >= maxHoldBars
         strategy.close("LH3-B Long", comment="TIME")
 
 if strategy.position_size == 0 and strategy.position_size[1] != 0

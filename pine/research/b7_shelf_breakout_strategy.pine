@@ -77,15 +77,15 @@ bool isGBP = str.contains(sym, "GBPJPY")
 bool isNAS = str.contains(sym, "NAS100") or str.contains(sym, "NDX") or str.contains(sym, "US100") or str.contains(sym, "USTEC")
 bool symOk = isXAU or isXAG or isEUR or isUSD or isCHF or isGBP or isNAS
 
-// TV実測確定値（2026-06-17）— 各銘柄で下記の値を手動設定
-//          棚  急落 棚幅  SL   RR   TIME リスク
-// USDJPY    5  2.8  1.8  0.70 2.0   60  2.5
-// EURJPY    6  3.0  2.0  0.25 1.3  OFF  2.5
-// GBPJPY    6  2.8  1.8  0.25 2.0   60  2.5
-// CHFJPY    6  3.0  2.0  0.80 3.1  OFF  2.5
-// XAGUSD    6  3.0  2.0  0.80 1.65  10  3.4
-// NAS100    3  3.0  2.0  0.80 1.6   60  1.6
-// XAUUSD    4  3.0  2.0  0.80 2.2  OFF  2.5
+// TV実測確定値（2026-06-17最終）— 各銘柄で下記の値を手動設定
+//          棚  急落 棚幅  SL   RR   TIME リスク  PF
+// USDJPY    6  2.8  1.8  0.86 2.8   60  2.5   2.71
+// EURJPY    6  3.0  2.0  0.25 1.3  OFF  2.5   1.45
+// GBPJPY    6  2.8  1.8  0.25 2.0   60  2.5   2.20
+// CHFJPY    6  3.0  2.0  0.80 3.1  OFF  2.5   3.18
+// XAGUSD    6  3.0  2.0  0.80 1.65  10  3.4   1.44
+// NAS100    3  3.0  2.0  0.80 1.6   60  1.6   2.32
+// XAUUSD    4  2.8  2.0  0.25 3.3  OFF  1.5   2.88
 float rr = rrInput
 
 // ---------------------------------------------------------------------

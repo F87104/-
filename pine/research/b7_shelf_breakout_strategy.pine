@@ -44,22 +44,19 @@ atrLen    = input.int(14, "ATR期間", minval=1, group=grpG)
 useTimeout = input.bool(true, "タイムアウト有効", group=grpG)
 maxHold    = input.int(60, "最大保有(本)", minval=10, group=grpG)
 
-grpX = "★ 銘柄プリセット"
-preset = input.string("OFF", "プリセット選択", options=["OFF", "USDJPY", "EURJPY", "GBPJPY", "CHFJPY", "XAGUSD", "NAS100", "XAUUSD"], group=grpX, tooltip="棚本数は手動: NAS100→3, XAUUSD→4, USDJPY→5, EURJPY/GBPJPY/CHFJPY/XAGUSD→6, 他→7")
-
 grpV = "V Shelf 条件"
 dropLook   = input.int(24, "急落の参照窓(本)", minval=4, maxval=60, group=grpV)
 dropAtrMin = input.float(2.8, "急落幅下限(ATR)", minval=1.0, step=0.1, group=grpV)
 recMin     = input.float(0.65, "回復率下限", minval=0.0, maxval=1.5, step=0.05, group=grpV)
 recMax     = input.float(1.25, "回復率上限", minval=0.5, maxval=2.0, step=0.05, group=grpV)
-shelfBars  = input.int(7, "棚の本数", minval=3, maxval=20, group=grpV)
+shelfBars  = input.int(7, "棚の本数", minval=1, maxval=20, group=grpV)
 shelfAtr   = input.float(1.8, "棚幅上限(ATR)", minval=0.5, step=0.1, group=grpV)
 shelfHold  = input.float(0.4, "棚安値保持率", minval=0.0, maxval=1.0, step=0.05, group=grpV)
 breakBuf   = input.float(0.05, "ブレイクバッファ(ATR)", minval=0.0, step=0.01, group=grpV)
 minBody    = input.float(0.30, "ブレイク足実体下限", minval=0.0, maxval=1.0, step=0.05, group=grpV)
 minCLoc    = input.float(0.50, "ブレイク足終値位置下限", minval=0.0, maxval=1.0, step=0.05, group=grpV)
 stopBuf    = input.float(0.25, "SL余白(ATR)", minval=0.0, step=0.05, group=grpV)
-manualRr   = input.float(0.0, "RR（0=自動）", minval=0.0, step=0.5, group=grpV, tooltip="0以外を設定するとプリセットのRRを上書き。実験用。")
+rrInput    = input.float(2.0, "RR", minval=0.5, step=0.1, group=grpV)
 maxRiskAtr = input.float(2.5, "最大リスク幅(ATR)", minval=0.5, step=0.1, group=grpV)
 
 grpVz = "表示"
@@ -80,28 +77,7 @@ bool isGBP = str.contains(sym, "GBPJPY")
 bool isNAS = str.contains(sym, "NAS100") or str.contains(sym, "NDX") or str.contains(sym, "US100") or str.contains(sym, "USTEC")
 bool symOk = isXAU or isXAG or isEUR or isUSD or isCHF or isGBP or isNAS
 
-// 銘柄別最適パラメータ（2026-06-16 エグジット最適化込み）
-//          棚数 棚幅 急落  RR  TIME SL余白 → PF
-// USDJPY   5   1.8  3.5  2.0  60  0.15  → PF1.17
-// EURJPY   5   2.0  3.0  2.0  15  0.25  → PF1.44
-// GBPJPY   7   1.8  2.8  2.0  15  0.50  → PF1.78
-// CHFJPY   7   2.5  2.8  3.0  30  0.50  → PF5.53
-// XAGUSD   7   1.8  3.5  1.5  80  0.15  → PF3.00
-// NAS100   7   1.5  2.8  2.5  60  0.25  → PF1.83
-// XAUUSD   3   2.0  4.0  3.0  80  0.50  → PF1.75
-bool pOff = preset == "OFF"
-bool pUSD = preset == "USDJPY"
-bool pEUR = preset == "EURJPY"
-bool pGBP = preset == "GBPJPY"
-bool pCHF = preset == "CHFJPY"
-bool pXAG = preset == "XAGUSD"
-bool pNAS = preset == "NAS100"
-bool pXAU = preset == "XAUUSD"
-
-float autoRr = pOff ? (isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0) : pUSD ? 2.0 : pEUR ? 1.3 : pGBP ? 2.0 : pCHF ? 3.1 : pXAG ? 1.65 : pNAS ? 1.6 : pXAU ? 2.2 : 2.0
-float rr = manualRr > 0 ? manualRr : autoRr
-
-// TV実測確定値（2026-06-17）
+// TV実測確定値（2026-06-17）— 各銘柄で下記の値を手動設定
 //          棚  急落 棚幅  SL   RR   TIME リスク
 // USDJPY    5  2.8  1.8  0.70 2.0   60  2.5
 // EURJPY    6  3.0  2.0  0.25 1.3  OFF  2.5
@@ -110,14 +86,7 @@ float rr = manualRr > 0 ? manualRr : autoRr
 // XAGUSD    6  3.0  2.0  0.80 1.65  10  3.4
 // NAS100    3  3.0  2.0  0.80 1.6   60  1.6
 // XAUUSD    4  3.0  2.0  0.80 2.2  OFF  2.5
-float effDropAtrMin = pOff ? dropAtrMin : pUSD ? 2.8 : pEUR ? 3.0 : pGBP ? 2.8 : pCHF ? 3.0 : pXAG ? 3.0 : pNAS ? 3.0 : pXAU ? 3.0 : dropAtrMin
-float effShelfAtr   = pOff ? shelfAtr   : pUSD ? 1.8 : pEUR ? 2.0 : pGBP ? 1.8 : pCHF ? 2.0 : pXAG ? 2.0 : pNAS ? 2.0 : pXAU ? 2.0 : shelfAtr
-float effStopBuf    = pOff ? stopBuf    : pUSD ? 0.70 : pEUR ? 0.25 : pGBP ? 0.25 : pCHF ? 0.80 : pXAG ? 0.80 : pNAS ? 0.80 : pXAU ? 0.80 : stopBuf
-int   effMaxHold    = pOff ? maxHold    : pUSD ? 60   : pEUR ? 9999 : pGBP ? 60  : pCHF ? 9999 : pXAG ? 10  : pNAS ? 60  : pXAU ? 9999 : maxHold
-float effMaxRiskAtr = pOff ? maxRiskAtr : pNAS ? 1.6  : pXAG ? 3.4 : maxRiskAtr
-float effShelfHold  = shelfHold
-float effRecMin     = recMin
-float effMinCLoc    = minCLoc
+float rr = rrInput
 
 // ---------------------------------------------------------------------
 // 指標
@@ -148,11 +117,11 @@ bool baseOk = h4Ok and dateOk and atrOk and symOk
 float sHi = ta.highest(high, shelfBars)[1]
 float sLo = ta.lowest(low, shelfBars)[1]
 float sRng = atrOk ? (sHi - sLo) / atr : 999.0
-bool shelfNarrow = sRng <= effShelfAtr
+bool shelfNarrow = sRng <= shelfAtr
 
 // ブレイク = 前足≤棚高値 & 今足>棚高値+バッファ
 bool freshBreak = not na(sHi) and close[1] <= sHi and close > sHi + breakBuf * atr
-bool qualOk = bodyR >= minBody and cLoc >= effMinCLoc
+bool qualOk = bodyR >= minBody and cLoc >= minCLoc
 
 // 棚の前に急落→回復があったか（棚開始点のさらに前 dropLook 本を見る）
 // 急落 = その窓の最高値 - 最安値 >= dropAtrMin * ATR
@@ -162,22 +131,22 @@ float preHi = ta.highest(high, dropLook)[preStart]
 float preLo = ta.lowest(low, dropLook)[preStart]
 float dropSize = not na(preHi) and not na(preLo) ? preHi - preLo : 0.0
 float dropAtr = atrOk ? dropSize / atr : 0.0
-bool hadDrop = dropAtr >= effDropAtrMin
+bool hadDrop = dropAtr >= dropAtrMin
 
 // 回復率 = (棚安値 - 急落安値) / 急落幅
 float recRate = dropSize > 0 and not na(sLo) and not na(preLo) ? (sLo - preLo) / dropSize : 0.0
-bool recOk = recRate >= effRecMin and recRate <= recMax
+bool recOk = recRate >= recMin and recRate <= recMax
 
 // 棚安値保持 = 棚安値が急落の holdLine 以上
-float holdLine = not na(preLo) ? preLo + dropSize * effShelfHold : na
+float holdLine = not na(preLo) ? preLo + dropSize * shelfHold : na
 bool holdOk = not na(holdLine) and not na(sLo) and sLo >= holdLine
 
 // SL / リスク
-float stop = not na(sLo) ? sLo - effStopBuf * atr : na
+float stop = not na(sLo) ? sLo - stopBuf * atr : na
 bool stopValid = not na(stop) and close > stop
 float risk = stopValid ? close - stop : 0.0
 float riskA = atrOk and risk > 0 ? risk / atr : 999.0
-bool riskOk = riskA <= effMaxRiskAtr and risk > 0
+bool riskOk = riskA <= maxRiskAtr and risk > 0
 
 // トレンドフィルタ（将来の精度向上用。現在は全銘柄OFF）
 // EMA20>EMA50はPython上PF改善だがTV実測ではプリセットOFFの方が良かったため無効化
@@ -218,7 +187,7 @@ if strategy.position_size > 0 and not na(activeStop)
         strategy.exit("X", from_entry="B7", stop=activeStop, limit=activeTarget)
     else
         strategy.close("B7", comment="bad_fill")
-    if useTimeout and barsHeld >= effMaxHold
+    if useTimeout and barsHeld >= maxHold
         strategy.close("B7", comment="timeout")
 
 if strategy.position_size == 0
@@ -279,19 +248,19 @@ if showV1Style and justExited and not na(tEntryBar) and not na(tEntry)
 
 plotshape(sigLong, title="B7 Signal", style=shape.triangleup, location=location.belowbar, color=color.new(color.aqua, 0), size=size.small)
 
-plot(pXAU ? ema20 : na, title="EMA20", color=color.new(color.orange, 30), linewidth=1)
-plot(pXAU ? ema50 : na, title="EMA50", color=color.new(color.blue, 30), linewidth=1)
+plot(ema20, title="EMA20", color=color.new(color.orange, 30), linewidth=1, display=display.none)
+plot(ema50, title="EMA50", color=color.new(color.blue, 30), linewidth=1, display=display.none)
 
 var table tbl = table.new(position.top_right, 2, 5, bgcolor=color.new(color.black, 80), border_color=color.gray, border_width=1)
 if barstate.islast
     table.cell(tbl, 0, 0, "Symbol", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 1, 0, sym, text_color=color.yellow, text_size=size.tiny)
     table.cell(tbl, 0, 1, "手法", text_color=color.white, text_size=size.tiny)
-    table.cell(tbl, 1, 1, pOff ? "B7棚 v2" : "B7棚 " + preset, text_color=pOff ? color.aqua : color.yellow, text_size=size.tiny)
+    table.cell(tbl, 1, 1, "B7棚 v2", text_color=color.aqua, text_size=size.tiny)
     table.cell(tbl, 0, 2, "RR", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 1, 2, str.tostring(rr), text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 0, 3, "TIME", text_color=color.white, text_size=size.tiny)
-    table.cell(tbl, 1, 3, str.tostring(effMaxHold) + "本", text_color=pOff ? color.white : color.yellow, text_size=size.tiny)
+    table.cell(tbl, 1, 3, useTimeout ? str.tostring(maxHold) + "本" : "OFF", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 0, 4, "対応", text_color=color.white, text_size=size.tiny)
     table.cell(tbl, 1, 4, symOk ? "ON" : "未対応", text_color=symOk ? color.lime : color.red, text_size=size.tiny)
 

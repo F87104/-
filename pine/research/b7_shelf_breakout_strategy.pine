@@ -101,7 +101,7 @@ float rr = pOff ? (isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0) : pUSD ? 2.0 :
 
 float effDropAtrMin = pOff ? dropAtrMin : pUSD ? 3.5 : pEUR ? 3.0 : pGBP ? 2.8 : pCHF ? 2.8 : pXAG ? 3.5 : pNAS ? 2.8 : pXAU ? 4.0 : dropAtrMin
 float effShelfAtr   = pOff ? shelfAtr   : pUSD ? 1.8 : pEUR ? 2.0 : pGBP ? 1.8 : pCHF ? 2.5 : pXAG ? 1.8 : pNAS ? 1.5 : pXAU ? 2.0 : shelfAtr
-float effStopBuf    = pOff ? stopBuf : pUSD ? 0.15 : pEUR ? 0.25 : pGBP ? 0.25 : pCHF ? 0.50 : pXAG ? 0.15 : pNAS ? 0.25 : pXAU ? 0.45 : stopBuf
+float effStopBuf    = pOff ? stopBuf : pUSD ? 0.70 : pEUR ? 0.25 : pGBP ? 0.55 : pCHF ? 0.60 : pXAG ? 0.70 : pNAS ? 0.90 : pXAU ? 0.55 : stopBuf
 int   effMaxHold    = pOff ? maxHold : pUSD ? 60  : pEUR ? 15  : pGBP ? 60  : pCHF ? 30  : pXAG ? 80  : pNAS ? 60  : pXAU ? 60  : maxHold
 float effShelfHold  = shelfHold
 float effRecMin     = recMin

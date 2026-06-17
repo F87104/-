@@ -7,7 +7,7 @@
 //
 // 2026-06-16 銘柄別最適化（エントリー+エグジット完全最適化）:
 //   CHFJPY  PF3.181/ 47% / 19件 ⭐ 棚6/急落3/棚幅2/SL0.8/RR3.1/TIMEなし TV実測
-//   XAGUSD  PF3.00 / 68% / 19件 ⭐ RR1.5/TIME80/SL0.15
+//   XAGUSD  PF1.439/ 56% / 71件  棚6/急落3/SL0.8/RR1.65/TIME10 TV実測
 //   GBPJPY  PF2.201/ 50% / 66件 ⭐ 棚6/SL0.25 TV実測
 //   NAS100  PF2.318/ 60% / 20件  棚3/SL0.8/RR1.6/TIME60/リスク1.6 TV実測
 //   XAUUSD  PF2.128/ 49% / 57件  棚4/急落3/棚幅2/SL0.8/RR2.2/TIMEなし TV実測(FXCM)
@@ -45,7 +45,7 @@ useTimeout = input.bool(true, "タイムアウト有効", group=grpG)
 maxHold    = input.int(60, "最大保有(本)", minval=10, group=grpG)
 
 grpX = "★ 銘柄プリセット"
-preset = input.string("OFF", "プリセット選択", options=["OFF", "USDJPY", "EURJPY", "GBPJPY", "CHFJPY", "XAGUSD", "NAS100", "XAUUSD"], group=grpX, tooltip="RR/急落/棚幅/SL/TIMEを自動適用。棚本数は手動: XAUUSD→4, USDJPY→5, EURJPY/GBPJPY→6, 他→7")
+preset = input.string("OFF", "プリセット選択", options=["OFF", "USDJPY", "EURJPY", "GBPJPY", "CHFJPY", "XAGUSD", "NAS100", "XAUUSD"], group=grpX, tooltip="棚本数は手動: NAS100→3, XAUUSD→4, USDJPY→5, EURJPY/GBPJPY/CHFJPY/XAGUSD→6, 他→7")
 
 grpV = "V Shelf 条件"
 dropLook   = input.int(24, "急落の参照窓(本)", minval=4, maxval=60, group=grpV)
@@ -98,13 +98,13 @@ bool pXAG = preset == "XAGUSD"
 bool pNAS = preset == "NAS100"
 bool pXAU = preset == "XAUUSD"
 
-float autoRr = pOff ? (isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0) : pUSD ? 2.0 : pEUR ? 1.3 : pGBP ? 2.0 : pCHF ? 3.1 : pXAG ? 1.5 : pNAS ? 1.6 : pXAU ? 2.2 : 2.0
+float autoRr = pOff ? (isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0) : pUSD ? 2.0 : pEUR ? 1.3 : pGBP ? 2.0 : pCHF ? 3.1 : pXAG ? 1.65 : pNAS ? 1.6 : pXAU ? 2.2 : 2.0
 float rr = manualRr > 0 ? manualRr : autoRr
 
-float effDropAtrMin = pOff ? dropAtrMin : pUSD ? 3.5 : pEUR ? 3.0 : pGBP ? 2.8 : pCHF ? 3.0 : pXAG ? 3.5 : pNAS ? 2.8 : pXAU ? 3.0 : dropAtrMin
+float effDropAtrMin = pOff ? dropAtrMin : pUSD ? 3.5 : pEUR ? 3.0 : pGBP ? 2.8 : pCHF ? 3.0 : pXAG ? 3.0 : pNAS ? 2.8 : pXAU ? 3.0 : dropAtrMin
 float effShelfAtr   = pOff ? shelfAtr   : pUSD ? 1.8 : pEUR ? 2.0 : pGBP ? 1.8 : pCHF ? 2.0 : pXAG ? 1.8 : pNAS ? 1.5 : pXAU ? 2.0 : shelfAtr
-float effStopBuf    = pOff ? stopBuf : pUSD ? 0.70 : pEUR ? 0.25 : pGBP ? 0.25 : pCHF ? 0.80 : pXAG ? 0.70 : pNAS ? 0.80 : pXAU ? 0.80 : stopBuf
-int   effMaxHold    = pOff ? maxHold : pUSD ? 60  : pEUR ? 9999 : pGBP ? 60  : pCHF ? 9999 : pXAG ? 80  : pNAS ? 60  : pXAU ? 9999 : maxHold
+float effStopBuf    = pOff ? stopBuf : pUSD ? 0.70 : pEUR ? 0.25 : pGBP ? 0.25 : pCHF ? 0.80 : pXAG ? 0.80 : pNAS ? 0.80 : pXAU ? 0.80 : stopBuf
+int   effMaxHold    = pOff ? maxHold : pUSD ? 60  : pEUR ? 9999 : pGBP ? 60  : pCHF ? 9999 : pXAG ? 10  : pNAS ? 60  : pXAU ? 9999 : maxHold
 float effShelfHold  = shelfHold
 float effRecMin     = recMin
 float effMinCLoc    = minCLoc

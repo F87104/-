@@ -6,7 +6,7 @@
 // ピボット状態遷移ではなく、毎足ローリングウィンドウで条件判定（バグ防止）。
 //
 // 2026-06-16 銘柄別最適化（エントリー+エグジット完全最適化）:
-//   CHFJPY  PF5.53 / 77% / 13件 ⭐ RR3.0/TIME30/SL0.50
+//   CHFJPY  PF3.181/ 47% / 19件 ⭐ 棚6/急落3/棚幅2/SL0.8/RR3.1/TIMEなし TV実測
 //   XAGUSD  PF3.00 / 68% / 19件 ⭐ RR1.5/TIME80/SL0.15
 //   GBPJPY  PF2.201/ 50% / 66件 ⭐ 棚6/SL0.25 TV実測
 //   NAS100  PF1.83 / 45% / 29件   RR2.5/TIME60/SL0.25
@@ -98,13 +98,13 @@ bool pXAG = preset == "XAGUSD"
 bool pNAS = preset == "NAS100"
 bool pXAU = preset == "XAUUSD"
 
-float autoRr = pOff ? (isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0) : pUSD ? 2.0 : pEUR ? 1.3 : pGBP ? 2.0 : pCHF ? 3.0 : pXAG ? 1.5 : pNAS ? 2.5 : pXAU ? 2.2 : 2.0
+float autoRr = pOff ? (isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0) : pUSD ? 2.0 : pEUR ? 1.3 : pGBP ? 2.0 : pCHF ? 3.1 : pXAG ? 1.5 : pNAS ? 2.5 : pXAU ? 2.2 : 2.0
 float rr = manualRr > 0 ? manualRr : autoRr
 
-float effDropAtrMin = pOff ? dropAtrMin : pUSD ? 3.5 : pEUR ? 3.0 : pGBP ? 2.8 : pCHF ? 2.8 : pXAG ? 3.5 : pNAS ? 2.8 : pXAU ? 3.0 : dropAtrMin
-float effShelfAtr   = pOff ? shelfAtr   : pUSD ? 1.8 : pEUR ? 2.0 : pGBP ? 1.8 : pCHF ? 2.5 : pXAG ? 1.8 : pNAS ? 1.5 : pXAU ? 2.0 : shelfAtr
-float effStopBuf    = pOff ? stopBuf : pUSD ? 0.70 : pEUR ? 0.25 : pGBP ? 0.25 : pCHF ? 0.60 : pXAG ? 0.70 : pNAS ? 0.90 : pXAU ? 0.80 : stopBuf
-int   effMaxHold    = pOff ? maxHold : pUSD ? 60  : pEUR ? 9999 : pGBP ? 60  : pCHF ? 30  : pXAG ? 80  : pNAS ? 60  : pXAU ? 9999 : maxHold
+float effDropAtrMin = pOff ? dropAtrMin : pUSD ? 3.5 : pEUR ? 3.0 : pGBP ? 2.8 : pCHF ? 3.0 : pXAG ? 3.5 : pNAS ? 2.8 : pXAU ? 3.0 : dropAtrMin
+float effShelfAtr   = pOff ? shelfAtr   : pUSD ? 1.8 : pEUR ? 2.0 : pGBP ? 1.8 : pCHF ? 2.0 : pXAG ? 1.8 : pNAS ? 1.5 : pXAU ? 2.0 : shelfAtr
+float effStopBuf    = pOff ? stopBuf : pUSD ? 0.70 : pEUR ? 0.25 : pGBP ? 0.25 : pCHF ? 0.80 : pXAG ? 0.70 : pNAS ? 0.90 : pXAU ? 0.80 : stopBuf
+int   effMaxHold    = pOff ? maxHold : pUSD ? 60  : pEUR ? 9999 : pGBP ? 60  : pCHF ? 9999 : pXAG ? 80  : pNAS ? 60  : pXAU ? 9999 : maxHold
 float effShelfHold  = shelfHold
 float effRecMin     = recMin
 float effMinCLoc    = minCLoc

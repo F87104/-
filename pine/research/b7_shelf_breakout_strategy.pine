@@ -59,6 +59,7 @@ breakBuf   = input.float(0.05, "ブレイクバッファ(ATR)", minval=0.0, step
 minBody    = input.float(0.30, "ブレイク足実体下限", minval=0.0, maxval=1.0, step=0.05, group=grpV)
 minCLoc    = input.float(0.50, "ブレイク足終値位置下限", minval=0.0, maxval=1.0, step=0.05, group=grpV)
 stopBuf    = input.float(0.25, "SL余白(ATR)", minval=0.0, step=0.05, group=grpV)
+manualRr   = input.float(0.0, "RR（0=自動）", minval=0.0, step=0.5, group=grpV, tooltip="0以外を設定するとプリセットのRRを上書き。実験用。")
 maxRiskAtr = input.float(2.5, "最大リスク幅(ATR)", minval=0.5, step=0.1, group=grpV)
 
 grpVz = "表示"
@@ -97,7 +98,8 @@ bool pXAG = preset == "XAGUSD"
 bool pNAS = preset == "NAS100"
 bool pXAU = preset == "XAUUSD"
 
-float rr = pOff ? (isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0) : pUSD ? 2.0 : pEUR ? 2.0 : pGBP ? 2.0 : pCHF ? 3.0 : pXAG ? 1.5 : pNAS ? 2.5 : pXAU ? 2.0 : 2.0
+float autoRr = pOff ? (isUSD ? 1.5 : isXAG ? 1.5 : isNAS ? 1.5 : 2.0) : pUSD ? 2.0 : pEUR ? 2.0 : pGBP ? 2.0 : pCHF ? 3.0 : pXAG ? 1.5 : pNAS ? 2.5 : pXAU ? 2.0 : 2.0
+float rr = manualRr > 0 ? manualRr : autoRr
 
 float effDropAtrMin = pOff ? dropAtrMin : pUSD ? 3.5 : pEUR ? 3.0 : pGBP ? 2.8 : pCHF ? 2.8 : pXAG ? 3.5 : pNAS ? 2.8 : pXAU ? 4.0 : dropAtrMin
 float effShelfAtr   = pOff ? shelfAtr   : pUSD ? 1.8 : pEUR ? 2.0 : pGBP ? 1.8 : pCHF ? 2.5 : pXAG ? 1.8 : pNAS ? 1.5 : pXAU ? 2.0 : shelfAtr

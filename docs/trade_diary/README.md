@@ -10,7 +10,7 @@
 | やりたいこと | 行き先 |
 |---|---|
 | **自分の実践トレードを見る・追加する** | 👉 [practice/](practice/) |
-| **最新エントリー** | [2026-06-10 XAUUSD 手法外ショート](practice/entries/2026-06-10_XAUUSD_手法外ショート.md) ／ [2026-06-10 XAUUSD 利確 +109万](practice/entries/2026-06-04_XAUUSD_V1ショートシグナル.md) ／ [2026-06-09 CHFJPY v2.1 SQZ](practice/entries/2026-06-09_CHFJPY_v2_1_SQZシグナル買い.md) |
+| **最新エントリー** | [2026-06-19 USDJPY 利確 +81万](practice/entries/2026-06-01_USDJPY_H4T5シグナル買い.md) ／ [2026-06-10 XAUUSD 手法外ショート](practice/entries/2026-06-10_XAUUSD_手法外ショート.md) ／ [2026-06-09 CHFJPY v2.1 SQZ](practice/entries/2026-06-09_CHFJPY_v2_1_SQZシグナル買い.md) |
 | **リアルタイム心理を記録する** | [psychology/](psychology/) |
 | **Slack 反省点リマインド（定期投稿）** | [Slack反省点設定.md](Slack反省点設定.md) |
 | **受講生トレード記録（137件・研究用）** | [archive/student/](archive/student/) |
@@ -53,7 +53,8 @@ docs/trade_diary/
 | 日付 | 銘柄 | 方向 | 理由 | 詳細 |
 |---|---|---|---|---|
 | 2026-06-09 | CHFJPY H4 | 買い | シグナル点灯 @201.368（v2.1 SQZ） | [エントリー](practice/entries/2026-06-09_CHFJPY_v2_1_SQZシグナル買い.md) |
-| 2026-06-01 | USDJPY H4 | 買い | 4HT5シグナル点灯 | [エントリー](practice/entries/2026-06-01_USDJPY_H4T5シグナル買い.md) |
+| 2026-06-19 | USDJPY H4 | 買い | **利確 +809,550**（OCO @161.079） | [エントリー](practice/entries/2026-06-01_USDJPY_H4T5シグナル買い.md) |
+| 2026-06-01 | USDJPY H4 | 買い | 4HT5シグナル点灯 @159.674 | [エントリー](practice/entries/2026-06-01_USDJPY_H4T5シグナル買い.md) |
 | 2026-06-03 | XAUUSD H1 | 買い | 損切り -668,492（投げ切り） | [エントリー](practice/entries/2026-06-03_XAUUSD_H1アラート買い.md) |
 | 2026-06-10 | XAUUSD H1 | 売り | **手法外** 裁量 @4164.77 | [エントリー](practice/entries/2026-06-10_XAUUSD_手法外ショート.md) |
 | 2026-06-10 | XAUUSD H1 | 売り | **利確 +1,091,277**（V1ショート @4200） | [エントリー](practice/entries/2026-06-04_XAUUSD_V1ショートシグナル.md) |

@@ -81,8 +81,8 @@ bool symOk = isXAU or isXAG or isEUR or isUSD or isCHF or isGBP or isNAS
 // TV実測確定値（2026-06-18 calc_on_order_fills=false 正直版で再検証中）
 //          棚  急落 棚幅  SL   RR   TIME リスク  PF    件数
 // GBPJPY    5  2.8  2.5  0.80 2.5   60  2.5   1.95   42  ✅確定
+// USDJPY    7  3.0  1.8  0.85 2.5  OFF  2.5   2.96   17  ✅確定
 // (以下は再検証待ち — Python honest推奨値)
-// USDJPY    7  3.0  1.8  0.80 2.5  OFF  2.5
 // EURJPY    7  3.5  2.5  0.50 1.5  OFF  2.5
 // CHFJPY    7  2.8  2.5  0.50 3.0  OFF  2.5
 // XAGUSD    6  2.8  1.8  0.80 3.0   60  2.5

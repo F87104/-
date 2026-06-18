@@ -1,0 +1,359 @@
+//@version=5
+indicator("Beautiful H&S / Inverse H&S Scanner", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=100, max_bars_back=1000)
+
+// =====================================================================
+// 綺麗な三尊・逆三尊 自動検出スキャナ (Visual)
+// ---------------------------------------------------------------------
+// 目的:
+//   単に高安が3つ並んでいるだけのノイズではなく、
+//   目視で「綺麗」と判断できる三尊・逆三尊だけを自動検出する。
+//
+// 形の合格条件 (三尊の場合 / 逆三尊は上下を反転):
+//   1) 事前トレンド: LSの手前 trendLookback 本で ATR×trendAtrMult 以上の上昇
+//   2) 頭が一番高い: H > LS かつ H > RS
+//   3) 頭の突出: H - max(LS, RS) >= ATR × headAtrMin
+//   4) 肩の高さが揃う: |LS - RS| <= 頭の振幅 × shoulderSymmetry
+//   5) 肩は頭より明確に低い: (max肩 - 平均ネック) <= 頭の振幅 × shoulderHeadGap
+//   6) 左右の波幅が近い: |(H-L1) - (H-L2)| <= 平均波幅 × amplitudeSymmetry
+//   7) 左右のローソク本数が近い: |bars(LS→H) - bars(H→RS)| <= 平均本数 × timeSymmetry
+//   8) ネックラインが歪まない: |L1 - L2| <= 平均波幅 × necklineTilt
+//   9) 両肩がネックラインより上 (逆三尊なら下)
+//
+// 表示:
+//   - LS / H / RS ピボットと肩→頭→肩のジグザグライン
+//   - L1-L2 を結ぶネックライン (右へ延長)
+//   - "三尊" / "逆三尊" ラベル
+//   - ネックライン抜け時に "Break↓ / Break↑" マーカー
+//   - Entry / SL / TP の参考水平線 (R/R 検証用)
+//
+// 注意:
+//   - ピボットは右側 pivotRight 本確定後に判定するため、
+//     形が描かれるのは右肩から pivotRight 本後のバーです。
+//   - 通貨ペア H1 / H4 想定。他足でも動作しますが本数系の
+//     パラメータは適宜調整してください。
+// =====================================================================
+
+// ============ Inputs ============
+g_pivot = "ピボット検出"
+pivotLeft  = input.int(5, "左バー数 (pivot left)",  minval=2, group=g_pivot,
+     tooltip="この本数分、左側に逆方向のローソクが無い高安を採用します。値を大きくするほど大きな波だけを拾います。")
+pivotRight = input.int(5, "右バー数 (pivot right)", minval=2, group=g_pivot,
+     tooltip="右側の確定本数。大きいほど信頼度↑、検出遅延↑。")
+
+g_shape = "形の綺麗さ"
+headAtrMin        = input.float(0.50, "頭の突出量 (ATR倍)",        minval=0.0, step=0.05, group=g_shape,
+     tooltip="頭は両肩の高い方より ATR × この値 以上 高い必要があります。")
+shoulderSymmetry  = input.float(0.25, "左右肩の高さ許容差率",       minval=0.01, maxval=0.6, step=0.01, group=g_shape,
+     tooltip="|LS - RS| / 頭の振幅 (頭 - 平均ネック) がこの値以下。")
+shoulderHeadGap   = input.float(0.85, "肩 vs 頭の高さ最大率",        minval=0.30, maxval=0.99, step=0.01, group=g_shape,
+     tooltip="(高い方の肩 - 平均ネック) <= (頭 - 平均ネック) × この値。肩が頭に近づきすぎると不合格。")
+amplitudeSymmetry = input.float(0.35, "左右波の値幅許容差率",       minval=0.05, maxval=0.7, step=0.01, group=g_shape,
+     tooltip="|左波幅 - 右波幅| / 平均波幅 がこの値以下。左右の波の大きさを揃える。")
+timeSymmetry      = input.float(0.45, "左右の本数許容差率",         minval=0.10, maxval=1.0, step=0.05, group=g_shape,
+     tooltip="|bars(LS→頭) - bars(頭→RS)| / 平均 がこの値以下。時間的な左右対称性。")
+necklineTilt      = input.float(0.30, "ネックライン傾斜許容率",     minval=0.0,  maxval=1.0, step=0.05, group=g_shape,
+     tooltip="|L1 - L2| / 平均波幅 がこの値以下。極端に歪んだネックラインを除外。")
+
+g_trend = "事前トレンド"
+requireTrend  = input.bool(true,  "事前トレンドを必須化", group=g_trend)
+trendLookback = input.int(40,    "事前トレンドバー数",    minval=10, group=g_trend)
+trendAtrMult  = input.float(1.5, "事前トレンドATR倍率",   step=0.1,  group=g_trend,
+     tooltip="LS から trendLookback 本前 → LS の価格差が ATR × この値 以上 必要 (三尊=上昇 / 逆三尊=下降)。")
+
+g_break = "ブレイク・追跡"
+trackBreaks    = input.bool(true, "ブレイク追跡を有効化",     group=g_break)
+breakBars      = input.int(80,    "ブレイク待機バー数",       minval=5, group=g_break,
+     tooltip="形成後この本数以内にネックラインを抜けなかったら追跡停止。")
+breakBufferAtr = input.float(0.10, "ブレイクATR余白",          step=0.01, group=g_break,
+     tooltip="ネックラインから ATR × この値 を超えたらブレイクと判定。")
+rrTarget       = input.float(1.0,  "TP倍率 (頭~ネック幅×何倍)", minval=0.1, step=0.1, group=g_break,
+     tooltip="ターゲット幅 = 頭 と ネックライン の距離 × この倍率。三尊なら下方向、逆三尊なら上方向。")
+
+g_view = "表示"
+showPatterns  = input.bool(true,  "綺麗な形を描画", group=g_view)
+showLabels    = input.bool(true,  "LS/H/RS ラベル", group=g_view)
+showBreaks    = input.bool(true,  "ブレイクをマーカー表示", group=g_view)
+showRawPivots = input.bool(false, "全ピボットを表示 (デバッグ)", group=g_view)
+atrLen        = input.int(14, "ATR 期間", minval=1, group=g_view)
+
+colHs   = input.color(color.new(#e53935, 0), "三尊カラー",        group=g_view)
+colIhs  = input.color(color.new(#43a047, 0), "逆三尊カラー",      group=g_view)
+colNeck = input.color(color.new(#ffd54f, 0), "ネックラインカラー", group=g_view)
+
+// ============ Core ============
+atrVal = ta.atr(atrLen)
+
+ph = ta.pivothigh(high, pivotLeft, pivotRight)
+pl = ta.pivotlow (low,  pivotLeft, pivotRight)
+
+// 高安が交互に並ぶピボット列を保持する。
+// 同種が連続した場合は、より極端な方 (高=より高い / 低=より低い) を採用。
+var float[] pivPrice = array.new_float()
+var int[]   pivBar   = array.new_int()
+var int[]   pivType  = array.new_int()   // 1 = high, -1 = low
+
+addPivot(price, bar, typ) =>
+    n = array.size(pivType)
+    if n > 0 and array.get(pivType, n - 1) == typ
+        prev = array.get(pivPrice, n - 1)
+        keepNew = (typ == 1 and price > prev) or (typ == -1 and price < prev)
+        if keepNew
+            array.set(pivPrice, n - 1, price)
+            array.set(pivBar,   n - 1, bar)
+    else
+        array.push(pivPrice, price)
+        array.push(pivBar,   bar)
+        array.push(pivType,  typ)
+    while array.size(pivType) > 80
+        array.shift(pivPrice)
+        array.shift(pivBar)
+        array.shift(pivType)
+
+bool newPivot = false
+if not na(ph)
+    addPivot(ph, bar_index - pivotRight, 1)
+    newPivot := true
+    if showRawPivots
+        label.new(bar_index - pivotRight, ph, "H", style=label.style_label_down,
+             color=color.new(color.gray, 60), textcolor=color.white, size=size.tiny)
+if not na(pl)
+    addPivot(pl, bar_index - pivotRight, -1)
+    newPivot := true
+    if showRawPivots
+        label.new(bar_index - pivotRight, pl, "L", style=label.style_label_up,
+             color=color.new(color.gray, 60), textcolor=color.white, size=size.tiny)
+
+// 最新5ピボットが H-L-H-L-H なら三尊候補、L-H-L-H-L なら逆三尊候補。
+// 戻り値: [ptype(1/-1/0), ls, l1, head, l2, rs, lsBar, l1Bar, hBar, l2Bar, rsBar]
+checkPattern() =>
+    n = array.size(pivType)
+    int   res  = 0
+    float ls   = na, l1 = na, h = na, l2 = na, rs = na
+    int   lsB  = na, l1B = na, hB = na, l2B = na, rsB = na
+    if n >= 5
+        t0 = array.get(pivType, n - 5)
+        t1 = array.get(pivType, n - 4)
+        t2 = array.get(pivType, n - 3)
+        t3 = array.get(pivType, n - 2)
+        t4 = array.get(pivType, n - 1)
+        if t0 == 1 and t1 == -1 and t2 == 1 and t3 == -1 and t4 == 1
+            res := 1
+        if t0 == -1 and t1 == 1 and t2 == -1 and t3 == 1 and t4 == -1
+            res := -1
+        if res != 0
+            ls  := array.get(pivPrice, n - 5)
+            l1  := array.get(pivPrice, n - 4)
+            h   := array.get(pivPrice, n - 3)
+            l2  := array.get(pivPrice, n - 2)
+            rs  := array.get(pivPrice, n - 1)
+            lsB := array.get(pivBar,   n - 5)
+            l1B := array.get(pivBar,   n - 4)
+            hB  := array.get(pivBar,   n - 3)
+            l2B := array.get(pivBar,   n - 2)
+            rsB := array.get(pivBar,   n - 1)
+    [res, ls, l1, h, l2, rs, lsB, l1B, hB, l2B, rsB]
+
+// 三尊の品質判定
+qualityHS(_ls, _l1, _h, _l2, _rs, _lsB, _hB, _rsB) =>
+    avgNeck = (_l1 + _l2) / 2.0
+    headAmp = math.max(_h - avgNeck, 1e-10)
+    leftAmp  = _h - _l1
+    rightAmp = _h - _l2
+    avgAmp   = math.max((leftAmp + rightAmp) / 2.0, 1e-10)
+    leftBars  = math.max(_hB - _lsB, 1)
+    rightBars = math.max(_rsB - _hB, 1)
+    avgBars   = (leftBars + rightBars) / 2.0
+    maxShoulder = math.max(_ls, _rs)
+    headHighest        = _h > _ls and _h > _rs
+    headStands         = (_h - maxShoulder) >= atrVal * headAtrMin
+    shoulderUnderHead  = (maxShoulder - avgNeck) <= headAmp * shoulderHeadGap
+    shoulderSymm       = math.abs(_ls - _rs) <= headAmp * shoulderSymmetry
+    ampSymm            = math.abs(leftAmp - rightAmp) <= avgAmp * amplitudeSymmetry
+    timeSymm           = math.abs(leftBars - rightBars) <= avgBars * timeSymmetry
+    neckOk             = math.abs(_l1 - _l2) <= avgAmp * necklineTilt
+    shouldersAboveNeck = _ls > avgNeck and _rs > avgNeck
+    headHighest and headStands and shoulderUnderHead and shoulderSymm and ampSymm and timeSymm and neckOk and shouldersAboveNeck
+
+// 逆三尊の品質判定 (上下反転)
+qualityInvHS(_ls, _l1, _h, _l2, _rs, _lsB, _hB, _rsB) =>
+    avgNeck = (_l1 + _l2) / 2.0
+    headAmp = math.max(avgNeck - _h, 1e-10)
+    leftAmp  = _l1 - _h
+    rightAmp = _l2 - _h
+    avgAmp   = math.max((leftAmp + rightAmp) / 2.0, 1e-10)
+    leftBars  = math.max(_hB - _lsB, 1)
+    rightBars = math.max(_rsB - _hB, 1)
+    avgBars   = (leftBars + rightBars) / 2.0
+    minShoulder = math.min(_ls, _rs)
+    headLowest         = _h < _ls and _h < _rs
+    headStands         = (minShoulder - _h) >= atrVal * headAtrMin
+    shoulderUnderHead  = (avgNeck - minShoulder) <= headAmp * shoulderHeadGap
+    shoulderSymm       = math.abs(_ls - _rs) <= headAmp * shoulderSymmetry
+    ampSymm            = math.abs(leftAmp - rightAmp) <= avgAmp * amplitudeSymmetry
+    timeSymm           = math.abs(leftBars - rightBars) <= avgBars * timeSymmetry
+    neckOk             = math.abs(_l1 - _l2) <= avgAmp * necklineTilt
+    shouldersBelowNeck = _ls < avgNeck and _rs < avgNeck
+    headLowest and headStands and shoulderUnderHead and shoulderSymm and ampSymm and timeSymm and neckOk and shouldersBelowNeck
+
+trendBeforeHS(_lsB) =>
+    bool ok = true
+    if requireTrend
+        offset = bar_index - _lsB
+        old    = close[offset + trendLookback]
+        cur    = close[offset]
+        ok := not na(old) and (cur - old) >= atrVal * trendAtrMult
+    ok
+
+trendBeforeInvHS(_lsB) =>
+    bool ok = true
+    if requireTrend
+        offset = bar_index - _lsB
+        old    = close[offset + trendLookback]
+        cur    = close[offset]
+        ok := not na(old) and (old - cur) >= atrVal * trendAtrMult
+    ok
+
+// ============ 未確定パターン (ブレイク追跡待ち) ============
+var int[]   pendType      = array.new_int()
+var int[]   pendRsBar     = array.new_int()
+var float[] pendNeckRs    = array.new_float()
+var float[] pendNeckSlope = array.new_float()
+var float[] pendHead      = array.new_float()
+var int[]   pendExpire    = array.new_int()
+var bool[]  pendBroken    = array.new_bool()
+
+trimPending() =>
+    while array.size(pendType) > 30
+        array.shift(pendType)
+        array.shift(pendRsBar)
+        array.shift(pendNeckRs)
+        array.shift(pendNeckSlope)
+        array.shift(pendHead)
+        array.shift(pendExpire)
+        array.shift(pendBroken)
+
+// ============ 形の確定 & 描画 ============
+bool hsValid    = false
+bool invHsValid = false
+
+if newPivot
+    [ptype, ls, l1, hPx, l2, rs, lsB, l1B, hB, l2B, rsB] = checkPattern()
+    if ptype == 1
+        if qualityHS(ls, l1, hPx, l2, rs, lsB, hB, rsB) and trendBeforeHS(lsB)
+            hsValid := true
+            slope    = (l2 - l1) / math.max(l2B - l1B, 1)
+            neckAtRs = l2 + slope * (rsB - l2B)
+            if showPatterns
+                line.new(lsB, ls,  hB,  hPx, color=colHs, width=2)
+                line.new(hB,  hPx, rsB, rs,  color=colHs, width=2)
+                line.new(l1B, l1,  l2B, l2,  color=colNeck, width=1, style=line.style_dashed, extend=extend.right)
+                if showLabels
+                    label.new(lsB, ls,  "LS",   style=label.style_label_down,
+                         color=color.new(colHs, 30), textcolor=color.white, size=size.small)
+                    label.new(hB,  hPx, "Head", style=label.style_label_down,
+                         color=color.new(colHs, 0),  textcolor=color.white, size=size.small)
+                    label.new(rsB, rs,  "RS",   style=label.style_label_down,
+                         color=color.new(colHs, 30), textcolor=color.white, size=size.small)
+                    label.new(rsB + pivotRight, hPx, "三尊",
+                         style=label.style_label_left,
+                         color=colHs, textcolor=color.white, size=size.normal)
+            if trackBreaks
+                array.push(pendType,      1)
+                array.push(pendRsBar,     rsB)
+                array.push(pendNeckRs,    neckAtRs)
+                array.push(pendNeckSlope, slope)
+                array.push(pendHead,      hPx)
+                array.push(pendExpire,    bar_index + breakBars)
+                array.push(pendBroken,    false)
+                trimPending()
+    if ptype == -1
+        if qualityInvHS(ls, l1, hPx, l2, rs, lsB, hB, rsB) and trendBeforeInvHS(lsB)
+            invHsValid := true
+            slope    = (l2 - l1) / math.max(l2B - l1B, 1)
+            neckAtRs = l2 + slope * (rsB - l2B)
+            if showPatterns
+                line.new(lsB, ls,  hB,  hPx, color=colIhs, width=2)
+                line.new(hB,  hPx, rsB, rs,  color=colIhs, width=2)
+                line.new(l1B, l1,  l2B, l2,  color=colNeck, width=1, style=line.style_dashed, extend=extend.right)
+                if showLabels
+                    label.new(lsB, ls,  "LS",   style=label.style_label_up,
+                         color=color.new(colIhs, 30), textcolor=color.white, size=size.small)
+                    label.new(hB,  hPx, "Head", style=label.style_label_up,
+                         color=color.new(colIhs, 0),  textcolor=color.white, size=size.small)
+                    label.new(rsB, rs,  "RS",   style=label.style_label_up,
+                         color=color.new(colIhs, 30), textcolor=color.white, size=size.small)
+                    label.new(rsB + pivotRight, hPx, "逆三尊",
+                         style=label.style_label_left,
+                         color=colIhs, textcolor=color.white, size=size.normal)
+            if trackBreaks
+                array.push(pendType,      -1)
+                array.push(pendRsBar,     rsB)
+                array.push(pendNeckRs,    neckAtRs)
+                array.push(pendNeckSlope, slope)
+                array.push(pendHead,      hPx)
+                array.push(pendExpire,    bar_index + breakBars)
+                array.push(pendBroken,    false)
+                trimPending()
+
+// ============ ブレイク追跡 ============
+bool hsBreak    = false
+bool invHsBreak = false
+
+if trackBreaks and array.size(pendType) > 0
+    int i = 0
+    while i < array.size(pendType)
+        int   typ     = array.get(pendType,      i)
+        int   rsB     = array.get(pendRsBar,     i)
+        float neckRs  = array.get(pendNeckRs,    i)
+        float slope   = array.get(pendNeckSlope, i)
+        float headPx  = array.get(pendHead,      i)
+        int   expire  = array.get(pendExpire,    i)
+        bool  broken  = array.get(pendBroken,    i)
+        float neckNow = neckRs + slope * (bar_index - rsB)
+        if not broken and bar_index > rsB
+            if typ == 1 and close < neckNow - atrVal * breakBufferAtr
+                array.set(pendBroken, i, true)
+                hsBreak := true
+                if showBreaks
+                    label.new(bar_index, neckNow, "Break↓",
+                         style=label.style_label_up,
+                         color=color.new(colHs, 0), textcolor=color.white, size=size.small)
+                    risk = headPx - neckNow
+                    tp   = neckNow - risk * rrTarget
+                    line.new(bar_index, neckNow, bar_index + 5, neckNow,
+                         color=color.new(colHs, 50),   style=line.style_dotted, extend=extend.right)
+                    line.new(bar_index, tp,      bar_index + 5, tp,
+                         color=color.new(colIhs, 50),  style=line.style_dotted, extend=extend.right)
+                    line.new(bar_index, headPx,  bar_index + 5, headPx,
+                         color=color.new(color.gray, 50), style=line.style_dotted, extend=extend.right)
+            if typ == -1 and close > neckNow + atrVal * breakBufferAtr
+                array.set(pendBroken, i, true)
+                invHsBreak := true
+                if showBreaks
+                    label.new(bar_index, neckNow, "Break↑",
+                         style=label.style_label_down,
+                         color=color.new(colIhs, 0), textcolor=color.white, size=size.small)
+                    risk = neckNow - headPx
+                    tp   = neckNow + risk * rrTarget
+                    line.new(bar_index, neckNow, bar_index + 5, neckNow,
+                         color=color.new(colIhs, 50),  style=line.style_dotted, extend=extend.right)
+                    line.new(bar_index, tp,      bar_index + 5, tp,
+                         color=color.new(colHs, 50),   style=line.style_dotted, extend=extend.right)
+                    line.new(bar_index, headPx,  bar_index + 5, headPx,
+                         color=color.new(color.gray, 50), style=line.style_dotted, extend=extend.right)
+        if bar_index > expire
+            array.remove(pendType,      i)
+            array.remove(pendRsBar,     i)
+            array.remove(pendNeckRs,    i)
+            array.remove(pendNeckSlope, i)
+            array.remove(pendHead,      i)
+            array.remove(pendExpire,    i)
+            array.remove(pendBroken,    i)
+        else
+            i := i + 1
+
+// ============ Alerts ============
+alertcondition(hsValid,    "Beautiful Head & Shoulders",      "綺麗な三尊検出: {{ticker}} {{interval}}")
+alertcondition(invHsValid, "Beautiful Inverse H&S",           "綺麗な逆三尊検出: {{ticker}} {{interval}}")
+alertcondition(hsBreak,    "H&S Neckline Break",              "三尊ネックライン割れ: {{ticker}} {{interval}}")
+alertcondition(invHsBreak, "Inverse H&S Neckline Break",      "逆三尊ネックライン上抜け: {{ticker}} {{interval}}")

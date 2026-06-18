@@ -335,6 +335,7 @@ fx-ai/
 │   ├── visual/                        可視化ツール (Indicator)
 │   │   ├── h4_t5_macd_bb_visual.pine
 │   │   ├── h4_sharp_drop_v_recovery_visual.pine
+│   │   ├── head_and_shoulders_scanner.pine    綺麗な三尊/逆三尊スキャナ
 │   │   ├── sai_h1_visual_scanner.pine
 │   │   ├── sai_mtf_visual_checker.pine
 │   │   └── synapse_usdjpy_m5_v2_context_visual.pine

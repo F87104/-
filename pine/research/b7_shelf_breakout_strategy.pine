@@ -58,6 +58,7 @@ minCLoc    = input.float(0.50, "ブレイク足終値位置下限", minval=0.0, 
 stopBuf    = input.float(0.25, "SL余白(ATR)", minval=0.0, step=0.05, group=grpV)
 rrInput    = input.float(2.0, "RR", minval=0.5, step=0.1, group=grpV)
 maxRiskAtr = input.float(2.5, "最大リスク幅(ATR)", minval=0.5, step=0.1, group=grpV)
+earlyEntry = input.bool(false, "先行エントリー（高値ブレイクで確認前に入る）", group=grpV, tooltip="ON: 高値が棚高値を超えた足でエントリー（終値確認なし）\nOFF: 終値で棚高値を上抜け確認後にエントリー（通常）")
 
 grpVz = "表示"
 showInOut   = input.bool(true, "IN/OUTラベル", group=grpVz)
@@ -119,9 +120,13 @@ float sLo = ta.lowest(low, shelfBars)[1]
 float sRng = atrOk ? (sHi - sLo) / atr : 999.0
 bool shelfNarrow = sRng <= shelfAtr
 
-// ブレイク = 前足≤棚高値 & 今足>棚高値+バッファ
-bool freshBreak = not na(sHi) and close[1] <= sHi and close > sHi + breakBuf * atr
-bool qualOk = bodyR >= minBody and cLoc >= minCLoc
+// ブレイク判定
+// 通常: 前足終値≤棚高値 & 今足終値>棚高値+バッファ（確認済みブレイク）
+// 先行: 前足高値≤棚高値 & 今足高値>棚高値（高値タッチで即エントリー）
+bool normalBreak = not na(sHi) and close[1] <= sHi and close > sHi + breakBuf * atr
+bool earlyBreak = not na(sHi) and high[1] <= sHi and high > sHi
+bool freshBreak = earlyEntry ? earlyBreak : normalBreak
+bool qualOk = earlyEntry ? true : (bodyR >= minBody and cLoc >= minCLoc)
 
 // 棚の前に急落→回復があったか（棚開始点のさらに前 dropLook 本を見る）
 // 急落 = その窓の最高値 - 最安値 >= dropAtrMin * ATR
